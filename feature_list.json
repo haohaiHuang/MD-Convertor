@@ -1,0 +1,94 @@
+{
+  "features": [
+    {
+      "id": "feat-001",
+      "name": "Harness Bootstrap",
+      "description": "建立项目级指令、状态追踪、变更记录、验证入口和跨会话交接机制。",
+      "dependencies": [],
+      "status": "done",
+      "done_criteria": ["Harness 文件齐全", "结构验证通过"],
+      "evidence": "2026-07-17: ./init.sh passed; harness structural audit 100/100."
+    },
+    {
+      "id": "feat-002",
+      "name": "Product and Technical Planning",
+      "description": "确定单链接转换、输出规则、隐私与安全边界；桌面交付范围由 feat-008 补充。",
+      "dependencies": ["feat-001"],
+      "status": "done",
+      "done_criteria": ["产品范围已记录", "技术架构与安全边界已记录"],
+      "evidence": "2026-07-18: docs/PRODUCT.md and docs/ARCHITECTURE.md created from approved plan."
+    },
+    {
+      "id": "feat-003",
+      "name": "Project Scaffolding",
+      "description": "创建 Next.js 16、TypeScript strict、npm、测试与生产构建配置。",
+      "dependencies": ["feat-002"],
+      "status": "done",
+      "done_criteria": ["依赖锁定", "类型检查、代码检查和生产构建通过"],
+      "evidence": "2026-07-18: npm run typecheck, npm run lint and npm run build passed."
+    },
+    {
+      "id": "feat-004",
+      "name": "Secure Conversion Pipeline",
+      "description": "实现 SSRF 防护、固定 IP 抓取、正文提取、动态浏览器兜底、超时与限流。",
+      "dependencies": ["feat-003"],
+      "status": "done",
+      "done_criteria": ["公开 HTML 可转换", "私网目标被拒绝", "动态网页可兜底"],
+      "evidence": "2026-07-18: 403 private-target smoke passed; live MDN conversion passed using browser mode."
+    },
+    {
+      "id": "feat-005",
+      "name": "Markdown and Embedded Images",
+      "description": "生成带来源元数据的 GFM，优化并 Base64 内嵌图片，限制最终文件为 20 MiB。",
+      "dependencies": ["feat-004"],
+      "status": "done",
+      "done_criteria": ["跨平台文件名", "图片内嵌与预算回退已测试"],
+      "evidence": "2026-07-18: Markdown/image tests cover five supported formats, unsupported and oversized images, 30-image limit, resize, animation fallback and 20 MiB body-first degradation; exact webpage-to-Markdown golden fixture passed."
+    },
+    {
+      "id": "feat-006",
+      "name": "Cross-browser Web Interface",
+      "description": "实现简体中文链接校验、确认后转换、停止、结果统计、预览、复制回退、下载和响应式界面。",
+      "dependencies": ["feat-005"],
+      "status": "done",
+      "done_criteria": ["Chromium、Firefox、WebKit 关键流程通过"],
+      "evidence": "2026-07-18: 21 Playwright checks passed across Chromium, Firefox and WebKit, including paste-without-submit, Enter/button submit, trusted stop click, validation, statistics, copy/download and 960/1180px typography."
+    },
+    {
+      "id": "feat-007",
+      "name": "Docker and Public HTTPS Rollout",
+      "description": "构建 Node 24/Chromium 容器，通过 Caddy 和公网域名提供 HTTPS。",
+      "dependencies": ["feat-006"],
+      "status": "cancelled",
+      "done_criteria": ["Docker 镜像健康检查通过", "公网 HTTPS 地址完成跨系统验收"],
+      "evidence": "2026-07-18: 用户将产品方向调整为个人使用的单机版，公网发布不再属于第一阶段范围。"
+    },
+    {
+      "id": "feat-008",
+      "name": "Apple Silicon Desktop Foundation",
+      "description": "用 Electron 承载现有界面与本地转换服务，并生成 darwin/arm64 应用包。",
+      "dependencies": ["feat-006"],
+      "status": "done",
+      "done_criteria": ["桌面窗口仅加载回环地址", "渲染进程隔离配置已启用", "darwin/arm64 应用目录可成功打包"],
+      "evidence": "2026-07-18: arm64 Mach-O .app packaged; local Next server started on 127.0.0.1 random port; automatic launch smoke passed."
+    },
+    {
+      "id": "feat-009",
+      "name": "Packaged Conversion Runtime",
+      "description": "确保静态、动态页面、图片内嵌、停止转换与结果统计在打包后的 Mac 应用内完整工作，并建立 0.1.3 质量门禁。",
+      "dependencies": ["feat-008"],
+      "status": "done",
+      "done_criteria": ["打包应用可转换静态页面", "内置动态页面渲染可用", "复制与保存文件通过真实应用验收"],
+      "evidence": "2026-07-18: 0.1.3 passed 82 coverage-gated tests, 21 three-engine E2E checks, live comparison and packaged runtime smoke. In the real packaged window, stop preserved an editable URL; Copy showed 已复制; clipboard and downloaded Markdown matched; a downloaded long WeChat article contained 17,643 non-Base64 chars and 30 embedded images in 7,749,363 bytes. QA-007 is resolved. Node 24 Forge packaging remains tracked separately as QA-006."
+    },
+    {
+      "id": "feat-010",
+      "name": "Personal Mac Release",
+      "description": "生成可供个人安装的 Apple Silicon Mac 分发包和安装说明。",
+      "dependencies": ["feat-009"],
+      "status": "in-progress",
+      "done_criteria": ["arm64 ZIP 产物生成", "全新目录安装与首次启动验收", "签名状态与安全提示已明确记录"],
+      "evidence": "2026-07-18: 0.1.3 arm64 personal-test ZIP generated at out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.1.3.zip; size 239,266,746 bytes; SHA-256 d5cd5bac1323827766c2a6bd94bde472b42bec2b790d52a276abed5d124c8a3e; minimum macOS 12.0. Same-Mac packaged startup, conversion, stop, copy and download passed. A second Apple Silicon Mac installation and first-launch acceptance remains pending; package is ad-hoc signed and not notarized."
+    }
+  ]
+}
