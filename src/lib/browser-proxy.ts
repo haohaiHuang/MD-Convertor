@@ -1,12 +1,18 @@
 import http, { type IncomingHttpHeaders, type IncomingMessage, type ServerResponse } from "node:http";
 import https from "node:https";
 import { connect as connectSocket, type TcpNetConnectOpts } from "node:net";
-import type { Duplex } from "node:stream";
+import { Transform, type Duplex } from "node:stream";
 import { AppError } from "@/lib/errors";
 import { createPinnedLookup } from "@/lib/fetcher";
 import { resolvePublicTarget } from "@/lib/security/url";
 
 const PROXY_HOST = "127.0.0.1";
+const MEBIBYTE = 1024 * 1024;
+export const BROWSER_PROXY_LIMITS = Object.freeze({
+  maxRequests: 100,
+  maxBytes: 50 * MEBIBYTE,
+  maxTunnelBytes: 25 * MEBIBYTE,
+});
 const HOP_BY_HOP_HEADERS = new Set([
   "connection",
   "keep-alive",
@@ -24,9 +30,52 @@ export type BrowserProxy = {
   close: () => Promise<void>;
 };
 
-type BrowserProxyOptions = {
+export type BrowserProxyOptions = {
   resolver?: typeof resolvePublicTarget;
+  maxRequests?: number;
+  maxBytes?: number;
+  maxTunnelBytes?: number;
 };
+
+type TunnelBudget = {
+  transferredBytes: number;
+};
+
+class BrowserProxyBudget {
+  private requestCount = 0;
+  private transferredBytes = 0;
+
+  constructor(
+    private readonly maxRequests: number,
+    private readonly maxBytes: number,
+    private readonly maxTunnelBytes: number,
+  ) {}
+
+  claimRequest(): void {
+    if (this.requestCount >= this.maxRequests) {
+      throw new AppError(429, "BROWSER_REQUEST_LIMIT", "动态网页请求数量超过限制。");
+    }
+    this.requestCount += 1;
+  }
+
+  assertContentLength(contentLength: number): void {
+    if (contentLength > this.maxBytes - this.transferredBytes) {
+      throw new AppError(413, "BROWSER_TRANSFER_LIMIT", "动态网页网络传输超过限制。");
+    }
+  }
+
+  consume(byteLength: number, tunnel?: TunnelBudget): void {
+    if (byteLength <= 0) return;
+    if (byteLength > this.maxBytes - this.transferredBytes) {
+      throw new AppError(413, "BROWSER_TRANSFER_LIMIT", "动态网页网络传输超过限制。");
+    }
+    if (tunnel && byteLength > this.maxTunnelBytes - tunnel.transferredBytes) {
+      throw new AppError(413, "BROWSER_TUNNEL_LIMIT", "动态网页单个连接传输超过限制。");
+    }
+    this.transferredBytes += byteLength;
+    if (tunnel) tunnel.transferredBytes += byteLength;
+  }
+}
 
 export type PinnedTunnelTarget = {
   options: TcpNetConnectOpts;
@@ -50,6 +99,37 @@ function proxyError(response: ServerResponse, status: number, message: string): 
     connection: "close",
   });
   response.end(message);
+}
+
+function normalizeLimit(value: number | undefined, fallback: number): number {
+  if (value === undefined) return fallback;
+  if (!Number.isSafeInteger(value) || value < 1) {
+    throw new AppError(500, "INVALID_PROXY_LIMIT", "安全代理预算配置无效。");
+  }
+  return value;
+}
+
+function createBudgetTransform(budget: BrowserProxyBudget, tunnel?: TunnelBudget): Transform {
+  return new Transform({
+    transform(chunk: Buffer, _encoding, callback) {
+      try {
+        budget.consume(chunk.byteLength, tunnel);
+        callback(null, chunk);
+      } catch (error) {
+        callback(error as Error);
+      }
+    },
+  });
+}
+
+function proxyErrorDetails(error: unknown): { status: number; message: string } {
+  if (error instanceof AppError) {
+    if (error.status === 403) return { status: 403, message: "Forbidden" };
+    if (error.status === 413) return { status: 413, message: "Payload Too Large" };
+    if (error.status === 429) return { status: 429, message: "Too Many Requests" };
+    if (error.status === 400) return { status: 400, message: "Bad Request" };
+  }
+  return { status: 502, message: "Bad Gateway" };
 }
 
 function parseProxyRequestUrl(request: IncomingMessage): URL {
@@ -93,7 +173,9 @@ async function forwardHttpRequest(
   response: ServerResponse,
   signal: AbortSignal,
   resolver: typeof resolvePublicTarget,
+  budget: BrowserProxyBudget,
 ): Promise<void> {
+  budget.claimRequest();
   const targetUrl = parseProxyRequestUrl(request);
   const target = await resolver(targetUrl);
   const requestImpl = target.url.protocol === "https:" ? https.request : http.request;
@@ -107,19 +189,42 @@ async function forwardHttpRequest(
       lookup: createPinnedLookup(target.address, target.family),
       signal,
     }, (upstreamResponse) => {
+      const contentLengthValue = upstreamResponse.headers["content-length"];
+      const contentLength = typeof contentLengthValue === "string" ? Number(contentLengthValue) : Number.NaN;
+      if (Number.isSafeInteger(contentLength) && contentLength >= 0) {
+        try {
+          budget.assertContentLength(contentLength);
+        } catch (error) {
+          upstreamResponse.destroy();
+          reject(error);
+          return;
+        }
+      }
       response.writeHead(
         upstreamResponse.statusCode ?? 502,
         upstreamResponse.statusMessage,
         filteredHeaders(upstreamResponse.headers),
       );
-      upstreamResponse.once("error", reject);
-      upstreamResponse.once("end", resolve);
-      upstreamResponse.pipe(response);
+      const limiter = createBudgetTransform(budget);
+      const fail = (error: unknown) => {
+        upstreamResponse.destroy();
+        response.destroy();
+        reject(error);
+      };
+      upstreamResponse.once("error", fail);
+      limiter.once("error", fail);
+      response.once("finish", resolve);
+      upstreamResponse.pipe(limiter).pipe(response);
     });
 
+    const requestLimiter = createBudgetTransform(budget);
+    requestLimiter.once("error", (error) => {
+      upstream.destroy();
+      reject(error);
+    });
     upstream.once("error", reject);
     request.once("aborted", () => upstream.destroy());
-    request.pipe(upstream);
+    request.pipe(requestLimiter).pipe(upstream);
   });
 }
 
@@ -130,8 +235,16 @@ function connectPinnedTunnel(
   signal: AbortSignal,
   sockets: Set<Duplex>,
   resolver: typeof resolvePublicTarget,
+  budget: BrowserProxyBudget,
 ): void {
   clientSocket.on("error", () => undefined);
+  try {
+    budget.claimRequest();
+  } catch (error) {
+    const { status, message } = proxyErrorDetails(error);
+    clientSocket.end(`HTTP/1.1 ${status} ${message}\r\nConnection: close\r\n\r\n`);
+    return;
+  }
   void resolvePinnedTunnelTarget(request.url ?? "", resolver)
     .then(({ options }) => {
       if (signal.aborted || clientSocket.destroyed) return;
@@ -142,10 +255,26 @@ function connectPinnedTunnel(
           upstreamSocket.destroy();
           return;
         }
+        const tunnel = { transferredBytes: 0 };
+        try {
+          budget.consume(head.byteLength, tunnel);
+        } catch {
+          clientSocket.end("HTTP/1.1 413 Payload Too Large\r\nConnection: close\r\n\r\n");
+          upstreamSocket.destroy();
+          return;
+        }
         clientSocket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
         if (head.length > 0) upstreamSocket.write(head);
-        clientSocket.pipe(upstreamSocket);
-        upstreamSocket.pipe(clientSocket);
+        const toUpstream = createBudgetTransform(budget, tunnel);
+        const toClient = createBudgetTransform(budget, tunnel);
+        const closeTunnel = () => {
+          clientSocket.destroy();
+          upstreamSocket.destroy();
+        };
+        toUpstream.once("error", closeTunnel);
+        toClient.once("error", closeTunnel);
+        clientSocket.pipe(toUpstream).pipe(upstreamSocket);
+        upstreamSocket.pipe(toClient).pipe(clientSocket);
       });
       upstreamSocket.once("error", () => clientSocket.destroy());
       upstreamSocket.once("close", () => {
@@ -166,11 +295,16 @@ export async function createPinnedBrowserProxy(
   options: BrowserProxyOptions = {},
 ): Promise<BrowserProxy> {
   const resolver = options.resolver ?? resolvePublicTarget;
+  const budget = new BrowserProxyBudget(
+    normalizeLimit(options.maxRequests, BROWSER_PROXY_LIMITS.maxRequests),
+    normalizeLimit(options.maxBytes, BROWSER_PROXY_LIMITS.maxBytes),
+    normalizeLimit(options.maxTunnelBytes, BROWSER_PROXY_LIMITS.maxTunnelBytes),
+  );
   const sockets = new Set<Duplex>();
   const server = http.createServer((request, response) => {
-    void forwardHttpRequest(request, response, signal, resolver).catch((error: unknown) => {
-      const status = error instanceof AppError && error.status === 403 ? 403 : 502;
-      proxyError(response, status, status === 403 ? "Forbidden" : "Bad Gateway");
+    void forwardHttpRequest(request, response, signal, resolver, budget).catch((error: unknown) => {
+      const { status, message } = proxyErrorDetails(error);
+      proxyError(response, status, message);
     });
   });
 
@@ -179,7 +313,7 @@ export async function createPinnedBrowserProxy(
     socket.once("close", () => sockets.delete(socket));
   });
   server.on("connect", (request, socket, head) => {
-    connectPinnedTunnel(request, socket, head, signal, sockets, resolver);
+    connectPinnedTunnel(request, socket, head, signal, sockets, resolver, budget);
   });
   server.on("upgrade", (_request, socket) => socket.destroy());
 

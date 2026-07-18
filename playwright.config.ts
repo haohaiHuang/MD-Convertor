@@ -10,9 +10,10 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
-    command: "npm run dev",
+    command: "node scripts/start-e2e-server.mjs",
     url: "http://127.0.0.1:3000/health",
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
+    gracefulShutdown: { signal: "SIGTERM", timeout: 1_000 },
   },
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },

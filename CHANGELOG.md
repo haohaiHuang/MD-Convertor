@@ -7,6 +7,20 @@
 ### Documentation
 
 - 初始化本地 Git `main` 基线，并补充构建产物、环境变量、日志与 macOS 元数据的忽略规则。
+- 完成第二轮整体质检：确认 Node.js 24 完整发布路径和第一轮安全整改，补充代理资源预算、发布 Harness 与测试工作区副作用问题。
+
+### Security
+
+- 动态浏览器代理新增每次回退 100 个请求、累计 50 MiB 和单 CONNECT 隧道 25 MiB 的共享预算；HTTP 请求体、响应或隧道超限时立即拒绝或关闭。
+
+### Added
+
+- 新增真实 HTTP 双向传输、并发子资源、流式响应、CONNECT、取消和 WebSocket 代理集成测试，并把代理覆盖率门禁提高到 85% lines / 75% branches / 90% functions。
+- 发布流程新增 fresh ZIP、版本、arm64、包结构、大小和 SHA-256 自动校验。
+
+### Changed
+
+- Harness 固定使用 Node.js 24.x；E2E 改用 production standalone 服务并阻断测试引起的 tracked 文件变化。
 
 ## [0.1.3] - 2026-07-18
 

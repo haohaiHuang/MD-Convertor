@@ -2,31 +2,55 @@
 
 ## Audit Metadata
 
-- Audit date: 2026-07-18
+- Audit date: 2026-07-18; second-round audit: 2026-07-18
 - Audited version: `0.1.2`; follow-up validation: `0.1.3`
 - Platform: Apple Silicon Mac (`darwin/arm64`)
 - Active feature: `feat-010 — Personal Mac Release`
 - Audit type: 文档一致性、代码与安全审查、自动化验证、真实网页门禁、依赖审计和打包产物抽查
-- Overall verdict: **Personal-test package validated locally; second-Mac and Node.js 24 release evidence remain open**
+- Overall verdict: **Personal-test functionality, proxy hardening and release Harness validated; second-Mac acceptance, dependency upgrades and external-distribution signing remain open**
+
+## Second-Round Audit Update — 2026-07-18
+
+第二轮在当前 `main` 基线和未提交的多平台规划文档之上独立复验。第一轮的 `QA-001`、`QA-002`、`QA-003` 和 `QA-007` 未出现回归；真实 Chromium loopback 子资源探针命中本地目标次数为 0，证明 Playwright 当前会强制把 loopback 请求送入固定 IP 代理。
+
+Node.js 24.14.1 / npm 11.11.0 下，工作区基线、21 项三浏览器 E2E、真实微信文章门禁均通过。随后在 `/private/tmp` 的干净隔离副本中完整运行 `npm run desktop:release`，Forge 7.11.2 成功生成新 ZIP；新包为 arm64、0.1.3、最低 macOS 12.0，大小 `239,266,900` bytes，SHA-256 `4477e94473063ec417341837e3b61beabc327d05e1f1983938f96c3b29be6181`，`example.com` 打包应用冒烟通过。该隔离产物只用于质检，已删除，没有替换当前正式记录的个人测试包。
+
+第二轮新增或重新打开以下问题：
+
+- `QA-004` 部分重新打开：`browser-proxy.ts` 只有约 22.47% 行覆盖和 14.28% 函数覆盖，门禁却仅要求 20% / 10%；实际 HTTP 转发、CONNECT 生命周期、取消、WebSocket 拒绝和关闭路径没有直接自动化覆盖。
+- `QA-009`：动态代理对 HTTPS 隧道和子资源没有累计传输预算或请求数量上限，5 MiB 动态 HTML 检查发生在 Chromium 完成加载和序列化 DOM 之后，恶意页面仍可先消耗大量网络与内存。
+- `QA-010`：`./init.sh` 和 `package.json` 不会强制当前进程使用 Node.js 24；默认 Node.js 23.11.1 仍可完整通过基线。
+- `QA-011`：`desktop:release` 只串联命令，不验证目标 ZIP 是本轮新生成；Forge 若无产物退出，脚本本身无法阻断错误放行。
+- `QA-012`：`npm run test:e2e` 使用 `next dev`，会把已跟踪的 `next-env.d.ts` 从 production types 改为 dev types，测试后留下脏工作区。
+
+第二轮结论：0.1.3 仍可继续用于受控个人测试，`QA-006` 关闭；在新包最终放行和第二台 Mac 验收前，应先处理 `QA-009` 至 `QA-012` 以及 `QA-004` 的代理集成测试缺口。
+
+## Third-Round Remediation Update — 2026-07-18
+
+- `QA-004` 与 `QA-009`：动态代理新增每次回退 100 个请求、累计 50 MiB 和单 CONNECT 隧道 25 MiB 的共享预算。10 个代理测试覆盖真实 HTTP 双向传输、声明/流式超限、并发子资源、CONNECT、取消与 WebSocket；`browser-proxy.ts` 达到 91.27% lines / 81.31% branches / 95% functions，门禁提高到 85% / 75% / 90%。
+- `QA-010`：`engines` 固定为 Node.js 24 主版本，`init.sh` 在其他检查前拒绝非 24 版本；Node.js 23.11.1 负向验证按预期失败。
+- `QA-011`：专用发布脚本记录开始时间与旧 ZIP 修改时间，Forge 后校验 fresh ZIP、0.1.3 版本、arm64 可执行文件和 ZIP 包结构，并输出大小和 SHA-256。Node.js 24.16.0 的无产物 finalizing 路径被正确判定为失败。
+- `QA-012`：E2E 改用 production standalone 服务，执行器比较测试前后 tracked diff；三引擎 21 项通过并输出 clean check passed。
+- Node.js 24.14.1 / npm 11.11.0 完整 `desktop:release` 通过，正式 ZIP 为 `239,281,512` bytes，SHA-256 `66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89`。新 `.app` 的 `example.com` browser-mode 冒烟和长微信 17,643 字符 / 30 图冒烟均通过。
 
 ## Remediation Update — 2026-07-18
 
 - `QA-001`: 已修复并完成新包冒烟。Chromium 改经一次性回环代理；HTTP 请求使用固定 lookup，HTTPS CONNECT 直接连接逐次校验所得 IP。DNS 重绑定回归测试、打包应用 `browser` 模式转换和内网拒绝均通过。
 - `QA-002`: 已修复并完成新包冒烟。Electron 每次生产启动生成 256 位随机令牌并由网络层附加；API 校验回环 Host、同源来源、JSON Content-Type 和令牌。
 - `QA-003`: 已修复。`TimeoutError` 返回 `504 CONVERSION_TIMEOUT`，客户端主动停止内部记录为 `499 CLIENT_ABORTED`。
-- `QA-004`: 关键缺口已修复。新增 API、限流、动态浏览器、代理 DNS 固定、逐跳重定向和完整转换编排测试；覆盖范围只包含项目源代码，并为安全关键文件设置阈值。
-- `QA-006`: Node.js 24.16.0 下已执行 `npm ci`、`./init.sh`、三浏览器 E2E、真实网页门禁、Next 构建和桌面资源准备；Forge 7.11.2 在 Node 24 finalizing 阶段无错误提前退出，最终封装临时使用 Node 23.11.1，此项保持部分开放。
+- `QA-004`: 第三轮已补真实代理 I/O 与超限路径，覆盖率和门禁均提升，此项关闭。
+- `QA-006`: 第二轮在 Node.js 24.14.1 干净隔离副本中完整运行 `desktop:release`，新 ZIP 实际生成且打包应用冒烟通过；24.16.0 的历史异常未复现，此项关闭。
 - `QA-007`: 已在 0.1.3 真实打包窗口完成。停止后链接保留且可编辑；“复制”“下载”和“已复制”反馈通过；剪贴板与下载内容一致；下载的长微信 Markdown 含 17,643 个非 Base64 字符和 30 张内嵌图，共 7,749,363 bytes。
-- 新产物：arm64 / macOS 12.0+ / 0.1.3，ZIP `239,266,746` bytes，SHA-256 `d5cd5bac1323827766c2a6bd94bde472b42bec2b790d52a276abed5d124c8a3e`。上一版 0.1.2 哈希保留为 `fbb645e1ad55b28373bc94f3974c85ca3a9aa3de58f73ce2530b9628ac84baf5`。
-- 仍未放行：第二台 Apple Silicon Mac 安装验收、`QA-005` 依赖告警和 `QA-006` Forge Node 24 兼容问题仍需处理。
+- 第一轮整改产物：arm64 / macOS 12.0+ / 0.1.3，ZIP `239,266,746` bytes，SHA-256 `d5cd5bac1323827766c2a6bd94bde472b42bec2b790d52a276abed5d124c8a3e`。上一版 0.1.2 哈希保留为 `fbb645e1ad55b28373bc94f3974c85ca3a9aa3de58f73ce2530b9628ac84baf5`；当前正式产物以第三轮记录为准。
+- 仍未放行：第二台 Apple Silicon Mac 安装验收、`QA-005` 依赖告警，以及正式对外分发所需的签名与 notarization。
 
 ## Executive Summary
 
 0.1.3 的 Node.js 24 日常基线、三浏览器 E2E、真实微信文章同轮对照和打包应用转换冒烟均已取得通过证据。真实打包窗口中的停止、系统剪贴板、下载以及长文 30 图文件核验也已完成，`feat-009` 的运行时完成条件满足。
 
-当前开放项是：尚未在第二台 Apple Silicon Mac 上完成解压、首次安全放行和转换验收；`QA-006` 的 Electron Forge 7.11.2 在 Node.js 24 finalizing 阶段无产物退出，最终 ZIP 暂由 Node 23 封装；`QA-005` 依赖告警仍待可达性分级处理。未签名状态仅接受个人测试，不满足对外分发要求。
+当前开放项是：尚未在第二台 Apple Silicon Mac 上完成解压、首次安全放行和转换验收；`QA-005` 依赖告警仍待安全升级。未签名状态仅接受个人测试，不满足对外分发要求。第二轮发现的代理与 Harness 缺口均已关闭。
 
-因此 `feat-009` 已完成，`feat-010` 进入 `in-progress`。现有 ZIP 可用于本机和第二台 Mac 的个人验收，但不能宣称跨电脑实测、完整 Node.js 24 发布门禁或正式外部分发已经通过。
+因此 `feat-009` 维持完成，`feat-010` 继续 `in-progress`。当前正式 ZIP 已通过本机完整门禁和打包冒烟，但仍不能宣称跨电脑实测或正式外部分发已经通过。
 
 ## Scope
 
@@ -42,30 +66,29 @@
 
 - 未在另一台全新 Apple Silicon Mac 上执行安装与首次启动验收。
 - 未配置或验证 Developer ID 签名与 notarization。
-- Electron Forge 7.11.2 尚未在 Node.js 24 下稳定生成最终产物；现有 ZIP 使用 Node.js 24 构建和准备资源、Node.js 23 执行 Forge 封装。
+- 尚未把第三轮正式 ZIP 放到第二台 Mac 进行真实跨电脑验收。
 - 依赖审计告警尚未完成运行时与构建时可达性分级和安全升级验证。
 
 ## Verification Results
 
 | Check | Result | Evidence |
 |---|---|---|
-| Node.js 24 `./init.sh` | Passed | lint、typecheck、17 files / 82 tests、覆盖率门禁、Next.js production build |
+| Node.js 24 `./init.sh` | Passed | lint、typecheck、18 files / 93 tests、覆盖率门禁、Next.js production build |
 | `npm run test:e2e` | Passed | Chromium、Firefox、WebKit 共 21 项 |
 | Node.js 24 `npm run test:live` | Passed with upstream variability | 真实微信文章同轮对照通过；曾出现一次 86.49% 和短时上游超时，阈值未降低 |
-| Node.js 24 `npm run desktop:release` | Partial | 基线、E2E 通过；真实网页阶段遇到上游超时，未进入封装 |
-| Node.js 24 `npm run desktop:make` | Partial | 构建与资源准备通过；Forge 7.11.2 在 finalizing 无产物退出 |
-| Node.js 23 Forge packaging | Passed with evidence gap | 对 Node.js 24 已构建和准备的资源完成 App/ZIP 封装 |
+| Node.js 24.14.1 `npm run desktop:release` | Passed in current workspace | 基线、93 tests、21 E2E、live、构建、Forge 和 fresh artifact 校验全部通过 |
+| Node.js 24 isolated artifact smoke | Passed | arm64 / 0.1.3 / macOS 12.0；239,266,900 bytes；`example.com` browser mode 270 bytes |
 | Packaged short-page smoke | Passed | `https://example.com`；browser mode；270 bytes；无警告 |
-| Packaged long-article smoke | Passed | 17,643 non-Base64 chars；30 images；7,749,363 bytes；无警告 |
+| Packaged long-article smoke | Passed | 当前正式包为 17,643 non-Base64 chars；30 images；7,749,363 bytes；无警告 |
 | Private-target packaged smoke | Passed | `localhost` 返回 `403 PRIVATE_TARGET`，应用以非零状态退出 |
-| Real packaged window | Passed | 停止保留链接；复制与下载内容一致；长文下载含 30 张内嵌图且小于 20 MiB |
-| Security-critical coverage gate | Passed | 17 个测试文件、82 项测试；API、鉴权、浏览器、限流、超时和转换编排均有直接门禁 |
+| Real packaged window | Passed | 用户确认当前 Mac 人工测试通过；停止保留链接；复制与下载内容一致；长文下载含 30 张内嵌图且小于 20 MiB |
+| Security-critical coverage gate | Passed | 总体 91.26%；代理 91.27% lines / 81.31% branches / 95% functions，阈值 85% / 75% / 90% |
 | Production dependency audit | Needs review | 2 moderate，来自 Next.js 间接依赖 PostCSS |
 | Full dependency audit | Needs review | 20 high、2 moderate、3 low；high 主要位于 Electron Forge 构建链 |
 | Artifact architecture | Passed | Mach-O 64-bit arm64 |
 | Artifact version | Passed | `CFBundleShortVersionString` 和 `CFBundleVersion` 均为 0.1.3；最低 macOS 12.0 |
-| ZIP size | Passed | 239,266,746 bytes |
-| ZIP SHA-256 | Passed | `d5cd5bac1323827766c2a6bd94bde472b42bec2b790d52a276abed5d124c8a3e` |
+| ZIP size | Passed | 239,281,512 bytes |
+| ZIP SHA-256 | Passed | `66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89` |
 | Code signing | Expected limitation | 仅临时/链接器签名，严格签名校验失败 |
 | Packaged copy/save acceptance | Passed | `feat-009` 完成条件已满足 |
 
@@ -116,24 +139,25 @@ Resolution evidence:
 ### QA-004 — Critical Orchestration Paths Lacked Direct Tests
 
 - Severity: **P2 — Quality gate weakness**
-- Status: Resolved for critical paths
+- Status: Resolved in third-round remediation
 - Location: `vitest.config.ts` 及相关测试目录
 
 Original finding: 原 45 个测试没有直接覆盖 API 路由和限流，动态浏览器及完整转换编排覆盖也不足；模拟 `/api/convert` 的 E2E 无法补足服务器回归证据。
 
 Resolution evidence:
 
-- 当前共有 17 个测试文件、82 项测试，直接覆盖逐跳重定向、动态浏览器安全代理、API 输入与鉴权、限流释放、超时和完整转换编排。
-- 覆盖范围已限制为项目源代码，并对安全关键模块设置文件级门禁。
+- 当前共有 18 个测试文件、93 项测试，直接覆盖逐跳重定向、浏览器入口、API 鉴权、限流、超时、完整转换编排及代理实际 I/O。
+- `browser-proxy.test.ts` 的 10 项测试覆盖真实 HTTP 双向传输、声明/流式超限、并发共享请求预算、CONNECT 超限、取消关闭和 WebSocket 拒绝。
+- `browser-proxy.ts` 达到 91.27% lines / 81.31% branches / 95% functions，门禁提高到 85% / 75% / 90%。
 
 ### QA-005 — Dependency Advisories Require Triage
 
 - Severity: **P2 — Build and supply-chain risk**
-- Status: Open
+- Status: Triaged; upgrades remain open
 
 `npm audit --omit=dev` 报告 2 个 moderate，来源是 Next.js 16.2.10 携带的 PostCSS 8.4.31。完整审计报告包含 20 high、2 moderate、3 low；high 主要来自 Electron Forge 构建链中的 `tar`、`tmp` 及其上游包。
 
-产物抽查确认 standalone 中不存在 `postcss` 和 `tar`，因此这些报告不能直接等同于已打包应用的运行时可利用漏洞；构建机、依赖安装和打包供应链仍需处理。npm 当前给出的 Forge 降级建议不应直接执行。
+第二轮再次确认当前 ZIP 中不存在 `postcss`、`tar`、`tmp` 或 Electron Forge 包。PostCSS 不参与打包应用运行时的远程 CSS 处理，high 告警位于依赖安装和构建链，因此不作为当前个人测试包的运行时阻断项；构建机和供应链仍需处理。npm 当前没有可直接采用的无破坏修复方案。
 
 Required remediation:
 
@@ -144,15 +168,16 @@ Required remediation:
 ### QA-006 — Verification Runtime Does Not Match the Target
 
 - Severity: **P2 — Release evidence gap**
-- Status: Partially resolved; Forge packaging still requires Node 23 workaround
-- Related configuration: `package.json` requires Node.js `>=24.0.0`
+- Status: Resolved in second-round Node.js 24.14.1 clean-clone release
+- Related configuration: `package.json` now requires Node.js `>=24.0.0 <25.0.0`
 
-Node.js 24.16.0 已完成 `npm ci`、基线、三浏览器 E2E、真实网页门禁、Next.js 构建和桌面资源准备。Electron Forge 7.11.2 随后在 finalizing 阶段无错误退出且未生成产物；现有 ZIP 由 Node.js 23.11.1 对上述 Node.js 24 资源执行最终 Forge 封装。
+历史证据中，Node.js 24.16.0 的 Forge 7.11.2 曾在 finalizing 无产物退出。第二轮改用本机现有 Node.js 24.14.1 / npm 11.11.0，在干净隔离副本中原样运行 `npm run desktop:release`，基线、E2E、live 和 Forge make 全部通过，并生成新 ZIP。
 
-Required remediation:
+Resolution evidence:
 
-- 复现并定位 Forge 7.11.2 在 Node.js 24 finalizing 阶段的提前退出，或升级到兼容版本。
-- 修复后必须在 Node.js 24 下完整运行 `npm run desktop:release` 并重新记录产物哈希；不能仅以现有 Node.js 23 封装产物关闭此项。
+- 新 ZIP：`239,266,900` bytes；SHA-256 `4477e94473063ec417341837e3b61beabc327d05e1f1983938f96c3b29be6181`。
+- 新 `.app` 为 Mach-O arm64、版本 0.1.3、最低 macOS 12.0，`example.com` browser-mode 冒烟通过。
+- 第三轮再次复现 24.16.0 的无产物异常，fresh ZIP 门禁按预期阻断；当前发布组合固定记录为已验证的 24.14.1。
 
 ### QA-007 — Manual Desktop Acceptance Was Incomplete
 
@@ -174,6 +199,60 @@ Resolution evidence:
 
 现有应用只有临时/链接器签名，`codesign --verify --deep --strict` 失败。该结果和项目文档“只适合个人测试”的描述一致，不阻止受控的本机验收，但阻止正式对外分发。
 
+### QA-009 — Dynamic Browser Traffic Had No Transfer Budget
+
+- Severity: **P2 — Local resource exhaustion risk**
+- Status: Resolved in third-round remediation
+- Location: `src/lib/browser-proxy.ts:91-209`、`src/lib/convert.ts:85-90`
+
+Original finding: 安全代理会直接转发 HTTP 响应或建立不解析内容的 HTTPS 隧道，没有累计接收字节、请求数量或单隧道流量限制。动态页面的 5 MiB 检查只作用于加载完成后的 `page.content()`，无法阻止页面在此之前下载大型脚本、图片或 fetch 响应。
+
+Resolution evidence:
+
+- 每次浏览器回退最多 100 个 HTTP/CONNECT 请求，代理累计 50 MiB，单 CONNECT 隧道 25 MiB；HTTP 请求体和响应、CONNECT 双向流量及并发子资源共享同一状态。
+- 已声明超限 `Content-Length` 的 HTTP 响应返回 413；未知长度流和 CONNECT 在累计超限时关闭。
+- 架构文档已明确区分序列化 DOM 的 5 MiB 限制与浏览器网络预算。
+
+### QA-010 — Baseline Did Not Enforce Node.js 24
+
+- Severity: **P2 — Verification integrity gap**
+- Status: Resolved in third-round remediation
+- Location: `init.sh:1-34`、`package.json:7-8`
+
+Original finding: 项目明确要求 Node.js 24，但默认终端为 23.11.1，`./init.sh` 仍完整通过。原 `engines: >=24.0.0` 只在安装阶段产生警告，也允许未来更高主版本；基线本身没有检查当前 Node 主版本。
+
+Resolution evidence:
+
+- `package.json` 与锁文件使用 `>=24.0.0 <25.0.0`；项目文档固定 Node.js 24.x。
+- `init.sh` 在其他验证前检查主版本；默认 Node.js 23.11.1 负向运行立即以非零状态退出并报告当前版本。
+
+### QA-011 — Release Command Did Not Assert a Fresh ZIP
+
+- Severity: **P2 — Release integrity gap**
+- Status: Resolved in third-round remediation
+- Location: `package.json:27`
+
+Original finding: `desktop:release` 只依次运行四个命令，没有记录开始时间，也没有验证目标 ZIP 的存在、mtime、版本和架构。历史上 Forge 曾无产物退出，因此仅依赖子命令退出状态可能把旧 ZIP 或无新产物误记为本轮发布成功。
+
+Resolution evidence:
+
+- `scripts/release-desktop.mjs` 记录开始时间与旧 ZIP mtime，要求新 ZIP 的时间推进，并检查应用版本、arm64 可执行文件和 ZIP 包结构。
+- Node.js 24.16.0 的 Forge 无产物路径被脚本按失败阻断；Node.js 24.14.1 完整门禁成功输出新 ZIP 大小和 SHA-256。
+- freshness guard 另有新旧时间戳的正向与负向测试。
+
+### QA-012 — E2E Left a Tracked File Modified
+
+- Severity: **P3 — Harness cleanliness**
+- Status: Resolved in third-round remediation
+- Location: `playwright.config.ts:12-16`、`next-env.d.ts:3`
+
+Original finding: `npm run test:e2e` 启动 `next dev`，Next.js 会把 `next-env.d.ts` 的引用从 `.next/types/routes.d.ts` 改为 `.next/dev/types/routes.d.ts`。第二轮实际观察到测试后 `git status` 出现该已跟踪文件修改。
+
+Resolution evidence:
+
+- E2E 改用 production standalone 服务，不再运行 `next dev`。
+- 执行器对测试前后的 tracked diff 计算 SHA-256；三引擎 21 项通过并明确输出 tracked-file check passed，`next-env.d.ts` 未变化。
+
 ## Documentation Consistency
 
 产品范围、架构、测试手册、README、进度、事项列表和交接文档对以下事实描述一致：
@@ -184,15 +263,13 @@ Resolution evidence:
 - 当前产物未完成 Developer ID 签名与 notarization。
 - `feat-009` 已完成，`feat-010` 因第二台 Mac 安装验收未完成而保持 `in-progress`。
 
-当前文档一致记录：安全和真实窗口阻断项已经修复，剩余个人发布门禁为第二台 Mac 安装验收、Node.js 24 Forge 封装证据和依赖告警处理；外部分发另需签名与 notarization。
+第三轮已同步产品、架构、测试、进度、事项和交接文档：代理预算与发布 Harness 均为已完成状态；`docs/MULTIPLATFORM-PLAN.md` 已列入 `init.sh` 必需文档。该文件及其引用仍需在用户要求提交时同批进入 Git。
 
 ## Remediation Order
 
 1. 在第二台 Apple Silicon、macOS 12.0+ 的 Mac 上完成解压、首次安全放行、转换、复制和下载验收。
-2. 定位或升级 Electron Forge，在 Node.js 24 下完整生成产物并关闭 `QA-006`。
-3. 分级处理 `QA-005` 的运行时与构建时依赖告警，避免未经评估的强制降级。
-4. 重新运行完整发布门禁并记录新产物哈希，完成 `feat-010`。
-5. 只有需要对外分发时，再以 Developer ID 签名和 notarization 关闭 `QA-008`。
+2. 分级处理 `QA-005` 的可安全升级项。
+3. 只有需要对外分发时，再以 Developer ID 签名和 notarization 关闭 `QA-008`。
 
 ## Re-Audit Checklist
 
@@ -204,8 +281,14 @@ Resolution evidence:
 - [x] Node.js 24 下 `./init.sh` 通过。
 - [x] Node.js 24 下 `npm run test:e2e` 通过。
 - [x] Node.js 24 下 `npm run test:live` 通过。
+- [x] Node.js 24 下完整 `npm run desktop:release` 生成新 ZIP。
 - [x] 新产物的打包转换冒烟通过。
 - [x] 新产物版本、arm64 架构和 SHA-256 已重新记录。
 - [x] 真实 `.app` 窗口停止、复制和保存验收通过。
 - [ ] 第二台 Apple Silicon Mac 安装和首次启动验收通过。
+- [x] 动态浏览器代理具备累计传输预算和超限集成测试。
+- [x] `browser-proxy.ts` 实际 HTTP/CONNECT I/O 路径达到合理覆盖率。
+- [x] `./init.sh` 会拒绝不符合项目策略的 Node 版本。
+- [x] 发布脚本验证 ZIP 为本轮新产物并输出版本、架构和 SHA-256。
+- [x] E2E 完成后不会修改 tracked 文件。
 - [x] `feature_list.json`、`PROGRESS.md`、`session-handoff.md` 和必要的变更记录已更新。

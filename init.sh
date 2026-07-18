@@ -1,6 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+required_node_major="24"
+if ! command -v node >/dev/null 2>&1; then
+  echo "ERROR: Node.js 24 is required, but node was not found." >&2
+  exit 1
+fi
+current_node_version="$(node -p 'process.versions.node')"
+current_node_major="${current_node_version%%.*}"
+if [ "$current_node_major" != "$required_node_major" ]; then
+  echo "ERROR: Node.js 24.x is required; current version is ${current_node_version}." >&2
+  exit 1
+fi
+
 echo "=== MD-Convertor Verification ==="
 
 required_files=(
@@ -15,6 +27,7 @@ required_files=(
   "docs/ARCHITECTURE.md"
   "docs/TESTING.md"
   "docs/QUALITY-AUDIT.md"
+  "docs/MULTIPLATFORM-PLAN.md"
 )
 
 for file in "${required_files[@]}"; do

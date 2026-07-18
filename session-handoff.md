@@ -4,13 +4,22 @@
 
 - Goal: 交付可在 Apple Silicon Mac 本地安装使用的 MD-Convertor。
 - Active: `feat-010 — Personal Mac Release`。
-- Quality status: `QA-001`、`QA-002`、`QA-003`、关键 `QA-004` 和真实窗口 `QA-007` 已完成；第二台 Mac 验收待完成，Forge 的 Node 24 封装兼容问题仍记录在 `QA-006`。
+- Quality status: 第二轮提出的 `QA-004`、`QA-009`、`QA-010`、`QA-011`、`QA-012` 已完成整改并通过完整发布门禁；第二台 Mac 验收、依赖升级和对外分发签名仍待完成。
 - Branch: `main`；本地 Git 仓库已初始化，当前 0.1.3 源码与 Harness 作为基线提交管理。
 
 ## Current Scope
 
 - 第一阶段只交付 Apple Silicon Mac 单机版，不需要公网服务器、域名或 Docker。
 - 不调用 AI API，不需要 API Key。
+- Windows 版已确定为后续独立平台，但尚未创建目录、依赖、代码或平台 Harness；当前 macOS 根目录仍是唯一有效应用项目。
+
+## Approved Future Repository Plan
+
+- `feat-011 — Multi-platform Repository Migration` 依赖 `feat-010` 完成，不能与当前 Mac 发布验收并行执行。
+- 迁移后目标是单一 Git 仓库，使用 `apps/macos/` 与 `apps/windows/` 隔离所有平台实现、依赖、状态和发布文件；根目录只保存跨平台 Harness 与稳定契约。
+- Windows 首版为 Electron `win32/x64` 免安装 ZIP，本机处理、无账号、无公网服务、无 AI API，以 macOS 0.1.3 的用户功能为对等基线，但独立从 `0.1.0` 编号。
+- 不使用 npm workspace、软链接或共享源码；仅共享经双方验证的产品契约与合成金标准 fixture。
+- 唯一事实源是 `docs/MULTIPLATFORM-PLAN.md`。后续会话必须先阅读该文件；未完成 `feat-010` 前不得创建 `apps/windows/` 或移动当前 macOS 文件。
 
 ## Implemented
 
@@ -32,44 +41,47 @@
 - 修复 `TimeoutError` 的 504 映射，客户端主动停止单独标记；新增服务器关键路径测试与覆盖率门禁。
 - 桌面准备显式复制 Sharp/libvips 原生依赖；代理正确处理取消中的 CONNECT，冒烟失败改为非零退出码。
 - 0.1.3 将结果按钮统一为“复制”和“下载”，保留“已复制”成功反馈，并补充 Apple Silicon/macOS 12+ 跨电脑使用说明。
+- 动态浏览器代理新增每次回退 100 请求、累计 50 MiB、单 CONNECT 隧道 25 MiB 的共享预算；真实 HTTP/CONNECT、并发、流式超限、取消和 WebSocket Case 已覆盖。
+- Node.js 主版本固定为 24；E2E 改用 production standalone 服务并校验 tracked diff；发布脚本校验 fresh ZIP、版本、arm64、包结构、大小和 SHA-256。
 
 ## Verification Evidence
 
 | Check | Result | Notes |
 |---|---|---|
-| 0.1.3 Node 24 `./init.sh` | Passed | lint、typecheck、coverage gate、82 tests、Next build |
+| 0.1.3 Node 24 `./init.sh` | Passed | lint、typecheck、coverage gate、18 files / 93 tests、Next build |
 | 0.1.3 `npm run test:e2e` | Passed | 21 checks across Chromium, Firefox, WebKit, including new button labels |
 | 0.1.3 `npm run test:live` | Passed with variability | first upstream timeout; unchanged-threshold rerun passed |
-| 0.1.3 Node 24 `npm run desktop:release` | Partial | baseline/E2E passed; live gate hit an upstream timeout before packaging |
-| 0.1.3 Node 24 `npm run desktop:make` | Partial | build/prepare passed; Forge exited at finalizing without artifact |
-| Node 23 Forge packaging | Passed | packaged the Node 24-built and prepared resources into final App/ZIP |
+| Second-round Node 24.14.1 `npm run desktop:release` | Passed in clean clone | baseline、21 E2E、live、Forge ZIP 全部通过；新 ZIP 实际生成 |
+| Second-round Node 24 audit artifact | Passed | 239,266,900 bytes / SHA-256 4477e944... / arm64 / 0.1.3 / macOS 12.0 / packaged smoke passed |
 | Packaged startup | Passed | loopback standalone service ready |
 | Packaged conversion | Passed | example.com, browser mode, 270 bytes |
 | WeChat blocked-page regression | Passed | false success now explicit 422 |
 | Public WeChat article | Passed | browser mode, 1 Data URI, no warnings, 121,801 bytes |
 | User long WeChat article | Passed | about 17,643 non-Base64 chars, 30 Data URIs, no warnings, 7,749,363 bytes |
 | Harness audit | Passed | 100/100 |
-| 0.1.3 real packaged window | Passed | stop preserved URL; Copy/Download worked; clipboard matched download; long download had 30 embedded images |
-| Overall quality audit | Open gates only | source fixes and real-window acceptance complete; second-Mac acceptance, Forge Node 24 gap and dependency triage pending |
+| 0.1.3 real packaged window | Passed | 用户确认当前 Mac 人工测试通过；stop preserved URL、Copy/Download worked、clipboard matched download、long download had 30 embedded images |
+| Remediation Node 24.14.1 `desktop:release` | Passed | 93 tests、21 E2E、live、Forge 与 fresh ZIP 校验；Node 24.16.0 无产物路径按预期被阻断 |
+| New packaged runtime | Passed | example.com browser mode 270 bytes；long WeChat 17,643 chars / 30 images / 7,749,363 bytes |
+| Overall quality audit | Hardening gates closed | second-Mac acceptance、dependency upgrades and signing remain open |
 | Second-Mac installation | Pending | 当前只有结构核验和本机真实应用验收 |
 | Signing/notarization | Pending | 当前为个人测试产物 |
 
 ## Artifact
 
 - `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.1.3.zip`
-- SHA-256: `d5cd5bac1323827766c2a6bd94bde472b42bec2b790d52a276abed5d124c8a3e`
-- Size: `239,266,746` bytes; arm64; minimum macOS `12.0`; version `0.1.3`.
+- SHA-256: `66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89`
+- Size: `239,281,512` bytes; arm64; minimum macOS `12.0`; version `0.1.3`.
 - Packaged smoke: example.com browser mode 270 bytes; long WeChat 17,643 non-Base64 chars / 30 images / 7,749,363 bytes.
 
 ## Next Session Startup
 
 1. 阅读 `AGENTS.md`、`PROGRESS.md`、`feature_list.json`、`docs/PRODUCT.md`、`docs/ARCHITECTURE.md`、`docs/TESTING.md` 和 `docs/QUALITY-AUDIT.md`。
 2. 运行 `./init.sh`。
-3. 把 0.1.3 ZIP 拷贝到第二台 Apple Silicon、macOS 12.0+ 的 Mac，完成解压和首次安全放行。
+3. 把 SHA-256 为 `66909aa8...df89` 的 0.1.3 ZIP 拷贝到第二台 Apple Silicon、macOS 12.0+ 的 Mac，完成解压和首次安全放行。
 4. 在第二台 Mac 转换、复制和下载同一公开链接，确认无需安装 Node.js、Chrome 或其他运行环境。
-5. 调查 Electron Forge 7.11.2 在 Node 24.16.0 finalizing 阶段提前退出；当前源码构建/准备为 Node 24，最终 Forge 封装临时使用 Node 23。
-6. 完成第二台 Mac 验收后决定是否关闭 `feat-010`；对外分发仍需签名与 notarization。
+5. 第二台 Mac 验收通过后更新证据并决定是否关闭 `feat-010`；对外分发仍需签名与 notarization。
+6. 仅在 `feat-010` 关闭并创建干净 Mac 基线提交后，按 `docs/MULTIPLATFORM-PLAN.md` 执行 `feat-011`；不要提前开始 Windows 实现。
 
 ## Recommended Next Step
 
-先在第二台 Apple Silicon、macOS 12.0+ 的 Mac 验收 0.1.3 ZIP；新包哈希见上方 Artifact。
+在第二台 Apple Silicon、macOS 12.0+ 的 Mac 上验收当前 fresh ZIP；通过后关闭 `feat-010` 并创建干净 Mac 基线提交。

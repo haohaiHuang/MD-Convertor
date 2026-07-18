@@ -33,7 +33,8 @@ Electron 渲染进程启用沙箱与上下文隔离，关闭 Node.js 集成。�
 - 本地服务只绑定 `127.0.0.1` 和系统分配的随机端口，不监听局域网或公网地址。
 - 仅允许 HTTP/HTTPS，拒绝 URL 凭据、本机、私网、链路本地、保留地址与云元数据地址，避免目标网页借应用访问本机或局域网资源。
 - 页面、每次重定向、动态页面子资源和图片均执行相同检查。Chromium 的 HTTP/HTTPS 流量必须经过一次性回环代理：每个 HTTP 请求或 HTTPS CONNECT 隧道都重新校验目标，并直接连接校验所得 IP，禁止 Chromium 在校验后再次解析域名。
-- HTML 解压后最多 5 MiB，单图最多 8 MiB，最多 30 张图，单次转换最多 45 秒。
+- HTML 解压后最多 5 MiB；该限制也适用于动态渲染完成后序列化的 DOM，不等同于浏览器网络流量预算。单图最多 8 MiB，最多 30 张图，单次转换最多 45 秒。
+- 每次动态浏览器回退最多代理 100 个 HTTP/CONNECT 请求，代理累计传输最多 50 MiB，单个 CONNECT 隧道最多 25 MiB。已声明 `Content-Length` 的超限 HTTP 响应在转发前拒绝，流式响应与加密隧道在累计超限时立即关闭；并发子资源共享同一预算。
 - 动态浏览器上下文及其安全代理按请求创建并销毁，禁止下载，阻止媒体、字体与 WebSocket 升级。
 - 直接请求和动态浏览器使用一致的桌面 Chrome User-Agent，避免应用自定义标识触发站点的非浏览器拦截。
 - Markdown 预览不解析原始 HTML，只允许应用生成的栅格图片 Data URI。
@@ -49,11 +50,12 @@ Electron 渲染进程启用沙箱与上下文隔离，关闭 Node.js 集成。�
 - 开发入口为 `npm run dev:desktop`。
 - 本地应用目录构建为 `npm run desktop:package`；分发 ZIP 构建为 `npm run desktop:make`。
 - 日常基线包含合成网页与固定 Markdown 的精确金标准测试；`npm run test:live` 在同一轮独立读取真实网页并对照转换结果，只作为发布前阻断门禁。
-- `npm run desktop:release` 依次执行完整基线、Chromium/Firefox/WebKit E2E、真实网页门禁与 Apple Silicon ZIP 打包。
+- `./init.sh` 与发布脚本只接受 Node.js 24.x。`npm run desktop:release` 依次执行完整基线、Chromium/Firefox/WebKit E2E、真实网页门禁与 Apple Silicon ZIP 打包，并强制验证 ZIP 是本轮新产物、应用版本为当前版本、可执行文件为 arm64、ZIP 包含预期应用结构，最后输出大小与 SHA-256。
+- E2E 使用 production standalone 服务；执行器会比较测试前后的 tracked diff，发现测试修改源码或项目文档时直接失败。
 - 完整命令矩阵、环境变量、打包冒烟和人工验收步骤见 `docs/TESTING.md`。
 - 第一阶段产物可不签名，仅用于开发和个人测试；对外分发前必须补充 Apple Developer ID 签名与 notarization。
 - 打包准备脚本把当前 Playwright 版本对应的 Apple Silicon Chromium Headless Shell 放入应用资源，并通过明确的可执行路径启动，避免依赖用户电脑上的浏览器缓存。
 
 ## 后续扩展
 
-Windows、Intel Mac 和 Linux 可以复用转换管线与界面，但需要分别构建、测试和签名对应平台产物。不同电脑各自安装应用，数据不会自动同步。
+Windows、Intel Mac 和 Linux 需要分别规划、实现、构建、测试和签名对应平台产物。已批准的 Windows 路线采用独立实现、依赖和 Harness，不假设共享源码；目录迁移与 Windows 初始化门槛见 `docs/MULTIPLATFORM-PLAN.md`。不同电脑各自安装应用，数据不会自动同步。

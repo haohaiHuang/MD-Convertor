@@ -5,7 +5,7 @@
   "private": true,
   "main": "electron/main.mjs",
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=24.0.0 <25.0.0"
   },
   "scripts": {
     "dev": "next dev",
@@ -22,9 +22,10 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "test:e2e": "playwright test",
+    "test:e2e": "node scripts/run-e2e.mjs",
+    "e2e:server": "node scripts/start-e2e-server.mjs",
     "test:live": "vitest run --config vitest.live.config.ts",
-    "desktop:release": "./init.sh && npm run test:e2e && npm run test:live && npm run desktop:make"
+    "desktop:release": "node scripts/release-desktop.mjs"
   },
   "dependencies": {
     "@mozilla/readability": "^0.6.0",

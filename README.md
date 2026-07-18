@@ -9,6 +9,7 @@ MD-Convertor 是一个 Apple Silicon Mac 网页转 Markdown 单机工具。粘�
 - 不调用 AI API，不需要 API Key，也不产生模型调用费用
 - 静态网页正文提取，JavaScript 页面使用浏览器兜底
 - 动态浏览器请求逐次校验并固定公网 IP，防止目标网页借应用访问本机或内网
+- 动态浏览器回退限制为最多 100 个请求、累计 50 MiB 网络传输和单连接 25 MiB，超限时停止相关请求
 - 支持可公开访问的微信公众号文章，并识别验证页或已删除文章
 - 自动保留标题、来源和转换时间
 - 支持 JPEG、PNG、WebP、GIF、AVIF 图片以内嵌 Data URI 写入 Markdown
@@ -31,7 +32,7 @@ MD-Convertor 是一个 Apple Silicon Mac 网页转 Markdown 单机工具。粘�
 
 ## 本地开发
 
-需要 Apple Silicon Mac、Node.js 24 和 npm。
+需要 Apple Silicon Mac、Node.js 24.x 和 npm；验证脚本会拒绝 Node.js 23 或 25 等其他主版本。
 
 ```bash
 npm install
@@ -56,7 +57,7 @@ npm run test:live
 npm run desktop:package
 ```
 
-`npm run test:live` 会联网对照指定的真实微信公众号文章，只用于发布前门禁。目标 Apple Silicon 发布流程使用 `npm run desktop:release`，依次执行基线、三浏览器 E2E、真实网页对照与 ZIP 打包；当前 Electron Forge 7.11.2 在 Node.js 24 下存在 finalizing 后不产出 ZIP 的已知问题，不能仅凭命令退出判定成功。现状、命令分层、环境变量、冒烟方式和人工验收清单见 [`docs/TESTING.md`](docs/TESTING.md)。
+`npm run test:live` 会联网对照指定的真实微信公众号文章，只用于发布前门禁。目标 Apple Silicon 发布流程使用 `npm run desktop:release`，依次执行基线、三浏览器 E2E、真实网页对照与 ZIP 打包；脚本会拒绝旧 ZIP，核验版本、arm64 架构和包结构，并输出新产物大小与 SHA-256。现状、命令分层、环境变量、冒烟方式和人工验收清单见 [`docs/TESTING.md`](docs/TESTING.md)。
 
 ## 构建 Apple Silicon 应用
 

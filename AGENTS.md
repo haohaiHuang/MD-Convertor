@@ -15,7 +15,7 @@
 1. 用 `pwd` 确认位于项目根目录。
 2. 阅读 `~/.codex/AGENTS.md` 与本文件。
 3. 阅读 `PROGRESS.md`、`feature_list.json` 和 `session-handoff.md`。
-4. 涉及产品行为时阅读 `docs/PRODUCT.md`；涉及抓取、安全或部署时阅读 `docs/ARCHITECTURE.md`；涉及验证、打包或发布时阅读 `docs/TESTING.md`；涉及质检、安全整改或发布放行时同时阅读 `docs/QUALITY-AUDIT.md`。
+4. 涉及产品行为时阅读 `docs/PRODUCT.md`；涉及抓取、安全或部署时阅读 `docs/ARCHITECTURE.md`；涉及验证、打包或发布时阅读 `docs/TESTING.md`；涉及质检、安全整改或发布放行时同时阅读 `docs/QUALITY-AUDIT.md`；涉及 Windows、目录迁移、跨平台契约或仓库结构时先阅读 `docs/MULTIPLATFORM-PLAN.md`。
 5. 运行 `./init.sh` 建立基线。
 6. 若仓库已启用 Git，查看 `git status --short` 与最新 5 条提交。
 
@@ -28,6 +28,7 @@
 - **Stay in scope**：只修改当前事项需要的文件，不顺手重构或扩展未获授权的功能。
 - 保持 Node.js 24、Next.js 16、Electron、npm 和当前锁文件；未经批准不要替换框架或包管理器。
 - 第一阶段只构建和验收 `darwin/arm64`；不要在未经用户确认时扩大到 Intel Mac、Windows、Linux 或公网部署。
+- `feat-010` 完成前，禁止创建 `apps/windows/`、移动当前 macOS 文件或在根目录加入 Windows 依赖；多平台迁移只能按 `docs/MULTIPLATFORM-PLAN.md` 执行。
 - 产品或架构决策写入相应项目文档；会话状态写入 `PROGRESS.md`，不要依赖聊天记录延续上下文。
 - 面向用户的显著变化记录到 `CHANGELOG.md` 的 `[Unreleased]`。
 - 不提交密钥、令牌、Cookie、个人数据、受版权保护的完整网页内容或其他敏感材料。
@@ -71,13 +72,13 @@
 ./init.sh
 ```
 
-该命令依次验证 Harness、lint、type-check、单元/安全测试和生产构建。跨浏览器测试需要浏览器运行时，单独执行：
+该命令先强制检查 Node.js 24.x，再依次验证 Harness、lint、type-check、单元/安全测试和生产构建。跨浏览器测试需要浏览器运行时，单独执行：
 
 ```bash
 npm run test:e2e
 ```
 
-真实网页对照只在发布前执行 `npm run test:live`，不得加入日常单元测试；它会联网但不得保存或输出网页正文。桌面打包、环境变量、冒烟和人工验收统一按 `docs/TESTING.md` 执行。正式 0.1.x 发布门禁使用 `npm run desktop:release`；必须确认新 ZIP 实际生成，不能把 Forge 无产物退出视为成功。签名和 notarization 尚未配置时必须明确报告产物仅适合本机测试。
+真实网页对照只在发布前执行 `npm run test:live`，不得加入日常单元测试；它会联网但不得保存或输出网页正文。桌面打包、环境变量、冒烟和人工验收统一按 `docs/TESTING.md` 执行。正式 0.1.x 发布门禁使用 `npm run desktop:release`；脚本必须自动验证新 ZIP 的新鲜度、版本、arm64 架构、包结构和 SHA-256，不能把 Forge 无产物退出视为成功。签名和 notarization 尚未配置时必须明确报告产物仅适合个人测试。
 
 ## Escalation
 
