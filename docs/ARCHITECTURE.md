@@ -54,8 +54,5 @@ Electron 渲染进程启用沙箱与上下文隔离，关闭 Node.js 集成。�
 - E2E 使用 production standalone 服务；执行器会比较测试前后的 tracked diff，发现测试修改源码或项目文档时直接失败。
 - 完整命令矩阵、环境变量、打包冒烟和人工验收步骤见 `docs/TESTING.md`。
 - 第一阶段产物可不签名，仅用于开发和个人测试；对外分发前必须补充 Apple Developer ID 签名与 notarization。
+- 第二台 Mac 验收确认未签名应用可能被 Gatekeeper 显示为“文件已经损坏”；个人测试时应先核对 ZIP SHA-256，再只移除 `com.apple.quarantine` 属性。该处理不等同于签名或 notarization，不扩大分发范围。
 - 打包准备脚本把当前 Playwright 版本对应的 Apple Silicon Chromium Headless Shell 放入应用资源，并通过明确的可执行路径启动，避免依赖用户电脑上的浏览器缓存。
-
-## 后续扩展
-
-Windows、Intel Mac 和 Linux 需要分别规划、实现、构建、测试和签名对应平台产物。已批准的 Windows 路线采用独立实现、依赖和 Harness，不假设共享源码；目录迁移与 Windows 初始化门槛见 `docs/MULTIPLATFORM-PLAN.md`。不同电脑各自安装应用，数据不会自动同步。

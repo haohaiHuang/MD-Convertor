@@ -86,18 +86,18 @@
       "name": "Personal Mac Release",
       "description": "生成可供个人安装的 Apple Silicon Mac 分发包和安装说明。",
       "dependencies": ["feat-009"],
-      "status": "in-progress",
+      "status": "done",
       "done_criteria": ["arm64 ZIP 产物生成", "全新目录安装与首次启动验收", "签名状态与安全提示已明确记录"],
-      "evidence": "2026-07-18: Node.js 24.14.1 remediation desktop:release passed 93 tests, 21 E2E checks, live comparison, Forge make and automatic fresh-artifact validation. The promoted arm64 ZIP is 239,281,512 bytes with SHA-256 66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89; packaged example.com browser-mode smoke and 17,643-char/30-image WeChat smoke passed. QA-004 and QA-009 through QA-012 are resolved. The user confirmed the current-Mac manual test passed; second-Mac acceptance remains open, and the package is ad-hoc signed and not notarized."
+      "evidence": "2026-07-20: Node.js 24.14.1 remediation desktop:release passed 93 tests, 21 E2E checks, live comparison, Forge make and automatic fresh-artifact validation. The promoted arm64 ZIP is 239,281,512 bytes with SHA-256 66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89. Current-Mac manual checks and second-Mac acceptance passed. On the second Mac, Gatekeeper initially reported the unsigned app as damaged; removing its quarantine extended attribute with xattr allowed successful use. The package remains ad-hoc signed and is only approved for personal testing."
     },
     {
       "id": "feat-011",
       "name": "Multi-platform Repository Migration",
       "description": "在 Mac 个人发布收口后，把仓库重组为独立的 macOS 与 Windows 应用目录，并建立只含稳定规则的跨平台契约层。",
       "dependencies": ["feat-010"],
-      "status": "planned",
+      "status": "cancelled",
       "done_criteria": ["feat-010 已完成且存在干净 Mac 基线提交", "macOS 已迁入 apps/macos 并通过完整迁移回归", "根目录跨平台 Harness 与 contracts 已建立", "Windows 目录尚未与结构迁移混合实现"],
-      "evidence": "2026-07-18: user approved docs/MULTIPLATFORM-PLAN.md. No directories, source files, dependencies or build configuration have been moved or created."
+      "evidence": "2026-07-21: 用户取消 Windows 版本和多平台仓库迁移。原方案未执行，未创建或移动平台目录、源码、依赖或构建配置；docs/MULTIPLATFORM-PLAN.md 已删除。"
     }
   ]
 }

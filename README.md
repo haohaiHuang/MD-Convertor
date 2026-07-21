@@ -25,10 +25,16 @@ MD-Convertor 是一个 Apple Silicon Mac 网页转 Markdown 单机工具。粘�
 
 - Apple Silicon（M1、M2、M3、M4 或后续 arm64 芯片）Mac，不支持 Intel Mac、Windows 或 Linux。
 - macOS 12.0 或更高版本；转换时需要联网访问公开网页。
-- 解压后建议把 `MD-Convertor.app` 拖入“应用程序”。当前产物未签名和 notarize，首次启动可能需要在 Finder 中右键应用并选择“打开”，或在“隐私与安全性”中允许启动。
+- 解压后建议把 `MD-Convertor.app` 拖入“应用程序”。当前产物未签名和 notarize，首次启动可能需要在 Finder 中右键应用并选择“打开”，或在“隐私与安全性”中允许启动；部分 Mac 会直接提示“文件已经损坏”。
 - 不同电脑不会同步历史或结果，需要在当前电脑下载 `.md` 文件自行保留。
 
-应用结构已包含转换服务、Chromium 和图片处理依赖，但尚未在第二台 Apple Silicon Mac 上完成真实安装验收。
+应用已在第二台 Apple Silicon Mac 上完成真实安装和使用验收。该电脑首次启动时出现“文件已经损坏”提示；确认 ZIP 的 SHA-256 与本文记录一致后，移除应用的 quarantine 属性即可启动：
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/MD-Convertor.app"
+```
+
+如果提示没有权限，再在命令前加 `sudo`。验收时使用 `xattr -cr` 同样成功，但它会递归清除应用的全部扩展属性，因此安装说明优先推荐上面只移除 quarantine 的精确命令。不要对来源或哈希不可信的应用执行该操作。
 
 ## 本地开发
 
@@ -73,6 +79,8 @@ npm run desktop:make
 out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.1.3.zip
 ```
 
-解压后可把 `MD-Convertor.app` 拖入“应用程序”。如果首次双击被 macOS 阻止，请在 Finder 中右键应用并选择“打开”，然后确认运行。
+当前 ZIP SHA-256：`66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89`。
+
+解压后可把 `MD-Convertor.app` 拖入“应用程序”。如果 Finder 右键“打开”仍提示应用损坏，请先核对 ZIP 的 SHA-256，再按“在其他电脑使用”中的命令移除 quarantine 属性。
 
 架构与安全边界见 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)，产品范围见 [`docs/PRODUCT.md`](docs/PRODUCT.md)。

@@ -27,7 +27,6 @@ required_files=(
   "docs/ARCHITECTURE.md"
   "docs/TESTING.md"
   "docs/QUALITY-AUDIT.md"
-  "docs/MULTIPLATFORM-PLAN.md"
 )
 
 for file in "${required_files[@]}"; do

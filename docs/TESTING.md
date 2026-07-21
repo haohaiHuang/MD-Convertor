@@ -65,9 +65,15 @@ MD_CONVERTOR_LIVE_URL=https://mp.weixin.qq.com/s/example npm run test:live
 5. 分别执行复制和下载，并在 Markdown 阅读器中打开 `.md` 检查正文与内嵌图片。
 6. 确认文件不超过 20 MiB；若图片被省略，界面必须显示对应警告。
 
-当前产物未签名。首次打开被 macOS 阻止时，在 Finder 中右键应用并选择“打开”。
+当前产物未签名。首次打开被 macOS 阻止时，先在 Finder 中右键应用并选择“打开”。如果系统直接提示“文件已经损坏”，先确认 ZIP 的 SHA-256 为本文记录值，再仅移除该应用的 quarantine 属性：
 
-本机 0.1.3 验收已完成：真实打包窗口中的停止、复制、下载均通过；剪贴板与下载内容一致；长微信文章下载为 7,749,363 bytes、17,643 个非 Base64 字符和 30 张内嵌图片。跨电脑能力仍需在第二台 Apple Silicon、macOS 12.0+ 的 Mac 上执行同一清单，且目标电脑不应预装 Node.js、Chrome 或 Playwright 作为前置条件。
+```bash
+xattr -dr com.apple.quarantine "/Applications/MD-Convertor.app"
+```
+
+如果普通权限无法修改，可在命令前加 `sudo`。第二台 Mac 实际验收使用 `xattr -cr /Applications/MD-Convertor.app` 后成功，但 `-c` 会清除全部扩展属性，范围大于所需，因此日常安装优先使用 `-d com.apple.quarantine`。不要对来源或哈希不可信的应用执行这些命令。
+
+本机 0.1.3 验收已完成：真实打包窗口中的停止、复制、下载均通过；剪贴板与下载内容一致；长微信文章下载为 7,749,363 bytes、17,643 个非 Base64 字符和 30 张内嵌图片。2026-07-20，第二台 Apple Silicon Mac 也完成验收；首次启动的“文件已经损坏”提示通过移除 quarantine 属性解决，随后应用可正常使用。`feat-010` 据此完成。
 
 当前个人测试包：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.1.3.zip`；大小为 `239,281,512` bytes，SHA-256 为 `66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89`。
 
@@ -79,4 +85,4 @@ MD_CONVERTOR_LIVE_URL=https://mp.weixin.qq.com/s/example npm run test:live
 - `desktop:release` 在 Forge finalizing 后没有新 ZIP：脚本会自动失败；保留错误与终端证据，调查工具链后在 Node.js 24 下重跑完整发布门禁。
 - `./init.sh` 提示 Node 版本不符：切换到 Node.js 24.x 后重新运行，不要用其他主版本生成验证或发布证据。
 - E2E 报告修改了 tracked 文件：检查 `git diff`，修复产生副作用的服务或测试配置，不要把自动生成变化混入发布。
-- 其他 Mac 无法直接打开：这是未签名产物的预期限制，不代表转换管线失败。
+- 其他 Mac 提示“文件已经损坏”：这是未签名、未 notarize 产物的 Gatekeeper 限制。先核对 ZIP 哈希，再使用本章的精确 `xattr` 命令移除 quarantine；仍不能打开时不要继续绕过系统校验，应保留错误并重新检查产物来源。

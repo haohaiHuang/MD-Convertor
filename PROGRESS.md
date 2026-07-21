@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Last updated: 2026-07-18
-- Active feature: `feat-010 — Personal Mac Release`
-- Overall status: 第二轮质检提出的代理资源预算、代理 I/O 覆盖、Node 24 门禁、fresh ZIP 校验和 E2E 工作区副作用均已整改；Node.js 24.14.1 完整发布门禁生成正式新 ZIP，短页 browser 模式与长微信 30 图打包冒烟通过。当前只等待第二台 Apple Silicon Mac 验收，依赖升级与签名仍是后续事项。
+- Last updated: 2026-07-21
+- Active feature: 无；`feat-010 — Personal Mac Release` 已完成，`feat-011 — Multi-platform Repository Migration` 已取消。
+- Overall status: 0.1.3 已完成自动发布门禁、本机人工操作和第二台 Apple Silicon Mac 安装验收。项目保持 Apple Silicon Mac 单链接转换工具，不再推进 Windows、多平台仓库迁移或直接粘贴正文转换；当前产物仍仅适合个人测试。
 
 ## Completed
 
@@ -37,10 +37,11 @@
 - [x] 新增真实 HTTP 双向传输、并发子资源、CONNECT、取消与 WebSocket 代理集成 Case；代理覆盖率提高到 91.27% lines / 81.31% branches / 95% functions。
 - [x] `init.sh` 强制 Node.js 24.x；E2E 使用 production standalone 服务并验证测试前后 tracked diff 不变。
 - [x] `desktop:release` 自动阻断旧或缺失 ZIP，校验版本、arm64、包结构并输出大小与 SHA-256。
+- [x] 第二台 Apple Silicon Mac 完成跨电脑验收；通过移除未签名应用的 quarantine 属性后正常启动和使用。
 
 ## Verification Evidence
 
-- Passed with Node.js 24.14.1 and 24.16.0: 0.1.3 `./init.sh` — lint、typecheck、覆盖率门禁、93 tests、Next.js build。
+- Passed with Node.js 24.14.1 and 24.16.0: 0.1.3 `./init.sh` — lint、typecheck、覆盖率门禁、93 tests、Next.js build；2026-07-21 删除失效规划与 Harness 引用后复跑通过。
 - Passed: 0.1.3 `npm run test:e2e` — Chromium、Firefox、WebKit 共 21 项，覆盖“复制”“下载”“已复制”和下载文件名。
 - Passed with upstream variability: 0.1.3 `npm run test:live` — 首次上游超时，原阈值复跑通过；完整 `desktop:release` 再次在 live 阶段遇到上游超时。
 - Partial with Node.js 24.16.0: 0.1.3 `npm run desktop:make` — 构建和资源准备通过，Forge 7.11.2 在 finalizing 无产物退出；Node 23 Forge 随后仅执行最终封装并成功。
@@ -57,9 +58,9 @@
 - Completed: 2026-07-18 second-round audit — Node.js 24.14.1 `desktop:release` 在隔离副本完整通过并生成 239,266,900-byte ZIP；loopback 子资源代理探针、现有包短页/私网/长文冒烟均通过。新增 `QA-009` 至 `QA-012`，详见质检文档。
 - Passed with Node.js 24.14.1: remediation `npm run desktop:release` — 18 files / 93 tests、21 三浏览器 E2E、真实微信门禁、Forge 和 fresh artifact 校验全部通过；新 ZIP 239,281,512 bytes / SHA-256 `66909aa8...df89`。
 - Passed: 新打包应用 `example.com` browser mode 270 bytes；长微信文章 direct mode 17,643 non-Base64 chars / 30 images / 7,749,363 bytes。
-- Passed: 用户确认 SHA-256 `66909aa8...df89` 对应的当前 Mac 版本人工测试通过；该证据不替代第二台 Mac 验收。
+- Passed: 用户确认 SHA-256 `66909aa8...df89` 对应的当前 Mac 版本人工测试通过；2026-07-20 又完成第二台 Mac 验收。
 - Passed: Node.js 23.11.1 执行 `./init.sh` 在其他检查前被拒绝；Node.js 24.16.0 Forge 无产物时发布脚本按预期非零失败。
-- Pending: 在第二台 Apple Silicon Mac 上解压、首次安全放行、转换、复制和下载验收。
+- Passed: 2026-07-20 第二台 Apple Silicon Mac 验收；首次启动出现“文件已经损坏”提示，执行 `xattr -cr` 移除应用扩展属性后正常使用。
 - Pending: Apple Developer ID 签名与 notarization；当前 ZIP 只适合个人测试。
 
 ## Decisions
@@ -69,9 +70,9 @@
 - SSRF 防护继续保留，防止网页链接访问本机和局域网资源。
 - Playwright 只打包 Apple Silicon Chromium Headless Shell，减少不必要的 Firefox/WebKit 体积。
 - 第一阶段允许未签名产物进行个人测试；正式对外分发前再配置签名与 notarization。
+- 第二台 Mac 证实未签名 ZIP 可跨电脑使用，但 Gatekeeper 可能将应用标记为“已损坏”；安装说明优先使用只移除 `com.apple.quarantine` 的精确命令。
 - Git 只管理源码、测试和项目知识文件；`node_modules/`、`.next/`、`.desktop/`、`out/`、环境变量和日志必须保持忽略。
-- 现有 macOS 项目完成 `feat-010` 后，使用 `apps/macos/` 与 `apps/windows/` 隔离平台代码、Harness、依赖、测试和发布状态；详细方案见 `docs/MULTIPLATFORM-PLAN.md`。
-- 根目录未来只管理跨平台契约和仓库级 Harness；不使用 npm workspace，不建立共享源码，Windows 先以独立 `0.1.0` 产品线启动。
+- 2026-07-21，用户取消 Windows 版本、多平台仓库迁移和直接粘贴正文生成 Markdown 的后续方案；现有仓库结构、0.1.3 版本和单链接产品边界保持不变。
 
 ## Artifacts
 
@@ -81,14 +82,13 @@
 
 ## Blockers and Risks
 
-- 应用尚未进行 Developer ID 签名和 notarization，其他 Mac 首次打开时会出现系统安全提示。
-- 当前结构已自包含 Node.js/Electron、Chromium 和图片原生依赖，但尚未在第二台 Apple Silicon Mac 上完成真实安装与首次启动验收。
+- 应用尚未进行 Developer ID 签名和 notarization；第二台 Mac 已实际出现“文件已经损坏”提示，需要用户确认来源可信并移除 quarantine 属性后才能启动。
 - 默认终端仍是 Node.js 23.11.1，但 `init.sh` 和发布流程现在会在开始阶段拒绝；执行验证前必须显式切换到 Node.js 24.x。
 - Node.js 24.16.0 下 Forge 7.11.2 仍会在 finalizing 无产物退出；fresh ZIP 门禁已可靠阻断，当前打包使用已验证的 Node.js 24.14.1。
 - 真实微信文章访问存在上游波动：同一版本曾出现 45 秒/20 秒超时，复跑可成功；95% 门禁和长文内容门槛均未降低。
 - 生产依赖审计有 2 个 moderate；完整依赖树有 20 high、2 moderate、3 low，high 主要位于 Electron Forge 构建链，需区分运行时与构建时影响后处理。
-- `feat-011` 的结构迁移依赖 `feat-010` 完成；在迁移完成前不得创建 Windows 应用目录、移动 macOS 文件或在根目录引入 Windows 依赖。
+- 当前没有计划中的功能事项；后续若要扩大产品范围，需要重新明确目标并新增独立 feature。
 
 ## Recommended Next Step
 
-把当前新 ZIP 放到第二台 Apple Silicon、macOS 12.0+ 的 Mac，完成解压、首次安全放行、转换、复制和下载验收；通过后再关闭 `feat-010` 并准备多平台目录迁移。
+提交第二台 Mac 验收、`feat-010` 关闭和后续方案取消记录，形成可长期维护的 0.1.3 Mac 基线；当前不安排下一项功能开发。

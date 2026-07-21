@@ -15,7 +15,7 @@
 1. 用 `pwd` 确认位于项目根目录。
 2. 阅读 `~/.codex/AGENTS.md` 与本文件。
 3. 阅读 `PROGRESS.md`、`feature_list.json` 和 `session-handoff.md`。
-4. 涉及产品行为时阅读 `docs/PRODUCT.md`；涉及抓取、安全或部署时阅读 `docs/ARCHITECTURE.md`；涉及验证、打包或发布时阅读 `docs/TESTING.md`；涉及质检、安全整改或发布放行时同时阅读 `docs/QUALITY-AUDIT.md`；涉及 Windows、目录迁移、跨平台契约或仓库结构时先阅读 `docs/MULTIPLATFORM-PLAN.md`。
+4. 涉及产品行为时阅读 `docs/PRODUCT.md`；涉及抓取、安全或部署时阅读 `docs/ARCHITECTURE.md`；涉及验证、打包或发布时阅读 `docs/TESTING.md`；涉及质检、安全整改或发布放行时同时阅读 `docs/QUALITY-AUDIT.md`。
 5. 运行 `./init.sh` 建立基线。
 6. 若仓库已启用 Git，查看 `git status --short` 与最新 5 条提交。
 
@@ -27,8 +27,7 @@
 - 实施前确认目标、非目标、完成条件和验证方式；重大缺口无法从现有资料推断时，向用户确认。
 - **Stay in scope**：只修改当前事项需要的文件，不顺手重构或扩展未获授权的功能。
 - 保持 Node.js 24、Next.js 16、Electron、npm 和当前锁文件；未经批准不要替换框架或包管理器。
-- 第一阶段只构建和验收 `darwin/arm64`；不要在未经用户确认时扩大到 Intel Mac、Windows、Linux 或公网部署。
-- `feat-010` 完成前，禁止创建 `apps/windows/`、移动当前 macOS 文件或在根目录加入 Windows 依赖；多平台迁移只能按 `docs/MULTIPLATFORM-PLAN.md` 执行。
+- 当前项目只构建和验收 `darwin/arm64`；Windows、多平台仓库迁移和直接粘贴正文转换均已取消，未经用户重新明确授权不得恢复这些范围。
 - 产品或架构决策写入相应项目文档；会话状态写入 `PROGRESS.md`，不要依赖聊天记录延续上下文。
 - 面向用户的显著变化记录到 `CHANGELOG.md` 的 `[Unreleased]`。
 - 不提交密钥、令牌、Cookie、个人数据、受版权保护的完整网页内容或其他敏感材料。

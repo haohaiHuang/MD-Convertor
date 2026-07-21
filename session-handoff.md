@@ -3,23 +3,21 @@
 ## Current Objective
 
 - Goal: 交付可在 Apple Silicon Mac 本地安装使用的 MD-Convertor。
-- Active: `feat-010 — Personal Mac Release`。
-- Quality status: 第二轮提出的 `QA-004`、`QA-009`、`QA-010`、`QA-011`、`QA-012` 已完成整改并通过完整发布门禁；第二台 Mac 验收、依赖升级和对外分发签名仍待完成。
+- Active: 无；`feat-010 — Personal Mac Release` 已完成，`feat-011 — Multi-platform Repository Migration` 已取消。
+- Quality status: 自动发布门禁、本机操作和第二台 Apple Silicon Mac 验收均已通过；依赖升级和对外分发签名仍待完成。
 - Branch: `main`；本地 Git 仓库已初始化，当前 0.1.3 源码与 Harness 作为基线提交管理。
 
 ## Current Scope
 
 - 第一阶段只交付 Apple Silicon Mac 单机版，不需要公网服务器、域名或 Docker。
 - 不调用 AI API，不需要 API Key。
-- Windows 版已确定为后续独立平台，但尚未创建目录、依赖、代码或平台 Harness；当前 macOS 根目录仍是唯一有效应用项目。
+- Windows 版本和直接粘贴正文生成 Markdown 的方案均已取消；当前 macOS 根目录是唯一有效应用项目。
 
-## Approved Future Repository Plan
+## Cancelled Future Work
 
-- `feat-011 — Multi-platform Repository Migration` 依赖 `feat-010` 完成，不能与当前 Mac 发布验收并行执行。
-- 迁移后目标是单一 Git 仓库，使用 `apps/macos/` 与 `apps/windows/` 隔离所有平台实现、依赖、状态和发布文件；根目录只保存跨平台 Harness 与稳定契约。
-- Windows 首版为 Electron `win32/x64` 免安装 ZIP，本机处理、无账号、无公网服务、无 AI API，以 macOS 0.1.3 的用户功能为对等基线，但独立从 `0.1.0` 编号。
-- 不使用 npm workspace、软链接或共享源码；仅共享经双方验证的产品契约与合成金标准 fixture。
-- 唯一事实源是 `docs/MULTIPLATFORM-PLAN.md`。后续会话必须先阅读该文件；未完成 `feat-010` 前不得创建 `apps/windows/` 或移动当前 macOS 文件。
+- 2026-07-21，用户取消 `feat-011`、Windows 应用及多平台目录迁移；原 `docs/MULTIPLATFORM-PLAN.md` 已删除，不能再作为后续执行依据。
+- 同日取消讨论中的“直接粘贴内容并转换为 Markdown”方案；该方案未进入代码、版本号或正式 feature，不创建 `0.2.0` 待办。
+- 除非用户以后重新明确授权，后续会话只维护现有 Apple Silicon Mac 单链接转换能力。
 
 ## Implemented
 
@@ -43,12 +41,13 @@
 - 0.1.3 将结果按钮统一为“复制”和“下载”，保留“已复制”成功反馈，并补充 Apple Silicon/macOS 12+ 跨电脑使用说明。
 - 动态浏览器代理新增每次回退 100 请求、累计 50 MiB、单 CONNECT 隧道 25 MiB 的共享预算；真实 HTTP/CONNECT、并发、流式超限、取消和 WebSocket Case 已覆盖。
 - Node.js 主版本固定为 24；E2E 改用 production standalone 服务并校验 tracked diff；发布脚本校验 fresh ZIP、版本、arm64、包结构、大小和 SHA-256。
+- 第二台 Apple Silicon Mac 验收通过；未签名应用首次被 Gatekeeper 提示损坏，移除 quarantine 属性后正常使用，精确处理命令已写入 README 与测试手册。
 
 ## Verification Evidence
 
 | Check | Result | Notes |
 |---|---|---|
-| 0.1.3 Node 24 `./init.sh` | Passed | lint、typecheck、coverage gate、18 files / 93 tests、Next build |
+| 0.1.3 Node 24 `./init.sh` | Passed | lint、typecheck、coverage gate、18 files / 93 tests、Next build；2026-07-21 取消方案并清理 Harness 后复跑通过 |
 | 0.1.3 `npm run test:e2e` | Passed | 21 checks across Chromium, Firefox, WebKit, including new button labels |
 | 0.1.3 `npm run test:live` | Passed with variability | first upstream timeout; unchanged-threshold rerun passed |
 | Second-round Node 24.14.1 `npm run desktop:release` | Passed in clean clone | baseline、21 E2E、live、Forge ZIP 全部通过；新 ZIP 实际生成 |
@@ -62,8 +61,8 @@
 | 0.1.3 real packaged window | Passed | 用户确认当前 Mac 人工测试通过；stop preserved URL、Copy/Download worked、clipboard matched download、long download had 30 embedded images |
 | Remediation Node 24.14.1 `desktop:release` | Passed | 93 tests、21 E2E、live、Forge 与 fresh ZIP 校验；Node 24.16.0 无产物路径按预期被阻断 |
 | New packaged runtime | Passed | example.com browser mode 270 bytes；long WeChat 17,643 chars / 30 images / 7,749,363 bytes |
-| Overall quality audit | Hardening gates closed | second-Mac acceptance、dependency upgrades and signing remain open |
-| Second-Mac installation | Pending | 当前只有结构核验和本机真实应用验收 |
+| Overall quality audit | Personal release gates closed | dependency upgrades and signing remain open |
+| Second-Mac installation | Passed | 首次提示“文件已经损坏”；执行 `xattr -cr` 后应用可正常使用，安装说明已改为更精确的 quarantine 移除命令 |
 | Signing/notarization | Pending | 当前为个人测试产物 |
 
 ## Artifact
@@ -77,11 +76,10 @@
 
 1. 阅读 `AGENTS.md`、`PROGRESS.md`、`feature_list.json`、`docs/PRODUCT.md`、`docs/ARCHITECTURE.md`、`docs/TESTING.md` 和 `docs/QUALITY-AUDIT.md`。
 2. 运行 `./init.sh`。
-3. 把 SHA-256 为 `66909aa8...df89` 的 0.1.3 ZIP 拷贝到第二台 Apple Silicon、macOS 12.0+ 的 Mac，完成解压和首次安全放行。
-4. 在第二台 Mac 转换、复制和下载同一公开链接，确认无需安装 Node.js、Chrome 或其他运行环境。
-5. 第二台 Mac 验收通过后更新证据并决定是否关闭 `feat-010`；对外分发仍需签名与 notarization。
-6. 仅在 `feat-010` 关闭并创建干净 Mac 基线提交后，按 `docs/MULTIPLATFORM-PLAN.md` 执行 `feat-011`；不要提前开始 Windows 实现。
+3. 确认第二台 Mac 验收、`feat-010` 关闭和后续方案取消记录已经提交，工作区为干净的 0.1.3 Mac 基线。
+4. 当前没有下一项功能开发；未经用户重新明确授权，不创建 Windows、跨平台迁移或粘贴内容转换事项。
+5. 对外分发仍需 Developer ID 签名与 notarization；依赖升级若恢复推进，按 `QA-005` 单独处理。
 
 ## Recommended Next Step
 
-在第二台 Apple Silicon、macOS 12.0+ 的 Mac 上验收当前 fresh ZIP；通过后关闭 `feat-010` 并创建干净 Mac 基线提交。
+提交第二台 Mac 验收、`feat-010` 关闭和方案取消记录，形成干净的 0.1.3 Mac 基线；当前不安排下一项功能开发。

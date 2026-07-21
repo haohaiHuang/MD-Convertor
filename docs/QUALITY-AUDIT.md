@@ -5,9 +5,9 @@
 - Audit date: 2026-07-18; second-round audit: 2026-07-18
 - Audited version: `0.1.2`; follow-up validation: `0.1.3`
 - Platform: Apple Silicon Mac (`darwin/arm64`)
-- Active feature: `feat-010 — Personal Mac Release`
+- Active feature: 无；`feat-010 — Personal Mac Release` 已完成
 - Audit type: 文档一致性、代码与安全审查、自动化验证、真实网页门禁、依赖审计和打包产物抽查
-- Overall verdict: **Personal-test functionality, proxy hardening and release Harness validated; second-Mac acceptance, dependency upgrades and external-distribution signing remain open**
+- Overall verdict: **Personal-test release validated on two Apple Silicon Macs; dependency upgrades and external-distribution signing remain open**
 
 ## Second-Round Audit Update — 2026-07-18
 
@@ -33,6 +33,13 @@ Node.js 24.14.1 / npm 11.11.0 下，工作区基线、21 项三浏览器 E2E、�
 - `QA-012`：E2E 改用 production standalone 服务，执行器比较测试前后 tracked diff；三引擎 21 项通过并输出 clean check passed。
 - Node.js 24.14.1 / npm 11.11.0 完整 `desktop:release` 通过，正式 ZIP 为 `239,281,512` bytes，SHA-256 `66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89`。新 `.app` 的 `example.com` browser-mode 冒烟和长微信 17,643 字符 / 30 图冒烟均通过。
 
+## Second-Mac Acceptance Update — 2026-07-20
+
+- 第二台 Apple Silicon Mac 已完成 0.1.3 验收，`feat-010` 的跨电脑完成条件满足。
+- 首次打开时 Gatekeeper 提示“文件已经损坏，只能放入废纸篓”。验收中执行 `xattr -cr /Applications/MD-Convertor.app` 后应用可正常使用；现象与未签名应用的系统隔离校验一致，未发现应用包运行依赖缺失。
+- 面向用户的说明改为优先使用范围更小的 `xattr -dr com.apple.quarantine "/Applications/MD-Convertor.app"`，并要求先核对 ZIP SHA-256；`xattr -cr` 只作为实际验收证据保留。
+- 该结果放行个人跨电脑使用，不改变 `QA-008`：未经 Developer ID 签名和 notarization 的包仍不适合公开分发。
+
 ## Remediation Update — 2026-07-18
 
 - `QA-001`: 已修复并完成新包冒烟。Chromium 改经一次性回环代理；HTTP 请求使用固定 lookup，HTTPS CONNECT 直接连接逐次校验所得 IP。DNS 重绑定回归测试、打包应用 `browser` 模式转换和内网拒绝均通过。
@@ -42,15 +49,15 @@ Node.js 24.14.1 / npm 11.11.0 下，工作区基线、21 项三浏览器 E2E、�
 - `QA-006`: 第二轮在 Node.js 24.14.1 干净隔离副本中完整运行 `desktop:release`，新 ZIP 实际生成且打包应用冒烟通过；24.16.0 的历史异常未复现，此项关闭。
 - `QA-007`: 已在 0.1.3 真实打包窗口完成。停止后链接保留且可编辑；“复制”“下载”和“已复制”反馈通过；剪贴板与下载内容一致；下载的长微信 Markdown 含 17,643 个非 Base64 字符和 30 张内嵌图，共 7,749,363 bytes。
 - 第一轮整改产物：arm64 / macOS 12.0+ / 0.1.3，ZIP `239,266,746` bytes，SHA-256 `d5cd5bac1323827766c2a6bd94bde472b42bec2b790d52a276abed5d124c8a3e`。上一版 0.1.2 哈希保留为 `fbb645e1ad55b28373bc94f3974c85ca3a9aa3de58f73ce2530b9628ac84baf5`；当前正式产物以第三轮记录为准。
-- 仍未放行：第二台 Apple Silicon Mac 安装验收、`QA-005` 依赖告警，以及正式对外分发所需的签名与 notarization。
+- 仍未放行：`QA-005` 依赖告警，以及正式对外分发所需的签名与 notarization。
 
 ## Executive Summary
 
 0.1.3 的 Node.js 24 日常基线、三浏览器 E2E、真实微信文章同轮对照和打包应用转换冒烟均已取得通过证据。真实打包窗口中的停止、系统剪贴板、下载以及长文 30 图文件核验也已完成，`feat-009` 的运行时完成条件满足。
 
-当前开放项是：尚未在第二台 Apple Silicon Mac 上完成解压、首次安全放行和转换验收；`QA-005` 依赖告警仍待安全升级。未签名状态仅接受个人测试，不满足对外分发要求。第二轮发现的代理与 Harness 缺口均已关闭。
+当前开放项是：`QA-005` 依赖告警仍待安全升级；未签名状态仅接受个人测试，不满足对外分发要求。第二台 Mac 验收以及第二轮发现的代理与 Harness 缺口均已关闭。
 
-因此 `feat-009` 维持完成，`feat-010` 继续 `in-progress`。当前正式 ZIP 已通过本机完整门禁和打包冒烟，但仍不能宣称跨电脑实测或正式外部分发已经通过。
+因此 `feat-009` 与 `feat-010` 均已完成。当前正式 ZIP 已通过自动门禁、本机操作和第二台 Mac 实测，可以用于受控个人使用；正式外部分发仍未放行。
 
 ## Scope
 
@@ -64,9 +71,7 @@ Node.js 24.14.1 / npm 11.11.0 下，工作区基线、21 项三浏览器 E2E、�
 
 ### Not Completed
 
-- 未在另一台全新 Apple Silicon Mac 上执行安装与首次启动验收。
 - 未配置或验证 Developer ID 签名与 notarization。
-- 尚未把第三轮正式 ZIP 放到第二台 Mac 进行真实跨电脑验收。
 - 依赖审计告警尚未完成运行时与构建时可达性分级和安全升级验证。
 
 ## Verification Results
@@ -82,6 +87,7 @@ Node.js 24.14.1 / npm 11.11.0 下，工作区基线、21 项三浏览器 E2E、�
 | Packaged long-article smoke | Passed | 当前正式包为 17,643 non-Base64 chars；30 images；7,749,363 bytes；无警告 |
 | Private-target packaged smoke | Passed | `localhost` 返回 `403 PRIVATE_TARGET`，应用以非零状态退出 |
 | Real packaged window | Passed | 用户确认当前 Mac 人工测试通过；停止保留链接；复制与下载内容一致；长文下载含 30 张内嵌图且小于 20 MiB |
+| Second-Mac installation | Passed with Gatekeeper workaround | 首次提示文件损坏；移除 quarantine 属性后应用可正常使用 |
 | Security-critical coverage gate | Passed | 总体 91.26%；代理 91.27% lines / 81.31% branches / 95% functions，阈值 85% / 75% / 90% |
 | Production dependency audit | Needs review | 2 moderate，来自 Next.js 间接依赖 PostCSS |
 | Full dependency audit | Needs review | 20 high、2 moderate、3 low；high 主要位于 Electron Forge 构建链 |
@@ -261,13 +267,13 @@ Resolution evidence:
 - 不使用 AI API、账号、云端数据库或转换历史。
 - 支持 30 张图片、8 MiB 单图、20 MiB 最终文件和正文优先降级。
 - 当前产物未完成 Developer ID 签名与 notarization。
-- `feat-009` 已完成，`feat-010` 因第二台 Mac 安装验收未完成而保持 `in-progress`。
+- `feat-009` 与 `feat-010` 已完成；`feat-011` 已取消，当前没有计划中的功能事项。
 
-第三轮已同步产品、架构、测试、进度、事项和交接文档：代理预算与发布 Harness 均为已完成状态；`docs/MULTIPLATFORM-PLAN.md` 已列入 `init.sh` 必需文档。该文件及其引用仍需在用户要求提交时同批进入 Git。
+第三轮已同步产品、架构、测试、进度、事项和交接文档：代理预算与发布 Harness 均为已完成状态。2026-07-21 用户取消 Windows 与多平台迁移，原 `docs/MULTIPLATFORM-PLAN.md` 已删除；第二台 Mac 验收、`feat-010` 关闭和方案取消记录仍需作为最终 0.1.3 Mac 基线提交。
 
 ## Remediation Order
 
-1. 在第二台 Apple Silicon、macOS 12.0+ 的 Mac 上完成解压、首次安全放行、转换、复制和下载验收。
+1. 把第二台 Mac 验收、`feat-010` 关闭和后续方案取消记录提交为干净的 0.1.3 Mac 基线。
 2. 分级处理 `QA-005` 的可安全升级项。
 3. 只有需要对外分发时，再以 Developer ID 签名和 notarization 关闭 `QA-008`。
 
@@ -285,7 +291,7 @@ Resolution evidence:
 - [x] 新产物的打包转换冒烟通过。
 - [x] 新产物版本、arm64 架构和 SHA-256 已重新记录。
 - [x] 真实 `.app` 窗口停止、复制和保存验收通过。
-- [ ] 第二台 Apple Silicon Mac 安装和首次启动验收通过。
+- [x] 第二台 Apple Silicon Mac 安装和首次启动验收通过；quarantine 处理方式已记录。
 - [x] 动态浏览器代理具备累计传输预算和超限集成测试。
 - [x] `browser-proxy.ts` 实际 HTTP/CONNECT I/O 路径达到合理覆盖率。
 - [x] `./init.sh` 会拒绝不符合项目策略的 Node 版本。
