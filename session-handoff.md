@@ -3,9 +3,9 @@
 ## Current Objective
 
 - Goal: 交付可在 Apple Silicon Mac 本地安装使用的 MD-Convertor；0.1.3 已交付验收，当前推进 v0.2 富文本粘贴转换（`feat-012`）。
-- Active: `feat-012 — Paste Rich-Text Conversion (v0.2)`，`in-progress`；规划批准见 `docs/PLAN-V0.2.md`，任务追踪见 `docs/TASKS-V0.2.md`，下一步 T3（`src/lib/paste.ts`，TDD）。
-- Quality status: 0.1.3 自动发布门禁、本机操作和第二台 Apple Silicon Mac 验收均已通过；依赖升级和对外分发签名仍待完成。
-- Branch: `codex/feat-012-v0.2`；`main` 固定在 0.1.3 封版提交 `ce041c9`，标签为 `v0.1.3`。v0.2 当前版本为 `0.2.0`，完成 T10 并经用户确认前不得合并。
+- Active: 无；`feat-012 — Paste Rich-Text Conversion (v0.2)` 已完成。后续 `feat-013`（Mermaid）与 `feat-014`（UI 调整）均为 `planned`。
+- Quality status: 0.1.3 自动发布门禁、本机操作和第二台 Apple Silicon Mac 验收均已通过；v0.2 最小安全升级后生产审计为 0，完整树剩余 1 critical / 26 high / 3 low 且未进入应用包；T10 自动发布门禁、打包应用冒烟与真实窗口人工验收均已通过；对外分发签名仍待完成。
+- Branch: `codex/feat-012-v0.2`；`main` 固定在 0.1.3 封版提交 `ce041c9`，标签为 `v0.1.3`。v0.2 当前版本为 `0.2.0`，已通过 T10 与用户验收，但尚未提交或合并。
 
 ## Current Scope
 
@@ -22,7 +22,7 @@
 ## Cancelled Future Work
 
 - 2026-07-21，用户取消 `feat-011`、Windows 应用及多平台目录迁移；原 `docs/MULTIPLATFORM-PLAN.md` 已删除，不能再作为后续执行依据。
-- 同日取消的「直接粘贴正文转换」方案，已于 2026-08-06 以 v0.2 富文本粘贴转换（`feat-012`）重新授权，范围见 `docs/PLAN-V0.2.md`（仅处理用户主动复制的剪贴板 HTML，不绕过登录/付费墙/验证码）。
+- 同日取消的「直接粘贴正文转换」方案，已于 2026-08-06 以 v0.2 富文本粘贴转换（`feat-012`）重新授权，范围见 `docs/PLAN-V0.2.md`（仅处理用户主动复制的剪贴板 HTML/纯文本，不绕过登录/付费墙/验证码）。
 - 除非用户以后重新明确授权，不恢复 Windows 与多平台仓库迁移。
 
 ## Implemented
@@ -48,6 +48,19 @@
 - 动态浏览器代理新增每次回退 100 请求、累计 50 MiB、单 CONNECT 隧道 25 MiB 的共享预算；真实 HTTP/CONNECT、并发、流式超限、取消和 WebSocket Case 已覆盖。
 - Node.js 主版本固定为 24；E2E 改用 production standalone 服务并校验 tracked diff；发布脚本校验 fresh ZIP、版本、arm64、包结构、大小和 SHA-256。
 - 第二台 Apple Silicon Mac 验收通过；未签名应用首次被 Gatekeeper 提示损坏，移除 quarantine 属性后正常使用，精确处理命令已写入 README 与测试手册。
+- feat-012 T3 已完成：新增独立粘贴预处理库，提供 DOM 语义门控、安全 body 清洗、标题提取优先级、HTML/text 降级、lazy 图片属性定向保留与 `textLength` 统计；尚未接入 Markdown、API 或 UI。
+- feat-012 T4 已完成：新增粘贴 HTML/纯文本 Markdown 渲染与粘贴文件名规则，覆盖可选来源、相对链接、标题去重、MiaoYan 适用语义和纯文本结构转义；既有链接模式函数行为保持不变。
+- feat-012 T5 已完成：图片处理新增显式 link/paste 策略，粘贴模式支持 lazy-first 与严格 Data URI 校验/优化，链接模式行为保持不变；AVIF 防 MIME 伪装、SSRF 交接、预算和取消均有测试。
+- feat-012 T6A 已完成：新增独立粘贴转换编排与 `paste` 提取类型；来源规范化、HTML/text、纯图片、422/413、末图预算、统计/警告与取消均已覆盖，预算路径使用 marker 定向单次渲染避免高内存循环。
+- feat-012 T6B 已完成：新增 5 MiB UTF-8 有界请求体和 `/api/convert-paste`；复用本地鉴权、限流与 45 秒总时限，覆盖 400/403/413/429/499/504、流取消与截止竞态，日志不记录粘贴内容或来源 URL。
+- feat-012 T7A 已完成：新增粘贴前端纯状态模块，固化富文本/纯文本/编辑降级提示、payload 与 UTF-8 5 MiB 精确边界、双模式输入保留、转换中禁切换和输出清理；客户端与服务端复用共享限制常量。
+- feat-012 T7B 已完成：现有页面新增链接/富文本 Tab，粘贴 textarea、来源 URL、前端预算、双 API、按模式停止提示与共享结果全部接入；审查修复旧 selector、异步状态 ref 竞态和 stop 按钮自动二次提交，旧 Chromium 用例恢复全绿。
+- feat-012 T8 已完成：新增 9 组粘贴 E2E，双 MIME、降级/编辑/替换、来源输出头、预算/413、停止 Abort、复制下载与结果统计在三浏览器通过；旧链接用例文件未修改。
+- feat-012 T9A 已完成：发布门禁固定保护 `main` / `v0.1.3`、外部只读 0.1.3 归档与 0.1.0–0.1.3 四 ZIP manifest；非 0.2.0 目标或历史产物异常会在任何发布命令前失败，成功及后续失败路径均复核历史清单。
+- feat-012 T9B 已完成：同步产品、架构、测试、质检、README、Changelog、任务、进度和交接文档；明确两模式、粘贴 API、安全边界、5 MiB/图片预算、登录态/临时/blob 限制、v0.2 安装条件与 T9A 证据。
+- feat-012 T10 已完成：生产审计清零；Node.js 24.14.1 连续通过 282 tests、48 E2E、live、Forge、fresh ZIP 与打包应用启动/长微信 30 图转换冒烟；用户确认真实窗口富文本模式人工验收通过。
+- T10 人工验收已开始：X Article 样本正文正常但图片为链接；诊断确认其 6 张正文图与封面均来自 `pbs.twimg.com`，本机匿名直连 7/7 `ECONNRESET`，X 页面复跑亦有 502 波动。当前按“不绕过网络/登录限制”降级为外链，用户已接受为 v0.2 已知限制。
+- 另一人工样本的缺图已定性为 Mermaid 支持缺口：页面无正文栅格图，只有客户端把空 `.mermaid` 占位渲染成内联 SVG；当前 direct 输出 0 图/0 警告且没有 Mermaid fence。用户已接受为 v0.2 已知限制并决定后续在 `feat-013` 独立开发，不能误记为普通图片异常。
 
 ## Verification Evidence
 
@@ -55,6 +68,18 @@
 |---|---|---|
 | v0.2 pre-development `./init.sh` | Passed | Node.js 24.14.0；lint、typecheck、18 files / 93 tests、coverage gate、Next.js production build；T3 尚未开始 |
 | v0.2 plan-review `./init.sh` | Passed | Node.js 24.14.0；评审修订后 18 files / 93 tests、coverage gate、production build；无产品代码改动 |
+| feat-012 T3 focused + `./init.sh` | Passed | Node.js 24.14.0；paste 32 tests；完整基线 19 files / 125 tests、lint、typecheck、coverage gate、production build；paste.ts 100% statements/lines/functions |
+| feat-012 T4 focused + `./init.sh` | Passed | Node.js 24.14.0；markdown 37 tests；完整基线 19 files / 159 tests、lint、typecheck、coverage gate、production build；markdown.ts 99.15% statements/lines、100% functions |
+| feat-012 T5 focused + `./init.sh` | Passed | Node.js 24.14.0；images 46 tests、相关 53 tests；完整基线 19 files / 191 tests、lint、typecheck、coverage gate、production build；images.ts 97.16% statements/lines、100% functions |
+| feat-012 T6A focused + `./init.sh` | Passed | Node.js 24.14.0；convert-paste 20 tests；完整基线 20 files / 211 tests、lint、typecheck、coverage gate、production build；convert-paste.ts 96.59% statements/lines、100% functions |
+| feat-012 T6B focused + `./init.sh` | Passed | Node.js 24.16.0；paste request + paste route + 旧 convert route 40 tests；完整基线 22 files / 245 tests、lint、typecheck、coverage gate、production build；paste-request.ts 100% statements/lines/functions |
+| feat-012 T7A focused | Passed | Node.js 24.16.0；paste-client 17 tests；与 paste request/route 联合 51 tests、typecheck、lint、diff-check 全部通过 |
+| feat-012 T7B build + static + old Chromium | Passed | Node.js 24.16.0；typecheck、lint、production build、diff-check；旧 Chromium 7/7；1180px/700px 双模式静态布局与 console 检查通过 |
+| feat-012 T8 `./init.sh` + three-engine E2E | Passed | Node.js 24.16.0；22 files / 262 tests、coverage/build；Chromium/Firefox/WebKit 48/48、tracked-file check；未运行 live |
+| feat-012 T9A guards + `./init.sh` | Passed | Node.js 24.16.0；release guards 22/22；完整 23 files / 281 tests、coverage/build；真实 refs、外部只读归档及四个 0.1.x ZIP 只读校验通过；未运行 live/make |
+| feat-012 T9B docs + static checks | Passed | 9 个授权文档、JSON 解析、关键词/死引用和 `git diff --check` 通过；未运行 live/make |
+| feat-012 T10 release gate | Passed | Node.js 24.14.1；24 files / 282 tests、48/48 E2E、live、Forge、fresh ZIP、启动与长微信 30 图冒烟；0.2.0 ZIP 354,594,827 bytes / `ab2a463c...a7b7b4` |
+| feat-012 final review remediation | Passed | Node.js 24.14.1；远程伪装格式与 ZIP 包内版本/arm64 均先 RED 后 GREEN；最终 `./init.sh` 24 files / 285 tests、coverage/build；现有 ZIP 包内只读复验通过 |
 | 0.1.3 Node 24 `./init.sh` | Passed | lint、typecheck、coverage gate、18 files / 93 tests、Next build；2026-07-21 取消方案并清理 Harness 后复跑通过 |
 | 0.1.3 `npm run test:e2e` | Passed | 21 checks across Chromium, Firefox, WebKit, including new button labels |
 | 0.1.3 `npm run test:live` | Passed with variability | first upstream timeout; unchanged-threshold rerun passed |
@@ -75,18 +100,19 @@
 
 ## Artifact
 
-- `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.1.3.zip`
-- SHA-256: `66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89`
-- Size: `239,281,512` bytes; arm64; minimum macOS `12.0`; version `0.1.3`.
-- Packaged smoke: example.com browser mode 270 bytes; long WeChat 17,643 non-Base64 chars / 30 images / 7,749,363 bytes.
+- v0.2 candidate: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.2.0.zip`
+- SHA-256: `ab2a463cf0a98a51cacdcad3a2cab5ed34b458b47b504ac644d56b7914a7b7b4`
+- Size: `354,594,827` bytes; arm64; minimum macOS `12.0`; version `0.2.0`.
+- Packaged smoke: startup passed; long WeChat 17,643 non-Base64 chars / 30 images / 7,749,111 bytes; user confirmed final real-window rich-text acceptance passed.
+- 0.1.3 frozen ZIP and external archive remain `239,281,512` bytes / SHA-256 `66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89`.
 
 ## Next Session Startup
 
 1. 阅读 `AGENTS.md`、`PROGRESS.md`、`feature_list.json`、`docs/PLAN-V0.2.md`、`docs/TASKS-V0.2.md`、`docs/PRODUCT.md`、`docs/ARCHITECTURE.md`、`docs/TESTING.md` 和 `docs/QUALITY-AUDIT.md`。
 2. 运行 `./init.sh`（Node.js 24.x）。
-3. 继续 `feat-012`（v0.2）当前 `in-progress` 任务；一次只推进一个任务，代码任务遵循 TDD（先写失败测试再实现）。
+3. T10 自动门禁、live、打包、应用冒烟与用户人工验收均已完成；下一步审阅并按用户指示提交当前 v0.2 变更。
 4. 未经用户重新明确授权，不恢复 Windows 与多平台仓库迁移。
-5. 对外分发仍需 Developer ID 签名与 notarization；依赖升级若恢复推进，按 `QA-005` 单独处理。
+5. 对外分发仍需 Developer ID 签名与 notarization；完整开发/构建树的上游告警继续按 `QA-005` 跟踪。
 
 ## Version Boundary
 
@@ -96,4 +122,4 @@
 
 ## Recommended Next Step
 
-实施 `feat-012` 的 T3：`src/lib/paste.ts` 预处理（DOM 语义门控、先提取 head 标题再净化 body、HTML/text 双通道、lazy 属性定向保留），TDD 先行——先写 `paste.test.ts` 失败测试再实现。任务边界与验证方式见 `docs/TASKS-V0.2.md`。
+审阅当前 v0.2 变更范围并等待用户指示提交 Git；不要自动合并到 `main`。Mermaid/SVG 图表保留与 UI 调整已分别登记为后续 `feat-013`、`feat-014`，开工前需重新确认具体范围。

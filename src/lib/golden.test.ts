@@ -39,6 +39,11 @@ describe("webpage to Markdown golden fixture", () => {
       sourceUrl,
       new AbortController().signal,
       1024 * 1024,
+      {
+        mode: "link",
+        sourcePriority: "src-first",
+        allowDataUri: false,
+      },
     );
     const markdown = htmlToMarkdown(embedded.html, extracted!.title, sourceUrl, convertedAt);
 

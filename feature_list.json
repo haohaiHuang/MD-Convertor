@@ -104,7 +104,7 @@
       "name": "Paste Rich-Text Conversion (v0.2)",
       "description": "v0.2：用户复制受限访问网页的富文本并粘贴到应用，转换为与链接模式同规格的 Markdown。参考 MiaoYan HtmlToMarkdown 的结构门控与清洗思路，复用现有 Turndown/GFM、DOMPurify、图片内嵌与 SSRF 管线。",
       "dependencies": [],
-      "status": "in-progress",
+      "status": "done",
       "done_criteria": [
         "富文本粘贴全流程（粘贴→转换→预览→复制→下载）在打包应用中可用",
         "DOM 语义门控、HTML/text 降级、data: URI 完整图片处理、远程图片 SSRF 拒绝均有自动化测试证据",
@@ -112,7 +112,35 @@
         "PRODUCT/ARCHITECTURE/TESTING/README/CHANGELOG/PLAN-V0.2 文档同步，验证证据已记录",
         "链接模式 0.1.x 行为回归通过"
       ],
-      "evidence": "2026-08-06: docs/PLAN-V0.2.md 已创建并获用户批准；全部代码开发遵循 TDD，PLAN 与 TASK 分离。2026-08-09: main 与 v0.1.3 标签固定在 ce041c9；创建 codex/feat-012-v0.2 分支并将版本隔离为 0.2.0；0.1.3 ZIP 恢复为只读外部归档且 SHA-256 一致。同日完成开工评审并获用户确认：API HTML/text 双通道、编辑后降级纯文本、扩大 DOM 语义门控、无标题使用正文首行、接受登录态图片限制、Data URI 完整校验优化、live 仅在 T10 阻断；TASKS 已拆分为 T3/T4/T5/T6A/T6B/T7A/T7B/T8/T9A/T9B/T10。下一步 T3（paste.ts 预处理，TDD）。"
+      "evidence": "2026-08-06: docs/PLAN-V0.2.md 已创建并获用户批准；全部代码开发遵循 TDD，PLAN 与 TASK 分离。2026-08-09: main 与 v0.1.3 标签固定在 ce041c9；创建 codex/feat-012-v0.2 分支并将版本隔离为 0.2.0；0.1.3 ZIP 恢复为只读外部归档且 SHA-256 一致。同日完成开工评审并获用户确认：API HTML/text 双通道、编辑后降级纯文本、扩大 DOM 语义门控、无标题使用正文首行、接受登录态图片限制、Data URI 完整校验优化、live 仅在 T10 阻断；TASKS 已拆分为 T3/T4/T5/T6A/T6B/T7A/T7B/T8/T9A/T9B/T10。T3 已按 TDD 完成：paste.ts / paste.test.ts 提供 DOM 语义门控、安全清洗、标题优先级、HTML/text 降级、lazy 属性定向保留和 textLength；专项 32 tests 与 Node.js 24.14.0 ./init.sh（19 files / 125 tests、lint、typecheck、coverage、build）通过。T4 已按 TDD 完成：新增粘贴 HTML/纯文本 Markdown、可选来源、链接与文件名规则；专项 37 tests 与 ./init.sh（19 files / 159 tests、lint、typecheck、coverage、build）通过，审查发现全部关闭，链接模式回归不变。T5 已按 TDD 完成：显式 link/paste 图片策略、lazy-first、严格 Data URI 五格式/AVIF 防伪、无 base、占位/优化/动图/预算/取消/SSRF 交接；images 46 tests、完整 ./init.sh 19 files / 191 tests 通过，审查发现关闭且链接模式零回归。T6A 已按 TDD 完成：独立粘贴编排、paste 类型、来源规范化、422/413、末图预算、统计警告和取消；marker 单次渲染算法关闭高内存与代码误判风险，专项20/完整211 tests通过。T6B 已按 TDD 完成：5 MiB有界请求体、/api/convert-paste、鉴权限流、45秒总时限、隐私日志和流/截止竞态均覆盖；专项及旧路由40 tests，Node.js 24.16.0完整245 tests、coverage/build通过。T7A 已按 TDD 完成：前端clipboard快照、rich/plain/edited状态、payload/source trim、UTF-8 JSON 5MiB边界、双模式保留/切换清理，17 tests及联合51 tests通过；客户端/服务端共享限制常量。T7B 已完成双模式页面与结果复用；静态布局、build及旧Chromium7项通过，审查关闭副标题/selector、状态ref和stop重提交流程回归。T8 已完成9组粘贴E2E；Node.js24.16.0完整262 tests/build和三引擎48/48、tracked check通过，未运行live。T9A 已完成封版自动保护：固定 Git refs、外部只读归档和四个 0.1.x ZIP manifest，拒绝非0.2.0目标并在成功/失败后复核历史；22项guard tests与Node24完整281 tests/build通过，真实只读校验4/4通过，未运行live/make。T9B 已完成文档同步：九个授权文档已对齐两模式、粘贴 API、安全限制、图片预算、安装条件与 T9A 证据；JSON、关键词/死引用、Node.js 24.16.0 ./init.sh（23 files / 281 tests）和 git diff-check 通过。T10 进入后，neat-freak 只读审计确认 QA-005 已漂移为生产 5 high/1 moderate、完整树 1 critical/30 high/1 moderate/3 low；经用户授权升级 Next.js 16.3.0、Undici 8.10.0、DOMPurify 3.4.13、Electron 43.3.0 与兼容 Nano ID 锁版本后，生产审计为0，完整树剩余1 critical/26 high/3 low且未进入应用包。Node.js 24.14.1 desktop:release 连续通过24 files/282 tests、三引擎48/48、live、Forge与fresh ZIP；0.2.0 arm64 ZIP 354,594,827 bytes，SHA-256 ab2a463cf0a98a51cacdcad3a2cab5ed34b458b47b504ac644d56b7914a7b7b4；启动和长微信17,643字符/30图转换冒烟通过。X 匿名图片失败与客户端 Mermaid/SVG 图表缺失均由用户接受为 v0.2 已知限制；Mermaid 支持转入 feat-013。2026-08-09 用户确认真实打包窗口的富文本模式人工验收通过，T10 与 feat-012 完成。提交前双轴审查以失败测试复现并关闭远程图片格式伪装与 ZIP 旁路校验问题；Node.js 24.14.1 ./init.sh 最终通过24 files/285 tests、coverage与build，现有0.2.0 ZIP经包内版本/arm64只读复验通过。"
+    },
+    {
+      "id": "feat-013",
+      "name": "Mermaid Diagram Preservation",
+      "description": "在不放宽不可信 SVG 安全边界的前提下，保留网页或富文本中的 Mermaid 图表：优先输出 Mermaid 代码块，只有渲染结果可用时安全栅格化，无法保留时给出明确警告。",
+      "dependencies": ["feat-012"],
+      "status": "planned",
+      "done_criteria": [
+        "可获得 Mermaid 源码时输出 fenced mermaid 代码块",
+        "只有客户端渲染 SVG 时可安全转换为 WebP，或在无法转换时显示明确警告",
+        "不允许原始不可信 SVG、脚本或主动内容进入 Markdown 预览与文件",
+        "链接模式与富文本模式均有 TDD、真实 fixture 和打包应用验收证据"
+      ],
+      "evidence": "2026-08-09: WalkingLabs 人工样本确认静态 HTML 只有空 .mermaid 占位，客户端 JavaScript 才生成内联 SVG；v0.2 当前会按安全规则移除 SVG，导致图表缺失且无警告。用户决定本轮不开发，登记为后续独立事项。"
+    },
+    {
+      "id": "feat-014",
+      "name": "UI Layout and Visual Polish",
+      "description": "在后续迭代中集中处理界面布局、视觉层级与交互细节；具体调整点在开工前与用户确认，不纳入 v0.2 封版范围。",
+      "dependencies": ["feat-012"],
+      "status": "planned",
+      "done_criteria": [
+        "开工前记录用户确认的具体 UI 问题、目标与非目标",
+        "关键桌面宽度与窄屏布局有截图或自动化回归证据",
+        "链接转换与富文本转换的核心流程和可访问性不回归",
+        "打包应用完成真实窗口人工验收"
+      ],
+      "evidence": "2026-08-09: v0.2 人工验收通过后，用户要求把 UI 调整作为后续迭代课题；当前尚未指定具体调整内容，因此仅登记规划事项，不实施。"
     }
   ]
 }

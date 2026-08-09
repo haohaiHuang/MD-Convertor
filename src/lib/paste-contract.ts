@@ -1,0 +1,1 @@
+export const MAX_PASTE_REQUEST_BYTES = 5 * 1024 * 1024;

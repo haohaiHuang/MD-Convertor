@@ -127,7 +127,11 @@ export async function convertUrlToMarkdown(inputUrl: string, signal: AbortSignal
 
   const nonImageBudget = Buffer.byteLength(extracted.html) + 16 * 1024;
   const imageBudget = Math.max(0, MAX_MARKDOWN_BYTES - nonImageBudget);
-  const embedded = await embedImages(extracted.html, sourceUrl, signal, imageBudget);
+  const embedded = await embedImages(extracted.html, sourceUrl, signal, imageBudget, {
+    mode: "link",
+    sourcePriority: "src-first",
+    allowDataUri: false,
+  });
   signal.throwIfAborted();
   warnings.push(...embedded.warnings);
 

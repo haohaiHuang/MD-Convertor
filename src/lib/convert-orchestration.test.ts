@@ -53,6 +53,13 @@ describe("complete conversion orchestration", () => {
     expect(result.meta).toMatchObject({ extractionMode: "direct", textChars: 350 });
     expect(result.markdown).toContain("直接提取的正文");
     expect(mocks.renderDynamicPage).not.toHaveBeenCalled();
+    expect(mocks.embedImages).toHaveBeenCalledWith(
+      "<p>直接提取的正文</p>",
+      sourceUrl,
+      signal,
+      expect.any(Number),
+      { mode: "link", sourcePriority: "src-first", allowDataUri: false },
+    );
   });
 
   it("replaces a short direct result with a stronger browser extraction", async () => {
