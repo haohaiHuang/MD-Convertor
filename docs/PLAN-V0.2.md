@@ -1,6 +1,6 @@
 # Plan — v0.2 富文本粘贴转换（feat-012）
 
-- Status: **approved 2026-08-06（用户确认 4 项关键决策：data: URI 保留内嵌 / 来源可选填 / 复用 Turndown / 尊重复制范围）**
+- Status: **approved 2026-08-06；reviewed and amended 2026-08-09**（用户确认：data: URI 经校验处理后内嵌 / 来源可选填 / 复用 Turndown / 尊重复制范围 / HTML 与纯文本双通道 / 编辑后降级纯文本 / 扩大语义门控 / 无标题使用正文首行 / 接受登录态图片限制 / live 仅作发布门禁）
 - Version target: `0.2.0`
 - Author date: 2026-08-06
 - Predecessor: 0.1.3 个人 Mac 基线（`ce041c9`）
@@ -14,8 +14,8 @@ v0.2 采用折衷方案：**用户在有权限的浏览器中手动复制网页�
 ## 2. 目标
 
 - 用户在「富文本转换」模式粘贴带格式的网页内容（`text/html`），可转换为与链接模式同规格的 Markdown 文件（标题、统计、预览、复制、下载）。
-- 粘贴的富文本含块级结构（标题/列表/表格/引用/代码块）时按 HTML 转换；无结构时降级为纯文本，不产生垃圾输出。
-- 粘贴内容中的远程图片沿用现有 SSRF 防护下载内嵌；`data:` URI 图片直接内嵌，无网络请求。
+- 粘贴内容同时保留剪贴板 `text/html` 与 `text/plain`：检测到受支持的语义结构时按 HTML 转换；只有无语义包装时才使用权威纯文本，避免垃圾输出又不丢失普通文章的段落、链接和图片。
+- 粘贴内容中的远程图片沿用现有 SSRF 防护下载内嵌；`data:` URI 不发起网络请求，但仍须解码、校验实际格式并执行现有尺寸、压缩和预算规则后才能内嵌。
 - 输出复用现有预算规则：30 图 / 单图 8 MiB / 最终 20 MiB / 正文优先降级。
 
 ## 3. 非目标
@@ -48,13 +48,13 @@ v0.2 采用折衷方案：**用户在有权限的浏览器中手动复制网页�
 
 | MiaoYan 能力 | 采用方式 | 理由 |
 |---|---|---|
-| 结构门控 | **采纳思路**（`containsBlockStructure` 正则移植为 TS 模块） | 防止代码编辑器 span/div 汤转出垃圾 MD |
+| 结构门控 | **采纳目标，调整实现**：基于解析后的 DOM 识别强结构、富文本信号与多段落 | 避免字符串误判，同时保留普通文章的链接、格式和图片 |
 | 纯文本降级 | **采纳** | 剪贴板无 HTML 或 HTML 无结构时按纯文本转换 |
 | Tidy 容错解析 | **不移植**，用现有 jsdom 解析 | JS 字符串天然 UTF-8，无 Tidy 编码问题 |
-| 标签清洗 | **采纳**：扩展现有 `sanitizeHtml` 的 FORBID_TAGS | 与现有 DOMPurify 清洗合并 |
+| 标签清洗 | **采纳规则，独立配置**：新增粘贴模式净化器，不修改链接模式私有实现 | 只定向保留 lazy 图片属性，保证 0.1.3 行为零变化 |
 | 块级/行内渲染 | **复用 Turndown + GFM** | 现有依赖，0.1.x 验证；必要时为 `div`→段落补充 custom rule |
 | 细节正确性规格 | **转测试金标准**：移植 MiaoYan 21 项用例语义，验证 Turndown 输出等价 | 以测试固化规格 |
-| `data:` 图片丢弃 | **偏离，改为保留内嵌** | 本工具卖点是图片内嵌；`data:` URI 无网络风险，直接保留并计入 20 MiB 预算 |
+| `data:` 图片丢弃 | **偏离，改为校验处理后内嵌** | 不发起网络请求，但仍执行实际格式、尺寸、压缩和预算规则 |
 | 远程图片 | **复用现有 `embedImages` 管线**（含 SSRF 防护） | 关键安全差异：MiaoYan 不联网，本项目粘贴内容含远程图 URL 时必须走 `fetchPublicResource` 白名单校验 |
 
 ## 5. 方案设计
@@ -63,30 +63,37 @@ v0.2 采用折衷方案：**用户在有权限的浏览器中手动复制网页�
 
 `POST /api/convert-paste`
 
-- 请求：`application/json`，`{ "html": string }`；Content-Length 上限 **5 MiB**（与现有 HTML 解压上限一致；现 `/api/convert` 的 4096 上限不适用）。
+- 请求：`application/json`，`{ "html"?: string, "text"?: string, "sourceUrl"?: string }`；`html` 与 `text` 至少一个非空。原始请求体（包含 JSON 开销）上限 **5 MiB**，既检查声明的 Content-Length，也使用有上限的读取过程验证实际 UTF-8 字节数，不能只信任请求头。
 - 鉴权：复用 `validateConvertApiCaller`（回环 Host、同源、令牌、Content-Type）。
 - 限流：复用 `acquireConversionSlot`；总时限 45 秒沿用。
+- `sourceUrl` 为空时省略来源行；非空时只接受无凭据 HTTP/HTTPS URL。它只用于来源展示和相对链接/图片解析，不主动抓取来源页面。
 - 响应：与 `ConvertResponse` 同结构，`meta.extractionMode = "paste"`；`meta.sourceUrl` 允许空字符串。
 - 错误码沿用 `400/403/413/422/429/502/504`。
 
 ### 5.2 新增服务端模块 `src/lib/paste.ts`
 
-- `detectStructuredHtml(html): boolean`：正则检测块级结构（移植 MiaoYan `structureRegex`）。
-- `preparePastedHtml(html): { html: string; title: string; textLength: number }`：
-  1. jsdom 解析，取 `body` 内容；
-  2. DOMPurify 清洗（扩展现有 FORBID_TAGS：追加 `button`，确认 `nav/svg` 已含）；
-  3. 标题提取优先级：`<title>` → `og:title` → 第一个 `h1` → 空则 `"粘贴内容"`；
-  4. 文本长度统计（与现有 `textLength` 口径一致）。
-- 结构门控逻辑放编排层：无块结构 → 走纯文本路径（保留换行，trim）。
+- `detectStructuredHtml(html): boolean`：基于解析后的 DOM 判断语义，不对原字符串做宽泛正则匹配。以下任一条件成立即使用 HTML：
+  - 强结构：`h1-h6/table/ul/ol/blockquote/pre/img`；
+  - 富文本信号：有效链接、粗体、斜体、删除线、行内代码；
+  - 至少两个正文段落。
+  单个仅含普通文字的 `<p>` 以及只有 `div/span/font` 的无语义包装不触发，保留 MiaoYan 的 `an ultimate ulterior plan` 反例。
+- `preparePastedContent({ html?, text? }): { mode: "html" | "text"; html: string; text: string; title: string; textLength: number }`：
+  1. 解析完整 HTML，在丢弃 `<head>` 前按 `<title>` → `og:title` → 第一个 `h1` 提取标题；
+  2. 无上述标题时取权威纯文本第一行有效内容并规范化，仍无标题时使用显示标题 `"粘贴内容"`；
+  3. 取 `body` 后使用**粘贴模式独立净化配置**，不修改 0.1.3 链接模式的私有 `sanitizeHtml`；禁用任意 `data-*`，但显式保留图片处理需要的 `data-src` 与 `data-lazy-src`，并保留 `src/alt`；
+  4. 有语义结构时返回净化 HTML；否则使用请求中的 `text` 作为权威纯文本，保留换行并 trim；
+  5. `textLength` 按最终选中的正文文本计算。
+- 若正文为空且只包含无法使用的资源，返回 `422 NO_USABLE_CONTENT`。无有效标题时，下载文件名使用 `粘贴内容-时间戳.md`，避免反复下载同名文件。
 
 ### 5.3 转换与输出头部（扩展 `src/lib/markdown.ts`）
 
-- 新增 `htmlToMarkdownFromPaste(html, title, convertedAt)`：复用 Turndown 配置（atx / `-` / fenced / `*` / `**` / inlined + GFM）。
+- 新增粘贴模式 Markdown 渲染入口，接收区分后的 HTML 或纯文本内容；HTML 复用 Turndown 配置（atx / `-` / fenced / `*` / `**` / inlined + GFM），纯文本路径保留用户换行并转义会改变字面含义的 Markdown 控制字符。
 - 头部规则（与链接模式对齐）：
   - `# 标题`
   - `> 转换时间：…`
   - 来源行：**默认省略**；若 API 同时收到可选 `sourceUrl`（用户填写或剪贴板自带）则输出 `> 来源：[url](url)`。
 - 链接模式现有函数与行为不变。
+- 粘贴正文首个 `h1` 与输出标题相同时沿用现有去重规则。无 `sourceUrl` 时只保留绝对 HTTP/HTTPS 链接；相对链接降级为普通文本。有 `sourceUrl` 时安全解析相对链接。
 
 ### 5.4 图片策略（改造 `src/lib/images.ts`）
 
@@ -107,19 +114,23 @@ v0.2 采用折衷方案：**用户在有权限的浏览器中手动复制网页�
 
 其他策略：
 
-- `data:` URI 图片：从「跳过 + 警告」改为「保留内嵌」。`prepareImage` 的 `rawSource.startsWith("data:")` 分支改为校验格式（`data:image/(png\|jpeg\|webp\|gif\|avif);base64,`）后保留 `src` 原样，计入 `sourceImageCount` 与 `embeddedImageCount`，不下载。**该变更仅作用于粘贴模式**，链接模式 data: 行为保持现状以最小化回归。
+- `data:` URI 图片：粘贴模式允许 `data:image/(png\|jpeg\|webp\|gif\|avif);base64,`，但不能只检查前缀或原样透传。必须严格解码 Base64、按解码字节数执行 8 MiB 上限、用 Sharp 校验实际格式与元数据，并执行 2 MiB / 2048px / 动图首帧规则后重新生成规范 Data URI。**该变更仅作用于粘贴模式**，链接模式 data: 行为保持现状。
 - 预算：30 图上限、单图 8 MiB（data: URI 按解码后字节数计）、20 MiB 降级逻辑全部沿用。
-- 已知边界（文档说明）：原生 `loading="lazy"` 且尚未加载的图片，剪贴板中不存在真实 URL，无法恢复；提示用户在浏览器中滚动加载后再复制。
+- `sourceUrl` 为空时不得把空字符串传给 JSDOM URL 或 `new URL(relative, base)`；绝对公网 HTTP/HTTPS 图片正常处理，相对图片降级为替代文本并给出明确警告。
+- 图片管线使用显式的区分联合参数（链接模式 `src-first` / 粘贴模式 `lazy-first + data-uri`），两个调用方都必须指定模式，禁止依赖容易误用的默认值。
+- 已知边界（文档说明）：原生 `loading="lazy"` 且尚未加载的图片，剪贴板中不存在真实 URL，无法恢复；登录态、临时签名、`blob:` 或需要 Cookie 的远程图片也可能无法由应用重新获取。上述情况保留替代文本并提示用户滚动加载或接受图片省略。
 
 ### 5.5 前端 UI（扩展 `src/app/page.tsx` + CSS）
 
 - 双模式 Tab：「链接转换」（现状）与「富文本转换」（新增）。
-- 富文本模式：`textarea`；`onPaste` 读取 `event.clipboardData.getData("text/html")`，同时保留 `text` 备用。
+- 富文本模式：`textarea`；`onPaste` 同时读取 `event.clipboardData.getData("text/html")` 与 `text/plain`，textarea 展示纯文本，内部单独保存 HTML。
   - 有 HTML → 状态提示「已识别富文本内容（约 N 字符），将转换为 Markdown」；
   - 无 HTML 只有文本 → 提示「未检测到富文本格式，将按纯文本转换」；
   - 可选来源 URL 输入框（空则省略来源行）。
+- 用户手工编辑 textarea 后立即丢弃此前捕获的 HTML，并提示「内容已修改，将按纯文本转换」；再次粘贴时整体替换当前内容与 HTML，不尝试合并多个富文本片段。
+- 两个模式分别保留各自输入；切换模式会清空结果和错误状态。转换中禁用模式切换，用户可先停止后切换。
 - 转换中可停止（图片下载可中止，复用 AbortController）；结果区完全复用现有统计/复制/下载/预览/警告组件。
-- 提交体：`{ html, sourceUrl? }`，Content-Length 上限 5 MiB，前端拦截超限并提示。
+- 提交体：`{ html?, text, sourceUrl? }`，前端按实际 UTF-8 JSON 字节数拦截超过 5 MiB 的内容并提示；服务端独立重复校验。
 
 ### 5.6 类型与统计
 
@@ -131,21 +142,21 @@ v0.2 采用折衷方案：**用户在有权限的浏览器中手动复制网页�
 
 ## 6. 安全边界（粘贴模式）
 
-- 剪贴板 HTML 视为不可信输入：DOMPurify 清洗（禁 script/style/iframe/object/embed/form/svg/math + `button`，禁 style/srcdoc 属性）。
+- 剪贴板 HTML 视为不可信输入：粘贴模式独立 DOMPurify 清洗（禁 script/style/iframe/object/embed/form/svg/math + `button/nav`，禁 style/srcdoc 与事件属性）；只显式保留图片管线需要的两个 lazy data 属性，不开放任意 `data-*`。
 - 远程图片 URL 必须经 `fetchPublicResource`（协议/IP/DNS 校验，拒绝本机、私网、链路本地、云元数据地址）——防止恶意网页诱导用户复制含内网图片的 HTML 后借应用探测内网。
 - `data:` URI 无网络请求，允许；`file:`、`javascript:` 等协议一律拒绝。
 - Markdown 预览安全策略不变（只放行应用生成的栅格图 Data URI）。
-- 粘贴 HTML 体积上限 5 MiB；请求体在路由层先校验 Content-Length。
+- 粘贴请求体上限 5 MiB；路由同时校验 Content-Length 和实际有界读取字节数，字段解析后再验证类型与至少一个非空内容字段。
 - 不新增日志字段；诊断日志仍不含正文。
 
 ## 7. 测试计划
 
 ### 7.1 单元测试（新增/扩展）
 
-- `src/lib/paste.test.ts`：结构门控正/负例（含 MiaoYan 的「`<p>an ultimate ulterior plan</p>` 不触发」回归）、标题提取优先级、清洗、纯文本降级。
+- `src/lib/paste.test.ts`：强结构/富文本信号/多段落门控与负例（含 MiaoYan 的「`<p>an ultimate ulterior plan</p>` 不触发」回归）、标题提取顺序与首行回退、净化、lazy 属性定向保留、权威纯文本降级。
 - `src/lib/markdown.test.ts`：金标准移植——标题/段落、有序+嵌套无序列表、引用、代码围栏（含 language 类与反引号冲突）、GFM 表格（含 `\|` 转义、无表头）、`hr`、行内混合、链接（含锚点链接去链接）、data: 图片保留、script/style 丢弃、空白折叠、实体解码、CJK 全流程、代码块内空行保留、列表内代码顺序。
-- `src/lib/images.test.ts`：data: URI 保留与计数、非法 data: 拒绝、file: 拒绝、预算计入、**懒加载取源优先级（data-src/lazy-src 优先于占位 src）**、占位 data: 图（< 1 KiB）降级替代文本、懒加载源下载失败不回退占位 src、链接模式 data: 行为回归不变。
-- `src/app/api/convert-paste/route.test.ts`：鉴权、Content-Length 超限 413、无 html 字段 400、纯文本降级、`extractionMode === "paste"`。
+- `src/lib/images.test.ts`：data: URI 严格解码、实际格式与元数据验证、8 MiB/2 MiB/2048px/动图规则、非法 data/file/blob 拒绝、预算计入、**懒加载取源优先级（data-src/lazy-src 优先于占位 src）**、占位 data: 图（< 1 KiB）降级、无 base 时绝对图成功/相对图降级、链接模式 data: 行为回归不变。
+- `src/app/api/convert-paste/route.test.ts`：鉴权、声明与实际请求体超限 413、html/text 均缺失 400、纯文本降级、sourceUrl 校验、`extractionMode === "paste"`。
 - `src/lib/convert-paste-orchestration.test.ts`（或并入 route）：编排、图片降级、超时。
 
 ### 7.2 安全测试
@@ -160,10 +171,11 @@ v0.2 采用折衷方案：**用户在有权限的浏览器中手动复制网页�
 - 纯文本粘贴 → 降级转换提示可见。
 - 超过 5 MiB 粘贴 → 前端/服务端 413 提示。
 - 停止转换保留输入内容。
+- 富文本粘贴后编辑 → 明确降级纯文本；再次粘贴整体替换；来源 URL 为空和有效两种输出头部。
 
 ### 7.4 发布门禁
 
-`npm run desktop:release` 全流程（基线 + 三浏览器 E2E + live + Forge + fresh ZIP 校验）在 Node.js 24.x 下通过；版本号 `0.2.0`。真实打包窗口人工验收：链接模式回归 + 富文本模式全流程。
+里程碑门禁统一为：T5 运行 `./init.sh`；T8 运行 `./init.sh` + 三浏览器 `npm run test:e2e`；只有 T10 运行包含 live 的 `npm run desktop:release`。发布流程在 Node.js 24.x 下通过且版本号为 `0.2.0`。真实打包窗口人工验收：链接模式回归 + 富文本模式全流程。
 
 ## 8. 交付物清单（文档同步）
 
@@ -179,7 +191,7 @@ v0.2 采用折衷方案：**用户在有权限的浏览器中手动复制网页�
 ## 9. 任务分解
 
 - **任务级事实源见独立文件 `docs/TASKS-V0.2.md`**（Harness：PLAN 与 TASK 分离）。本 PLAN 只保留方案，不承载任务状态。
-- 任务序列：`T3 → T4 → T5 → T6 → T7 → T8 → T9 → T10`（依赖关系与每个 Task 的边界/完成条件/验证证据见 TASKS 文件）。
+- 任务序列：`T3 → T4 → T5 → T6A → T6B → T7A → T7B → T8 → T9A → T9B → T10`（依赖关系与每个 Task 的边界/完成条件/验证证据见 TASKS 文件）。
 - 执行规则：一次只推进一个 `in-progress` Task；所有代码 Task 遵循 TDD（RED → GREEN → REFACTOR），先写失败测试再实现。
 
 ## 10. 风险与缓解
@@ -192,13 +204,16 @@ v0.2 采用折衷方案：**用户在有权限的浏览器中手动复制网页�
 | Turndown 对 div 包裹文本段落感弱 | 金标准对照，必要时补充 custom rule（div→段落） |
 | data: URI 大图挤占 20 MiB 预算 | 按解码字节数计入，沿用末图降级 |
 | 恶意 HTML 诱导内网图片请求 | 远程图强制走 SSRF 防护管线 |
+| 富文本显示内容被用户编辑后仍提交旧 HTML | 首次手工编辑立即丢弃 HTML，并把状态切换为纯文本 |
+| 登录态/临时图片地址没有可复用 Cookie | 明确作为已知限制；失败时替代文本 + 警告，不引入 Cookie 读取 |
+| 只有段落/链接/图片的普通文章被错误降级 | 使用 DOM 语义门控：强结构、富文本信号或多段落均可进入 HTML 路径 |
 | 与链接模式行为漂移 | 头部规则/统计口径共用同一实现与测试；图片管线用策略参数隔离两种模式，链接模式零改动 |
 | **v0.2 构建破坏 0.1.3 正式产物/功能** | 见第 12 节「版本隔离与 0.1 正式版保护」 |
 
 ## 11. 完成条件（Definition of Done）
 
 - 富文本粘贴转换全流程（粘贴→转换→预览→复制→下载）在打包应用中可用。
-- 结构门控、data: URI 保留、SSRF 图片拒绝均有自动化测试证据。
+- DOM 语义门控、HTML/text 降级、data: URI 完整图片处理和 SSRF 图片拒绝均有自动化测试证据。
 - 三浏览器 E2E、覆盖率门禁、`desktop:release` 在 Node.js 24.x 全通过，版本 `0.2.0`。
 - 上述 8 项交付物文档全部同步，feature_list.json 记录验证证据。
 - 链接模式 0.1.x 行为回归通过（头部、图片、统计不变）。
@@ -212,7 +227,8 @@ v0.2 采用折衷方案：**用户在有权限的浏览器中手动复制网页�
 - **版本号隔离**：v0.2 分支建立时即把 `package.json` 与锁文件版本号改为 `0.2.0`，不得等到发布阶段才修改；Forge 输出文件名带版本号（`MD-Convertor-darwin-arm64-0.2.0.zip`），与 0.1.x ZIP 天然不冲突。`out/make/zip/darwin/arm64/` 下历史 ZIP（0.1.0–0.1.3）一律不得删除、覆盖或修改。
 - **`.app` 目录覆盖**：`out/MD-Convertor-darwin-arm64/MD-Convertor.app` 会被 Forge 重建覆盖，属预期行为；正式版恢复以归档 ZIP 为准，不依赖 `out/` 下的 `.app`。
 - **源码可复现**：0.1.3 源码基线为 git 提交 `ce041c9`，并以 Git 标签 `v0.1.3` 固定；v0.2 只在 `codex/feat-012-v0.2` 分支开发，完整验收并经用户确认前不得合并到 `main`。
-- **回归门禁**：每个 v0.2 里程碑（T5/T8/T10）必须完整运行 0.1.3 既有验证（93 tests、21 三浏览器 E2E、live 门禁）并全部通过；链接模式行为零变化。任何破坏 0.1.3 测试或产物的变更不得进入 `main`。
+- **回归门禁**：T5 运行 `./init.sh`，T8 追加完整三浏览器 E2E，T10 执行包含真实网页 live 的完整发布门禁；0.1.3 既有 93 tests 与 21 项链接模式 E2E 必须始终作为扩展后测试集的一部分保持通过。任何破坏 0.1.3 行为或产物的变更不得进入 `main`。
+- **自动封版校验**：T10 前扩展发布 guard，自动验证 `main` 与 `v0.1.3^{}` 仍为 `ce041c9`、外部只读归档存在且 SHA-256 为固定值，并在打包前后核对 0.1.x ZIP 哈希不变。
 
 ## 13. 技术选型评估：Agent-Reach 与第三方抓取通道（2026-08-07）
 

@@ -12,7 +12,8 @@
 - 第一阶段只交付 Apple Silicon Mac 单机版，不需要公网服务器、域名或 Docker。
 - 不调用 AI API，不需要 API Key。
 - Windows 版本和多平台仓库迁移已取消；当前 macOS 根目录是唯一有效应用项目。
-- v0.2（feat-012）已批准：富文本粘贴转换，规划见 `docs/PLAN-V0.2.md`，任务追踪见 `docs/TASKS-V0.2.md`。
+- v0.2（feat-012）已批准并完成开工评审：富文本粘贴转换同时保留剪贴板 HTML 与纯文本，编辑后降级纯文本；规划见 `docs/PLAN-V0.2.md`，任务追踪见 `docs/TASKS-V0.2.md`。
+- 登录态、临时签名、Blob 或需要 Cookie 的远程图片可能无法重新获取，届时保留替代文本并警告；本迭代不读取 Cookie。
 
 ## Open Discussion Items（后续迭代讨论项）
 
@@ -53,6 +54,7 @@
 | Check | Result | Notes |
 |---|---|---|
 | v0.2 pre-development `./init.sh` | Passed | Node.js 24.14.0；lint、typecheck、18 files / 93 tests、coverage gate、Next.js production build；T3 尚未开始 |
+| v0.2 plan-review `./init.sh` | Passed | Node.js 24.14.0；评审修订后 18 files / 93 tests、coverage gate、production build；无产品代码改动 |
 | 0.1.3 Node 24 `./init.sh` | Passed | lint、typecheck、coverage gate、18 files / 93 tests、Next build；2026-07-21 取消方案并清理 Harness 后复跑通过 |
 | 0.1.3 `npm run test:e2e` | Passed | 21 checks across Chromium, Firefox, WebKit, including new button labels |
 | 0.1.3 `npm run test:live` | Passed with variability | first upstream timeout; unchanged-threshold rerun passed |
@@ -94,4 +96,4 @@
 
 ## Recommended Next Step
 
-实施 `feat-012`（v0.2 富文本粘贴转换）的 T3：`src/lib/paste.ts` 预处理（结构门控/清洗/标题提取），TDD 先行——先写 `paste.test.ts` 失败测试再实现。任务边界与验证方式见 `docs/TASKS-V0.2.md`。
+实施 `feat-012` 的 T3：`src/lib/paste.ts` 预处理（DOM 语义门控、先提取 head 标题再净化 body、HTML/text 双通道、lazy 属性定向保留），TDD 先行——先写 `paste.test.ts` 失败测试再实现。任务边界与验证方式见 `docs/TASKS-V0.2.md`。

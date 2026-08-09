@@ -39,10 +39,12 @@
 - [x] `desktop:release` 自动阻断旧或缺失 ZIP，校验版本、arm64、包结构并输出大小与 SHA-256。
 - [x] 第二台 Apple Silicon Mac 完成跨电脑验收；通过移除未签名应用的 quarantine 属性后正常启动和使用。
 - [x] 建立 0.1.3/v0.2 版本边界：`main` 与 `v0.1.3` 固定封版提交，v0.2 使用独立分支和 0.2.0 版本号；正式 ZIP 恢复为外部只读归档。
+- [x] 完成 v0.2 开工评审并取得用户确认：补齐 HTML/text 双通道、编辑降级、DOM 语义门控、Data URI 完整图片处理、无来源 URL 资源规则、登录态图片限制和 T10-only live 门禁；任务拆分为 T3/T4/T5/T6A/T6B/T7A/T7B/T8/T9A/T9B/T10。
 
 ## Verification Evidence
 
 - Passed with Node.js 24.14.0: v0.2 开工基线 `./init.sh` — Harness、lint、typecheck、18 files / 93 tests、覆盖率门禁和 Next.js production build；此时尚未开始 T3 功能编码。
+- Passed with Node.js 24.14.0: v0.2 开工评审修订后 `./init.sh` — lint、typecheck、18 files / 93 tests、覆盖率门禁和 Next.js production build；修订只涉及计划与 Harness 文档，T3 仍未开始。
 - Passed with Node.js 24.14.1 and 24.16.0: 0.1.3 `./init.sh` — lint、typecheck、覆盖率门禁、93 tests、Next.js build；2026-07-21 删除失效规划与 Harness 引用后复跑通过。
 - Passed: 0.1.3 `npm run test:e2e` — Chromium、Firefox、WebKit 共 21 项，覆盖“复制”“下载”“已复制”和下载文件名。
 - Passed with upstream variability: 0.1.3 `npm run test:live` — 首次上游超时，原阈值复跑通过；完整 `desktop:release` 再次在 live 阶段遇到上游超时。
@@ -75,7 +77,8 @@
 - 第二台 Mac 证实未签名 ZIP 可跨电脑使用，但 Gatekeeper 可能将应用标记为“已损坏”；安装说明优先使用只移除 `com.apple.quarantine` 的精确命令。
 - Git 只管理源码、测试和项目知识文件；`node_modules/`、`.next/`、`.desktop/`、`out/`、环境变量和日志必须保持忽略。
 - 2026-07-21，用户取消 Windows 版本、多平台仓库迁移和直接粘贴正文生成 Markdown 的后续方案；现有仓库结构、0.1.3 版本和单链接产品边界保持不变。
-- 2026-08-07，用户确认 0.1.3 为正式版本：v0.2 构建必须使用独立版本号 0.2.0，不得覆盖或删除 0.1.x 产物；0.1.3 ZIP 已归档至 `~/Downloads/MD-Convertor-0.1.3-release/`（SHA-256 `66909aa8...df89`）；每个 v0.2 里程碑须完整通过 0.1.3 回归（93 tests / 21 E2E / live），链接模式行为零变化。详见 `docs/PLAN-V0.2.md` 第 12 节。
+- 2026-08-07，用户确认 0.1.3 为正式版本：v0.2 构建必须使用独立版本号 0.2.0，不得覆盖或删除 0.1.x 产物；0.1.3 ZIP 已归档至 `~/Downloads/MD-Convertor-0.1.3-release/`（SHA-256 `66909aa8...df89`），链接模式行为零变化。2026-08-09 开工评审进一步统一门禁：T5 运行 `./init.sh`，T8 追加三浏览器 E2E，T10 才运行 live 与完整发布流程。
+- 2026-08-09，用户确认 v0.2 修订契约：API 同时接收 HTML/纯文本/可选来源；编辑后丢弃旧 HTML；普通段落、链接和图片纳入语义门控；无标题优先使用正文首行；登录态、临时与 Blob 图片可能无法内嵌；Data URI 必须经完整图片校验和优化而非原样透传。
 - 2026-08-07，完成 Agent-Reach（github.com/Panniantong/agent-reach）技术选型评估：v0.2 不引入 Jina 等第三方代理抓取通道（隐私冲突 + 对登录墙无效 + 破坏图片内嵌）与 OpenCLI/Cookie 登录态路线（越过非目标 + 安全边界复杂）；可借鉴其工程模式（多后端降级路由、能力探测三段式、故障隔离、最小权限凭据、只读观察纪律）。Jina 保留为后续迭代讨论项，触发条件与评估见 `docs/PLAN-V0.2.md` 第 13 节。
 
 ## Artifacts
@@ -91,6 +94,7 @@
 - Node.js 24.16.0 下 Forge 7.11.2 仍会在 finalizing 无产物退出；fresh ZIP 门禁已可靠阻断，当前打包使用已验证的 Node.js 24.14.1。
 - 真实微信文章访问存在上游波动：同一版本曾出现 45 秒/20 秒超时，复跑可成功；95% 门禁和长文内容门槛均未降低。
 - 生产依赖审计有 2 个 moderate；完整依赖树有 20 high、2 moderate、3 low，high 主要位于 Electron Forge 构建链，需区分运行时与构建时影响后处理。
+- 登录态、临时签名、Blob 或需要 Cookie 的远程图片可能无法从粘贴 HTML 重新获取；v0.2 明确降级为替代文本并警告，不引入 Cookie 读取。
 - `feat-012` 尚未开始功能编码；开工准备完成后从 T3 进入 TDD，不得并行推进后续 Task。
 
 ## Recommended Next Step
