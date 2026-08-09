@@ -267,13 +267,13 @@ Resolution evidence:
 - 不使用 AI API、账号、云端数据库或转换历史。
 - 支持 30 张图片、8 MiB 单图、20 MiB 最终文件和正文优先降级。
 - 当前产物未完成 Developer ID 签名与 notarization。
-- `feat-009` 与 `feat-010` 已完成；`feat-011` 已取消，当前没有计划中的功能事项。
+- `feat-009` 与 `feat-010` 已完成；`feat-011` 已取消。0.1.3 收口后，2026-08-06 启动 v0.2 `feat-012`（富文本粘贴转换，规划见 `docs/PLAN-V0.2.md`，任务追踪见 `docs/TASKS-V0.2.md`）。
 
-第三轮已同步产品、架构、测试、进度、事项和交接文档：代理预算与发布 Harness 均为已完成状态。2026-07-21 用户取消 Windows 与多平台迁移，原 `docs/MULTIPLATFORM-PLAN.md` 已删除；第二台 Mac 验收、`feat-010` 关闭和方案取消记录仍需作为最终 0.1.3 Mac 基线提交。
+第三轮已同步产品、架构、测试、进度、事项和交接文档：代理预算与发布 Harness 均为已完成状态。2026-07-21 用户取消 Windows 与多平台迁移，原 `docs/MULTIPLATFORM-PLAN.md` 已删除；第二台 Mac 验收、`feat-010` 关闭和方案取消记录已提交为 0.1.3 Mac 基线（`ce041c9`）。
 
 ## Remediation Order
 
-1. 把第二台 Mac 验收、`feat-010` 关闭和后续方案取消记录提交为干净的 0.1.3 Mac 基线。
+1. 0.1.3 Mac 基线已提交（`ce041c9`：第二台 Mac 验收、`feat-010` 关闭和后续方案取消）。
 2. 分级处理 `QA-005` 的可安全升级项。
 3. 只有需要对外分发时，再以 Developer ID 签名和 notarization 关闭 `QA-008`。
 
