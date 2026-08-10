@@ -231,6 +231,7 @@
 
 .pasteActions {
   display: flex;
+  gap: 10px;
   justify-content: flex-end;
 }
 
@@ -267,12 +268,33 @@
 }
 
 .submit,
+.clearAction,
 .action {
   min-height: 48px;
   border: 0;
   border-radius: 12px;
   cursor: pointer;
   transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.clearAction {
+  min-width: 88px;
+  padding: 0 20px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  background: white;
+  font-weight: 700;
+}
+
+.clearAction:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: #aab4b0;
+  background: #f7f9f8;
+}
+
+.clearAction:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .submit {
@@ -540,10 +562,10 @@
   .privacy { display: none; }
   .form { flex-direction: column; }
   .input { min-height: 52px; }
-  .submit { width: 100%; }
+  .submit, .clearAction { width: 100%; }
   .sourceRow { align-items: stretch; flex-direction: column; gap: 7px; }
   .sourceInput { width: 100%; min-height: 48px; }
-  .pasteActions { display: block; }
+  .pasteActions { flex-direction: column; }
   .hintRow { flex-wrap: wrap; gap: 8px 14px; }
   .resultHeader { align-items: stretch; flex-direction: column; }
   .actions { width: 100%; }

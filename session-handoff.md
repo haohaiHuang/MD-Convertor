@@ -3,7 +3,7 @@
 ## Current Objective
 
 - Goal: 交付可在 Apple Silicon Mac 本地安装使用的 MD-Convertor；0.1.3 已封版，v0.2 富文本粘贴转换（`feat-012`）已完成并提交，按用户决定暂不合并。
-- Active: 无；后续 `feat-013`（Mermaid）与 `feat-015`（一键清空富文本内容及来源链接）为 `planned`，`feat-014`（整体 UI/UX 优化）已取消。
+- Active: 无；`feat-015 — Clear Pasted Content Action` 已完成，`feat-013` 保持 planned，`feat-014` 已取消。
 - Quality status: 0.1.3 自动发布门禁、本机操作和第二台 Apple Silicon Mac 验收均已通过；v0.2 最小安全升级后生产审计为 0，完整树剩余 1 critical / 26 high / 3 low 且未进入应用包；T10 自动发布门禁、打包应用冒烟与真实窗口人工验收均已通过；对外分发签名仍待完成。
 - Branch: `codex/feat-012-v0.2`；`main` 固定在 0.1.3 封版提交 `ce041c9`，标签为 `v0.1.3`。v0.2 当前版本为 `0.2.0`，已通过 T10 与用户验收，并以提交 `23294e4` 收口；按用户决定暂不合并。
 
@@ -60,6 +60,7 @@
 - feat-012 T9A 已完成：发布门禁固定保护 `main` / `v0.1.3`、外部只读 0.1.3 归档与 0.1.0–0.1.3 四 ZIP manifest；非 0.2.0 目标或历史产物异常会在任何发布命令前失败，成功及后续失败路径均复核历史清单。
 - feat-012 T9B 已完成：同步产品、架构、测试、质检、README、Changelog、任务、进度和交接文档；明确两模式、粘贴 API、安全边界、5 MiB/图片预算、登录态/临时/blob 限制、v0.2 安装条件与 T9A 证据。
 - feat-012 T10 已完成：生产审计清零；Node.js 24.14.1 连续通过 282 tests、48 E2E、live、Forge、fresh ZIP 与打包应用启动/长微信 30 图转换冒烟；用户确认真实窗口富文本模式人工验收通过。
+- feat-015 已完成：富文本模式新增“清空”，一次移除 HTML、纯文本、来源 URL 和旧结果；转换中禁用。Node.js 24.14.1 基线 287 tests，富文本三引擎 E2E 30/30。
 - T10 人工验收已开始：X Article 样本正文正常但图片为链接；诊断确认其 6 张正文图与封面均来自 `pbs.twimg.com`，本机匿名直连 7/7 `ECONNRESET`，X 页面复跑亦有 502 波动。当前按“不绕过网络/登录限制”降级为外链，用户已接受为 v0.2 已知限制。
 - 另一人工样本的缺图已定性为 Mermaid 支持缺口：页面无正文栅格图，只有客户端把空 `.mermaid` 占位渲染成内联 SVG；当前 direct 输出 0 图/0 警告且没有 Mermaid fence。用户已接受为 v0.2 已知限制并决定后续在 `feat-013` 独立开发，不能误记为普通图片异常。
 
@@ -123,4 +124,4 @@
 
 ## Recommended Next Step
 
-不要自动合并 v0.2。后续若继续开发，由用户在 `feat-013`（Mermaid）和 `feat-015`（一键清空富文本内容及来源链接）中选择一个；开工前先确认范围。`feat-014` 已取消。
+等待用户决定下一项；`feat-013 — Mermaid Preservation` 仍为 planned，未经确认不实施。feat-015 未打包、未运行 live、未合并。

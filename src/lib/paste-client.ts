@@ -77,6 +77,17 @@ export function switchPasteMode<Result>(
   return { ...state, mode, output: emptyPasteOutput<Result>() };
 }
 
+export function clearPastedContent<Result>(
+  state: PasteClientState<Result>,
+): PasteClientState<Result> {
+  if (state.output.requestState === "loading") return state;
+  return {
+    ...state,
+    pasteInput: { text: "", contentState: "empty" },
+    output: emptyPasteOutput<Result>(),
+  };
+}
+
 export function replacePastedClipboard(
   previous: PastedDraft | undefined,
   snapshot: PastedClipboardSnapshot,

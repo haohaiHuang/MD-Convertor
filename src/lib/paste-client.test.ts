@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildPastedPayload,
+  clearPastedContent,
   editPastedText,
   isPastedPayloadWithinLimit,
   jsonByteLength,
@@ -11,6 +12,52 @@ import {
 } from "./paste-client";
 
 describe("paste client clipboard state", () => {
+  it("clears pasted HTML, text, source URL, and shared output in one action", () => {
+    const state = {
+      ...createPasteClientState<{ markdown: string }>(),
+      mode: "paste" as const,
+      linkInput: "https://example.com/kept",
+      pasteInput: {
+        html: "<p>旧内容</p>",
+        text: "旧内容",
+        sourceUrl: "https://example.com/source",
+        contentState: "rich" as const,
+      },
+      output: {
+        requestState: "success" as const,
+        result: { markdown: "# 旧结果" },
+        error: "旧错误",
+        copied: true,
+        showCopyFallback: true,
+      },
+    };
+
+    expect(clearPastedContent(state)).toEqual({
+      ...state,
+      pasteInput: { text: "", contentState: "empty" },
+      output: {
+        requestState: "idle",
+        result: null,
+        error: "",
+        copied: false,
+        showCopyFallback: false,
+      },
+    });
+  });
+
+  it("does not clear pasted content while conversion is loading", () => {
+    const state = {
+      ...createPasteClientState(),
+      mode: "paste" as const,
+      pasteInput: { text: "转换中", contentState: "plain" as const },
+      output: {
+        ...createPasteClientState().output,
+        requestState: "loading" as const,
+      },
+    };
+
+    expect(clearPastedContent(state)).toBe(state);
+  });
   it("captures clipboard HTML and plain text together", () => {
     expect(replacePastedClipboard(undefined, {
       html: "<p>富文本</p>",

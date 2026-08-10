@@ -5,6 +5,7 @@ import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   buildPastedPayload,
+  clearPastedContent,
   createPasteClientState,
   editPastedText,
   isPastedPayloadWithinLimit,
@@ -82,6 +83,7 @@ export default function Home() {
   const normalizedSourceUrl = pasteInput.sourceUrl?.trim() || "";
   const hasValidSourceUrl = normalizedSourceUrl.length === 0 || isSafeSourceUrl(normalizedSourceUrl);
   const hasPasteContent = Boolean(pasteInput.text.trim() || pasteInput.html?.trim());
+  const hasPasteState = hasPasteContent || Boolean(normalizedSourceUrl) || result !== null;
   const pastePayload: PastedPayload = useMemo(() => buildPastedPayload(pasteInput), [pasteInput]);
   const pastePayloadWithinLimit = useMemo(
     () => isPastedPayloadWithinLimit(pastePayload),
@@ -442,6 +444,16 @@ export default function Home() {
                   <p id="paste-size-error" className={styles.validation} role="alert">粘贴内容超过 5 MiB，请减少内容后重试。</p>
                 )}
                 <div className={styles.pasteActions}>
+                  {hasPasteState && (
+                    <button
+                      className={styles.clearAction}
+                      type="button"
+                      disabled={isLoading}
+                      onClick={() => setClientState((previous) => clearPastedContent(previous))}
+                    >
+                      清空
+                    </button>
+                  )}
                   {isLoading ? (
                     <button key="stop" className={`${styles.submit} ${styles.stop}`} type="button" onClick={stopConversion}>
                       停止转换

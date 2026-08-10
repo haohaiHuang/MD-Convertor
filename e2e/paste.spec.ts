@@ -119,6 +119,28 @@ test("rich text paste converts with statistics, preview, warning, copy, and down
   expect(await readFile(downloadPath!, "utf8")).toBe(pasteResponse.markdown);
 });
 
+test("clear removes pasted content, source URL, and the previous result before a new paste", async ({ page }) => {
+  await pasteIntoTextarea(page, "<p>第一份内容</p>", "第一份内容");
+  await page.getByLabel("来源 URL（可选）").fill("https://example.com/first");
+  await page.getByRole("button", { name: "转换为 MD" }).click();
+  await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toBeVisible();
+
+  await page.getByRole("button", { name: "清空", exact: true }).click();
+
+  await expect(page.getByLabel("粘贴的正文内容")).toHaveValue("");
+  await expect(page.getByLabel("来源 URL（可选）")).toHaveValue("");
+  await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "转换为 MD" })).toBeDisabled();
+
+  await pasteIntoTextarea(page, "<p>第二份内容</p>", "第二份内容");
+  await page.getByRole("button", { name: "转换为 MD" }).click();
+  await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toBeVisible();
+  expect(pasteRequests).toEqual([
+    { html: "<p>第一份内容</p>", text: "第一份内容", sourceUrl: "https://example.com/first" },
+    { html: "<p>第二份内容</p>", text: "第二份内容" },
+  ]);
+});
+
 test("plain text paste shows the fallback hint and omits HTML and source fields", async ({ page }) => {
   const text = "纯文本粘贴内容\n第二行";
   await pasteIntoTextarea(page, "", text);
@@ -240,6 +262,7 @@ test("disables tabs during a slow paste conversion and preserves editable input 
   await expect(page.getByRole("tab", { name: "富文本转换" })).toBeDisabled();
   await expect(textarea).toHaveAttribute("readonly", "");
   await expect(source).toHaveAttribute("readonly", "");
+  await expect(page.getByRole("button", { name: "清空", exact: true })).toBeDisabled();
   await expect.poll(async () => page.evaluate(() => (
     (window as typeof window & { pasteFetchState?: SlowFetchState }).pasteFetchState?.requestStarted ?? false
   ))).toBe(true);
