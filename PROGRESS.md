@@ -4,7 +4,7 @@
 
 - Last updated: 2026-08-10
 - Active feature: 无；`feat-015 — Clear Pasted Content Action` 已完成，`feat-013` 保持 planned，`feat-014` 已取消。
-- Overall status: 0.1.3 已以提交 `ce041c9`、标签 `v0.1.3` 和只读 ZIP 归档封版。v0.2 已在独立分支 `codex/feat-012-v0.2` 完成自动门禁、打包应用冒烟、用户人工验收，并以提交 `23294e4` 收口；按用户决定暂不合并到 `main`。
+- Overall status: 0.1.3 已以提交 `ce041c9`、标签 `v0.1.3` 和只读 ZIP 归档封版。v0.2 `feat-012` 已在 `codex/feat-012-v0.2` 以提交 `23294e4` 完成自动门禁、打包应用冒烟和用户人工验收；当前工作分支 `codex/feat-015-clear-paste` 在其上完成 `feat-015`，HEAD 为 `df6ed31`。按用户决定，v0.2 尚未合并到 `main`；现有 0.2.0 ZIP 尚未包含 feat-015。
 
 ## Completed
 
@@ -49,7 +49,7 @@
 - [x] 完成 feat-012 T7B 双模式界面：链接模式保持旧文案/交互，富文本模式接入剪贴板 HTML/text、来源、预算、停止与共享结果；键盘 Tab、ARIA 和桌面/窄屏布局已检查，审查中发现的三个真实 React 回归均已关闭。
 - [x] 完成 feat-012 T8 三浏览器 E2E：9 组粘贴场景在 Chromium、Firefox、WebKit 全绿；旧 21 项链接用例未改，停止测试确认请求启动与 AbortSignal，来源元数据头、5 MiB 和 413 回显均已覆盖。
 - [x] 完成 feat-012 T9A 封版自动保护：发布前固定校验 0.1.3 Git 基线、外部只读归档和四个 0.1.x 历史 ZIP manifest；非 0.2.0 目标、缺失、篡改或新增 0.1.x 均在发布命令前失败，后续任一步失败仍执行历史复核。
-- [x] 完成 feat-012 T9B 文档同步：产品、架构、测试、质检、README、Changelog、事项、进度和交接均已对齐两模式、粘贴 API、安全限制、图片预算、v0.2 安装条件与 T9A 保护；T10 的 live、打包和人工验收保持未完成。
+- [x] 完成 feat-012 T9B 文档同步：产品、架构、测试、质检、README、Changelog、事项、进度和交接均已对齐两模式、粘贴 API、安全限制、图片预算、v0.2 安装条件与 T9A 保护；该记录时点的 T10 live、打包和人工验收随后已完成。
 - [x] 完成 feat-012 T10 自动发布门禁：授权升级 Next.js 16.3.0、Undici 8.10.0、DOMPurify 3.4.13 与 Electron 43.3.0 后，生产审计清零；Node.js 24.14.1 连续通过 282 tests、48 E2E、live、Forge、fresh ZIP、启动和长微信 30 图转换冒烟。
 - [x] 完成 feat-012 T10 人工验收：用户确认真实打包窗口的富文本转换流程通过；X 匿名图片和 Mermaid/SVG 缺失按已记录边界处理。
 - [x] 完成 feat-015 一键清空：富文本模式可同时清除 HTML、纯文本、来源 URL 与旧结果；转换期间入口禁用，清空后可直接粘贴并转换下一份内容；用户已在当前源码的真实 Electron 窗口人工验收通过。
@@ -71,6 +71,7 @@
 - Passed with Node.js 24.14.1: feat-012 T10 `npm run desktop:release` — lint、typecheck、24 files / 282 tests、coverage gate、三引擎 48/48、真实微信门禁、Forge 与 fresh artifact 校验全通过；ZIP 为 0.2.0 / arm64 / macOS 12.0+，354,594,827 bytes，SHA-256 `ab2a463c...a7b7b4`。
 - Passed with Node.js 24.14.1: 提交前审查整改后的 `./init.sh` — lint、typecheck、24 files / 285 tests、coverage gate 与 production build；现有 0.2.0 ZIP 经新门禁解压检查，包内版本与 arm64 可执行文件通过。
 - Passed with Node.js 24.14.1: feat-015 `src/lib/paste-client.test.ts` — 19/19；`./init.sh` — lint、typecheck、24 files / 287 tests、coverage gate 与 production build；富文本关键 E2E — Chromium/Firefox/WebKit 30/30，tracked-file check passed。
+- Passed with Node.js 24.14.1: feat-015 后完整 `npm run test:e2e` — Chromium/Firefox/WebKit 51/51，tracked-file check passed；当前源码包含链接模式 21 项与富文本模式 30 项。
 - Passed: feat-015 real Electron window — 用户确认“一键清空”交互人工验收通过；本事项未重新打包、未运行 live。
 - Passed: 0.2.0 packaged runtime — loopback standalone 启动；长微信 direct mode 17,643 non-Base64 chars / 30 images / 7,749,111 bytes；打包应用未包含 Forge、concurrently 或 tar；用户已确认真实窗口富文本模式人工验收通过。
 - Passed with Node.js 24.14.1 and 24.16.0: 0.1.3 `./init.sh` — lint、typecheck、覆盖率门禁、93 tests、Next.js build；2026-07-21 删除失效规划与 Harness 引用后复跑通过。
@@ -125,9 +126,9 @@
 - 登录态、临时签名、Blob 或需要 Cookie 的远程图片可能无法从粘贴 HTML 重新获取；v0.2 明确降级为替代文本并警告，不引入 Cookie 读取。
 - 0.2.0 真实窗口人工验收样本 `x.com/lumenxbt/status/2082101954206130402` 为 X Article：正文含 6 个图片实体并另有封面，均位于 `pbs.twimg.com`；本机匿名直连 7/7 返回 `ECONNRESET`，同一打包应用复跑 X 页面也出现 502 上游波动。图片无法下载时保留外层链接，属于当前“不绕过 X 网络/登录限制”的降级，不是 Data URI 格式回归；用户已接受为 v0.2 已知限制，不阻断个人测试发布。
 - 人工验收页面 `walkinglabs.github.io/.../lecture-02-what-a-harness-actually-is/` 没有正文栅格图片；静态 HTML 只有空 `.mermaid` 占位，JavaScript 运行后生成 1 个内联 SVG。当前 direct 转换输出 0 source/embedded images、0 warnings，且没有 Mermaid fence；由于正文足够不会触发 browser fallback，SVG 又按安全规则删除，图表完全缺失。该项是 Mermaid 支持缺口，不是图片下载失败；用户已接受为 v0.2 已知限制，并决定后续在 `feat-013` 独立开发。
-- feat-012 已完成全部 T3–T10、live、0.2.0 打包、应用冒烟与真实窗口人工验收，并以提交 `23294e4` 收口；当前分支按用户决定暂不合并。
+- feat-012 已完成全部 T3–T10、live、0.2.0 打包、应用冒烟与真实窗口人工验收，并以提交 `23294e4` 收口；当前 `codex/feat-015-clear-paste` 分支在其上完成 feat-015，未重新打包或合并到 `main`。
 - 2026-08-10 用户确认现有 UI/UX 无需整体调整，取消 `feat-014`；随后授权并完成 `feat-015`，新增富文本模式一键清空粘贴 HTML、纯文本、来源链接和旧结果。
 
 ## Recommended Next Step
 
-等待用户决定下一项；`feat-013 — Mermaid Preservation` 保持 planned，未经确认不实施。feat-015 不打包、不运行 live、不合并。
+等待用户决定下一项；`feat-013 — Mermaid Preservation` 保持 planned，未经确认不实施。feat-015 当前源码已完成，但尚未进入 0.2.0 ZIP，未运行 live、未合并。

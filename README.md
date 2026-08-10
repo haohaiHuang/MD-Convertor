@@ -45,12 +45,14 @@ MD-Convertor 是一个 Apple Silicon Mac 网页转 Markdown 单机工具。你�
 
 ## 在其他电脑使用
 
-0.1.3 与当前已验收的 v0.2 0.2.0 ZIP 都是自包含的 Apple Silicon Mac 应用。目标电脑不需要安装 Node.js、npm、Chrome、Playwright、AI API 或其他开发环境。使用条件如下：
+0.1.3 与 v0.2 T10 阶段已验收的 0.2.0 ZIP 都是自包含的 Apple Silicon Mac 应用。目标电脑不需要安装 Node.js、npm、Chrome、Playwright、AI API 或其他开发环境。使用条件如下：
 
 - Apple Silicon（M1、M2、M3、M4 或后续 arm64 芯片）Mac，不支持 Intel Mac、Windows 或 Linux。
 - macOS 12.0 或更高版本；链接模式转换或富文本模式重新嵌入远程 HTTP(S) 图片时需要联网，纯文本和 `data:` 图片可离线转换。
 - 解压后建议把 `MD-Convertor.app` 拖入“应用程序”。当前产物未签名和 notarize，首次启动可能需要在 Finder 中右键应用并选择“打开”，或在“隐私与安全性”中允许启动；部分 Mac 会直接提示“文件已经损坏”。
 - 不同电脑不会同步历史或结果，需要在当前电脑下载 `.md` 文件自行保留。
+
+当前源码分支已完成 `feat-015`“一键清空”，但本文记录的 0.2.0 ZIP 是 2026-08-09 的 feat-012 T10 产物，早于 feat-015，尚未包含该按钮。重新打包并通过 T10 后，才能把新产物描述为包含 feat-015。
 
 0.1.3 应用已在第二台 Apple Silicon Mac 上完成真实安装和使用验收。该电脑首次启动时出现“文件已经损坏”提示；确认 ZIP 的 SHA-256 与本文记录一致后，移除应用的 quarantine 属性即可启动：
 

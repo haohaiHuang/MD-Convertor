@@ -70,6 +70,8 @@ MD_CONVERTOR_LIVE_URL=https://mp.weixin.qq.com/s/example npm run test:live
 
 Electron 43 起 `npm install` 不再自动下载 Electron 运行时；`desktop:prepare` 已显式调用官方 `install-electron`，首次打包会联网下载并缓存对应的 darwin/arm64 ZIP，后续复用缓存。T10 产物为 `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.2.0.zip`，大小 `354,594,827` bytes，SHA-256 `ab2a463cf0a98a51cacdcad3a2cab5ed34b458b47b504ac644d56b7914a7b7b4`。
 
+该 T10 产物对应 feat-012 基线；当前源码已完成 feat-015，但 feat-015 尚未重新打包，因此不能把现有 ZIP 作为包含“一键清空”的安装包。
+
 ## 0.1.3 人工验收
 
 自动门禁通过后，仍需在最终 `.app` 窗口完成以下检查，才能结束 `feat-009`：

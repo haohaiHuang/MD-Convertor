@@ -2,13 +2,22 @@
 
 ## Audit Metadata
 
-- Audit date: 2026-07-18; second-round audit: 2026-07-18
+- Audit date: 2026-07-18; second-round audit: 2026-07-18; consistency review: 2026-08-10
 - Audited version: `0.1.2`; follow-up validation: `0.1.3`
 - Platform: Apple Silicon Mac (`darwin/arm64`)
 - Historical active feature: 无；`feat-010 — Personal Mac Release` 已完成
-- Current review scope: `feat-012 — Paste Rich-Text Conversion` T3–T10 自动门禁与真实窗口人工验收，均已完成
+- Current review scope: `feat-012 — Paste Rich-Text Conversion` T3–T10，以及当前分支 `feat-015 — Clear Pasted Content Action` 的源码、测试和产物边界
 - Audit type: 文档一致性、代码与安全审查、自动化验证、真实网页门禁、依赖审计和打包产物抽查
-- Overall verdict: **0.1.3 personal release remains validated; v0.2 automated release gates and final real-window acceptance pass after dependency remediation**
+- Overall verdict: **0.1.3 personal release and v0.2 T10 artifact remain validated; feat-015 is source-accepted but not included in the current 0.2.0 ZIP; external distribution remains unsigned**
+
+## Fourth-Round Consistency Update — 2026-08-10
+
+- 当前工作分支为 `codex/feat-015-clear-paste`，HEAD 为 `df6ed31`；`feat-012` 的发布基线仍是 `codex/feat-012-v0.2` / `23294e4`，`main` 与 `v0.1.3^{}` 仍固定在 `ce041c9`。
+- `feature_list.json`、`PROGRESS.md`、`session-handoff.md`、`docs/TASKS-FEAT-015.md` 与 `CHANGELOG.md` 对 `feat-015` 的状态已统一为完成。当前源码已通过 Node.js 24.14.1 `./init.sh`（24 files / 287 tests）、富文本三引擎 30/30，以及完整三引擎 E2E 51/51。
+- 当前 0.2.0 ZIP（354,594,827 bytes，SHA-256 `ab2a463cf0a98a51cacdcad3a2cab5ed34b458b47b504ac644d56b7914a7b7b4`）来自 2026-08-09 的 feat-012 T10 发布，早于 2026-08-10 的 feat-015 提交，因此不包含“一键清空”。feat-015 已完成源码和人工验收，但需重新运行 T10 发布门禁后才可进入新的 0.2.0 产物。
+- 当前依赖审计为生产依赖 0；完整依赖树为 1 critical / 26 high / 3 low，剩余项仍位于开发/构建链。旧的 5 high / 1 moderate 与 1 critical / 30 high / 1 moderate / 3 low 仅保留为历史审计证据。
+
+一致性结论：产品范围、事项状态、版本边界、0.1.3 归档和当前安全结论已对齐；唯一需要对外明确区分的是“当前源码”与“尚未包含 feat-015 的 0.2.0 ZIP”。
 
 ## Second-Round Audit Update — 2026-07-18
 
@@ -90,8 +99,8 @@ Node.js 24.14.1 / npm 11.11.0 下，工作区基线、21 项三浏览器 E2E、�
 | Real packaged window | Passed | 用户确认当前 Mac 人工测试通过；停止保留链接；复制与下载内容一致；长文下载含 30 张内嵌图且小于 20 MiB |
 | Second-Mac installation | Passed with Gatekeeper workaround | 首次提示文件损坏；移除 quarantine 属性后应用可正常使用 |
 | Security-critical coverage gate | Passed | 总体 91.26%；代理 91.27% lines / 81.31% branches / 95% functions，阈值 85% / 75% / 90% |
-| Production dependency audit | Release blocker for v0.2 | 2026-08-09 复核：5 high、1 moderate；涉及 Next.js、Undici、DOMPurify 及 Next.js 的 Nano ID/PostCSS/Sharp 依赖 |
-| Full dependency audit | Needs remediation/triage | 2026-08-09 复核：1 critical、30 high、1 moderate、3 low；critical/high 主要集中在 Electron Forge 构建链，另含生产依赖告警 |
+| Production dependency audit (pre-remediation) | Historical evidence | 2026-08-09 初次复核为 5 high、1 moderate；之后已授权升级并复核为 0 |
+| Full dependency audit | Residual build-chain risk | 当前复核为 1 critical、26 high、3 low；主要集中在 Electron Forge 构建链 |
 | Artifact architecture | Passed | Mach-O 64-bit arm64 |
 | Artifact version | Passed | `CFBundleShortVersionString` 和 `CFBundleVersion` 均为 0.1.3；最低 macOS 12.0 |
 | ZIP size | Passed | 239,281,512 bytes |
@@ -320,6 +329,6 @@ Resolution evidence:
 
 ### v0.2 release status
 
-`T9A`、`T9B` 与 `T10` 已完成，`feat-012` 无剩余任务。自动门禁、live、Forge fresh ZIP、启动、链接转换冒烟和真实窗口富文本模式人工验收均已通过；X 图片匿名直连失败时保留外链，以及客户端 Mermaid/SVG 图表缺失，均已由用户接受为 v0.2 已知限制。Mermaid 保留转入后续 `feat-013`；泛化 UI/UX 调整 `feat-014` 已取消，一键清空富文本内容及来源链接登记为后续 `feat-015`。Apple Developer ID 签名与 notarization 仍是对外分发前的独立开放项。
+`T9A`、`T9B` 与 `T10` 已完成，`feat-012` 无剩余任务。自动门禁、live、Forge fresh ZIP、启动、链接转换冒烟和真实窗口富文本模式人工验收均已通过；X 图片匿名直连失败时保留外链，以及客户端 Mermaid/SVG 图表缺失，均已由用户接受为 v0.2 已知限制。Mermaid 保留转入后续 `feat-013`；泛化 UI/UX 调整 `feat-014` 已取消；`feat-015` 已在当前源码完成一键清空并通过 287 tests、51/51 E2E 和人工验收，但尚未重新打包进入现有 0.2.0 ZIP。Apple Developer ID 签名与 notarization 仍是对外分发前的独立开放项。
 
 2026-08-09 的 QA-005 阻断经授权整改：生产审计从 6 项降至 0，完整树降至 1 critical / 26 high / 3 low；剩余项确认属于未进入应用包的开发/构建链。Node.js 24.16.0 的 Forge 无产物路径再次被 fresh ZIP 门禁正确阻断，随后 Node.js 24.14.1 的连续发布门禁成功生成并校验 0.2.0 ZIP。该过程未改变任何 0.1.x 哈希或外部归档。

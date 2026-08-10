@@ -2,10 +2,10 @@
 
 ## Current Objective
 
-- Goal: 交付可在 Apple Silicon Mac 本地安装使用的 MD-Convertor；0.1.3 已封版，v0.2 富文本粘贴转换（`feat-012`）已完成并提交，按用户决定暂不合并。
+- Goal: 交付可在 Apple Silicon Mac 本地安装使用的 MD-Convertor；0.1.3 已封版，v0.2 富文本粘贴转换（`feat-012`）已完成，当前分支另完成 `feat-015`，按用户决定暂不合并。
 - Active: 无；`feat-015 — Clear Pasted Content Action` 已完成，`feat-013` 保持 planned，`feat-014` 已取消。
 - Quality status: 0.1.3 自动发布门禁、本机操作和第二台 Apple Silicon Mac 验收均已通过；v0.2 最小安全升级后生产审计为 0，完整树剩余 1 critical / 26 high / 3 low 且未进入应用包；T10 自动发布门禁、打包应用冒烟与真实窗口人工验收均已通过；对外分发签名仍待完成。
-- Branch: `codex/feat-012-v0.2`；`main` 固定在 0.1.3 封版提交 `ce041c9`，标签为 `v0.1.3`。v0.2 当前版本为 `0.2.0`，已通过 T10 与用户验收，并以提交 `23294e4` 收口；按用户决定暂不合并。
+- Branch: `codex/feat-015-clear-paste`，HEAD `df6ed31`；`main` 固定在 0.1.3 封版提交 `ce041c9`，标签为 `v0.1.3`。v0.2 `feat-012` 在 `codex/feat-012-v0.2` 以提交 `23294e4` 收口，当前分支在其上完成 `feat-015`；按用户决定暂不合并。现有 0.2.0 ZIP 仍是 feat-012 T10 产物，不包含 feat-015。
 
 ## Current Scope
 
@@ -13,6 +13,7 @@
 - 不调用 AI API，不需要 API Key。
 - Windows 版本和多平台仓库迁移已取消；当前 macOS 根目录是唯一有效应用项目。
 - v0.2（feat-012）已批准并完成开工评审：富文本粘贴转换同时保留剪贴板 HTML 与纯文本，编辑后降级纯文本；规划见 `docs/PLAN-V0.2.md`，任务追踪见 `docs/TASKS-V0.2.md`。
+- 当前分支的 `feat-015` 已在富文本模式增加一键清空，状态契约、页面 E2E 和当前源码人工验收均已完成；该变更尚未进入现有 0.2.0 ZIP。
 - 登录态、临时签名、Blob 或需要 Cookie 的远程图片可能无法重新获取，届时保留替代文本并警告；本迭代不读取 Cookie。
 
 ## Open Discussion Items（后续迭代讨论项）
@@ -61,7 +62,7 @@
 - feat-012 T9B 已完成：同步产品、架构、测试、质检、README、Changelog、任务、进度和交接文档；明确两模式、粘贴 API、安全边界、5 MiB/图片预算、登录态/临时/blob 限制、v0.2 安装条件与 T9A 证据。
 - feat-012 T10 已完成：生产审计清零；Node.js 24.14.1 连续通过 282 tests、48 E2E、live、Forge、fresh ZIP 与打包应用启动/长微信 30 图转换冒烟；用户确认真实窗口富文本模式人工验收通过。
 - feat-015 已完成：富文本模式新增“清空”，一次移除 HTML、纯文本、来源 URL 和旧结果；转换中禁用。Node.js 24.14.1 基线 287 tests，富文本三引擎 E2E 30/30，用户在当前源码的真实 Electron 窗口人工验收通过。
-- T10 人工验收已开始：X Article 样本正文正常但图片为链接；诊断确认其 6 张正文图与封面均来自 `pbs.twimg.com`，本机匿名直连 7/7 `ECONNRESET`，X 页面复跑亦有 502 波动。当前按“不绕过网络/登录限制”降级为外链，用户已接受为 v0.2 已知限制。
+- T10 人工验收已完成：X Article 样本正文正常但图片为链接；诊断确认其 6 张正文图与封面均来自 `pbs.twimg.com`，本机匿名直连 7/7 `ECONNRESET`，X 页面复跑亦有 502 波动。当前按“不绕过网络/登录限制”降级为外链，用户已接受为 v0.2 已知限制。
 - 另一人工样本的缺图已定性为 Mermaid 支持缺口：页面无正文栅格图，只有客户端把空 `.mermaid` 占位渲染成内联 SVG；当前 direct 输出 0 图/0 警告且没有 Mermaid fence。用户已接受为 v0.2 已知限制并决定后续在 `feat-013` 独立开发，不能误记为普通图片异常。
 
 ## Verification Evidence
@@ -112,7 +113,7 @@
 
 1. 阅读 `AGENTS.md`、`PROGRESS.md`、`feature_list.json`、`docs/PLAN-V0.2.md`、`docs/TASKS-V0.2.md`、`docs/PRODUCT.md`、`docs/ARCHITECTURE.md`、`docs/TESTING.md` 和 `docs/QUALITY-AUDIT.md`。
 2. 运行 `./init.sh`（Node.js 24.x）。
-3. T10 自动门禁、live、打包、应用冒烟与用户人工验收均已完成；v0.2 已提交为 `23294e4`，按用户决定暂不合并。
+3. T10 自动门禁、live、打包、应用冒烟与用户人工验收均已完成；`feat-012` 以 `23294e4` 收口，当前 `feat-015` 源码验收已完成但尚未重新打包，按用户决定暂不合并。
 4. 未经用户重新明确授权，不恢复 Windows 与多平台仓库迁移。
 5. 对外分发仍需 Developer ID 签名与 notarization；完整开发/构建树的上游告警继续按 `QA-005` 跟踪。
 
@@ -120,8 +121,8 @@
 
 - 0.1.3 正式源码：`main` / `ce041c9` / `v0.1.3`。
 - 0.1.3 正式 ZIP：`~/Downloads/MD-Convertor-0.1.3-release/MD-Convertor-darwin-arm64-0.1.3.zip`，只读，SHA-256 `66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89`。
-- v0.2 开发：`codex/feat-012-v0.2`，版本 `0.2.0`；只允许在通过 T10 和用户验收后合并。
+- v0.2 开发基线：`codex/feat-012-v0.2` / `23294e4`，版本 `0.2.0`；当前工作分支：`codex/feat-015-clear-paste` / `df6ed31`。两者只允许在用户确认后合并。
 
 ## Recommended Next Step
 
-等待用户决定下一项；`feat-013 — Mermaid Preservation` 仍为 planned，未经确认不实施。feat-015 未打包、未运行 live、未合并。
+等待用户决定下一项；`feat-013 — Mermaid Preservation` 仍为 planned，未经确认不实施。feat-015 当前源码已验收，但未打包、未运行 live、未合并。
