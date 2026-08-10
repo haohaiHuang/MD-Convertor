@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Last updated: 2026-08-09
-- Active feature: 无；`feat-012 — Paste Rich-Text Conversion (v0.2)` 已完成，`feat-013 — Mermaid Diagram Preservation` 与 `feat-014 — UI Layout and Visual Polish` 均为后续 `planned` 事项。
-- Overall status: 0.1.3 已以提交 `ce041c9`、标签 `v0.1.3` 和只读 ZIP 归档封版。v0.2 已在独立分支 `codex/feat-012-v0.2` 完成自动门禁、打包应用冒烟和用户人工验收；尚未提交或合并到 `main`。
+- Last updated: 2026-08-10
+- Active feature: 无；`feat-012 — Paste Rich-Text Conversion (v0.2)` 已完成，`feat-013 — Mermaid Diagram Preservation` 与 `feat-015 — Clear Pasted Content Action` 为后续 `planned` 事项；`feat-014 — UI Layout and Visual Polish` 已取消。
+- Overall status: 0.1.3 已以提交 `ce041c9`、标签 `v0.1.3` 和只读 ZIP 归档封版。v0.2 已在独立分支 `codex/feat-012-v0.2` 完成自动门禁、打包应用冒烟、用户人工验收，并以提交 `23294e4` 收口；按用户决定暂不合并到 `main`。
 
 ## Completed
 
@@ -122,8 +122,9 @@
 - 登录态、临时签名、Blob 或需要 Cookie 的远程图片可能无法从粘贴 HTML 重新获取；v0.2 明确降级为替代文本并警告，不引入 Cookie 读取。
 - 0.2.0 真实窗口人工验收样本 `x.com/lumenxbt/status/2082101954206130402` 为 X Article：正文含 6 个图片实体并另有封面，均位于 `pbs.twimg.com`；本机匿名直连 7/7 返回 `ECONNRESET`，同一打包应用复跑 X 页面也出现 502 上游波动。图片无法下载时保留外层链接，属于当前“不绕过 X 网络/登录限制”的降级，不是 Data URI 格式回归；用户已接受为 v0.2 已知限制，不阻断个人测试发布。
 - 人工验收页面 `walkinglabs.github.io/.../lecture-02-what-a-harness-actually-is/` 没有正文栅格图片；静态 HTML 只有空 `.mermaid` 占位，JavaScript 运行后生成 1 个内联 SVG。当前 direct 转换输出 0 source/embedded images、0 warnings，且没有 Mermaid fence；由于正文足够不会触发 browser fallback，SVG 又按安全规则删除，图表完全缺失。该项是 Mermaid 支持缺口，不是图片下载失败；用户已接受为 v0.2 已知限制，并决定后续在 `feat-013` 独立开发。
-- feat-012 已完成全部 T3–T10、live、0.2.0 打包、应用冒烟与真实窗口人工验收；当前分支尚未提交或合并。后续 UI 调整仅登记为 `feat-014`，具体范围待开工前确认。
+- feat-012 已完成全部 T3–T10、live、0.2.0 打包、应用冒烟与真实窗口人工验收，并以提交 `23294e4` 收口；当前分支按用户决定暂不合并。
+- 2026-08-10 用户确认现有 UI/UX 无需整体调整，取消 `feat-014`；另将富文本模式“一键清空粘贴 HTML、纯文本及来源链接”登记为后续 `feat-015`，本轮不实现。
 
 ## Recommended Next Step
 
-审阅当前 v0.2 变更范围并按用户指示提交 Git；提交完成后再决定何时合并。`feat-013`（Mermaid）与 `feat-014`（UI 调整）保持 planned，开工前分别确认方案，不与 v0.2 封版混合。`QA-008` 签名与 notarization 仍只在对外分发时需要。
+保持 v0.2 分支暂不合并；需要继续开发时，由用户从 `feat-013`（Mermaid）或 `feat-015`（一键清空富文本内容及来源链接）中选择一个，并在开工前确认范围。`feat-014` 已取消。`QA-008` 签名与 notarization 仍只在对外分发时需要。

@@ -320,6 +320,6 @@ Resolution evidence:
 
 ### v0.2 release status
 
-`T9A`、`T9B` 与 `T10` 已完成，`feat-012` 无剩余任务。自动门禁、live、Forge fresh ZIP、启动、链接转换冒烟和真实窗口富文本模式人工验收均已通过；X 图片匿名直连失败时保留外链，以及客户端 Mermaid/SVG 图表缺失，均已由用户接受为 v0.2 已知限制。Mermaid 保留与 UI 调整分别转入后续 `feat-013`、`feat-014`。Apple Developer ID 签名与 notarization 仍是对外分发前的独立开放项。
+`T9A`、`T9B` 与 `T10` 已完成，`feat-012` 无剩余任务。自动门禁、live、Forge fresh ZIP、启动、链接转换冒烟和真实窗口富文本模式人工验收均已通过；X 图片匿名直连失败时保留外链，以及客户端 Mermaid/SVG 图表缺失，均已由用户接受为 v0.2 已知限制。Mermaid 保留转入后续 `feat-013`；泛化 UI/UX 调整 `feat-014` 已取消，一键清空富文本内容及来源链接登记为后续 `feat-015`。Apple Developer ID 签名与 notarization 仍是对外分发前的独立开放项。
 
 2026-08-09 的 QA-005 阻断经授权整改：生产审计从 6 项降至 0，完整树降至 1 critical / 26 high / 3 low；剩余项确认属于未进入应用包的开发/构建链。Node.js 24.16.0 的 Forge 无产物路径再次被 fresh ZIP 门禁正确阻断，随后 Node.js 24.14.1 的连续发布门禁成功生成并校验 0.2.0 ZIP。该过程未改变任何 0.1.x 哈希或外部归档。

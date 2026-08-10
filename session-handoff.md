@@ -2,10 +2,10 @@
 
 ## Current Objective
 
-- Goal: 交付可在 Apple Silicon Mac 本地安装使用的 MD-Convertor；0.1.3 已交付验收，当前推进 v0.2 富文本粘贴转换（`feat-012`）。
-- Active: 无；`feat-012 — Paste Rich-Text Conversion (v0.2)` 已完成。后续 `feat-013`（Mermaid）与 `feat-014`（UI 调整）均为 `planned`。
+- Goal: 交付可在 Apple Silicon Mac 本地安装使用的 MD-Convertor；0.1.3 已封版，v0.2 富文本粘贴转换（`feat-012`）已完成并提交，按用户决定暂不合并。
+- Active: 无；后续 `feat-013`（Mermaid）与 `feat-015`（一键清空富文本内容及来源链接）为 `planned`，`feat-014`（整体 UI/UX 优化）已取消。
 - Quality status: 0.1.3 自动发布门禁、本机操作和第二台 Apple Silicon Mac 验收均已通过；v0.2 最小安全升级后生产审计为 0，完整树剩余 1 critical / 26 high / 3 low 且未进入应用包；T10 自动发布门禁、打包应用冒烟与真实窗口人工验收均已通过；对外分发签名仍待完成。
-- Branch: `codex/feat-012-v0.2`；`main` 固定在 0.1.3 封版提交 `ce041c9`，标签为 `v0.1.3`。v0.2 当前版本为 `0.2.0`，已通过 T10 与用户验收，但尚未提交或合并。
+- Branch: `codex/feat-012-v0.2`；`main` 固定在 0.1.3 封版提交 `ce041c9`，标签为 `v0.1.3`。v0.2 当前版本为 `0.2.0`，已通过 T10 与用户验收，并以提交 `23294e4` 收口；按用户决定暂不合并。
 
 ## Current Scope
 
@@ -23,6 +23,7 @@
 
 - 2026-07-21，用户取消 `feat-011`、Windows 应用及多平台目录迁移；原 `docs/MULTIPLATFORM-PLAN.md` 已删除，不能再作为后续执行依据。
 - 同日取消的「直接粘贴正文转换」方案，已于 2026-08-06 以 v0.2 富文本粘贴转换（`feat-012`）重新授权，范围见 `docs/PLAN-V0.2.md`（仅处理用户主动复制的剪贴板 HTML/纯文本，不绕过登录/付费墙/验证码）。
+- 2026-08-10，用户确认现有界面可以接受，取消 `feat-014 — UI Layout and Visual Polish`；不得把该泛化 UI/UX 调整重新混入其他事项。
 - 除非用户以后重新明确授权，不恢复 Windows 与多平台仓库迁移。
 
 ## Implemented
@@ -110,7 +111,7 @@
 
 1. 阅读 `AGENTS.md`、`PROGRESS.md`、`feature_list.json`、`docs/PLAN-V0.2.md`、`docs/TASKS-V0.2.md`、`docs/PRODUCT.md`、`docs/ARCHITECTURE.md`、`docs/TESTING.md` 和 `docs/QUALITY-AUDIT.md`。
 2. 运行 `./init.sh`（Node.js 24.x）。
-3. T10 自动门禁、live、打包、应用冒烟与用户人工验收均已完成；下一步审阅并按用户指示提交当前 v0.2 变更。
+3. T10 自动门禁、live、打包、应用冒烟与用户人工验收均已完成；v0.2 已提交为 `23294e4`，按用户决定暂不合并。
 4. 未经用户重新明确授权，不恢复 Windows 与多平台仓库迁移。
 5. 对外分发仍需 Developer ID 签名与 notarization；完整开发/构建树的上游告警继续按 `QA-005` 跟踪。
 
@@ -122,4 +123,4 @@
 
 ## Recommended Next Step
 
-审阅当前 v0.2 变更范围并等待用户指示提交 Git；不要自动合并到 `main`。Mermaid/SVG 图表保留与 UI 调整已分别登记为后续 `feat-013`、`feat-014`，开工前需重新确认具体范围。
+不要自动合并 v0.2。后续若继续开发，由用户在 `feat-013`（Mermaid）和 `feat-015`（一键清空富文本内容及来源链接）中选择一个；开工前先确认范围。`feat-014` 已取消。
