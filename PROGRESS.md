@@ -52,7 +52,7 @@
 - [x] 完成 feat-012 T9B 文档同步：产品、架构、测试、质检、README、Changelog、事项、进度和交接均已对齐两模式、粘贴 API、安全限制、图片预算、v0.2 安装条件与 T9A 保护；T10 的 live、打包和人工验收保持未完成。
 - [x] 完成 feat-012 T10 自动发布门禁：授权升级 Next.js 16.3.0、Undici 8.10.0、DOMPurify 3.4.13 与 Electron 43.3.0 后，生产审计清零；Node.js 24.14.1 连续通过 282 tests、48 E2E、live、Forge、fresh ZIP、启动和长微信 30 图转换冒烟。
 - [x] 完成 feat-012 T10 人工验收：用户确认真实打包窗口的富文本转换流程通过；X 匿名图片和 Mermaid/SVG 缺失按已记录边界处理。
-- [x] 完成 feat-015 一键清空：富文本模式可同时清除 HTML、纯文本、来源 URL 与旧结果；转换期间入口禁用，清空后可直接粘贴并转换下一份内容。
+- [x] 完成 feat-015 一键清空：富文本模式可同时清除 HTML、纯文本、来源 URL 与旧结果；转换期间入口禁用，清空后可直接粘贴并转换下一份内容；用户已在当前源码的真实 Electron 窗口人工验收通过。
 
 ## Verification Evidence
 
@@ -71,6 +71,7 @@
 - Passed with Node.js 24.14.1: feat-012 T10 `npm run desktop:release` — lint、typecheck、24 files / 282 tests、coverage gate、三引擎 48/48、真实微信门禁、Forge 与 fresh artifact 校验全通过；ZIP 为 0.2.0 / arm64 / macOS 12.0+，354,594,827 bytes，SHA-256 `ab2a463c...a7b7b4`。
 - Passed with Node.js 24.14.1: 提交前审查整改后的 `./init.sh` — lint、typecheck、24 files / 285 tests、coverage gate 与 production build；现有 0.2.0 ZIP 经新门禁解压检查，包内版本与 arm64 可执行文件通过。
 - Passed with Node.js 24.14.1: feat-015 `src/lib/paste-client.test.ts` — 19/19；`./init.sh` — lint、typecheck、24 files / 287 tests、coverage gate 与 production build；富文本关键 E2E — Chromium/Firefox/WebKit 30/30，tracked-file check passed。
+- Passed: feat-015 real Electron window — 用户确认“一键清空”交互人工验收通过；本事项未重新打包、未运行 live。
 - Passed: 0.2.0 packaged runtime — loopback standalone 启动；长微信 direct mode 17,643 non-Base64 chars / 30 images / 7,749,111 bytes；打包应用未包含 Forge、concurrently 或 tar；用户已确认真实窗口富文本模式人工验收通过。
 - Passed with Node.js 24.14.1 and 24.16.0: 0.1.3 `./init.sh` — lint、typecheck、覆盖率门禁、93 tests、Next.js build；2026-07-21 删除失效规划与 Harness 引用后复跑通过。
 - Passed: 0.1.3 `npm run test:e2e` — Chromium、Firefox、WebKit 共 21 项，覆盖“复制”“下载”“已复制”和下载文件名。

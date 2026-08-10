@@ -16,4 +16,4 @@
 
 - **状态**：done
 - **完成条件**：`./init.sh`、三浏览器关键 E2E、文档同步与 Git 提交通过；不打包、不运行 live、不合并。
-- **验证**：Node.js 24.14.1 `./init.sh` 通过 24 files / 287 tests、coverage 与 build；富文本三浏览器 E2E 30/30，tracked-file check 通过。
+- **验证**：Node.js 24.14.1 `./init.sh` 通过 24 files / 287 tests、coverage 与 build；富文本三浏览器 E2E 30/30，tracked-file check 通过；用户在当前源码的真实 Electron 窗口人工验收通过。
