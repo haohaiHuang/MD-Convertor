@@ -2,12 +2,20 @@ import { JSDOM } from "jsdom";
 import sharp from "sharp";
 import { AppError } from "@/lib/errors";
 import { fetchPublicResource } from "@/lib/fetcher";
+import { GENERATED_MERMAID_IMAGE_ATTRIBUTE } from "@/lib/mermaid";
 import type { ConversionWarning } from "@/types/conversion";
 
 const MAX_IMAGES = 30;
 const MAX_SOURCE_IMAGE_BYTES = 8 * 1024 * 1024;
 const OPTIMIZE_THRESHOLD_BYTES = 2 * 1024 * 1024;
 const SUPPORTED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]);
+const DATA_URI_TYPES = new Map<string, { format: string; compression?: string }>([
+  ["image/jpeg", { format: "jpeg" }],
+  ["image/png", { format: "png" }],
+  ["image/webp", { format: "webp" }],
+  ["image/gif", { format: "gif" }],
+  ["image/avif", { format: "heif", compression: "av1" }],
+]);
 
 export function shouldOptimizeImage(byteLength: number, width = 0, height = 0): boolean {
   return byteLength > OPTIMIZE_THRESHOLD_BYTES || width > 2048 || height > 2048;
@@ -26,30 +34,202 @@ export type ImageEmbeddingStats = {
   omittedImageCount: number;
 };
 
+export type ImageEmbeddingStrategy =
+  | {
+      mode: "link";
+      sourcePriority: "src-first";
+      allowDataUri: false;
+      trustedDataUris?: ReadonlyMap<string, string>;
+    }
+  | {
+      mode: "paste";
+      sourcePriority: "lazy-first";
+      allowDataUri: true;
+    };
+
 function imagePlaceholder(element: HTMLImageElement): Text {
   const label = element.alt.trim() || "图片";
   return element.ownerDocument.createTextNode(`[图片：${label}]`);
 }
 
-async function prepareImage(
+function parseDataUri(rawSource: string): { buffer: Buffer; contentType: string } | null {
+  const match = /^data:(image\/(?:jpeg|png|webp|gif|avif));base64,([A-Za-z0-9+/]*={0,2})$/i.exec(rawSource);
+  if (!match) return null;
+  const contentType = match[1].toLowerCase();
+  const payload = match[2];
+  if (!payload || payload.length % 4 !== 0 || payload.length > Math.ceil((MAX_SOURCE_IMAGE_BYTES * 4) / 3) + 4) {
+    return null;
+  }
+  const buffer = Buffer.from(payload, "base64");
+  if (!buffer.byteLength || buffer.byteLength > MAX_SOURCE_IMAGE_BYTES || buffer.toString("base64") !== payload) {
+    return null;
+  }
+  return { buffer, contentType };
+}
+
+type ProcessedImage = {
+  dataUri?: string;
+  warning?: ConversionWarning;
+  animatedReduced?: boolean;
+};
+
+async function processImageBuffer(
+  buffer: Buffer,
+  contentType: string,
+  options: {
+    validateDeclaredFormat: boolean;
+    placeholderEligible: boolean;
+    invalidFormatWarning?: ConversionWarning;
+  },
+): Promise<ProcessedImage> {
+  const metadata = await sharp(buffer, { animated: true }).metadata();
+  if (options.validateDeclaredFormat) {
+    const expected = DATA_URI_TYPES.get(contentType);
+    if (!expected || metadata.format !== expected.format ||
+      (expected.compression && metadata.compression !== expected.compression)) {
+      return {
+        warning: options.invalidFormatWarning ?? {
+          code: "IMAGE_DATA_INVALID",
+          message: "有一张内嵌图片格式与声明不一致，已保留替代文本。",
+        },
+      };
+    }
+  }
+  if (options.placeholderEligible && buffer.byteLength < 1024) {
+    return {
+      warning: { code: "IMAGE_PLACEHOLDER", message: "图片未在浏览器中加载，请滚动到图片位置后重新复制。" },
+    };
+  }
+
+  let outputBuffer = buffer;
+  let outputType = contentType;
+  let animatedReduced = false;
+  const needsOptimization = shouldOptimizeImage(
+    buffer.byteLength,
+    metadata.width ?? 0,
+    metadata.height ?? 0,
+  );
+  if (needsOptimization) {
+    animatedReduced = (metadata.pages ?? 1) > 1;
+    outputBuffer = await sharp(buffer, { page: 0 })
+      .resize({ width: 2048, height: 2048, fit: "inside", withoutEnlargement: true })
+      .webp({ quality: 82 })
+      .toBuffer();
+    outputType = "image/webp";
+  }
+  return {
+    dataUri: `data:${outputType};base64,${outputBuffer.toString("base64")}`,
+    animatedReduced,
+  };
+}
+
+async function prepareDataUriImage(
   element: HTMLImageElement,
-  sourceUrl: string,
+  rawSource: string,
   signal: AbortSignal,
+  placeholderEligible: boolean,
 ): Promise<PreparedImage> {
-  const rawSource =
-    element.getAttribute("src") ||
-    element.getAttribute("data-src") ||
-    element.getAttribute("data-lazy-src") ||
-    "";
-  if (!rawSource || rawSource.startsWith("data:")) {
+  const parsed = parseDataUri(rawSource);
+  if (!parsed) {
     return {
       element,
-      warning: { code: "IMAGE_SOURCE_MISSING", message: "有一张图片缺少可用地址，已保留替代文本。" },
+      warning: { code: "IMAGE_DATA_INVALID", message: "有一张内嵌图片数据无效，已保留替代文本。" },
     };
   }
 
   try {
-    const absoluteUrl = new URL(rawSource, sourceUrl);
+    signal.throwIfAborted();
+    const processed = await processImageBuffer(parsed.buffer, parsed.contentType, {
+      validateDeclaredFormat: true,
+      placeholderEligible,
+    });
+    signal.throwIfAborted();
+    return { element, ...processed };
+  } catch {
+    signal.throwIfAborted();
+    return {
+      element,
+      warning: { code: "IMAGE_DATA_INVALID", message: "有一张内嵌图片元数据无效，已保留替代文本。" },
+    };
+  }
+}
+
+function trustedDataUriForSource(
+  rawSource: string,
+  sourceUrl: string | undefined,
+  strategy: ImageEmbeddingStrategy,
+): string | undefined {
+  if (strategy.mode !== "link" || !strategy.trustedDataUris) return undefined;
+
+  const directMatch = strategy.trustedDataUris.get(rawSource);
+  if (directMatch || !sourceUrl) return directMatch;
+
+  try {
+    return strategy.trustedDataUris.get(new URL(rawSource, sourceUrl).toString());
+  } catch {
+    return undefined;
+  }
+}
+
+async function prepareImage(
+  element: HTMLImageElement,
+  sourceUrl: string | undefined,
+  signal: AbortSignal,
+  strategy: ImageEmbeddingStrategy,
+): Promise<PreparedImage> {
+  const rawSource = (strategy.sourcePriority === "lazy-first"
+    ? element.hasAttribute("data-src")
+      ? element.getAttribute("data-src") ?? ""
+      : element.hasAttribute("data-lazy-src")
+        ? element.getAttribute("data-lazy-src") ?? ""
+        : element.getAttribute("src") || ""
+    : element.getAttribute("src") || element.getAttribute("data-src") || element.getAttribute("data-lazy-src") || "").trim();
+  const trustedDataUri = trustedDataUriForSource(rawSource, sourceUrl, strategy);
+  if (trustedDataUri) {
+    return prepareDataUriImage(element, trustedDataUri, signal, false);
+  }
+  const isDataSource = strategy.allowDataUri ? /^data:/i.test(rawSource) : rawSource.startsWith("data:");
+  if (!rawSource || isDataSource) {
+    if (isDataSource && strategy.allowDataUri) {
+      const hasLazySource = element.hasAttribute("data-src") || element.hasAttribute("data-lazy-src");
+      const isGeneratedMermaid = element.getAttribute(GENERATED_MERMAID_IMAGE_ATTRIBUTE) === "mermaid";
+      return prepareDataUriImage(element, rawSource, signal, !hasLazySource && !isGeneratedMermaid);
+    }
+    const hasLazySource = strategy.sourcePriority === "lazy-first" &&
+      (element.hasAttribute("data-src") || element.hasAttribute("data-lazy-src"));
+    return {
+      element,
+      warning: {
+        code: hasLazySource ? "IMAGE_SOURCE_INVALID" : "IMAGE_SOURCE_MISSING",
+        message: hasLazySource
+          ? "有一张懒加载图片地址无效，已保留替代文本。"
+          : "有一张图片缺少可用地址，已保留替代文本。",
+      },
+    };
+  }
+
+  let absoluteUrl: URL;
+  try {
+    absoluteUrl = sourceUrl ? new URL(rawSource, sourceUrl) : new URL(rawSource);
+  } catch {
+    return {
+      element,
+      warning: {
+        code: strategy.mode === "link" ? "IMAGE_FETCH_FAILED" : "IMAGE_SOURCE_INVALID",
+        message: strategy.mode === "link"
+          ? "有一张图片无法安全获取，已保留替代文本。"
+          : "有一张图片地址无效或缺少来源地址，已保留替代文本。",
+      },
+    };
+  }
+  if (strategy.mode === "paste" && absoluteUrl.protocol !== "http:" && absoluteUrl.protocol !== "https:") {
+    return {
+      element,
+      warning: { code: "IMAGE_SOURCE_INVALID", message: "有一张图片协议不受支持，已保留替代文本。" },
+    };
+  }
+
+  try {
     const result = await fetchPublicResource(absoluteUrl, {
       signal,
       maxBytes: MAX_SOURCE_IMAGE_BYTES,
@@ -63,30 +243,15 @@ async function prepareImage(
       };
     }
 
-    let buffer = result.buffer;
-    let contentType = result.contentType;
-    let animatedReduced = false;
-    const metadata = await sharp(buffer, { animated: true }).metadata();
-    const needsOptimization = shouldOptimizeImage(
-      buffer.byteLength,
-      metadata.width ?? 0,
-      metadata.height ?? 0,
-    );
-
-    if (needsOptimization) {
-      animatedReduced = (metadata.pages ?? 1) > 1;
-      buffer = await sharp(buffer, { page: 0 })
-        .resize({ width: 2048, height: 2048, fit: "inside", withoutEnlargement: true })
-        .webp({ quality: 82 })
-        .toBuffer();
-      contentType = "image/webp";
-    }
-
-    return {
-      element,
-      dataUri: `data:${contentType};base64,${buffer.toString("base64")}`,
-      animatedReduced,
-    };
+    const processed = await processImageBuffer(result.buffer, result.contentType, {
+      validateDeclaredFormat: true,
+      placeholderEligible: false,
+      invalidFormatWarning: {
+        code: "IMAGE_TYPE_UNSUPPORTED",
+        message: "有一张图片的实际格式与声明不一致或不受支持，已保留替代文本。",
+      },
+    });
+    return { element, ...processed };
   } catch (error) {
     signal.throwIfAborted();
     if (error instanceof AppError && error.status === 413) {
@@ -123,62 +288,71 @@ async function mapWithConcurrency<T, R>(
 
 export async function embedImages(
   html: string,
-  sourceUrl: string,
+  sourceUrl: string | undefined,
   signal: AbortSignal,
   totalBudgetBytes: number,
+  strategy: ImageEmbeddingStrategy,
 ): Promise<{ html: string; warnings: ConversionWarning[]; stats: ImageEmbeddingStats }> {
-  const dom = new JSDOM(`<body>${html}</body>`, { url: sourceUrl });
-  const warnings: ConversionWarning[] = [];
-  const allImages = Array.from(dom.window.document.querySelectorAll("img"));
-  const selectedImages = allImages.slice(0, MAX_IMAGES);
+  signal.throwIfAborted();
+  const normalizedSourceUrl = sourceUrl?.trim() || undefined;
+  const dom = normalizedSourceUrl
+    ? new JSDOM(`<body>${html}</body>`, { url: normalizedSourceUrl })
+    : new JSDOM(`<body>${html}</body>`);
+  try {
+    const warnings: ConversionWarning[] = [];
+    const allImages = Array.from(dom.window.document.querySelectorAll("img"));
+    const selectedImages = allImages.slice(0, MAX_IMAGES);
 
-  for (const element of allImages.slice(MAX_IMAGES)) {
-    element.replaceWith(imagePlaceholder(element));
-  }
-  if (allImages.length > MAX_IMAGES) {
-    warnings.push({ code: "IMAGE_COUNT_LIMIT", message: `网页包含超过 ${MAX_IMAGES} 张图片，额外图片已省略。` });
-  }
-
-  const prepared = await mapWithConcurrency(selectedImages, 4, (element) =>
-    prepareImage(element, sourceUrl, signal),
-  );
-  let usedBytes = 0;
-  let embeddedImageCount = 0;
-
-  for (const item of prepared) {
-    if (item.warning || !item.dataUri) {
-      if (item.warning) warnings.push(item.warning);
-      item.element.replaceWith(imagePlaceholder(item.element));
-      continue;
+    for (const element of allImages.slice(MAX_IMAGES)) {
+      element.replaceWith(imagePlaceholder(element));
     }
-    const bytes = Buffer.byteLength(item.dataUri);
-    if (usedBytes + bytes > totalBudgetBytes) {
-      warnings.push({ code: "IMAGE_BUDGET_EXCEEDED", message: "部分图片会使文件超过 20 MiB，已保留替代文本。" });
-      item.element.replaceWith(imagePlaceholder(item.element));
-      continue;
+    if (allImages.length > MAX_IMAGES) {
+      warnings.push({ code: "IMAGE_COUNT_LIMIT", message: `网页包含超过 ${MAX_IMAGES} 张图片，额外图片已省略。` });
     }
-    usedBytes += bytes;
-    embeddedImageCount += 1;
-    item.element.setAttribute("src", item.dataUri);
-    item.element.removeAttribute("srcset");
-    item.element.removeAttribute("data-src");
-    item.element.removeAttribute("data-lazy-src");
-    if (item.animatedReduced) {
-      warnings.push({ code: "ANIMATION_REDUCED", message: "一张过大的动图已压缩为静态首帧。" });
-    }
-  }
 
-  const output = dom.window.document.body.innerHTML;
-  dom.window.close();
-  return {
-    html: output,
-    warnings,
-    stats: {
-      sourceImageCount: allImages.length,
-      embeddedImageCount,
-      omittedImageCount: allImages.length - embeddedImageCount,
-    },
-  };
+    const prepared = await mapWithConcurrency(selectedImages, 4, (element) =>
+      prepareImage(element, normalizedSourceUrl, signal, strategy),
+    );
+    signal.throwIfAborted();
+    let usedBytes = 0;
+    let embeddedImageCount = 0;
+
+    for (const item of prepared) {
+      if (item.warning || !item.dataUri) {
+        if (item.warning) warnings.push(item.warning);
+        item.element.replaceWith(imagePlaceholder(item.element));
+        continue;
+      }
+      const bytes = Buffer.byteLength(item.dataUri);
+      if (usedBytes + bytes > totalBudgetBytes) {
+        warnings.push({ code: "IMAGE_BUDGET_EXCEEDED", message: "部分图片会使文件超过 20 MiB，已保留替代文本。" });
+        item.element.replaceWith(imagePlaceholder(item.element));
+        continue;
+      }
+      usedBytes += bytes;
+      embeddedImageCount += 1;
+      item.element.setAttribute("src", item.dataUri);
+      item.element.removeAttribute("srcset");
+      item.element.removeAttribute("data-src");
+      item.element.removeAttribute("data-lazy-src");
+      item.element.removeAttribute(GENERATED_MERMAID_IMAGE_ATTRIBUTE);
+      if (item.animatedReduced) {
+        warnings.push({ code: "ANIMATION_REDUCED", message: "一张过大的动图已压缩为静态首帧。" });
+      }
+    }
+
+    return {
+      html: dom.window.document.body.innerHTML,
+      warnings,
+      stats: {
+        sourceImageCount: allImages.length,
+        embeddedImageCount,
+        omittedImageCount: allImages.length - embeddedImageCount,
+      },
+    };
+  } finally {
+    dom.window.close();
+  }
 }
 
 export function omitLastEmbeddedImage(html: string): { html: string; omitted: boolean } {

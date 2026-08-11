@@ -1,6 +1,7 @@
 import createDOMPurify from "dompurify";
 import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
+import { normalizeMermaidSources, restoreMermaidSourceMarkers } from "@/lib/mermaid";
 import type { ExtractedContent } from "@/types/conversion";
 
 const REMOVE_SELECTORS = [
@@ -45,7 +46,7 @@ function extractWeChatArticle(dom: JSDOM, sourceUrl: string): ExtractedContent |
     if (lazySource) image.setAttribute("src", lazySource);
   });
 
-  const cleanHtml = sanitizeHtml(dom.window, content.innerHTML);
+  const cleanHtml = sanitizeHtml(dom.window, restoreMermaidSourceMarkers(content.innerHTML));
   const cleanDom = new JSDOM(cleanHtml);
   try {
     const textLength = cleanDom.window.document.body.textContent?.trim().length ?? 0;
@@ -59,13 +60,14 @@ function extractWeChatArticle(dom: JSDOM, sourceUrl: string): ExtractedContent |
 export function extractReadable(html: string, sourceUrl: string): ExtractedContent | null {
   const dom = new JSDOM(html, { url: sourceUrl, runScripts: "outside-only" });
   try {
+    normalizeMermaidSources(dom.window.document);
     const weChatArticle = extractWeChatArticle(dom, sourceUrl);
     if (weChatArticle) return weChatArticle;
 
     const documentClone = dom.window.document.cloneNode(true) as Document;
     const article = new Readability(documentClone, { charThreshold: 50 }).parse();
     if (!article?.content) return null;
-    const cleanHtml = sanitizeHtml(dom.window, article.content);
+    const cleanHtml = sanitizeHtml(dom.window, restoreMermaidSourceMarkers(article.content));
     const cleanDom = new JSDOM(cleanHtml);
     const textLength = cleanDom.window.document.body.textContent?.trim().length ?? 0;
     cleanDom.window.close();
@@ -82,9 +84,13 @@ export function extractReadable(html: string, sourceUrl: string): ExtractedConte
 export function extractBodyFallback(html: string, sourceUrl: string): ExtractedContent {
   const dom = new JSDOM(html, { url: sourceUrl, runScripts: "outside-only" });
   try {
+    normalizeMermaidSources(dom.window.document);
     dom.window.document.querySelectorAll(REMOVE_SELECTORS).forEach((node) => node.remove());
     const title = dom.window.document.title.trim() || "未命名网页";
-    const cleanHtml = sanitizeHtml(dom.window, dom.window.document.body.innerHTML);
+    const cleanHtml = sanitizeHtml(
+      dom.window,
+      restoreMermaidSourceMarkers(dom.window.document.body.innerHTML),
+    );
     const textLength = new JSDOM(cleanHtml).window.document.body.textContent?.trim().length ?? 0;
     return { title, html: cleanHtml, textLength };
   } finally {

@@ -1,8 +1,14 @@
-export type ExtractionMode = "direct" | "browser" | "body-fallback";
+export type ExtractionMode = "direct" | "browser" | "body-fallback" | "paste";
 
 export type ConversionWarning = {
   code: string;
   message: string;
+};
+
+export type PastedConvertRequest = {
+  html?: string;
+  text?: string;
+  sourceUrl?: string;
 };
 
 export type ConvertResponse = {

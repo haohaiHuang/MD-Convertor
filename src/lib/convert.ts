@@ -1,9 +1,11 @@
 import { AppError, toAppError } from "@/lib/errors";
 import { renderDynamicPage } from "@/lib/browser";
+import type { GeneratedBrowserImage } from "@/lib/browser";
 import { extractBodyFallback, extractReadable } from "@/lib/extract";
 import { fetchHtml } from "@/lib/fetcher";
 import { embedImages, omitLastEmbeddedImage } from "@/lib/images";
 import { htmlToMarkdown, makeFilename, MAX_MARKDOWN_BYTES } from "@/lib/markdown";
+import { requiresMermaidRendering } from "@/lib/mermaid";
 import { detectPageAccessIssue } from "@/lib/page-access";
 import { parsePublicHttpUrl } from "@/lib/security/url";
 import type { ConversionWarning, ConvertResponse, ExtractedContent, ExtractionMode } from "@/types/conversion";
@@ -81,11 +83,15 @@ export async function convertUrlToMarkdown(inputUrl: string, signal: AbortSignal
     ? extractReadable(originalHtml, sourceUrl)
     : null;
   let extractionMode: ExtractionMode = "direct";
+  let generatedImages: GeneratedBrowserImage[] = [];
+  const mermaidRenderingRequired = requiresMermaidRendering(originalHtml);
 
-  if (!extracted || extracted.textLength < 300) {
+  if (!extracted || extracted.textLength < 300 || mermaidRenderingRequired) {
     try {
       const browserSignal = AbortSignal.any([signal, AbortSignal.timeout(20_000)]);
-      const renderedHtml = await renderDynamicPage(sourceUrl, browserSignal);
+      const renderedPage = await renderDynamicPage(sourceUrl, browserSignal);
+      const renderedHtml = renderedPage.html;
+      warnings.push(...renderedPage.warnings);
       if (Buffer.byteLength(renderedHtml) > 5 * 1024 * 1024) {
         throw new AppError(413, "SOURCE_TOO_LARGE", "动态网页内容超过允许的大小。");
       }
@@ -95,14 +101,25 @@ export async function convertUrlToMarkdown(inputUrl: string, signal: AbortSignal
       } else {
         pageAccessIssue = null;
         const rendered = extractReadable(renderedHtml, sourceUrl);
-        if (rendered && rendered.textLength >= (extracted?.textLength ?? 0)) {
+        const directTextLength = extracted?.textLength ?? 0;
+        const preservesGeneratedMermaid = renderedPage.generatedImages.length > 0
+          && rendered !== null
+          && rendered.textLength >= directTextLength * 0.95;
+        if (rendered && (rendered.textLength >= directTextLength || preservesGeneratedMermaid)) {
           extracted = rendered;
           originalHtml = renderedHtml;
           extractionMode = "browser";
+          generatedImages = renderedPage.generatedImages;
         }
       }
     } catch (error) {
       if (signal.aborted || (error instanceof AppError && error.status === 413)) throw error;
+      if (mermaidRenderingRequired) {
+        warnings.push({
+          code: "MERMAID_RENDER_FAILED",
+          message: "网页中的 Mermaid 图表未能安全栅格化，结果中可能缺少该图表。",
+        });
+      }
       warnings.push({
         code: "BROWSER_FALLBACK_FAILED",
         message: "动态渲染未能完成，已使用当前可读取的网页内容。",
@@ -127,7 +144,17 @@ export async function convertUrlToMarkdown(inputUrl: string, signal: AbortSignal
 
   const nonImageBudget = Buffer.byteLength(extracted.html) + 16 * 1024;
   const imageBudget = Math.max(0, MAX_MARKDOWN_BYTES - nonImageBudget);
-  const embedded = await embedImages(extracted.html, sourceUrl, signal, imageBudget);
+  const trustedDataUris = new Map<string, string>();
+  for (const generatedImage of generatedImages) {
+    trustedDataUris.set(generatedImage.placeholderUrl, generatedImage.dataUri);
+    trustedDataUris.set(new URL(generatedImage.placeholderUrl, sourceUrl).toString(), generatedImage.dataUri);
+  }
+  const embedded = await embedImages(extracted.html, sourceUrl, signal, imageBudget, {
+    mode: "link",
+    sourcePriority: "src-first",
+    allowDataUri: false,
+    ...(trustedDataUris.size > 0 ? { trustedDataUris } : {}),
+  });
   signal.throwIfAborted();
   warnings.push(...embedded.warnings);
 

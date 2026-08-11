@@ -53,13 +53,24 @@ describe("complete conversion orchestration", () => {
     expect(result.meta).toMatchObject({ extractionMode: "direct", textChars: 350 });
     expect(result.markdown).toContain("直接提取的正文");
     expect(mocks.renderDynamicPage).not.toHaveBeenCalled();
+    expect(mocks.embedImages).toHaveBeenCalledWith(
+      "<p>直接提取的正文</p>",
+      sourceUrl,
+      signal,
+      expect.any(Number),
+      { mode: "link", sourcePriority: "src-first", allowDataUri: false },
+    );
   });
 
   it("replaces a short direct result with a stronger browser extraction", async () => {
     mocks.extractReadable
       .mockReturnValueOnce({ title: "短正文", html: "<p>短</p>", textLength: 100 })
       .mockReturnValueOnce({ title: "动态正文", html: "<p>动态页面完整正文</p>", textLength: 420 });
-    mocks.renderDynamicPage.mockResolvedValue("<article>rendered</article>");
+    mocks.renderDynamicPage.mockResolvedValue({
+      html: "<article>rendered</article>",
+      generatedImages: [],
+      warnings: [],
+    });
 
     const result = await convertUrlToMarkdown(sourceUrl, signal);
 
