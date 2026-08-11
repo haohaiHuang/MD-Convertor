@@ -63,11 +63,11 @@
 - feat-012 T10 已完成：生产审计清零；Node.js 24.14.1 连续通过 282 tests、48 E2E、live、Forge、fresh ZIP 与打包应用启动/长微信 30 图转换冒烟；用户确认真实窗口富文本模式人工验收通过。
 - feat-015 已完成：富文本模式新增“清空”，一次移除 HTML、纯文本、来源 URL 和旧结果；转换中禁用。Node.js 24.14.1 基线 287 tests，富文本三引擎 E2E 30/30，用户在当前源码的真实 Electron 窗口人工验收通过。
 - feat-013 链接/粘贴实现已完成：Mermaid 源码输出 fenced `mermaid`；链接客户端渲染图由受控 Chromium 截图为可信 PNG；富文本 Mermaid SVG 经独立白名单清洗后由 Sharp 转为 PNG；两者复用 30 图/8 MiB/20 MiB 预算。无法安全栅格化或 Canvas 仍占位警告。WalkingLabs 链接/粘贴真实门禁均通过。
-- feat-013 链接路径的 T4 自动门禁曾完成：Node.js 24.14.1 `desktop:release` 通过 306 tests、三引擎 51/51、live 2/2、Forge 与 fresh ZIP 校验；新包 354,619,347 bytes，SHA-256 `e84ce4bdeb7ea50e50d9a3a5fe2efe0a3f7bdc098cf133f83a513fb2e81328c0`。该 ZIP 早于后续粘贴 SVG 修复；最新源码仍需重新通过正式发布门禁。
+- feat-013 链接路径的 T4 自动门禁曾完成：Node.js 24.14.1 `desktop:release` 通过 306 tests、三引擎 51/51、live 2/2、Forge 与 fresh ZIP 校验；新包 354,619,347 bytes，SHA-256 `e84ce4bdeb7ea50e50d9a3a5fe2efe0a3f7bdc098cf133f83a513fb2e81328c0`。该 ZIP 早于后续粘贴 SVG 修复，是历史中间态；重新发布要求已由后续 feat-013/feat-016 release gate 关闭，现役产物见下方 Artifact。
 - 粘贴修复后用户提供实际下载 Markdown，只提取 Data URI PNG 并确认来源 CSS 丢失导致黑色回退；移除来源样式并写入固定浅色配色后，真实页面目视和重新打包应用人工复验通过。随后质检以失败测试确认并关闭动态多图跳过、纯源码误选、内联样式覆盖、31 图统计/警告及小型生成 PNG 误判；Node.js 24.14.1 `./init.sh` 最终通过 27 files / 314 tests、coverage/build。整改版再次 `desktop:package`，确认 0.2.0 / arm64 / macOS 12.0+，用户复测 WalkingLabs 富文本转换正常。最新完整 `desktop:release` 通过 E2E 51/51 和 WalkingLabs 2/2，但固定微信样本约 28 秒后 504，在 Forge 前停止且旧 ZIP 未变。
 - 用户确认微信上游 504 不再阻断个人测试包发布；`test:live` 只运行 WalkingLabs 链接/粘贴 Mermaid 两项稳定门禁，微信同轮对照保留为 `test:live:wechat` 诊断命令。最终 `desktop:release` 通过 315 tests、E2E 51/51、WalkingLabs 2/2、Forge 与 fresh ZIP 校验。
 - T10 人工验收已完成：X Article 样本正文正常但图片为链接；诊断确认其 6 张正文图与封面均来自 `pbs.twimg.com`，本机匿名直连 7/7 `ECONNRESET`，X 页面复跑亦有 502 波动。当前按“不绕过网络/登录限制”降级为外链，用户已接受为 v0.2 已知限制。
-- 同一 WalkingLabs 样本的富文本粘贴曾继续缺图：真实剪贴板 HTML 只有渲染 SVG。最新源码已用专用白名单清洗、固定浅色配色与 Sharp 栅格化修复，并通过真实粘贴门禁及本机 `.app` 人工验收；现有 ZIP 只含链接修复，不含本次粘贴修复。
+- 同一 WalkingLabs 样本的富文本粘贴曾继续缺图：真实剪贴板 HTML 只有渲染 SVG。源码已用专用白名单清洗、固定浅色配色与 Sharp 栅格化修复，并通过真实粘贴门禁及本机 `.app` 人工验收；“ZIP 只含链接修复”是当时的中间态，现役 ZIP 已包含完整 feat-013 链接/粘贴修复和 feat-016，见下方 Artifact 与 release gate 记录。
 
 ## Verification Evidence
 

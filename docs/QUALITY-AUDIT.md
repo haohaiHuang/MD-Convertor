@@ -22,13 +22,13 @@
 - 公开命令配置测试按 TDD 先 RED 后 GREEN，release guards 25/25；Node.js 24.14.1 `desktop:release` 通过 27 files / 315 tests、coverage/build、三引擎 51/51、WalkingLabs live 2/2、Forge、fresh ZIP 与包内版本/arm64 校验。
 - 当前 0.2.0 arm64 ZIP 为 `354,631,314` bytes，SHA-256 `b212b359405e53f1a0cc924b51c48c986335a3f74b4520f06f9fb825357d505c`。结合此前最新整改应用的 WalkingLabs 真实窗口验收，`feat-013` 完成；分支仍未合并，Developer ID 签名与 notarization 仍未配置。
 
-## Fifth-Round Release Closeout — 2026-08-11
+## Fifth-Round Release Closeout — 2026-08-11（历史快照，已由第七轮取代）
 
-- 当前 `codex/feat-015-clear-paste` 以源码提交 `f1d8ec3` 重新运行 Node.js 24.14.1 完整 `desktop:release`：24 files / 287 tests、coverage、三引擎 51/51、真实微信门禁、Forge 与 fresh ZIP 校验全部通过。
+- 当时的 `codex/feat-015-clear-paste` 以源码提交 `f1d8ec3` 重新运行 Node.js 24.14.1 完整 `desktop:release`：24 files / 287 tests、coverage、三引擎 51/51、真实微信门禁、Forge 与 fresh ZIP 校验全部通过。本节只保留 feat-015 历史证据，现役结论见上方第七轮。
 - 新 ZIP 为 0.2.0 / arm64 / macOS 12.0+，大小 `354,603,624` bytes，SHA-256 `7f6f39873056a34414706362356cb461d1617cb1cb73c9b76952fe587dd658c6`；包内版本与 arm64 可执行文件已由门禁解压复核，0.1.x 历史产物保护未变化。
 - 打包应用启动冒烟和 `https://example.com` browser-mode 转换通过（270 bytes、无警告）；包内静态 chunk 包含 feat-015 清空状态逻辑，用户随后确认真实打包窗口“一键清空”无问题。
 
-当前结论：feat-015 已从 source-accepted 推进到 packaged-and-accepted；现役 0.2.0 候选 ZIP 已包含该功能。分支仍未合并，Developer ID 签名与 notarization 仍未配置。
+当时结论：feat-015 已从 source-accepted 推进到 packaged-and-accepted；该轮 0.2.0 ZIP 已包含此功能。此历史快照已由第七轮 feat-016 发布收口取代；Developer ID 签名与 notarization 仍未配置。
 
 ## Fourth-Round Consistency Update — 2026-08-10
 
@@ -369,3 +369,26 @@ Resolution evidence:
 - 链接模式仅在受控 Chromium 中截图可见图表，使用不可预测的请求内占位映射；PNG 仍经 Sharp 实际格式校验、30 图、8 MiB 单图与 20 MiB 最终预算。网页自行提供的链接模式 Data URI 仍被拒绝。
 - 真实 WalkingLabs 门禁发现 `fonts.googleapis.com` 样式表会在固定代理中悬挂并阻塞 `DOMContentLoaded`；修复只阻断该字体样式表及既有字体/媒体资源，保留页面自身 CSS。未采用“导航超时但已提交即放行”的宽松方案，避免浏览器错误空壳被当作正文。
 - 链接版曾完成 Node.js 24.14.1 `desktop:release`：306 tests、三引擎 51/51、live 2/2、Forge 和 fresh ZIP。用户随后发现同一 WalkingLabs 页面经富文本粘贴仍缺图；固定浅色配色与质检整改后的本机 `.app` 已通过真实窗口验收，最终完整发布门禁及 fresh ZIP 也已通过，feat-013 标记为 done。
+
+## Eighth-Round QA — 2026-08-11
+
+质检执行时以 `HEAD bbf071d`、干净工作树和现有 0.2.0 产物为对象，只登记下列残留而未直接改写。后续已按用户授权完成文档修订；当前代码、测试和发布产物均已验证，以下条目不是新的代码缺陷。
+
+### Verification Snapshot
+
+- Node.js 24.14.1 `./init.sh`：27 个测试文件 / 317 tests、lint、typecheck、coverage gate 和 production build 全部通过。
+- `npm run test:e2e`：Chromium / Firefox / WebKit 60/60，通过 tracked-file check。
+- `npm run test:live`：WalkingLabs 链接/富文本 Mermaid 2/2 通过。
+- `npm run test:live:wechat`：固定微信公众号样本约 28 秒后返回 `504 CONVERSION_TIMEOUT`；按已批准的分层门禁属于非阻断诊断项。
+- `npm audit --omit=dev --json`：生产依赖 0；完整 `npm audit --json`：1 critical / 26 high / 3 low，均为未进入应用包的开发/构建链告警。
+- 当前 ZIP：`354,636,241` bytes，SHA-256 `5becae36a53e91129a0dbcb93c3f7f5f3197326b2c83df6f10cb8494d8116485`；版本 `0.2.0`、架构 `arm64`，与现有状态文档一致。
+
+### Documentation Residual Register — Resolved
+
+| ID | 文件与位置 | 残留表述 | 当前事实 | 影响 | 建议动作 | 状态 |
+|---|---|---|---|---|---|---|
+| DOC-014 | `PROGRESS.md:139` | 写成“当前 `codex/feat-015-clear-paste` 分支” | 当前分支是 `codex/feat-013-mermaid`，feat-013/feat-016 已完成 | 下一会话可能误判分支和收口范围 | 已改为当前分支、`b17341a` 与最新发布状态 | resolved-2026-08-11 |
+| DOC-015 | `docs/QUALITY-AUDIT.md:27` | 第五轮快照仍使用“当前 `codex/feat-015-clear-paste`” | 第七轮已是 feat-016 完整发布收口 | 读者可能把历史快照误认成现役状态 | 已在章节标题和正文标注历史快照，并指向第七轮现役结论 | resolved-2026-08-11 |
+| DOC-016 | `session-handoff.md:66,70` | 旧交接记录写“最新源码仍需重新发布”及“现有 ZIP 只含链接修复” | 当前 ZIP 已含完整 feat-013 链接/粘贴修复和 feat-016 | 交接者可能拿旧产物或重复执行已完成发布 | 已保留历史证据并补充后续发布取代指针 | resolved-2026-08-11 |
+
+以下内容本轮不登记为残留：`docs/TASKS-FEAT-013.md` T1 的“唯一 in-progress”是开工时完成条件；`docs/QUALITY-AUDIT.md:352` 位于明确标注为 2026-08-09 的历史审计章节，均不属于现役状态声明。
