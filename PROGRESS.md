@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Last updated: 2026-08-10
+- Last updated: 2026-08-11
 - Active feature: 无；`feat-015 — Clear Pasted Content Action` 已完成，`feat-013` 保持 planned，`feat-014` 已取消。
-- Overall status: 0.1.3 已以提交 `ce041c9`、标签 `v0.1.3` 和只读 ZIP 归档封版。v0.2 `feat-012` 已在 `codex/feat-012-v0.2` 以提交 `23294e4` 完成自动门禁、打包应用冒烟和用户人工验收；当前工作分支 `codex/feat-015-clear-paste` 在其上完成 `feat-015`，HEAD 为 `df6ed31`。按用户决定，v0.2 尚未合并到 `main`；现有 0.2.0 ZIP 尚未包含 feat-015。
+- Overall status: 0.1.3 已以提交 `ce041c9`、标签 `v0.1.3` 和只读 ZIP 归档封版。v0.2 `feat-012` 已在 `codex/feat-012-v0.2` 以提交 `23294e4` 收口；当前工作分支 `codex/feat-015-clear-paste` 在其上完成 `feat-015`。以提交 `f1d8ec3` 为源码生成的新 0.2.0 ZIP 已通过完整发布门禁、打包冒烟和用户真实窗口验收，包含“一键清空”；按用户决定尚未合并到 `main`。
 
 ## Completed
 
@@ -72,7 +72,8 @@
 - Passed with Node.js 24.14.1: 提交前审查整改后的 `./init.sh` — lint、typecheck、24 files / 285 tests、coverage gate 与 production build；现有 0.2.0 ZIP 经新门禁解压检查，包内版本与 arm64 可执行文件通过。
 - Passed with Node.js 24.14.1: feat-015 `src/lib/paste-client.test.ts` — 19/19；`./init.sh` — lint、typecheck、24 files / 287 tests、coverage gate 与 production build；富文本关键 E2E — Chromium/Firefox/WebKit 30/30，tracked-file check passed。
 - Passed with Node.js 24.14.1: feat-015 后完整 `npm run test:e2e` — Chromium/Firefox/WebKit 51/51，tracked-file check passed；当前源码包含链接模式 21 项与富文本模式 30 项。
-- Passed: feat-015 real Electron window — 用户确认“一键清空”交互人工验收通过；本事项未重新打包、未运行 live。
+- Passed: feat-015 pre-package source Electron window — 用户在重新发布前确认“一键清空”交互通过；后续发布与打包窗口证据见下一条。
+- Passed with Node.js 24.14.1: feat-015 `npm run desktop:release` — 24 files / 287 tests、coverage gate、三引擎 51/51、真实微信门禁、Forge 与 fresh ZIP 校验全部通过；打包应用启动和 `example.com` browser-mode 270-byte 转换冒烟通过，用户确认新打包窗口的“一键清空”无问题。
 - Passed: 0.2.0 packaged runtime — loopback standalone 启动；长微信 direct mode 17,643 non-Base64 chars / 30 images / 7,749,111 bytes；打包应用未包含 Forge、concurrently 或 tar；用户已确认真实窗口富文本模式人工验收通过。
 - Passed with Node.js 24.14.1 and 24.16.0: 0.1.3 `./init.sh` — lint、typecheck、覆盖率门禁、93 tests、Next.js build；2026-07-21 删除失效规划与 Harness 引用后复跑通过。
 - Passed: 0.1.3 `npm run test:e2e` — Chromium、Firefox、WebKit 共 21 项，覆盖“复制”“下载”“已复制”和下载文件名。
@@ -113,7 +114,7 @@
 ## Artifacts
 
 - v0.2 candidate App: `out/MD-Convertor-darwin-arm64/MD-Convertor.app` — arm64；最低 macOS 12.0；版本 0.2.0。
-- v0.2 candidate ZIP: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.2.0.zip` — 354,594,827 bytes；SHA-256 `ab2a463cf0a98a51cacdcad3a2cab5ed34b458b47b504ac644d56b7914a7b7b4`。
+- v0.2 candidate ZIP: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.2.0.zip` — 354,603,624 bytes；SHA-256 `7f6f39873056a34414706362356cb461d1617cb1cb73c9b76952fe587dd658c6`；包含 feat-015。
 - 0.1.3 frozen ZIP 保持 `239,281,512` bytes / SHA-256 `66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89`；外部只读归档和 0.1.0–0.1.3 四个历史哈希均未变化。
 
 ## Blockers and Risks
@@ -126,9 +127,9 @@
 - 登录态、临时签名、Blob 或需要 Cookie 的远程图片可能无法从粘贴 HTML 重新获取；v0.2 明确降级为替代文本并警告，不引入 Cookie 读取。
 - 0.2.0 真实窗口人工验收样本 `x.com/lumenxbt/status/2082101954206130402` 为 X Article：正文含 6 个图片实体并另有封面，均位于 `pbs.twimg.com`；本机匿名直连 7/7 返回 `ECONNRESET`，同一打包应用复跑 X 页面也出现 502 上游波动。图片无法下载时保留外层链接，属于当前“不绕过 X 网络/登录限制”的降级，不是 Data URI 格式回归；用户已接受为 v0.2 已知限制，不阻断个人测试发布。
 - 人工验收页面 `walkinglabs.github.io/.../lecture-02-what-a-harness-actually-is/` 没有正文栅格图片；静态 HTML 只有空 `.mermaid` 占位，JavaScript 运行后生成 1 个内联 SVG。当前 direct 转换输出 0 source/embedded images、0 warnings，且没有 Mermaid fence；由于正文足够不会触发 browser fallback，SVG 又按安全规则删除，图表完全缺失。该项是 Mermaid 支持缺口，不是图片下载失败；用户已接受为 v0.2 已知限制，并决定后续在 `feat-013` 独立开发。
-- feat-012 已完成全部 T3–T10、live、0.2.0 打包、应用冒烟与真实窗口人工验收，并以提交 `23294e4` 收口；当前 `codex/feat-015-clear-paste` 分支在其上完成 feat-015，未重新打包或合并到 `main`。
+- feat-012 已完成全部 T3–T10 并以提交 `23294e4` 收口；当前 `codex/feat-015-clear-paste` 分支在其上完成 feat-015，并已重新通过 live、0.2.0 打包、应用冒烟与真实窗口人工验收，但尚未合并到 `main`。
 - 2026-08-10 用户确认现有 UI/UX 无需整体调整，取消 `feat-014`；随后授权并完成 `feat-015`，新增富文本模式一键清空粘贴 HTML、纯文本、来源链接和旧结果。
 
 ## Recommended Next Step
 
-等待用户决定下一项；`feat-013 — Mermaid Preservation` 保持 planned，未经确认不实施。feat-015 当前源码已完成，但尚未进入 0.2.0 ZIP，未运行 live、未合并。
+等待用户决定下一项；`feat-013 — Mermaid Preservation` 保持 planned，未经确认不实施。feat-015 已进入当前 0.2.0 候选 ZIP，但分支尚未合并到 `main`。

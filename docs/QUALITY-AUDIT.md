@@ -2,22 +2,30 @@
 
 ## Audit Metadata
 
-- Audit date: 2026-07-18; second-round audit: 2026-07-18; consistency review: 2026-08-10
+- Audit date: 2026-07-18; second-round audit: 2026-07-18; consistency reviews: 2026-08-10 and 2026-08-11
 - Audited version: `0.1.2`; follow-up validation: `0.1.3`
 - Platform: Apple Silicon Mac (`darwin/arm64`)
 - Historical active feature: 无；`feat-010 — Personal Mac Release` 已完成
 - Current review scope: `feat-012 — Paste Rich-Text Conversion` T3–T10，以及当前分支 `feat-015 — Clear Pasted Content Action` 的源码、测试和产物边界
 - Audit type: 文档一致性、代码与安全审查、自动化验证、真实网页门禁、依赖审计和打包产物抽查
-- Overall verdict: **0.1.3 personal release and v0.2 T10 artifact remain validated; feat-015 is source-accepted but not included in the current 0.2.0 ZIP; external distribution remains unsigned**
+- Overall verdict: **0.1.3 personal release remains frozen; current v0.2 0.2.0 artifact includes feat-015 and passed release, smoke, and real-window acceptance; external distribution remains unsigned**
+
+## Fifth-Round Release Closeout — 2026-08-11
+
+- 当前 `codex/feat-015-clear-paste` 以源码提交 `f1d8ec3` 重新运行 Node.js 24.14.1 完整 `desktop:release`：24 files / 287 tests、coverage、三引擎 51/51、真实微信门禁、Forge 与 fresh ZIP 校验全部通过。
+- 新 ZIP 为 0.2.0 / arm64 / macOS 12.0+，大小 `354,603,624` bytes，SHA-256 `7f6f39873056a34414706362356cb461d1617cb1cb73c9b76952fe587dd658c6`；包内版本与 arm64 可执行文件已由门禁解压复核，0.1.x 历史产物保护未变化。
+- 打包应用启动冒烟和 `https://example.com` browser-mode 转换通过（270 bytes、无警告）；包内静态 chunk 包含 feat-015 清空状态逻辑，用户随后确认真实打包窗口“一键清空”无问题。
+
+当前结论：feat-015 已从 source-accepted 推进到 packaged-and-accepted；现役 0.2.0 候选 ZIP 已包含该功能。分支仍未合并，Developer ID 签名与 notarization 仍未配置。
 
 ## Fourth-Round Consistency Update — 2026-08-10
 
-- 当前工作分支为 `codex/feat-015-clear-paste`，HEAD 为 `df6ed31`；`feat-012` 的发布基线仍是 `codex/feat-012-v0.2` / `23294e4`，`main` 与 `v0.1.3^{}` 仍固定在 `ce041c9`。
-- `feature_list.json`、`PROGRESS.md`、`session-handoff.md`、`docs/TASKS-FEAT-015.md` 与 `CHANGELOG.md` 对 `feat-015` 的状态已统一为完成。当前源码已通过 Node.js 24.14.1 `./init.sh`（24 files / 287 tests）、富文本三引擎 30/30，以及完整三引擎 E2E 51/51。
-- 当前 0.2.0 ZIP（354,594,827 bytes，SHA-256 `ab2a463cf0a98a51cacdcad3a2cab5ed34b458b47b504ac644d56b7914a7b7b4`）来自 2026-08-09 的 feat-012 T10 发布，早于 2026-08-10 的 feat-015 提交，因此不包含“一键清空”。feat-015 已完成源码和人工验收，但需重新运行 T10 发布门禁后才可进入新的 0.2.0 产物。
-- 当前依赖审计为生产依赖 0；完整依赖树为 1 critical / 26 high / 3 low，剩余项仍位于开发/构建链。旧的 5 high / 1 moderate 与 1 critical / 30 high / 1 moderate / 3 low 仅保留为历史审计证据。
+- 本节是 2026-08-10 的发布前快照，已被上方第五轮发布收口取代：当时工作分支为 `codex/feat-015-clear-paste`，HEAD 为 `df6ed31`；`feat-012` 的发布基线为 `codex/feat-012-v0.2` / `23294e4`，`main` 与 `v0.1.3^{}` 固定在 `ce041c9`。
+- 当时 `feature_list.json`、`PROGRESS.md`、`session-handoff.md`、`docs/TASKS-FEAT-015.md` 与 `CHANGELOG.md` 已把 `feat-015` 统一为完成；源码通过 Node.js 24.14.1 `./init.sh`（24 files / 287 tests）、富文本三引擎 30/30，以及完整三引擎 E2E 51/51。
+- 当时的 0.2.0 ZIP（354,594,827 bytes，SHA-256 `ab2a463cf0a98a51cacdcad3a2cab5ed34b458b47b504ac644d56b7914a7b7b4`）来自 2026-08-09 的 feat-012 T10，不包含“一键清空”；该差异已由 2026-08-11 新包关闭。
+- 依赖审计在该时点为生产依赖 0；完整依赖树为 1 critical / 26 high / 3 low，剩余项位于开发/构建链。旧的 5 high / 1 moderate 与 1 critical / 30 high / 1 moderate / 3 low 仅保留为历史审计证据。
 
-一致性结论：产品范围、事项状态、版本边界、0.1.3 归档和当前安全结论已对齐；唯一需要对外明确区分的是“当前源码”与“尚未包含 feat-015 的 0.2.0 ZIP”。
+当时的一致性结论要求区分源码与旧 ZIP；2026-08-11 重新发布后，该差异不再是现役限制。
 
 ## Second-Round Audit Update — 2026-07-18
 
@@ -329,6 +337,6 @@ Resolution evidence:
 
 ### v0.2 release status
 
-`T9A`、`T9B` 与 `T10` 已完成，`feat-012` 无剩余任务。自动门禁、live、Forge fresh ZIP、启动、链接转换冒烟和真实窗口富文本模式人工验收均已通过；X 图片匿名直连失败时保留外链，以及客户端 Mermaid/SVG 图表缺失，均已由用户接受为 v0.2 已知限制。Mermaid 保留转入后续 `feat-013`；泛化 UI/UX 调整 `feat-014` 已取消；`feat-015` 已在当前源码完成一键清空并通过 287 tests、51/51 E2E 和人工验收，但尚未重新打包进入现有 0.2.0 ZIP。Apple Developer ID 签名与 notarization 仍是对外分发前的独立开放项。
+`T9A`、`T9B` 与 `T10` 已完成，`feat-012` 无剩余任务。自动门禁、live、Forge fresh ZIP、启动、链接转换冒烟和真实窗口富文本模式人工验收均已通过；X 图片匿名直连失败时保留外链，以及客户端 Mermaid/SVG 图表缺失，均已由用户接受为 v0.2 已知限制。Mermaid 保留转入后续 `feat-013`；泛化 UI/UX 调整 `feat-014` 已取消；`feat-015` 已完成一键清空并进入当前 0.2.0 ZIP，通过 287 tests、51/51 E2E、live、打包冒烟和真实窗口验收。Apple Developer ID 签名与 notarization 仍是对外分发前的独立开放项。
 
 2026-08-09 的 QA-005 阻断经授权整改：生产审计从 6 项降至 0，完整树降至 1 critical / 26 high / 3 low；剩余项确认属于未进入应用包的开发/构建链。Node.js 24.16.0 的 Forge 无产物路径再次被 fresh ZIP 门禁正确阻断，随后 Node.js 24.14.1 的连续发布门禁成功生成并校验 0.2.0 ZIP。该过程未改变任何 0.1.x 哈希或外部归档。

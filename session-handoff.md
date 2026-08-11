@@ -4,8 +4,8 @@
 
 - Goal: 交付可在 Apple Silicon Mac 本地安装使用的 MD-Convertor；0.1.3 已封版，v0.2 富文本粘贴转换（`feat-012`）已完成，当前分支另完成 `feat-015`，按用户决定暂不合并。
 - Active: 无；`feat-015 — Clear Pasted Content Action` 已完成，`feat-013` 保持 planned，`feat-014` 已取消。
-- Quality status: 0.1.3 自动发布门禁、本机操作和第二台 Apple Silicon Mac 验收均已通过；v0.2 最小安全升级后生产审计为 0，完整树剩余 1 critical / 26 high / 3 low 且未进入应用包；T10 自动发布门禁、打包应用冒烟与真实窗口人工验收均已通过；对外分发签名仍待完成。
-- Branch: `codex/feat-015-clear-paste`，HEAD `df6ed31`；`main` 固定在 0.1.3 封版提交 `ce041c9`，标签为 `v0.1.3`。v0.2 `feat-012` 在 `codex/feat-012-v0.2` 以提交 `23294e4` 收口，当前分支在其上完成 `feat-015`；按用户决定暂不合并。现有 0.2.0 ZIP 仍是 feat-012 T10 产物，不包含 feat-015。
+- Quality status: 0.1.3 自动发布门禁、本机操作和第二台 Apple Silicon Mac 验收均已通过；v0.2 最小安全升级后生产审计为 0，完整树剩余 1 critical / 26 high / 3 low 且未进入应用包；feat-015 后的完整发布门禁、打包应用冒烟与真实窗口人工验收均已通过；对外分发签名仍待完成。
+- Branch: `codex/feat-015-clear-paste`；`main` 固定在 0.1.3 封版提交 `ce041c9`，标签为 `v0.1.3`。v0.2 `feat-012` 在 `codex/feat-012-v0.2` 以提交 `23294e4` 收口，当前分支在其上完成 `feat-015`；新 0.2.0 ZIP 由源码提交 `f1d8ec3` 生成并包含 feat-015，按用户决定暂不合并。
 
 ## Current Scope
 
@@ -13,7 +13,7 @@
 - 不调用 AI API，不需要 API Key。
 - Windows 版本和多平台仓库迁移已取消；当前 macOS 根目录是唯一有效应用项目。
 - v0.2（feat-012）已批准并完成开工评审：富文本粘贴转换同时保留剪贴板 HTML 与纯文本，编辑后降级纯文本；规划见 `docs/PLAN-V0.2.md`，任务追踪见 `docs/TASKS-V0.2.md`。
-- 当前分支的 `feat-015` 已在富文本模式增加一键清空，状态契约、页面 E2E 和当前源码人工验收均已完成；该变更尚未进入现有 0.2.0 ZIP。
+- 当前分支的 `feat-015` 已在富文本模式增加一键清空，状态契约、页面 E2E、完整发布门禁、重新打包和真实窗口验收均已完成；当前 0.2.0 候选 ZIP 已包含该变更。
 - 登录态、临时签名、Blob 或需要 Cookie 的远程图片可能无法重新获取，届时保留替代文本并警告；本迭代不读取 Cookie。
 
 ## Open Discussion Items（后续迭代讨论项）
@@ -83,6 +83,7 @@
 | feat-012 T9B docs + static checks | Passed | 9 个授权文档、JSON 解析、关键词/死引用和 `git diff --check` 通过；未运行 live/make |
 | feat-012 T10 release gate | Passed | Node.js 24.14.1；24 files / 282 tests、48/48 E2E、live、Forge、fresh ZIP、启动与长微信 30 图冒烟；0.2.0 ZIP 354,594,827 bytes / `ab2a463c...a7b7b4` |
 | feat-012 final review remediation | Passed | Node.js 24.14.1；远程伪装格式与 ZIP 包内版本/arm64 均先 RED 后 GREEN；最终 `./init.sh` 24 files / 285 tests、coverage/build；现有 ZIP 包内只读复验通过 |
+| feat-015 release gate | Passed | Node.js 24.14.1；24 files / 287 tests、51/51 E2E、live、Forge、fresh ZIP、启动和 `example.com` 转换冒烟；用户确认新打包窗口“一键清空”通过 |
 | 0.1.3 Node 24 `./init.sh` | Passed | lint、typecheck、coverage gate、18 files / 93 tests、Next build；2026-07-21 取消方案并清理 Harness 后复跑通过 |
 | 0.1.3 `npm run test:e2e` | Passed | 21 checks across Chromium, Firefox, WebKit, including new button labels |
 | 0.1.3 `npm run test:live` | Passed with variability | first upstream timeout; unchanged-threshold rerun passed |
@@ -104,16 +105,16 @@
 ## Artifact
 
 - v0.2 candidate: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.2.0.zip`
-- SHA-256: `ab2a463cf0a98a51cacdcad3a2cab5ed34b458b47b504ac644d56b7914a7b7b4`
-- Size: `354,594,827` bytes; arm64; minimum macOS `12.0`; version `0.2.0`.
-- Packaged smoke: startup passed; long WeChat 17,643 non-Base64 chars / 30 images / 7,749,111 bytes; user confirmed final real-window rich-text acceptance passed.
+- SHA-256: `7f6f39873056a34414706362356cb461d1617cb1cb73c9b76952fe587dd658c6`
+- Size: `354,603,624` bytes; arm64; minimum macOS `12.0`; version `0.2.0`; includes feat-015.
+- Packaged smoke: startup and `example.com` browser-mode conversion passed; user confirmed the final packaged-window “一键清空” flow passed. The earlier feat-012 package retains the long WeChat 17,643 non-Base64 chars / 30 images evidence.
 - 0.1.3 frozen ZIP and external archive remain `239,281,512` bytes / SHA-256 `66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89`.
 
 ## Next Session Startup
 
 1. 阅读 `AGENTS.md`、`PROGRESS.md`、`feature_list.json`、`docs/PLAN-V0.2.md`、`docs/TASKS-V0.2.md`、`docs/PRODUCT.md`、`docs/ARCHITECTURE.md`、`docs/TESTING.md` 和 `docs/QUALITY-AUDIT.md`。
 2. 运行 `./init.sh`（Node.js 24.x）。
-3. T10 自动门禁、live、打包、应用冒烟与用户人工验收均已完成；`feat-012` 以 `23294e4` 收口，当前 `feat-015` 源码验收已完成但尚未重新打包，按用户决定暂不合并。
+3. feat-015 后的自动门禁、live、重新打包、应用冒烟与用户人工验收均已完成；当前 0.2.0 ZIP 包含 feat-015，分支按用户决定暂不合并。
 4. 未经用户重新明确授权，不恢复 Windows 与多平台仓库迁移。
 5. 对外分发仍需 Developer ID 签名与 notarization；完整开发/构建树的上游告警继续按 `QA-005` 跟踪。
 
@@ -121,8 +122,8 @@
 
 - 0.1.3 正式源码：`main` / `ce041c9` / `v0.1.3`。
 - 0.1.3 正式 ZIP：`~/Downloads/MD-Convertor-0.1.3-release/MD-Convertor-darwin-arm64-0.1.3.zip`，只读，SHA-256 `66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89`。
-- v0.2 开发基线：`codex/feat-012-v0.2` / `23294e4`，版本 `0.2.0`；当前工作分支：`codex/feat-015-clear-paste` / `df6ed31`。两者只允许在用户确认后合并。
+- v0.2 开发基线：`codex/feat-012-v0.2` / `23294e4`，版本 `0.2.0`；当前工作分支为 `codex/feat-015-clear-paste`，候选包源码提交为 `f1d8ec3`。两者只允许在用户确认后合并。
 
 ## Recommended Next Step
 
-等待用户决定下一项；`feat-013 — Mermaid Preservation` 仍为 planned，未经确认不实施。feat-015 当前源码已验收，但未打包、未运行 live、未合并。
+等待用户决定下一项；`feat-013 — Mermaid Preservation` 仍为 planned，未经确认不实施。feat-015 已重新打包并验收，但尚未合并。

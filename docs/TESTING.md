@@ -68,9 +68,9 @@ MD_CONVERTOR_LIVE_URL=https://mp.weixin.qq.com/s/example npm run test:live
 
 当前 v0.2 候选包使用 Node.js 24.14.1 / npm 11.11.0 生成。Node.js 24.16.0 可通过日常基线，但本机 Forge 仍会在 finalizing 阶段无产物退出；fresh ZIP 门禁已再次确认会将该情况判定为失败，因此打包阶段以 24.14.1 为已验证组合。T10 的基线、三浏览器、live、Forge、fresh ZIP、启动、长微信转换冒烟和真实窗口人工验收均已通过。
 
-Electron 43 起 `npm install` 不再自动下载 Electron 运行时；`desktop:prepare` 已显式调用官方 `install-electron`，首次打包会联网下载并缓存对应的 darwin/arm64 ZIP，后续复用缓存。T10 产物为 `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.2.0.zip`，大小 `354,594,827` bytes，SHA-256 `ab2a463cf0a98a51cacdcad3a2cab5ed34b458b47b504ac644d56b7914a7b7b4`。
+Electron 43 起 `npm install` 不再自动下载 Electron 运行时；`desktop:prepare` 已显式调用官方 `install-electron`，首次打包会联网下载并缓存对应的 darwin/arm64 ZIP，后续复用缓存。2026-08-11 在 feat-015 后重新生成的当前产物为 `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.2.0.zip`，大小 `354,603,624` bytes，SHA-256 `7f6f39873056a34414706362356cb461d1617cb1cb73c9b76952fe587dd658c6`。
 
-该 T10 产物对应 feat-012 基线；当前源码已完成 feat-015，但 feat-015 尚未重新打包，因此不能把现有 ZIP 作为包含“一键清空”的安装包。
+当前产物包含 feat-015。Node.js 24.14.1 完整 `desktop:release` 已通过 287 tests、三引擎 51/51、真实微信门禁、Forge、fresh ZIP 与包内版本/arm64 校验；随后打包应用启动、`example.com` 转换和真实窗口“一键清空”验收通过。
 
 ## 0.1.3 人工验收
 

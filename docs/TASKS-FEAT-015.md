@@ -17,3 +17,9 @@
 - **状态**：done
 - **完成条件**：`./init.sh`、三浏览器关键 E2E、文档同步与 Git 提交通过；不打包、不运行 live、不合并。
 - **验证**：Node.js 24.14.1 `./init.sh` 通过 24 files / 287 tests、coverage 与 build；富文本三浏览器 E2E 30/30，tracked-file check 通过；用户在当前源码的真实 Electron 窗口人工验收通过。
+
+## T4 — 重新发布验证
+
+- **状态**：done
+- **完成条件**：完整发布门禁生成包含 feat-015 的 fresh 0.2.0 arm64 ZIP，并通过打包应用冒烟和真实窗口验收。
+- **验证**：Node.js 24.14.1 `desktop:release` 通过 287 tests、三引擎 51/51、真实微信门禁、Forge、fresh ZIP 与包内版本/架构校验；打包应用启动和 `example.com` 转换冒烟通过，用户确认“一键清空”无问题。ZIP 为 354,603,624 bytes，SHA-256 `7f6f39873056a34414706362356cb461d1617cb1cb73c9b76952fe587dd658c6`。
