@@ -1,74 +1,76 @@
 # MD-Convertor
 
-MD-Convertor 是一个 Apple Silicon Mac 网页转 Markdown 单机工具。你可以粘贴公开网页链接，或把自己已经复制的网页富文本粘贴进应用；确认无误后点击转换，即可在本机预览、复制或保存包含内嵌图片的 `.md` 文件。
+**English** | [简体中文](README.zh.md)
 
-## 第一阶段能力
+MD-Convertor is a local webpage-to-Markdown app for Apple Silicon Macs. Paste a public webpage URL, or paste rich web content that you have already copied, review the input, and start the conversion. You can then preview, copy, or save a `.md` file with embedded images—all on your Mac.
 
-- 无账号、无需外部服务器，链接和转换结果只在本机处理
-- 每次启动使用随机会话令牌保护本地转换接口，外部网页不能直接调用
-- 不调用 AI API，不需要 API Key，也不产生模型调用费用
-- 静态网页正文提取，JavaScript 页面使用浏览器兜底
-- 动态浏览器请求逐次校验并固定公网 IP，防止目标网页借应用访问本机或内网
-- 动态浏览器回退限制为最多 100 个请求、累计 50 MiB 网络传输和单连接 25 MiB，超限时停止相关请求
-- 支持可公开访问的微信公众号文章，并识别验证页或已删除文章
-- 提供“链接转换”和“富文本转换”两个模式；富文本模式同时读取剪贴板 HTML 与纯文本
-- 富文本 HTML 经过语义门控和独立净化；手工编辑后自动降级为纯文本，再次粘贴整体替换
-- 富文本请求体最多 5 MiB（按 UTF-8 JSON 实际字节数校验），来源 URL 可选且只用于来源头部和相对资源解析
-- 富文本图片按 lazy-first 处理，严格校验 `data:` 图片并沿用 30 图、8 MiB 单图、20 MiB 最终文件预算
-- 链接模式自动保留标题、来源和转换时间；富文本模式按可选来源 URL 保留来源
-- 支持 JPEG、PNG、WebP、GIF、AVIF 图片以内嵌 Data URI 写入 Markdown
-- Mermaid 源码转换为 fenced `mermaid` 代码块；链接页面或粘贴内容只有安全的渲染图时，转为 PNG 并内嵌
-- 最终文件不超过 20 MiB；超出预算时优先保留正文并从末张图片开始省略
-- 转换中可停止；完成后显示文件大小、正文字数和图片提取数
-- 链接模式可一键清空 URL 和旧结果；长结果页面可快速返回顶部继续输入
-- Apple Silicon（arm64）Mac 桌面应用
+## First-stage capabilities
 
-应用不绕过登录页、付费墙、验证码或其他访问限制；富文本模式只处理用户主动复制的剪贴板内容。登录态、临时签名、`blob:` 或需要 Cookie 的图片可能无法重新获取，会保留替代文本并提示。PDF、批量转换、历史记录和跨电脑同步不在第一阶段范围内。
+- No account or external server required; URLs and conversion results are processed locally
+- A random session token protects the local conversion API on every launch, preventing external webpages from calling it directly
+- No AI API, API key, model usage, or model-related cost
+- Extracts content from static webpages and falls back to an embedded browser for JavaScript-rendered pages
+- Validates every dynamic browser request and pins it to a public IP, preventing target webpages from using the app to access the host or private networks
+- Limits each browser fallback to 100 requests, 50 MiB of cumulative network traffic, and 25 MiB per connection; related requests stop when a limit is exceeded
+- Supports publicly accessible WeChat Official Account articles and detects verification or deleted-article pages
+- Provides two modes: Link Conversion and Rich Text Conversion; rich text mode reads both clipboard HTML and plain text
+- Applies semantic gating and independent sanitization to pasted HTML; manual edits automatically fall back to plain text, while a new paste replaces the entire previous input
+- Limits rich text request bodies to 5 MiB based on actual UTF-8 JSON bytes; the optional source URL is used only for source metadata and resolving relative resources
+- Processes pasted images with lazy-load sources first, strictly validates `data:` images, and retains the existing limits of 30 images, 8 MiB per source image, and 20 MiB per final file
+- Link mode automatically preserves the title, source, and conversion time; rich text mode preserves a source only when an optional source URL is provided
+- Embeds JPEG, PNG, WebP, GIF, and AVIF images as Data URIs in Markdown
+- Converts Mermaid source to fenced `mermaid` code blocks; when a linked page or pasted content contains only a safe rendered diagram, it converts the diagram to an embedded PNG
+- Limits the final file to 20 MiB; when over budget, it keeps the text first and omits embedded images starting from the last one
+- Lets you stop an in-progress conversion; completed results show file size, text character count, and extracted image count
+- Lets you clear the URL and previous result in link mode with one action; long result pages provide a quick way back to the top
+- Ships as an Apple Silicon (arm64) Mac desktop app
 
-## 两种转换模式
+The app does not bypass login pages, paywalls, CAPTCHAs, or other access restrictions. Rich text mode processes only clipboard content that the user explicitly copies. Images that require an authenticated session, temporary signatures, `blob:` URLs, or cookies may not be retrievable; the app keeps their alt text and displays a warning. PDFs, batch conversion, history, and cross-device synchronization are outside the first-stage scope.
 
-### 链接转换
+## Two conversion modes
 
-在“链接转换”页粘贴 HTTP/HTTPS 网页链接，点击“转换为 MD”后由本机安全抓取、提取正文并处理图片。点击“清空链接”可同时清除 URL、校验提示和旧结果；转换进行中该操作不可用。动态网页可使用内置 Chromium 回退；链接、网页和图片不会上传到 MD-Convertor 服务。
+### Link Conversion
 
-结果较长时，页面右下角会在滚动后显示“返回顶部”；它只负责平滑回到输入区，不会清除链接、富文本内容或转换结果。
+Paste an HTTP/HTTPS webpage URL into the Link Conversion tab, then click “转换为 MD” (Convert to MD). The app securely fetches the page, extracts its main content, and processes its images locally. “清空链接” (Clear Link) removes the URL, validation message, and previous result together; it is disabled during conversion. Dynamic pages can use the embedded Chromium fallback. URLs, webpages, and images are never uploaded to an MD-Convertor service.
 
-### 富文本转换
+When a result is long, a “返回顶部” (Back to Top) button appears in the lower-right corner after you scroll. It only scrolls smoothly back to the input area and does not clear the URL, rich text, or conversion result.
 
-在“富文本转换”页直接粘贴浏览器复制的网页内容。应用读取 `text/html` 和 `text/plain`，输入框显示纯文本：
+### Rich Text Conversion
 
-1. 检测到语义结构时，使用净化后的 HTML、Turndown/GFM 和 lazy-first 图片管线。
-2. 没有可用语义 HTML 时，使用剪贴板纯文本；提示会明确显示当前路径。
-3. 手工编辑后旧 HTML 会立即丢弃并按纯文本转换；再次粘贴会替换全部内容。
-4. 可选填写来源 URL。填写无凭据的 HTTP/HTTPS 地址时输出来源头部并帮助解析相对链接/图片；留空则省略来源行。
-5. 点击“清空”可一次移除当前内容、来源 URL 和旧转换结果；转换进行中该操作不可用。
+Paste content copied from a browser directly into the Rich Text Conversion tab. The app reads both `text/html` and `text/plain`, while the input box displays the plain-text representation:
 
-粘贴模式不会重新抓取来源网页、读取浏览器 Cookie 或恢复登录态。懒加载图片缺少真实 URL，或图片依赖登录态、临时签名、`blob:` URL 时，应用会保留替代文本和警告。
+1. When semantic structure is detected, the app uses sanitized HTML, Turndown/GFM, and the lazy-first image pipeline.
+2. When no usable semantic HTML exists, it uses the clipboard plain text and clearly indicates that path.
+3. Manual edits immediately discard the previous HTML and switch the conversion to plain text; pasting again replaces all existing content.
+4. You may provide a source URL. A credential-free HTTP/HTTPS URL adds source metadata and helps resolve relative links and images; leaving it blank omits the source line.
+5. “清空” (Clear) removes the current content, source URL, and previous result in one action; it is disabled during conversion.
 
-Mermaid 源码会保留为 fenced `mermaid` 代码块；应用预览把它显示为代码，支持 Mermaid 的 Markdown 阅读器可自行渲染。链接页面若只有客户端渲染结果，应用会在受控 Chromium 中截图为 PNG。富文本粘贴若只有 Mermaid SVG，会先移除脚本、外部资源和危险属性，再在本机转为 PNG；无法安全转换或只有 Canvas 时保留占位文本并提示。两条路径生成的 PNG 都按现有图片数量和文件大小预算内嵌，原始 SVG 不进入 Markdown。
+Paste mode does not refetch the source webpage, read browser cookies, or restore an authenticated session. If a lazy-loaded image has no real URL, or an image depends on authentication, temporary signatures, or a `blob:` URL, the app keeps its alt text and displays a warning.
 
-## 在其他电脑使用
+Mermaid source is preserved as a fenced `mermaid` code block. The built-in preview displays it as code, while Markdown readers with Mermaid support can render it themselves. If a linked page contains only a client-rendered diagram, the app captures it as a PNG in controlled Chromium. If pasted rich text contains only Mermaid SVG, the app removes scripts, external resources, and dangerous attributes before converting it to PNG locally. If safe conversion is impossible, or only a Canvas rendering is available, it keeps placeholder text and displays a warning. PNGs from both paths share the existing image-count and file-size budgets, and raw SVG never enters the Markdown output.
 
-0.1.3 与当前已验收的 v0.2 0.2.0 ZIP 都是自包含的 Apple Silicon Mac 应用。目标电脑不需要安装 Node.js、npm、Chrome、Playwright、AI API 或其他开发环境。使用条件如下：
+## Using the app on another computer
 
-- Apple Silicon（M1、M2、M3、M4 或后续 arm64 芯片）Mac，不支持 Intel Mac、Windows 或 Linux。
-- macOS 12.0 或更高版本；链接模式转换或富文本模式重新嵌入远程 HTTP(S) 图片时需要联网，纯文本和 `data:` 图片可离线转换。
-- 解压后建议把 `MD-Convertor.app` 拖入“应用程序”。当前产物未签名和 notarize，首次启动可能需要在 Finder 中右键应用并选择“打开”，或在“隐私与安全性”中允许启动；部分 Mac 会直接提示“文件已经损坏”。
-- 不同电脑不会同步历史或结果，需要在当前电脑下载 `.md` 文件自行保留。
+Both 0.1.3 and the currently verified v0.2 (`0.2.0`) ZIP are self-contained Apple Silicon Mac applications. The target Mac does not need Node.js, npm, Chrome, Playwright, an AI API, or any other development environment.
 
-当前 0.2.0 ZIP 已包含 `feat-015`、feat-013 的链接/富文本 Mermaid 完整修复，以及 feat-016 的清空链接与返回顶部，并通过完整发布门禁；文件为 `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.2.0.zip`，大小 `354,636,241` bytes，SHA-256 为 `5becae36a53e91129a0dbcb93c3f7f5f3197326b2c83df6f10cb8494d8116485`。
+- Requires an Apple Silicon Mac with an M1, M2, M3, M4, or later arm64 chip; Intel Macs, Windows, and Linux are not supported.
+- Requires macOS 12.0 or later. Link conversion and re-embedding remote HTTP(S) images in rich text mode require an internet connection; plain text and `data:` images can be converted offline.
+- After extracting the ZIP, move `MD-Convertor.app` to Applications. The current build is not signed or notarized, so the first launch may require right-clicking the app in Finder and choosing Open, or allowing it under Privacy & Security. Some Macs may instead report that the app is damaged.
+- Conversion history and results do not sync between computers. Download each `.md` file on the Mac where you create it.
 
-0.1.3 应用已在第二台 Apple Silicon Mac 上完成真实安装和使用验收。该电脑首次启动时出现“文件已经损坏”提示；确认 ZIP 的 SHA-256 与本文记录一致后，移除应用的 quarantine 属性即可启动：
+The current 0.2.0 ZIP includes `feat-015`, the complete link/paste Mermaid fixes from `feat-013`, and the clear-link/back-to-top interactions from `feat-016`. It passed the complete release gate. The file is `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.2.0.zip`, its size is `354,636,241` bytes, and its SHA-256 is `5becae36a53e91129a0dbcb93c3f7f5f3197326b2c83df6f10cb8494d8116485`.
+
+Version 0.1.3 was installed and tested on a second Apple Silicon Mac. On first launch, that Mac displayed an “app is damaged” message. After verifying that the ZIP SHA-256 matched the value documented here, removing the quarantine attribute allowed the app to launch:
 
 ```bash
 xattr -dr com.apple.quarantine "/Applications/MD-Convertor.app"
 ```
 
-如果提示没有权限，再在命令前加 `sudo`。验收时使用 `xattr -cr` 同样成功，但它会递归清除应用的全部扩展属性，因此安装说明优先推荐上面只移除 quarantine 的精确命令。不要对来源或哈希不可信的应用执行该操作。
+If macOS reports insufficient permissions, prepend `sudo`. The acceptance test also succeeded with `xattr -cr`, but that command recursively removes all extended attributes from the app. The installation instructions therefore recommend the more precise quarantine-only command above. Never run it on an app whose source or checksum you do not trust.
 
-## 本地开发
+## Local development
 
-需要 Apple Silicon Mac、Node.js 24.x 和 npm；验证脚本会拒绝 Node.js 23 或 25 等其他主版本。
+Local development requires an Apple Silicon Mac, Node.js 24.x, and npm. The verification script rejects other Node.js major versions, including 23 and 25.
 
 ```bash
 npm install
@@ -76,11 +78,11 @@ npx playwright install chromium
 npm run dev:desktop
 ```
 
-首次构建需要联网下载 Electron 和 Chromium；之后的桌面打包会复用本机缓存。
+The first build needs internet access to download Electron and Chromium. Later desktop builds reuse the local cache.
 
-## 验证
+## Verification
 
-首次执行完整跨浏览器验收前安装三个引擎：
+Before the first full cross-browser run, install all three browser engines:
 
 ```bash
 npx playwright install chromium firefox webkit
@@ -94,26 +96,26 @@ npm run test:live:wechat
 npm run desktop:package
 ```
 
-`npm run test:live` 会联网验证 WalkingLabs 链接/粘贴 Mermaid，是发布前阻断门禁；`npm run test:live:wechat` 保留微信公众号真实对照，但因微信上游验证与超时波动只作为非阻断诊断。目标 Apple Silicon 发布流程使用 `npm run desktop:release`，依次执行基线、三浏览器 E2E、稳定真实网页对照与 ZIP 打包；脚本会拒绝旧 ZIP，核验版本、arm64 架构和包结构，并输出新产物大小与 SHA-256。现状、命令分层、环境变量、冒烟方式和人工验收清单见 [`docs/TESTING.md`](docs/TESTING.md)。
+`npm run test:live` runs the release-blocking online checks for WalkingLabs link and pasted Mermaid conversion. `npm run test:live:wechat` retains the real WeChat comparison as a non-blocking diagnostic because WeChat verification and timeout behavior can vary. The Apple Silicon release workflow uses `npm run desktop:release` to run the baseline, three-browser E2E tests, stable live-page comparisons, and ZIP packaging. The script rejects stale ZIPs, verifies the version, arm64 architecture, and package structure, and prints the new artifact size and SHA-256. See [`docs/TESTING.md`](docs/TESTING.md) for command tiers, environment variables, smoke tests, and the manual acceptance checklist.
 
-v0.2 的 `desktop:release` 只在 T10 执行：它要求目标版本为 `0.2.0`，并在任何检查或打包命令前保护 `main`/`v0.1.3`、外部只读归档及 0.1.0–0.1.3 历史 ZIP。T9A 的 guard、真实 live、0.2.0 打包与打包窗口人工验收均已通过。
+The v0.2 `desktop:release` workflow is restricted to T10. It requires version `0.2.0` and protects `main`/`v0.1.3`, the external read-only archive, and all historical 0.1.0–0.1.3 ZIPs before running any validation or packaging command. The T9A guards, live checks, 0.2.0 packaging, and packaged-window acceptance have all passed.
 
-## 构建 Apple Silicon 应用
+## Building the Apple Silicon app
 
 ```bash
 npm run desktop:make
 ```
 
-未签名的测试产物生成在 `out/`。首次打开时 macOS 可能显示安全提示；正式分发前需要完成 Developer ID 签名和 notarization。
+Unsigned test artifacts are generated under `out/`. macOS may display a security warning on first launch. Developer ID signing and notarization are required before formal distribution.
 
-0.1.3 个人测试包位于（v0.2 不覆盖该历史产物）：
+The 0.1.3 personal-test ZIP is stored at the following path, and v0.2 does not overwrite it:
 
 ```text
 out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.1.3.zip
 ```
 
-当前 ZIP SHA-256：`66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89`。
+Its SHA-256 is `66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89`.
 
-解压后可把 `MD-Convertor.app` 拖入“应用程序”。如果 Finder 右键“打开”仍提示应用损坏，请先核对 ZIP 的 SHA-256，再按“在其他电脑使用”中的命令移除 quarantine 属性。
+After extracting the ZIP, move `MD-Convertor.app` to Applications. If right-clicking and choosing Open in Finder still reports that the app is damaged, verify the ZIP SHA-256 first, then remove the quarantine attribute using the command under “Using the app on another computer.”
 
-架构与安全边界见 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)，产品范围见 [`docs/PRODUCT.md`](docs/PRODUCT.md)。
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for architecture and security boundaries, and [`docs/PRODUCT.md`](docs/PRODUCT.md) for the product scope.
