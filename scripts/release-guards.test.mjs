@@ -16,8 +16,8 @@ import {
 } from "./release-guards.mjs";
 import { RELEASE_VERSION_ERROR, runRelease, verifyFreshArtifact } from "./release-desktop.mjs";
 
-describe("protected 0.1.3 source baseline guard", () => {
-  it("requires both main and the peeled v0.1.3 tag to match the full fixed commit", () => {
+describe("protected 0.1.3 source tag guard", () => {
+  it("requires the peeled v0.1.3 tag to match the full fixed commit without pinning main", () => {
     const refs = [];
     expect(() => assertProtectedBaseline({
       revParse: (ref) => {
@@ -25,19 +25,18 @@ describe("protected 0.1.3 source baseline guard", () => {
         return PROTECTED_BASELINE_COMMIT;
       },
     })).not.toThrow();
-    expect(refs).toEqual(["main", "v0.1.3^{commit}"]);
+    expect(refs).toEqual(["v0.1.3^{commit}"]);
   });
 
-  it.each([
-    ["main", "0000000000000000000000000000000000000000"],
-    ["v0.1.3^{commit}", "1111111111111111111111111111111111111111"],
-  ])("rejects a %s mismatch without exposing ref, path, or hash details", (badRef, badCommit) => {
+  it("rejects a v0.1.3 tag mismatch without exposing ref, path, or hash details", () => {
+    const badRef = "v0.1.3^{commit}";
+    const badCommit = "1111111111111111111111111111111111111111";
     const sentinelPath = "/tmp/release-guard-private-path";
     const error = (() => {
       try {
         assertProtectedBaseline({
           root: sentinelPath,
-          revParse: (ref) => ref === badRef ? badCommit : PROTECTED_BASELINE_COMMIT,
+          revParse: () => badCommit,
         });
         return null;
       } catch (caught) {

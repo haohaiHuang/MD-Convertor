@@ -1,55 +1,57 @@
 # Product Specification
 
-## 用户与目标
+**English** | [简体中文](PRODUCT.zh.md)
 
-MD-Convertor 面向希望归档网页内容的个人用户。第一阶段交付 Apple Silicon Mac 单机应用，提供两个互相独立的入口：粘贴公开网页链接，或把用户已经复制的网页富文本粘贴进应用。两种入口都在本机生成可预览、复制和下载的 Markdown 单文件。
+## Users and goals
 
-## 核心流程
+MD-Convertor is designed for individuals who want to archive web content. The first release is a standalone Apple Silicon Mac app with two independent entry points: paste a public webpage URL, or paste rich web content that the user has already copied. Both paths create a local, single-file Markdown document that can be previewed, copied, and downloaded.
 
-1. 用户选择“链接转换”或“富文本转换”。
-2. 链接模式接受 HTTP/HTTPS 网页链接；应用只填入输入框并校验格式。用户点击“转换为 MD”或按 Enter 后才开始抓取，转换期间可停止并保留原链接。链接非空时可一键清空 URL、校验和旧结果，转换中该操作禁用。
-3. 富文本模式只处理用户主动提供的剪贴板快照：同时读取 `text/html` 与 `text/plain`，文本区域显示纯文本。具有语义结构时按净化后的 HTML 转换，否则以剪贴板纯文本为权威内容。
-4. 富文本内容被用户手工编辑后，已捕获的 HTML 立即丢弃并明确降级为纯文本；再次粘贴会整体替换当前内容，不合并多个片段。来源 URL 为可选输入，只影响来源头部和相对链接/图片解析。用户可一键清空 HTML、纯文本、来源 URL 和旧结果；转换中该操作禁用。
-5. 链接模式必要时使用内置浏览器渲染动态页面；富文本模式不重新抓取来源网页。两种模式完成后都展示文件大小、正文字数、图片数量、警告和 Markdown 预览。
-6. 用户点击“复制”获得原始 Markdown，或点击“下载”把 `.md` 文件保存到本机；复制成功后短暂显示“已复制”。页面滚动超过约 500px 后提供固定的“返回顶部”，平滑回到输入区且不清除当前内容或结果。
+## Core flows
 
-## 输出规则
+1. Choose Link Conversion or Rich Text Conversion.
+2. Link mode accepts an HTTP/HTTPS URL, validates it, and waits for explicit submission. Click Convert to MD or press Enter to start. An in-progress conversion can be stopped without losing the URL. Clear Link removes the URL, validation message, and previous result; it is disabled while converting.
+3. Rich text mode processes only an explicit clipboard snapshot. It reads both `text/html` and `text/plain`, while the text area displays plain text. Semantically structured content uses sanitized HTML; otherwise clipboard plain text is authoritative.
+4. Editing pasted content immediately discards the captured HTML and switches to plain text. A new paste replaces the entire previous input rather than merging fragments. The optional source URL affects only source metadata and relative link/image resolution. Clear removes HTML, plain text, the source URL, and the previous result; it is disabled while converting.
+5. Link mode can use the embedded browser for dynamic pages. Rich text mode never refetches the source webpage. Both modes show file size, text character count, image statistics, warnings, and a Markdown preview.
+6. Copy writes the original Markdown to the clipboard. Download saves the `.md` file locally. A successful copy briefly displays a confirmation. After the page is scrolled by roughly 500px, Back to Top returns to the input area without clearing any input or result.
 
-- 文档包含一级标题、UTC 转换时间和正文；链接模式包含原始来源，富文本模式仅在填写有效 `sourceUrl` 时包含来源行。
-- JPEG、PNG、WebP、GIF、AVIF 图片以 Base64/Data URI 内嵌，不生成资源目录；SVG、BMP、TIFF 等格式保留替代文本。
-- Mermaid 有源码时输出 fenced `mermaid` 代码块；链接页面或粘贴内容只有渲染结果时，在对应安全边界内栅格化为 PNG，并沿用图片数量与文件预算。应用预览不执行 Mermaid 源码。
-- 文件名兼容 macOS，最长 80 个字符；同时保留跨平台安全规则，便于把文件复制到其他电脑。
-- 最多处理 30 张图片，单张源图最多 8 MiB；超过 2 MiB 或最长边超过 2048px 时转为 WebP quality 82，需压缩的动图保留首帧。
-- 最终文件硬上限为 20 MiB；超限时从最后一张图片开始降级为替代文本，优先保留全部正文。只有纯正文自身仍超限时才返回错误。
-- “正文字数”取提取后、生成 Markdown 前的正文字符数；图片统计同时反映原图数、成功内嵌数和省略数。
+## Output rules
 
-## 富文本粘贴规则
+- Documents contain an H1 title, UTC conversion time, and body. Link mode includes the original source URL; rich text mode includes a source line only when a valid `sourceUrl` is provided.
+- JPEG, PNG, WebP, GIF, and AVIF images are embedded as Base64 Data URIs with no asset directory. SVG, BMP, TIFF, and other unsupported formats fall back to alt text.
+- Mermaid source becomes a fenced `mermaid` block. When only a rendered Mermaid result is available, the appropriate security boundary rasterizes it to PNG under the existing image and output budgets. The built-in preview does not execute Mermaid source.
+- Filenames are macOS-compatible, limited to 80 characters, and retain cross-platform safety rules for files copied to other computers.
+- At most 30 images are processed. Each source image is limited to 8 MiB. Images over 2 MiB or 2048px on the longest edge are converted to WebP at quality 82. Animated images that require compression keep only the first frame.
+- The final file has a hard 20 MiB limit. When over budget, embedded images are replaced with alt text starting from the last image so that all body text is preserved. An error is returned only when text alone still exceeds the limit.
+- Text character count is measured after extraction and before Markdown generation. Image statistics include source, embedded, and omitted counts.
 
-- HTML 先经过 DOM 语义门控和独立净化；标题按 `title`、`og:title`、首个 `h1`、纯文本首行依次回退，仍无标题时显示“粘贴内容”。
-- 只保留转换所需的 HTML 语义和 `data-src`/`data-lazy-src` 图片属性，不开放任意 `data-*`；`script`、样式、导航、按钮及主动内容不会进入输出。
-- Mermaid 源码可保留为代码块；富文本只有 Mermaid SVG 时不执行主动内容，而是移除脚本、事件和外部资源后在本机转为 PNG。无法安全栅格化或只有 Canvas 时改为占位文本并显示警告。
-- 粘贴图片使用 `data-src` → `data-lazy-src` → `src` 的 lazy-first 顺序。远程图片仍走公网目标校验和 SSRF 防护；合规 `data:` 图片会重新解码、校验和优化后再内嵌，不原样透传。
-- 富文本模式请求体（JSON 开销在内）最多 5 MiB；前端按 UTF-8 字节数预检，服务端再按声明长度和实际流式读取双重校验。
+## Rich text paste rules
 
-## 第一阶段支持范围
+- HTML passes through DOM semantic gating and an independent sanitizer. Title fallback order is `title`, `og:title`, first `h1`, and the first plain-text line; the final fallback is “Pasted Content.”
+- Only conversion-relevant semantics and the image attributes `data-src` and `data-lazy-src` are retained. Arbitrary `data-*`, scripts, styles, navigation, buttons, and active content never enter the output.
+- Mermaid source can be retained as code. If pasted content contains only rendered Mermaid SVG, the app does not execute active content: it removes scripts, events, and external resources, then converts the sanitized diagram to PNG locally. Unsafe or Canvas-only diagrams fall back to placeholder text with a warning.
+- Pasted images use `data-src` → `data-lazy-src` → `src` priority. Remote images still use public-target validation and SSRF defenses. Valid `data:` images are decoded, format-checked, and optimized before embedding rather than passed through unchanged.
+- The rich text JSON request body, including JSON overhead, is limited to 5 MiB. The frontend checks UTF-8 bytes before submission, and the server checks both the declared length and the actual streamed body.
 
-- Apple Silicon（arm64）Mac。
-- 接受公开 HTTP/HTTPS HTML 页面并尽力转换。
-- 支持静态 HTML 与无需登录的 JavaScript 动态页面。
-- 支持无需登录或人工验证即可公开访问的微信公众号文章；微信验证页和已删除文章会显示明确错误，不生成伪正文。
-- 支持用户从自己有权访问的网页主动复制并粘贴 HTML/纯文本；该模式不读取登录态，不绕过登录、付费墙或验证码。
-- 两种模式均不需要账号；链接模式转换或富文本模式重新嵌入远程 HTTP(S) 图片时需要联网，纯文本和 `data:` 图片可离线转换。
-- 不调用 OpenAI 或其他 AI API，不需要 API Key，也不产生模型调用费用。
+## Supported first-release scope
 
-## 非目标
+- Apple Silicon (arm64) Macs.
+- Best-effort conversion of public HTTP/HTTPS HTML pages.
+- Static HTML and JavaScript-rendered pages that do not require authentication.
+- Public WeChat Official Account articles that require neither login nor manual verification. Verification and deleted-article pages return explicit errors instead of false content.
+- HTML/plain text explicitly copied by a user from content they are authorized to access. Paste mode does not read authenticated browser state or bypass login pages, paywalls, or CAPTCHAs.
+- No account is required. Link conversion and remote HTTP(S) images require internet access; plain text and `data:` images can be converted offline.
+- No OpenAI or other AI API, API key, model usage, or model-related cost.
 
-- 第一阶段不提供 Intel Mac、Windows 或 Linux 安装包。
-- 不提供公网服务、跨设备同步、账号、历史记录或自动更新。
-- 不绕过登录、付费墙、验证码或网站访问限制；不会代替用户抓取受限页面，只处理用户主动复制的剪贴板内容。
-- 不支持任意文件/网页正文的自动导入、PDF 等非 HTML 资源或批量输入，也不承诺所有网页达到相同提取质量。
-- 不承诺重新获取登录态、临时签名、`blob:` 或需要 Cookie 的远程图片；此类图片会保留替代文本并给出警告。
-- 不从网页 JavaScript bundle 逆向恢复 Mermaid 源码，也不把原始 SVG/Canvas 写入 Markdown；链接模式只接受本次受控 Chromium 生成并校验的栅格截图，粘贴模式只接受经独立白名单清洗后由本机生成并重新校验的 Mermaid PNG。
+## Non-goals
 
-## 隐私
+- No Intel Mac, Windows, or Linux packages in the first release.
+- No hosted service, cross-device synchronization, account, history, or automatic updates.
+- No bypassing authentication, paywalls, CAPTCHAs, or website access restrictions. Paste mode processes only clipboard content explicitly supplied by the user.
+- No automatic import of arbitrary files or webpage bodies, non-HTML resources such as PDFs, or batch input. Extraction quality is not guaranteed to be identical across all websites.
+- No guarantee that images requiring authentication, cookies, temporary signatures, or `blob:` URLs can be fetched. Such images retain alt text and produce a warning.
+- No reverse engineering of Mermaid source from JavaScript bundles and no raw SVG/Canvas in Markdown. Link mode accepts only validated raster screenshots produced by the controlled Chromium session; paste mode accepts only Mermaid PNGs generated locally from independently sanitized SVG.
 
-链接、剪贴板 HTML/纯文本、网页、图片和转换结果不上传到 MD-Convertor 服务，应用代码也不建立转换历史、数据库或分析记录。粘贴内容只在当前本地转换请求中使用，诊断日志不记录正文、HTML 或来源 URL；应用不读取浏览器 Cookie 或登录态。Electron 和内置浏览器会在本机创建运行缓存与浏览器配置文件，但不会被应用用来同步或恢复转换内容；关闭应用后当前结果消失，用户主动保存的 `.md` 文件除外。
+## Privacy
+
+URLs, clipboard HTML/plain text, webpages, images, and conversion results are not uploaded to an MD-Convertor service. The application code creates no conversion history, database, or analytics record. Pasted content exists only for the current local request, and diagnostic logs do not record body text, HTML, or source URLs. The app does not read browser cookies or authenticated state. Electron and the embedded browser create local runtime caches and browser profiles, but the app does not use them to synchronize or restore conversion content. Closing the app clears the current result except for `.md` files explicitly saved by the user.

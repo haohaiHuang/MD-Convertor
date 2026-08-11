@@ -17,8 +17,7 @@ export const PROTECTED_HISTORICAL_ZIP_MANIFEST = Object.freeze({
 });
 
 function resolveGitRef(ref, root) {
-  const gitRef = ref === "main" ? "main^{commit}" : ref;
-  return execFileSync("git", ["rev-parse", "--verify", gitRef], {
+  return execFileSync("git", ["rev-parse", "--verify", ref], {
     cwd: root,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "ignore"],
@@ -27,9 +26,8 @@ function resolveGitRef(ref, root) {
 
 export function assertProtectedBaseline({ root = process.cwd(), revParse = resolveGitRef } = {}) {
   try {
-    const mainCommit = String(revParse("main", root)).trim();
     const tagCommit = String(revParse("v0.1.3^{commit}", root)).trim();
-    if (mainCommit !== PROTECTED_BASELINE_COMMIT || tagCommit !== PROTECTED_BASELINE_COMMIT) {
+    if (tagCommit !== PROTECTED_BASELINE_COMMIT) {
       throw new Error(PROTECTED_BASELINE_ERROR);
     }
   } catch {

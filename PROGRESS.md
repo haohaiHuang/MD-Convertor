@@ -4,7 +4,7 @@
 
 - Last updated: 2026-08-11
 - Active feature: 无；`feat-016 — Quick Return and Clear Link` 已完成自动验证与真实窗口验收。`feat-014` 已取消。
-- Overall status: 0.1.3 已以提交 `ce041c9`、标签 `v0.1.3` 和只读 ZIP 归档封版。v0.2 `feat-012`、`feat-015`、`feat-013` 与 `feat-016` 已完成；源码提交 `b17341a`，最新 0.2.0 ZIP 已通过完整发布门禁，但尚未合并到 `main`。
+- Overall status: v0.2（0.2.0）已确认为当前正式版本并通过 PR #1 合并到 `main`；`v0.2.0` 标签与英文 GitHub Release 在本轮收尾创建。0.1.3 继续由提交 `ce041c9`、标签 `v0.1.3` 和只读 ZIP 归档作为不可变历史基线。
 
 ## Completed
 
@@ -38,7 +38,7 @@
 - [x] `init.sh` 强制 Node.js 24.x；E2E 使用 production standalone 服务并验证测试前后 tracked diff 不变。
 - [x] `desktop:release` 自动阻断旧或缺失 ZIP，校验版本、arm64、包结构并输出大小与 SHA-256。
 - [x] 第二台 Apple Silicon Mac 完成跨电脑验收；通过移除未签名应用的 quarantine 属性后正常启动和使用。
-- [x] 建立 0.1.3/v0.2 版本边界：`main` 与 `v0.1.3` 固定封版提交，v0.2 使用独立分支和 0.2.0 版本号；正式 ZIP 恢复为外部只读归档。
+- [x] 建立 0.1.3/v0.2 版本边界：v0.2 开发期间 `main` 与 `v0.1.3` 固定在封版提交；v0.2 完成后合并到 `main`，`v0.1.3` 标签与历史正式 ZIP 继续保持不可变。
 - [x] 完成 v0.2 开工评审并取得用户确认：补齐 HTML/text 双通道、编辑降级、DOM 语义门控、Data URI 完整图片处理、无来源 URL 资源规则、登录态图片限制和 T10-only live 门禁；任务拆分为 T3/T4/T5/T6A/T6B/T7A/T7B/T8/T9A/T9B/T10。
 - [x] 完成 feat-012 T3 粘贴预处理：DOM 语义门控、安全清洗、HTML/text 降级、标题优先级、lazy 图片属性定向保留与字符统计；32 项专项测试覆盖 MiaoYan 单段落回归、空段落、恶意链接、SVG 标题和畸形 HTML。
 - [x] 完成 feat-012 T4 粘贴 Markdown 与文件名规则：HTML/GFM、纯文本字面转义、可选来源、链接解析、标题去重及 MiaoYan 适用语义；审查发现全部关闭，37 项 Markdown 测试通过且链接模式回归不变。
@@ -104,6 +104,7 @@
 - Passed: 用户确认 SHA-256 `66909aa8...df89` 对应的当前 Mac 版本人工测试通过；2026-07-20 又完成第二台 Mac 验收。
 - Passed: Node.js 23.11.1 执行 `./init.sh` 在其他检查前被拒绝；Node.js 24.16.0 Forge 无产物时发布脚本按预期非零失败。
 - Passed: 2026-07-20 第二台 Apple Silicon Mac 验收；首次启动出现“文件已经损坏”提示，执行 `xattr -cr` 移除应用扩展属性后正常使用。
+- Passed with Node.js 24.14.1: v0.2 合并后收尾 `./init.sh` — release guards 24/24，完整 27 files / 316 tests、lint、typecheck、coverage gate 和 production build；真实 `v0.1.3` 标签保护通过，默认英文公开文档与中文 `.zh.md` 副本静态检查通过。
 - Pending: Apple Developer ID 签名与 notarization；当前 ZIP 只适合个人测试。
 
 ## Decisions
@@ -136,9 +137,9 @@
 - 登录态、临时签名、Blob 或需要 Cookie 的远程图片可能无法从粘贴 HTML 重新获取；v0.2 明确降级为替代文本并警告，不引入 Cookie 读取。
 - 0.2.0 真实窗口人工验收样本 `x.com/lumenxbt/status/2082101954206130402` 为 X Article：正文含 6 个图片实体并另有封面，均位于 `pbs.twimg.com`；本机匿名直连 7/7 返回 `ECONNRESET`，同一打包应用复跑 X 页面也出现 502 上游波动。图片无法下载时保留外层链接，属于当前“不绕过 X 网络/登录限制”的降级，不是 Data URI 格式回归；用户已接受为 v0.2 已知限制，不阻断个人测试发布。
 - WalkingLabs 页面静态 HTML 只有空 `.mermaid`、客户端才生成内联 SVG；链接模式已由受控 Chromium 安全截图。真实剪贴板同时含 HTML/text，HTML 中只有渲染 SVG；现已增加专用清洗、固定浅色配色和 Sharp 栅格化，真实粘贴门禁及本机预览/下载人工验收通过。
-- feat-012 已以提交 `23294e4` 收口；当前分支为 `codex/feat-013-mermaid`，feat-013 与 feat-016 已提交为 `b17341a`，并已通过完整发布门禁生成包含两项功能的 0.2.0 ZIP，但尚未合并到 `main`。
+- feat-012 已以提交 `23294e4` 收口；feat-013 与 feat-016 的功能提交为 `b17341a`。PR #1 已把完整 v0.2 合并到 `main`，当前 0.2.0 ZIP 包含全部已验收功能。
 - 2026-08-10 用户确认现有 UI/UX 无需整体调整，取消 `feat-014`；随后授权并完成 `feat-015`，新增富文本模式一键清空粘贴 HTML、纯文本、来源链接和旧结果。
 
 ## Recommended Next Step
 
-feat-013 与 feat-016 已提交并生成通过完整门禁的新 0.2.0 ZIP。下一步仅需用户决定是否对新打包窗口补一次人工抽查，以及是否把当前分支合并到 `main`；未经授权不自动合并。
+v0.2 已完成、合并并发布源码；当前无进行中 feature。后续新需求应建立独立版本/feature，并在实施前重新确认范围。

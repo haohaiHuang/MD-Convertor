@@ -2,10 +2,10 @@
 
 ## Current Objective
 
-- Goal: 交付可在 Apple Silicon Mac 本地安装使用的 MD-Convertor；0.1.3 已封版，v0.2 富文本粘贴转换（`feat-012`）、一键清空（`feat-015`）与 Mermaid 保留（`feat-013`）均已完成，按用户决定暂不合并。
+- Goal: 交付可在 Apple Silicon Mac 本地安装使用的 MD-Convertor；v0.2 已完成全部计划功能、发布门禁、人工验收并合并到 `main`，是当前正式版本。
 - Active: 无。`feat-016 — Quick Return and Clear Link` 已完成代码、Node.js 24 基线、三浏览器 E2E 与真实 Electron 窗口验收；`feat-014` 已取消。
 - Quality status: 0.1.3 自动发布门禁、本机操作和第二台 Apple Silicon Mac 验收均已通过；v0.2 最小安全升级后生产审计为 0，完整树剩余 1 critical / 26 high / 3 low 且未进入应用包；feat-015 后的完整发布门禁、打包应用冒烟与真实窗口人工验收均已通过；对外分发签名仍待完成。
-- Branch: `codex/feat-013-mermaid`；从已完成 feat-015 的提交 `7d78c1a` 建立，feat-013 与 feat-016 已提交为 `b17341a`。`main` 固定在 0.1.3 封版提交 `ce041c9`，标签为 `v0.1.3`；最新 0.2.0 ZIP 已包含 feat-013 与 feat-016，按用户决定暂不合并。
+- Branch: v0.2 已通过 PR #1 合并到 `main`；本轮 `codex/v0.2-global-release` 只处理版本收尾、历史 guard 和默认英文公开文档。`v0.1.3` 标签固定在提交 `ce041c9`；0.2.0 ZIP 已包含 feat-013 与 feat-016。
 
 ## Current Scope
 
@@ -13,7 +13,7 @@
 - 不调用 AI API，不需要 API Key。
 - Windows 版本和多平台仓库迁移已取消；当前 macOS 根目录是唯一有效应用项目。
 - v0.2（feat-012）已批准并完成开工评审：富文本粘贴转换同时保留剪贴板 HTML 与纯文本，编辑后降级纯文本；规划见 `docs/PLAN-V0.2.md`，任务追踪见 `docs/TASKS-V0.2.md`。
-- 当前分支的 `feat-015` 已在富文本模式增加一键清空，状态契约、页面 E2E、完整发布门禁、重新打包和真实窗口验收均已完成；当前 0.2.0 候选 ZIP 已包含该变更。
+- `feat-015` 已在富文本模式增加一键清空，状态契约、页面 E2E、完整发布门禁、重新打包和真实窗口验收均已完成；当前 0.2.0 正式个人测试 ZIP 已包含该变更。
 - 登录态、临时签名、Blob 或需要 Cookie 的远程图片可能无法重新获取，届时保留替代文本并警告；本迭代不读取 Cookie。
 
 ## Open Discussion Items（后续迭代讨论项）
@@ -58,7 +58,7 @@
 - feat-012 T7A 已完成：新增粘贴前端纯状态模块，固化富文本/纯文本/编辑降级提示、payload 与 UTF-8 5 MiB 精确边界、双模式输入保留、转换中禁切换和输出清理；客户端与服务端复用共享限制常量。
 - feat-012 T7B 已完成：现有页面新增链接/富文本 Tab，粘贴 textarea、来源 URL、前端预算、双 API、按模式停止提示与共享结果全部接入；审查修复旧 selector、异步状态 ref 竞态和 stop 按钮自动二次提交，旧 Chromium 用例恢复全绿。
 - feat-012 T8 已完成：新增 9 组粘贴 E2E，双 MIME、降级/编辑/替换、来源输出头、预算/413、停止 Abort、复制下载与结果统计在三浏览器通过；旧链接用例文件未修改。
-- feat-012 T9A 已完成：发布门禁固定保护 `main` / `v0.1.3`、外部只读 0.1.3 归档与 0.1.0–0.1.3 四 ZIP manifest；非 0.2.0 目标或历史产物异常会在任何发布命令前失败，成功及后续失败路径均复核历史清单。
+- feat-012 T9A 已完成：发布门禁固定保护 `v0.1.3` 历史标签、外部只读 0.1.3 归档与 0.1.0–0.1.3 四 ZIP manifest；非 0.2.0 目标或历史产物异常会在任何发布命令前失败，成功及后续失败路径均复核历史清单。
 - feat-012 T9B 已完成：同步产品、架构、测试、质检、README、Changelog、任务、进度和交接文档；明确两模式、粘贴 API、安全边界、5 MiB/图片预算、登录态/临时/blob 限制、v0.2 安装条件与 T9A 证据。
 - feat-012 T10 已完成：生产审计清零；Node.js 24.14.1 连续通过 282 tests、48 E2E、live、Forge、fresh ZIP 与打包应用启动/长微信 30 图转换冒烟；用户确认真实窗口富文本模式人工验收通过。
 - feat-015 已完成：富文本模式新增“清空”，一次移除 HTML、纯文本、来源 URL 和旧结果；转换中禁用。Node.js 24.14.1 基线 287 tests，富文本三引擎 E2E 30/30，用户在当前源码的真实 Electron 窗口人工验收通过。
@@ -90,6 +90,7 @@
 | feat-015 release gate | Passed | Node.js 24.14.1；24 files / 287 tests、51/51 E2E、live、Forge、fresh ZIP、启动和 `example.com` 转换冒烟；用户确认新打包窗口“一键清空”通过 |
 | feat-013 final release gate | Passed | Node.js 24.14.1；27 files / 315 tests、51/51 E2E、WalkingLabs 链接/粘贴 live 2/2、Forge、fresh ZIP；0.2.0 arm64 ZIP 354,631,314 bytes / `b212b359...7d505c` |
 | feat-016 release gate | Passed | Node.js 24.14.1；27 files / 317 tests、60/60 E2E、WalkingLabs 链接/粘贴 live 2/2、Forge、fresh ZIP；0.2.0 arm64 ZIP 354,636,241 bytes / `5becae36...16485` |
+| v0.2 merge/global closeout | Passed | Node.js 24.14.1；release guards 24/24、完整 27 files / 316 tests、coverage/build；真实 `v0.1.3` 标签保护与中英双语公开文档静态检查通过 |
 | 0.1.3 Node 24 `./init.sh` | Passed | lint、typecheck、coverage gate、18 files / 93 tests、Next build；2026-07-21 取消方案并清理 Harness 后复跑通过 |
 | 0.1.3 `npm run test:e2e` | Passed | 21 checks across Chromium, Firefox, WebKit, including new button labels |
 | 0.1.3 `npm run test:live` | Passed with variability | first upstream timeout; unchanged-threshold rerun passed |
@@ -120,16 +121,16 @@
 
 1. 阅读 `AGENTS.md`、`PROGRESS.md`、`feature_list.json`、`docs/PLAN-V0.2.md`、`docs/TASKS-V0.2.md`、`docs/PRODUCT.md`、`docs/ARCHITECTURE.md`、`docs/TESTING.md` 和 `docs/QUALITY-AUDIT.md`。
 2. 运行 `./init.sh`（Node.js 24.x）。
-3. feat-013 已完成并生成包含最新链接/粘贴 Mermaid 修复的 fresh ZIP；微信同轮对照为非阻断诊断项，分支按用户决定暂不合并。
+3. v0.2 已合并到 `main` 并生成包含最新链接/粘贴 Mermaid 修复的 fresh ZIP；微信同轮对照为非阻断诊断项。
 4. 未经用户重新明确授权，不恢复 Windows 与多平台仓库迁移。
 5. 对外分发仍需 Developer ID 签名与 notarization；完整开发/构建树的上游告警继续按 `QA-005` 跟踪。
 
 ## Version Boundary
 
-- 0.1.3 正式源码：`main` / `ce041c9` / `v0.1.3`。
+- 0.1.3 历史源码：`ce041c9` / `v0.1.3`，标签不可移动。
 - 0.1.3 正式 ZIP：`~/Downloads/MD-Convertor-0.1.3-release/MD-Convertor-darwin-arm64-0.1.3.zip`，只读，SHA-256 `66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89`。
-- v0.2 开发基线：`codex/feat-012-v0.2` / `23294e4`，版本 `0.2.0`；当前工作分支为 `codex/feat-013-mermaid`，feat-013 与 feat-016 功能提交为 `b17341a`。只有在用户确认后才允许合并。
+- v0.2 当前源码：`main`，版本 `0.2.0`；开发基线为 `codex/feat-012-v0.2` / `23294e4`，feat-013 与 feat-016 功能提交为 `b17341a`，PR #1 已合并。
 
 ## Recommended Next Step
 
-feat-013 与 feat-016 已提交并生成通过完整门禁的新 0.2.0 ZIP。下一步由用户决定是否对新打包窗口补一次人工抽查，以及是否合并当前分支到 `main`；不自动合并。
+v0.2 已完成、合并并发布源码，当前无进行中 feature。后续新需求应建立独立版本/feature，并在开工前确认边界。
