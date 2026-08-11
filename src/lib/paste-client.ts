@@ -88,6 +88,17 @@ export function clearPastedContent<Result>(
   };
 }
 
+export function clearLinkInput<Result>(
+  state: PasteClientState<Result>,
+): PasteClientState<Result> {
+  if (state.output.requestState === "loading") return state;
+  return {
+    ...state,
+    linkInput: "",
+    output: emptyPasteOutput<Result>(),
+  };
+}
+
 export function replacePastedClipboard(
   previous: PastedDraft | undefined,
   snapshot: PastedClipboardSnapshot,

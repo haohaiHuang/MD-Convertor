@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildPastedPayload,
+  clearLinkInput,
   clearPastedContent,
   editPastedText,
   isPastedPayloadWithinLimit,
@@ -12,6 +13,51 @@ import {
 } from "./paste-client";
 
 describe("paste client clipboard state", () => {
+  it("clears the link input and shared output while preserving pasted content", () => {
+    const state = {
+      ...createPasteClientState<{ markdown: string }>(),
+      linkInput: "https://example.com/article",
+      pasteInput: {
+        html: "<p>保留内容</p>",
+        text: "保留内容",
+        sourceUrl: "https://example.com/source",
+        contentState: "rich" as const,
+      },
+      output: {
+        requestState: "success" as const,
+        result: { markdown: "# 旧结果" },
+        error: "旧错误",
+        copied: true,
+        showCopyFallback: true,
+      },
+    };
+
+    expect(clearLinkInput(state)).toEqual({
+      ...state,
+      linkInput: "",
+      output: {
+        requestState: "idle",
+        result: null,
+        error: "",
+        copied: false,
+        showCopyFallback: false,
+      },
+    });
+  });
+
+  it("does not clear the link input while conversion is loading", () => {
+    const state = {
+      ...createPasteClientState(),
+      linkInput: "https://example.com/converting",
+      output: {
+        ...createPasteClientState().output,
+        requestState: "loading" as const,
+      },
+    };
+
+    expect(clearLinkInput(state)).toBe(state);
+  });
+
   it("clears pasted HTML, text, source URL, and shared output in one action", () => {
     const state = {
       ...createPasteClientState<{ markdown: string }>(),

@@ -119,14 +119,14 @@
       "name": "Mermaid Diagram Preservation",
       "description": "在不放宽不可信 SVG 安全边界的前提下，保留网页或富文本中的 Mermaid 图表：优先输出 Mermaid 代码块，只有渲染结果可用时安全栅格化，无法保留时给出明确警告。",
       "dependencies": ["feat-012"],
-      "status": "planned",
+      "status": "done",
       "done_criteria": [
         "可获得 Mermaid 源码时输出 fenced mermaid 代码块",
-        "只有客户端渲染 SVG 时可安全转换为 WebP，或在无法转换时显示明确警告",
+        "只有客户端渲染 SVG 时可安全转换为 PNG，或在无法转换时显示明确警告",
         "不允许原始不可信 SVG、脚本或主动内容进入 Markdown 预览与文件",
         "链接模式与富文本模式均有 TDD、真实 fixture 和打包应用验收证据"
       ],
-      "evidence": "2026-08-09: WalkingLabs 人工样本确认静态 HTML 只有空 .mermaid 占位，客户端 JavaScript 才生成内联 SVG；v0.2 当前会按安全规则移除 SVG，导致图表缺失且无警告。用户决定本轮不开发，登记为后续独立事项。"
+      "evidence": "2026-08-09: WalkingLabs 人工样本确认静态 HTML 只有空 .mermaid 占位，客户端 JavaScript 才生成内联 SVG；v0.2 当时会按安全规则移除 SVG，导致图表缺失且无警告。2026-08-11: 用户授权启动 feat-013；公共测试 seam 固定为 convertUrlToMarkdown、convertPastedContent 和 renderDynamicPage。独立分支 codex/feat-013-mermaid 建立，开工 Node.js 24.14.1 ./init.sh 通过 24 files / 287 tests、coverage 与 build。链接路径按 TDD 完成源码 fence、动态 PNG 截图、可信图片映射、预算/统计/取消和浏览器失败警告；Google Fonts CSS 挂起固定代理的问题以失败回归定向修复；desktop:release 通过 26 files / 306 tests、三引擎 E2E 51/51、live 2/2、Forge 与 fresh ZIP，生成 354,619,347 bytes / e84ce4bd...e81328c0 的 0.2.0 ZIP。用户随后发现同一页面经富文本粘贴仍缺图，确认真实剪贴板 HTML 只有 Mermaid SVG 并授权解决；新增专用白名单清洗和 Sharp PNG 栅格化，脚本/事件/外部资源与原始 SVG 不泄漏，foreignObject 纯文本化，最长边 2048px，失败仍占位警告。完整 desktop:release 两次和微信单独复验均因微信上游 504 失败，未生成新正式 ZIP。前两次人工复验暴露透明画布与深色内容问题；用户最终提供实际下载 Markdown，Data URI PNG 检查确认白底已生效，但来源 CSS 丢失使 SVG 节点、线条和文字回退为黑色。深色 fixture 节点像素先 RED（31）后改为移除来源 CSS、写入固定浅色 palette GREEN；真实 WalkingLabs 页面生成图目视可读。重新 desktop:package 并打开 arm64 / 0.2.0 本机 .app 后，用户确认真实窗口验收通过。验收后质检再以失败测试复现并关闭动态多图跳过、纯源码误选、内联 style 覆盖、31 图统计/警告和小型生成 PNG 占位误判；聚焦 123/123，Node.js 24.14.1 ./init.sh 通过 27 files / 314 tests、coverage/build。质检整改版再次 desktop:package，确认为 0.2.0 / arm64 / macOS 12.0+，用户复测 WalkingLabs 富文本转换正常。固定微信样本因上游波动 504，经用户确认改为可单独运行的非阻断 test:live:wechat 诊断项；WalkingLabs 链接/粘贴真实样本继续阻断发布。配置测试先 RED 后 GREEN；最终 Node.js 24.14.1 desktop:release 通过 27 files / 315 tests、三引擎 E2E 51/51、WalkingLabs live 2/2、Forge 与 fresh ZIP 校验，生成 354,631,314 bytes / b212b359405e53f1a0cc924b51c48c986335a3f74b4520f06f9fb825357d505c 的 0.2.0 arm64 ZIP。用户已在最新整改应用中确认真实 WalkingLabs 富文本转换正常，feat-013 完成。"
     },
     {
       "id": "feat-014",
@@ -155,6 +155,20 @@
         "转换中是否允许清空、是否同时清除已有结果在开工前确认并由自动化测试固化"
       ],
       "evidence": "2026-08-10: 用户在 v0.2 人工使用后提出，富文本模式缺少同时清空粘贴内容和来源链接的操作，导致每次转换前需要手工全选删除；随后授权按最小范围实施：清空 HTML、文本、来源和旧结果，转换中禁用，不弹确认框；不打包、不运行 live、不合并。按 TDD 新增纯状态 seam 与页面入口：单元测试先因缺函数和 loading guard RED，最终 19/19；Chromium E2E 先因缺按钮 RED，最终富文本三引擎 30/30。Node.js 24.14.1 ./init.sh 通过 24 files / 287 tests、coverage 与 build；用户在当前源码的真实 Electron 窗口人工验收通过。2026-08-11: 用户另行授权重新发布；Node.js 24.14.1 desktop:release 通过 287 tests、三引擎 51/51、真实微信门禁、Forge、fresh ZIP 与包内校验；启动和 example.com 转换冒烟通过，用户确认新打包窗口无问题。0.2.0 arm64 ZIP 为 354,603,624 bytes，SHA-256 7f6f39873056a34414706362356cb461d1617cb1cb73c9b76952fe587dd658c6。"
+    },
+    {
+      "id": "feat-016",
+      "name": "Quick Return and Clear Link",
+      "description": "长结果页面提供快速返回顶部入口；链接转换模式提供一键清空当前 URL，减少再次转换前的手工操作。",
+      "dependencies": ["feat-013"],
+      "status": "done",
+      "done_criteria": [
+        "长结果页面可以通过清晰且可访问的入口返回顶部输入区",
+        "链接模式可以一键清空 URL 与相关校验状态",
+        "转换中行为、是否清除已有结果及响应式位置在开工前确认并由测试固化",
+        "链接与富文本既有转换、停止、复制、下载流程不回归"
+      ],
+      "evidence": "2026-08-11: 用户在微信文章与 Mermaid 验收后提出两个后续体验点：长结果缺少快速返回顶部入口，链接模式缺少一键清空 URL。开工前已确认：清空链接同时清除校验和旧结果、不弹确认框、转换中禁用；页面滚动约 500px 后在右下角显示返回顶部，平滑回到输入区且保留内容；桌面与窄屏、三浏览器均需覆盖。按 TDD 新增 clearLinkInput 纯状态 seam：缺函数与 loading 守卫分别 RED，最终 paste-client 21/21；页面按钮先因缺入口 RED，loading 禁用再 RED；返回顶部 390px 用例先因缺入口 RED，最小实现后 Chromium 完整链接页 10/10。Node.js 24.14.1 ./init.sh 通过 27 files / 317 tests、coverage 与 build；三引擎全量 E2E 60/60、tracked-file check passed。用户随后在当前源码的真实 Electron 窗口确认两项交互均正常，feat-016 完成；未运行 live、未打包、未覆盖现有 ZIP。"
     }
   ]
 }

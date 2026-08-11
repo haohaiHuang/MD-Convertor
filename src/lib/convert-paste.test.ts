@@ -79,6 +79,74 @@ describe("paste conversion orchestration", () => {
     });
   });
 
+  it("converts pasted Mermaid source into a fenced Mermaid block", async () => {
+    imageMocks.embedImages.mockImplementation(async (html: string) => ({
+      html,
+      warnings: [],
+      stats: { sourceImageCount: 0, embeddedImageCount: 0, omittedImageCount: 0 },
+    }));
+
+    const result = await convertPastedContent(
+      {
+        html: '<article><h1>Diagram</h1><div class="mermaid">flowchart LR\n  A --&gt; B</div></article>',
+        text: "Diagram\nflowchart LR\nA --> B",
+      },
+      new AbortController().signal,
+    );
+
+    expect(result.markdown).toContain("```mermaid\nflowchart LR\n  A --> B\n```");
+    expect(result.markdown).not.toContain("<svg");
+  });
+
+  it("warns and keeps a placeholder when pasted Mermaid only contains rendered SVG", async () => {
+    imageMocks.embedImages.mockImplementation(async (html: string) => ({
+      html,
+      warnings: [],
+      stats: { sourceImageCount: 0, embeddedImageCount: 0, omittedImageCount: 0 },
+    }));
+
+    const result = await convertPastedContent(
+      {
+        html: `<article><h1>Rendered diagram</h1><p>正文内容</p>
+          <div class="mermaid"><svg aria-roledescription="flowchart-v2">
+            <script>alert(1)</script><text>Node A</text>
+          </svg></div></article>`,
+        text: "Rendered diagram\n正文内容\nNode A",
+      },
+      new AbortController().signal,
+    );
+
+    expect(result.markdown).toContain("Mermaid 图表未能安全转换");
+    expect(result.markdown).not.toMatch(/<svg|<script|alert\(1\)/i);
+    expect(result.warnings).toContainEqual({
+      code: "MERMAID_RENDER_UNAVAILABLE",
+      message: "有一张 Mermaid 图表只有渲染结果，无法从粘贴内容中安全转换，已保留占位文本。",
+    });
+  });
+
+  it("also degrades a standalone rendered Mermaid SVG without executing it", async () => {
+    imageMocks.embedImages.mockImplementation(async (html: string) => ({
+      html,
+      warnings: [],
+      stats: { sourceImageCount: 0, embeddedImageCount: 0, omittedImageCount: 0 },
+    }));
+
+    const result = await convertPastedContent(
+      {
+        html: `<article><h1>Standalone diagram</h1><p>正文内容</p>
+          <svg id="mermaid-80" aria-roledescription="sequence"><foreignObject>
+            <script>alert(1)</script><p>unsafe</p>
+          </foreignObject></svg></article>`,
+        text: "Standalone diagram\n正文内容",
+      },
+      new AbortController().signal,
+    );
+
+    expect(result.markdown).toContain("Mermaid 图表未能安全转换");
+    expect(result.markdown).not.toMatch(/<svg|foreignObject|unsafe|alert/i);
+    expect(result.warnings.map((warning) => warning.code)).toContain("MERMAID_RENDER_UNAVAILABLE");
+  });
+
   it("canonicalizes valid source URLs before image resolution and metadata", async () => {
     const signal = new AbortController().signal;
     imageMocks.embedImages.mockResolvedValue({

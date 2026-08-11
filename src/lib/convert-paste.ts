@@ -4,6 +4,7 @@ import { preparePastedContent, type PastedContentInput } from "@/lib/paste";
 import { embedImages } from "@/lib/images";
 import { AppError } from "@/lib/errors";
 import { makePasteFilename, MAX_MARKDOWN_BYTES, pastedContentToMarkdown } from "@/lib/markdown";
+import { rasterizePastedMermaid } from "@/lib/paste-mermaid";
 import type { ConversionWarning, ConvertResponse } from "@/types/conversion";
 
 export type PastedConversionInput = PastedContentInput & {
@@ -256,7 +257,8 @@ export async function convertPastedContent(
 ): Promise<ConvertResponse> {
   signal.throwIfAborted();
   const sourceUrl = normalizeSourceUrl(input.sourceUrl);
-  const prepared = preparePastedContent(input);
+  const mermaid = await rasterizePastedMermaid(input.html, signal);
+  const prepared = preparePastedContent({ ...input, html: mermaid.html });
   signal.throwIfAborted();
   const embedded = prepared.mode === "html"
     ? await embedImages(prepared.html, sourceUrl || undefined, signal, MAX_MARKDOWN_BYTES, {
@@ -295,7 +297,7 @@ export async function convertPastedContent(
         omittedImageCount: embedded.stats.omittedImageCount,
       });
   signal.throwIfAborted();
-  const warnings = [...embedded.warnings];
+  const warnings = [...mermaid.warnings, ...(prepared.warnings ?? []), ...embedded.warnings];
   if (budget.imageBudgetExceeded) {
     warnings.push({ code: "IMAGE_BUDGET_EXCEEDED", message: "部分图片会使文件超过 20 MiB，已保留替代文本。" });
   }
@@ -311,9 +313,9 @@ export async function convertPastedContent(
       extractionMode: "paste",
       outputBytes: budget.outputBytes,
       textChars: prepared.textLength,
-      sourceImageCount: embedded.stats.sourceImageCount,
+      sourceImageCount: embedded.stats.sourceImageCount + mermaid.omittedImageCount,
       embeddedImageCount: budget.embeddedImageCount,
-      omittedImageCount: budget.omittedImageCount,
+      omittedImageCount: budget.omittedImageCount + mermaid.omittedImageCount,
     },
   };
 }

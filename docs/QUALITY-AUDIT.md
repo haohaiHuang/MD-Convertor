@@ -3,12 +3,18 @@
 ## Audit Metadata
 
 - Audit date: 2026-07-18; second-round audit: 2026-07-18; consistency reviews: 2026-08-10 and 2026-08-11
-- Audited version: `0.1.2`; follow-up validation: `0.1.3`
+- Audited version: `0.1.2`; follow-up validation: `0.1.3`; current development version: `0.2.0`
 - Platform: Apple Silicon Mac (`darwin/arm64`)
 - Historical active feature: 无；`feat-010 — Personal Mac Release` 已完成
-- Current review scope: `feat-012 — Paste Rich-Text Conversion` T3–T10，以及当前分支 `feat-015 — Clear Pasted Content Action` 的源码、测试和产物边界
+- Current review scope: `feat-013 — Mermaid Diagram Preservation` 的源码、测试、安全边界、人工验收与发布收口；`feat-012`、`feat-015` 保留为已完成回归基线
 - Audit type: 文档一致性、代码与安全审查、自动化验证、真实网页门禁、依赖审计和打包产物抽查
-- Overall verdict: **0.1.3 personal release remains frozen; current v0.2 0.2.0 artifact includes feat-015 and passed release, smoke, and real-window acceptance; external distribution remains unsigned**
+- Overall verdict: **0.1.3 personal release remains frozen; feat-013 remediation, real-window acceptance and fresh 0.2.0 arm64 ZIP release gate pass; external distribution remains unsigned**
+
+## Sixth-Round Mermaid Release Closeout — 2026-08-11
+
+- 用户确认微信公众号固定样本的 504 属于可接受的上游波动；微信完整对照保留为 `npm run test:live:wechat` 非阻断诊断，正式 `npm run test:live` 继续以 WalkingLabs 链接/粘贴 Mermaid 2 项稳定真实样本阻断发布。
+- 公开命令配置测试按 TDD 先 RED 后 GREEN，release guards 25/25；Node.js 24.14.1 `desktop:release` 通过 27 files / 315 tests、coverage/build、三引擎 51/51、WalkingLabs live 2/2、Forge、fresh ZIP 与包内版本/arm64 校验。
+- 当前 0.2.0 arm64 ZIP 为 `354,631,314` bytes，SHA-256 `b212b359405e53f1a0cc924b51c48c986335a3f74b4520f06f9fb825357d505c`。结合此前最新整改应用的 WalkingLabs 真实窗口验收，`feat-013` 完成；分支仍未合并，Developer ID 签名与 notarization 仍未配置。
 
 ## Fifth-Round Release Closeout — 2026-08-11
 
@@ -340,3 +346,20 @@ Resolution evidence:
 `T9A`、`T9B` 与 `T10` 已完成，`feat-012` 无剩余任务。自动门禁、live、Forge fresh ZIP、启动、链接转换冒烟和真实窗口富文本模式人工验收均已通过；X 图片匿名直连失败时保留外链，以及客户端 Mermaid/SVG 图表缺失，均已由用户接受为 v0.2 已知限制。Mermaid 保留转入后续 `feat-013`；泛化 UI/UX 调整 `feat-014` 已取消；`feat-015` 已完成一键清空并进入当前 0.2.0 ZIP，通过 287 tests、51/51 E2E、live、打包冒烟和真实窗口验收。Apple Developer ID 签名与 notarization 仍是对外分发前的独立开放项。
 
 2026-08-09 的 QA-005 阻断经授权整改：生产审计从 6 项降至 0，完整树降至 1 critical / 26 high / 3 low；剩余项确认属于未进入应用包的开发/构建链。Node.js 24.16.0 的 Forge 无产物路径再次被 fresh ZIP 门禁正确阻断，随后 Node.js 24.14.1 的连续发布门禁成功生成并校验 0.2.0 ZIP。该过程未改变任何 0.1.x 哈希或外部归档。
+
+## feat-013 Mermaid Safety and Conversion Audit — 2026-08-11
+
+- Mermaid 源码在正文提取/净化前规范化，并经内部 marker 穿过 Readability，最终只输出 fenced `mermaid`；普通代码块行为不变。
+- 粘贴模式不在浏览器执行 SVG/Canvas。Mermaid SVG 经专用白名单清洗后由 Sharp 转为 PNG：脚本、事件、外部资源和危险属性被移除，`foreignObject` 只提取纯文本并改写为 SVG `text`；原始 SVG 不进入 Markdown。无法安全栅格化或 Canvas 输出占位与 `MERMAID_RENDER_UNAVAILABLE`。
+- 前两轮分别尝试不透明白底和继承安全根文字色，但真实窗口仍显示黑图，因此未把自动 fixture 结果当成人工问题关闭证据。用户随后提供实际下载 Markdown；只提取其中唯一 Data URI PNG 检查，确认其为 1170×266、全不透明白底，但节点、连线为黑色且文字同样接近黑色，问题不在预览、透明度、缓存或旧二进制。
+- 最终根因是剪贴板 SVG 依赖来源网页 CSS；独立安全栅格化时这些样式不能可靠保留，未显式设置的 SVG presentation 属性按规范回退为黑色。修复改为移除来源 `<style>`，对节点、连线、marker 和文字写入固定浅色配色后再由 Sharp 栅格化，不再推断或继承网页主题。深色 fixture 节点像素先 RED（31，预期大于 220）后 GREEN；同一真实 WalkingLabs 页面生成图已目视确认节点、箭头和文字可读。
+- Node.js 24.14.1 `./init.sh` 仍通过 27 files / 311 tests、coverage 与 build；重新 `desktop:package` 后，用户在真实应用窗口重新粘贴、转换并确认问题解决。该证据关闭黑图人工验收，但不替代仍被微信上游 504 阻断的正式发布门禁。
+- 人工验收后的双轴质检又确认三项真实缺口：动态 Locator 边递增遍历边替换会跳过多图；元素内联 `style` 可覆盖 canonical presentation attributes；第 31 张粘贴 Mermaid 会降级但未进入来源/省略统计。另确认纯源码 `.mermaid` 不应进入浏览器截图集合。四项均先以失败测试复现，再分别改为倒序替换、只选择含 SVG/Canvas 的容器、移除内联样式、回传遗漏计数和专用 `MERMAID_COUNT_LIMIT`。
+- 31 张小型 fixture 同时暴露应用生成的低于 1 KiB PNG 会被通用占位检测误删；新增只在内部管线存活的生成标记以绕过该启发式，图片仍执行严格 PNG 校验，标记在输出前移除。聚焦浏览器/粘贴/图片回归为 123/123；Node.js 24.14.1 `./init.sh` 通过 27 files / 314 tests、coverage 与 build。
+- 质检整改后重新运行 `desktop:package`，产物只生成未压缩本机 `.app`，确认为 0.2.0 / arm64 / macOS 12.0+；用户在该新应用中复测 WalkingLabs 富文本转换正常。该人工证据覆盖最新整改，但仍不等价于 `desktop:release` 的 live 与 fresh ZIP 门禁。
+- 随后重跑完整 `desktop:release`：314 tests、coverage/build、三引擎 51/51、WalkingLabs live 2/2 均通过；固定微信样本在转换阶段约 28 秒后 504，发布在 Forge 前停止。旧 ZIP 的大小与 SHA-256 保持 `354,619,347` bytes / `e84ce4bd...e81328c0`，证明失败路径没有把历史产物误报或覆盖为新发布。用户同日手动转换另一篇微信文章成功，下一步应先把该 URL 作为临时 live 输入验证，而不是删除真实网页门禁。
+- 用户随后确认微信 504 属于可接受的上游波动并授权忽略其发布阻断作用。整改采用分层门禁：`test:live` 只保留 WalkingLabs 链接/粘贴 Mermaid 两项稳定真实样本，微信公众号同轮对照完整保留为 `test:live:wechat` 非阻断诊断命令；未删除覆盖率、标题、图片或 20 MiB 断言。公开命令配置测试先 RED 后 GREEN，release guards 25/25。
+- 最终 Node.js 24.14.1 `desktop:release` 通过 27 files / 315 tests、coverage/build、三引擎 51/51、WalkingLabs live 2/2、Forge、fresh ZIP、包内 0.2.0 与 arm64 校验。新 ZIP 为 `354,631,314` bytes，SHA-256 `b212b359405e53f1a0cc924b51c48c986335a3f74b4520f06f9fb825357d505c`；0.1.x 固定产物保护复核通过。结合此前最新 `.app` 的 WalkingLabs 真实窗口验收，feat-013 发布条件关闭。
+- 链接模式仅在受控 Chromium 中截图可见图表，使用不可预测的请求内占位映射；PNG 仍经 Sharp 实际格式校验、30 图、8 MiB 单图与 20 MiB 最终预算。网页自行提供的链接模式 Data URI 仍被拒绝。
+- 真实 WalkingLabs 门禁发现 `fonts.googleapis.com` 样式表会在固定代理中悬挂并阻塞 `DOMContentLoaded`；修复只阻断该字体样式表及既有字体/媒体资源，保留页面自身 CSS。未采用“导航超时但已提交即放行”的宽松方案，避免浏览器错误空壳被当作正文。
+- 链接版曾完成 Node.js 24.14.1 `desktop:release`：306 tests、三引擎 51/51、live 2/2、Forge 和 fresh ZIP。用户随后发现同一 WalkingLabs 页面经富文本粘贴仍缺图；固定浅色配色与质检整改后的本机 `.app` 已通过真实窗口验收，最终完整发布门禁及 fresh ZIP 也已通过，feat-013 标记为 done。

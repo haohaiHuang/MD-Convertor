@@ -1,5 +1,12 @@
 import createDOMPurify from "dompurify";
 import { JSDOM } from "jsdom";
+import {
+  GENERATED_MERMAID_IMAGE_ATTRIBUTE,
+  normalizeMermaidSources,
+  replaceUnusablePastedMermaid,
+  restoreMermaidSourceMarkers,
+} from "@/lib/mermaid";
+import type { ConversionWarning } from "@/types/conversion";
 
 const STRONG_STRUCTURE_SELECTOR = "h1,h2,h3,h4,h5,h6,table,ul,ol,blockquote,pre,img";
 const RICH_TEXT_SELECTOR = "strong,b,em,i,del,s,code";
@@ -24,6 +31,7 @@ export interface PreparedPastedContent {
   text: string;
   title: string;
   textLength: number;
+  warnings?: ConversionWarning[];
 }
 
 export interface PastedContentInput {
@@ -70,7 +78,7 @@ function sanitizePasteBody(window: JSDOM["window"], bodyHtml: string): string {
     FORBID_TAGS: PASTE_FORBID_TAGS,
     FORBID_ATTR: ["style", "srcdoc"],
     ALLOW_DATA_ATTR: false,
-    ADD_ATTR: ["data-src", "data-lazy-src"],
+    ADD_ATTR: ["data-src", "data-lazy-src", GENERATED_MERMAID_IMAGE_ATTRIBUTE],
   });
 }
 
@@ -111,9 +119,20 @@ export function preparePastedContent({ html, text }: PastedContentInput): Prepar
   const title = sourceDom ? documentTitle(sourceDom.window.document, plainText) : firstTextLine(plainText) || "粘贴内容";
   try {
     if (sourceDom) {
+      normalizeMermaidSources(sourceDom.window.document);
+      const unavailableMermaidCount = replaceUnusablePastedMermaid(sourceDom.window.document);
+      const warnings = unavailableMermaidCount > 0
+        ? [{
+            code: "MERMAID_RENDER_UNAVAILABLE",
+            message: "有一张 Mermaid 图表只有渲染结果，无法从粘贴内容中安全转换，已保留占位文本。",
+          }]
+        : [];
       const sourceBody = sourceDom.window.document.body;
       sourceBody?.querySelectorAll(PASTE_FORBID_TAGS.join(",")).forEach((element) => element.remove());
-      const cleanHtml = sanitizePasteBody(sourceDom.window, sourceBody?.innerHTML ?? "");
+      const cleanHtml = sanitizePasteBody(
+        sourceDom.window,
+        restoreMermaidSourceMarkers(sourceBody?.innerHTML ?? ""),
+      );
       const cleanDom = new JSDOM(`<body>${cleanHtml}</body>`, { runScripts: "outside-only" });
       try {
         const cleanBody = cleanDom.window.document.body;
@@ -129,6 +148,7 @@ export function preparePastedContent({ html, text }: PastedContentInput): Prepar
             text: cleanText,
             title,
             textLength: cleanText.length,
+            ...(warnings.length > 0 ? { warnings } : {}),
           };
         }
       } finally {

@@ -218,4 +218,15 @@ describe("preparePastedContent", () => {
     expect(result.html).not.toContain("Copied Page Title");
     expect(result.html).toContain("Body heading");
   });
+
+  it("normalizes pasted Mermaid source into a fenced-code HTML shape", () => {
+    const result = preparePastedContent({
+      html: '<article><h1>Diagram</h1><div class="mermaid">flowchart LR\n  A --&gt; B</div></article>',
+      text: "Diagram\nflowchart LR\nA --> B",
+    });
+
+    expect(result.mode).toBe("html");
+    expect(result.html).toContain('<pre><code class="language-mermaid">flowchart LR\n  A --&gt; B</code></pre>');
+    expect(result.html).not.toContain('class="mermaid"');
+  });
 });

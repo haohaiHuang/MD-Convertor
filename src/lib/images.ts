@@ -2,6 +2,7 @@ import { JSDOM } from "jsdom";
 import sharp from "sharp";
 import { AppError } from "@/lib/errors";
 import { fetchPublicResource } from "@/lib/fetcher";
+import { GENERATED_MERMAID_IMAGE_ATTRIBUTE } from "@/lib/mermaid";
 import type { ConversionWarning } from "@/types/conversion";
 
 const MAX_IMAGES = 30;
@@ -38,6 +39,7 @@ export type ImageEmbeddingStrategy =
       mode: "link";
       sourcePriority: "src-first";
       allowDataUri: false;
+      trustedDataUris?: ReadonlyMap<string, string>;
     }
   | {
       mode: "paste";
@@ -152,6 +154,23 @@ async function prepareDataUriImage(
   }
 }
 
+function trustedDataUriForSource(
+  rawSource: string,
+  sourceUrl: string | undefined,
+  strategy: ImageEmbeddingStrategy,
+): string | undefined {
+  if (strategy.mode !== "link" || !strategy.trustedDataUris) return undefined;
+
+  const directMatch = strategy.trustedDataUris.get(rawSource);
+  if (directMatch || !sourceUrl) return directMatch;
+
+  try {
+    return strategy.trustedDataUris.get(new URL(rawSource, sourceUrl).toString());
+  } catch {
+    return undefined;
+  }
+}
+
 async function prepareImage(
   element: HTMLImageElement,
   sourceUrl: string | undefined,
@@ -165,11 +184,16 @@ async function prepareImage(
         ? element.getAttribute("data-lazy-src") ?? ""
         : element.getAttribute("src") || ""
     : element.getAttribute("src") || element.getAttribute("data-src") || element.getAttribute("data-lazy-src") || "").trim();
+  const trustedDataUri = trustedDataUriForSource(rawSource, sourceUrl, strategy);
+  if (trustedDataUri) {
+    return prepareDataUriImage(element, trustedDataUri, signal, false);
+  }
   const isDataSource = strategy.allowDataUri ? /^data:/i.test(rawSource) : rawSource.startsWith("data:");
   if (!rawSource || isDataSource) {
     if (isDataSource && strategy.allowDataUri) {
       const hasLazySource = element.hasAttribute("data-src") || element.hasAttribute("data-lazy-src");
-      return prepareDataUriImage(element, rawSource, signal, !hasLazySource);
+      const isGeneratedMermaid = element.getAttribute(GENERATED_MERMAID_IMAGE_ATTRIBUTE) === "mermaid";
+      return prepareDataUriImage(element, rawSource, signal, !hasLazySource && !isGeneratedMermaid);
     }
     const hasLazySource = strategy.sourcePriority === "lazy-first" &&
       (element.hasAttribute("data-src") || element.hasAttribute("data-lazy-src"));
@@ -311,6 +335,7 @@ export async function embedImages(
       item.element.removeAttribute("srcset");
       item.element.removeAttribute("data-src");
       item.element.removeAttribute("data-lazy-src");
+      item.element.removeAttribute(GENERATED_MERMAID_IMAGE_ATTRIBUTE);
       if (item.animatedReduced) {
         warnings.push({ code: "ANIMATION_REDUCED", message: "一张过大的动图已压缩为静态首帧。" });
       }

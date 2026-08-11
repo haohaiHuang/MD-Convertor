@@ -5,6 +5,7 @@ import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   buildPastedPayload,
+  clearLinkInput,
   clearPastedContent,
   createPasteClientState,
   editPastedText,
@@ -73,6 +74,7 @@ export default function Home() {
   const [clientState, setClientState] = useState<PasteClientState<ConvertResponse>>(
     () => createPasteClientState<ConvertResponse>(),
   );
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const controllerRef = useRef<AbortController | null>(null);
   const resultRef = useRef<HTMLElement | null>(null);
   const { mode, linkInput, pasteInput, output } = clientState;
@@ -97,6 +99,19 @@ export default function Home() {
   const isLoading = requestState === "loading";
 
   useEffect(() => () => controllerRef.current?.abort(), []);
+
+  useEffect(() => {
+    const updateBackToTopVisibility = () => {
+      const nextVisibility = window.scrollY >= 500;
+      setShowBackToTop((previous) => (
+        previous === nextVisibility ? previous : nextVisibility
+      ));
+    };
+
+    updateBackToTopVisibility();
+    window.addEventListener("scroll", updateBackToTopVisibility, { passive: true });
+    return () => window.removeEventListener("scroll", updateBackToTopVisibility);
+  }, []);
 
   function setOutput(patch: Partial<PasteOutputState<ConvertResponse>>): void {
     setClientState((previous) => ({
@@ -260,6 +275,11 @@ export default function Home() {
     controller?.abort();
   }
 
+  function returnToTop(): void {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+  }
+
   async function copyMarkdown(): Promise<void> {
     const currentResult = clientState.output.result;
     if (!currentResult) return;
@@ -383,6 +403,16 @@ export default function Home() {
                   aria-invalid={hasLinkInput && !hasValidUrl}
                   aria-describedby={hasLinkInput && !hasValidUrl ? "link-url-error" : undefined}
                 />
+                {hasLinkInput && (
+                  <button
+                    className={styles.clearAction}
+                    type="button"
+                    disabled={isLoading}
+                    onClick={() => setClientState((previous) => clearLinkInput(previous))}
+                  >
+                    清空链接
+                  </button>
+                )}
                 {isLoading ? (
                   <button key="stop" className={`${styles.submit} ${styles.stop}`} type="button" onClick={stopConversion}>
                     停止转换
@@ -568,6 +598,17 @@ export default function Home() {
           </section>
         )}
       </div>
+      {showBackToTop && (
+        <button
+          className={styles.backToTop}
+          type="button"
+          aria-label="返回顶部"
+          onClick={returnToTop}
+        >
+          <span aria-hidden="true">↑</span>
+          返回顶部
+        </button>
+      )}
     </main>
   );
 }

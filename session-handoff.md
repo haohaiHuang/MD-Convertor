@@ -2,10 +2,10 @@
 
 ## Current Objective
 
-- Goal: 交付可在 Apple Silicon Mac 本地安装使用的 MD-Convertor；0.1.3 已封版，v0.2 富文本粘贴转换（`feat-012`）已完成，当前分支另完成 `feat-015`，按用户决定暂不合并。
-- Active: 无；`feat-015 — Clear Pasted Content Action` 已完成，`feat-013` 保持 planned，`feat-014` 已取消。
+- Goal: 交付可在 Apple Silicon Mac 本地安装使用的 MD-Convertor；0.1.3 已封版，v0.2 富文本粘贴转换（`feat-012`）、一键清空（`feat-015`）与 Mermaid 保留（`feat-013`）均已完成，按用户决定暂不合并。
+- Active: 无。`feat-016 — Quick Return and Clear Link` 已完成代码、Node.js 24 基线、三浏览器 E2E 与真实 Electron 窗口验收；`feat-014` 已取消。
 - Quality status: 0.1.3 自动发布门禁、本机操作和第二台 Apple Silicon Mac 验收均已通过；v0.2 最小安全升级后生产审计为 0，完整树剩余 1 critical / 26 high / 3 low 且未进入应用包；feat-015 后的完整发布门禁、打包应用冒烟与真实窗口人工验收均已通过；对外分发签名仍待完成。
-- Branch: `codex/feat-015-clear-paste`；`main` 固定在 0.1.3 封版提交 `ce041c9`，标签为 `v0.1.3`。v0.2 `feat-012` 在 `codex/feat-012-v0.2` 以提交 `23294e4` 收口，当前分支在其上完成 `feat-015`；新 0.2.0 ZIP 由源码提交 `f1d8ec3` 生成并包含 feat-015，按用户决定暂不合并。
+- Branch: `codex/feat-013-mermaid`；从已完成 feat-015 的提交 `7d78c1a` 建立。`main` 固定在 0.1.3 封版提交 `ce041c9`，标签为 `v0.1.3`。最新 0.2.0 ZIP 已包含 feat-013 链接与粘贴 SVG 修复；当前改动尚未提交，按用户决定暂不合并。
 
 ## Current Scope
 
@@ -62,8 +62,12 @@
 - feat-012 T9B 已完成：同步产品、架构、测试、质检、README、Changelog、任务、进度和交接文档；明确两模式、粘贴 API、安全边界、5 MiB/图片预算、登录态/临时/blob 限制、v0.2 安装条件与 T9A 证据。
 - feat-012 T10 已完成：生产审计清零；Node.js 24.14.1 连续通过 282 tests、48 E2E、live、Forge、fresh ZIP 与打包应用启动/长微信 30 图转换冒烟；用户确认真实窗口富文本模式人工验收通过。
 - feat-015 已完成：富文本模式新增“清空”，一次移除 HTML、纯文本、来源 URL 和旧结果；转换中禁用。Node.js 24.14.1 基线 287 tests，富文本三引擎 E2E 30/30，用户在当前源码的真实 Electron 窗口人工验收通过。
+- feat-013 链接/粘贴实现已完成：Mermaid 源码输出 fenced `mermaid`；链接客户端渲染图由受控 Chromium 截图为可信 PNG；富文本 Mermaid SVG 经独立白名单清洗后由 Sharp 转为 PNG；两者复用 30 图/8 MiB/20 MiB 预算。无法安全栅格化或 Canvas 仍占位警告。WalkingLabs 链接/粘贴真实门禁均通过。
+- feat-013 链接路径的 T4 自动门禁曾完成：Node.js 24.14.1 `desktop:release` 通过 306 tests、三引擎 51/51、live 2/2、Forge 与 fresh ZIP 校验；新包 354,619,347 bytes，SHA-256 `e84ce4bdeb7ea50e50d9a3a5fe2efe0a3f7bdc098cf133f83a513fb2e81328c0`。该 ZIP 早于后续粘贴 SVG 修复；最新源码仍需重新通过正式发布门禁。
+- 粘贴修复后用户提供实际下载 Markdown，只提取 Data URI PNG 并确认来源 CSS 丢失导致黑色回退；移除来源样式并写入固定浅色配色后，真实页面目视和重新打包应用人工复验通过。随后质检以失败测试确认并关闭动态多图跳过、纯源码误选、内联样式覆盖、31 图统计/警告及小型生成 PNG 误判；Node.js 24.14.1 `./init.sh` 最终通过 27 files / 314 tests、coverage/build。整改版再次 `desktop:package`，确认 0.2.0 / arm64 / macOS 12.0+，用户复测 WalkingLabs 富文本转换正常。最新完整 `desktop:release` 通过 E2E 51/51 和 WalkingLabs 2/2，但固定微信样本约 28 秒后 504，在 Forge 前停止且旧 ZIP 未变。
+- 用户确认微信上游 504 不再阻断个人测试包发布；`test:live` 只运行 WalkingLabs 链接/粘贴 Mermaid 两项稳定门禁，微信同轮对照保留为 `test:live:wechat` 诊断命令。最终 `desktop:release` 通过 315 tests、E2E 51/51、WalkingLabs 2/2、Forge 与 fresh ZIP 校验。
 - T10 人工验收已完成：X Article 样本正文正常但图片为链接；诊断确认其 6 张正文图与封面均来自 `pbs.twimg.com`，本机匿名直连 7/7 `ECONNRESET`，X 页面复跑亦有 502 波动。当前按“不绕过网络/登录限制”降级为外链，用户已接受为 v0.2 已知限制。
-- 另一人工样本的缺图已定性为 Mermaid 支持缺口：页面无正文栅格图，只有客户端把空 `.mermaid` 占位渲染成内联 SVG；当前 direct 输出 0 图/0 警告且没有 Mermaid fence。用户已接受为 v0.2 已知限制并决定后续在 `feat-013` 独立开发，不能误记为普通图片异常。
+- 同一 WalkingLabs 样本的富文本粘贴曾继续缺图：真实剪贴板 HTML 只有渲染 SVG。最新源码已用专用白名单清洗、固定浅色配色与 Sharp 栅格化修复，并通过真实粘贴门禁及本机 `.app` 人工验收；现有 ZIP 只含链接修复，不含本次粘贴修复。
 
 ## Verification Evidence
 
@@ -84,6 +88,7 @@
 | feat-012 T10 release gate | Passed | Node.js 24.14.1；24 files / 282 tests、48/48 E2E、live、Forge、fresh ZIP、启动与长微信 30 图冒烟；0.2.0 ZIP 354,594,827 bytes / `ab2a463c...a7b7b4` |
 | feat-012 final review remediation | Passed | Node.js 24.14.1；远程伪装格式与 ZIP 包内版本/arm64 均先 RED 后 GREEN；最终 `./init.sh` 24 files / 285 tests、coverage/build；现有 ZIP 包内只读复验通过 |
 | feat-015 release gate | Passed | Node.js 24.14.1；24 files / 287 tests、51/51 E2E、live、Forge、fresh ZIP、启动和 `example.com` 转换冒烟；用户确认新打包窗口“一键清空”通过 |
+| feat-013 final release gate | Passed | Node.js 24.14.1；27 files / 315 tests、51/51 E2E、WalkingLabs 链接/粘贴 live 2/2、Forge、fresh ZIP；0.2.0 arm64 ZIP 354,631,314 bytes / `b212b359...7d505c` |
 | 0.1.3 Node 24 `./init.sh` | Passed | lint、typecheck、coverage gate、18 files / 93 tests、Next build；2026-07-21 取消方案并清理 Harness 后复跑通过 |
 | 0.1.3 `npm run test:e2e` | Passed | 21 checks across Chromium, Firefox, WebKit, including new button labels |
 | 0.1.3 `npm run test:live` | Passed with variability | first upstream timeout; unchanged-threshold rerun passed |
@@ -98,23 +103,23 @@
 | 0.1.3 real packaged window | Passed | 用户确认当前 Mac 人工测试通过；stop preserved URL、Copy/Download worked、clipboard matched download、long download had 30 embedded images |
 | Remediation Node 24.14.1 `desktop:release` | Passed | 93 tests、21 E2E、live、Forge 与 fresh ZIP 校验；Node 24.16.0 无产物路径按预期被阻断 |
 | New packaged runtime | Passed | example.com browser mode 270 bytes；long WeChat 17,643 chars / 30 images / 7,749,363 bytes |
-| Overall quality audit | Personal release gates closed | dependency upgrades and signing remain open |
+| Overall quality audit | Personal release gates closed for 0.1.3 | production dependency remediation completed；build-chain advisories and signing remain open |
 | Second-Mac installation | Passed | 首次提示“文件已经损坏”；执行 `xattr -cr` 后应用可正常使用，安装说明已改为更精确的 quarantine 移除命令 |
 | Signing/notarization | Pending | 当前为个人测试产物 |
 
 ## Artifact
 
-- v0.2 candidate: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.2.0.zip`
-- SHA-256: `7f6f39873056a34414706362356cb461d1617cb1cb73c9b76952fe587dd658c6`
-- Size: `354,603,624` bytes; arm64; minimum macOS `12.0`; version `0.2.0`; includes feat-015.
-- Packaged smoke: startup and `example.com` browser-mode conversion passed; user confirmed the final packaged-window “一键清空” flow passed. The earlier feat-012 package retains the long WeChat 17,643 non-Base64 chars / 30 images evidence.
+- v0.2 current ZIP: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.2.0.zip`
+- SHA-256: `b212b359405e53f1a0cc924b51c48c986335a3f74b4520f06f9fb825357d505c`
+- Size: `354,631,314` bytes; arm64; minimum macOS `12.0`; version `0.2.0`; includes feat-015 and the complete feat-013 link/paste Mermaid remediation.
+- Current packaged App: `out/MD-Convertor-darwin-arm64/MD-Convertor.app`，arm64 / 0.2.0，来自同一轮完整 release gate。
 - 0.1.3 frozen ZIP and external archive remain `239,281,512` bytes / SHA-256 `66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89`.
 
 ## Next Session Startup
 
 1. 阅读 `AGENTS.md`、`PROGRESS.md`、`feature_list.json`、`docs/PLAN-V0.2.md`、`docs/TASKS-V0.2.md`、`docs/PRODUCT.md`、`docs/ARCHITECTURE.md`、`docs/TESTING.md` 和 `docs/QUALITY-AUDIT.md`。
 2. 运行 `./init.sh`（Node.js 24.x）。
-3. feat-015 后的自动门禁、live、重新打包、应用冒烟与用户人工验收均已完成；当前 0.2.0 ZIP 包含 feat-015，分支按用户决定暂不合并。
+3. feat-013 已完成并生成包含最新链接/粘贴 Mermaid 修复的 fresh ZIP；微信同轮对照为非阻断诊断项，分支按用户决定暂不合并。
 4. 未经用户重新明确授权，不恢复 Windows 与多平台仓库迁移。
 5. 对外分发仍需 Developer ID 签名与 notarization；完整开发/构建树的上游告警继续按 `QA-005` 跟踪。
 
@@ -122,8 +127,8 @@
 
 - 0.1.3 正式源码：`main` / `ce041c9` / `v0.1.3`。
 - 0.1.3 正式 ZIP：`~/Downloads/MD-Convertor-0.1.3-release/MD-Convertor-darwin-arm64-0.1.3.zip`，只读，SHA-256 `66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89`。
-- v0.2 开发基线：`codex/feat-012-v0.2` / `23294e4`，版本 `0.2.0`；当前工作分支为 `codex/feat-015-clear-paste`，候选包源码提交为 `f1d8ec3`。两者只允许在用户确认后合并。
+- v0.2 开发基线：`codex/feat-012-v0.2` / `23294e4`，版本 `0.2.0`；当前工作分支为 `codex/feat-013-mermaid`，改动尚未提交。只有在用户确认后才允许合并。
 
 ## Recommended Next Step
 
-等待用户决定下一项；`feat-013 — Mermaid Preservation` 仍为 planned，未经确认不实施。feat-015 已重新打包并验收，但尚未合并。
+等待用户决定是否提交已验收的 feat-013 与 feat-016 工作树，或另行授权运行完整发布门禁生成包含 feat-016 的新 ZIP。feat-016 自动证据为 Node.js 24.14.1 基线 27 files / 317 tests、三引擎 E2E 60/60，真实窗口验收通过；仍不自动运行 live、打包、合并到 `main` 或提交 Git。

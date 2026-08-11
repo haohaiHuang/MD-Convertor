@@ -24,7 +24,8 @@
     "test:watch": "vitest",
     "test:e2e": "node scripts/run-e2e.mjs",
     "e2e:server": "node scripts/start-e2e-server.mjs",
-    "test:live": "vitest run --config vitest.live.config.ts",
+    "test:live": "vitest run --config vitest.live.config.ts tests/live/mermaid-page.test.ts",
+    "test:live:wechat": "vitest run --config vitest.live.config.ts tests/live/wechat-article.test.ts",
     "desktop:release": "node scripts/release-desktop.mjs"
   },
   "dependencies": {

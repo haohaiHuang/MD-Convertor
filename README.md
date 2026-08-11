@@ -17,8 +17,10 @@ MD-Convertor 是一个 Apple Silicon Mac 网页转 Markdown 单机工具。你�
 - 富文本图片按 lazy-first 处理，严格校验 `data:` 图片并沿用 30 图、8 MiB 单图、20 MiB 最终文件预算
 - 链接模式自动保留标题、来源和转换时间；富文本模式按可选来源 URL 保留来源
 - 支持 JPEG、PNG、WebP、GIF、AVIF 图片以内嵌 Data URI 写入 Markdown
+- Mermaid 源码转换为 fenced `mermaid` 代码块；链接页面或粘贴内容只有安全的渲染图时，转为 PNG 并内嵌
 - 最终文件不超过 20 MiB；超出预算时优先保留正文并从末张图片开始省略
 - 转换中可停止；完成后显示文件大小、正文字数和图片提取数
+- 链接模式可一键清空 URL 和旧结果；长结果页面可快速返回顶部继续输入
 - Apple Silicon（arm64）Mac 桌面应用
 
 应用不绕过登录页、付费墙、验证码或其他访问限制；富文本模式只处理用户主动复制的剪贴板内容。登录态、临时签名、`blob:` 或需要 Cookie 的图片可能无法重新获取，会保留替代文本并提示。PDF、批量转换、历史记录和跨电脑同步不在第一阶段范围内。
@@ -27,7 +29,9 @@ MD-Convertor 是一个 Apple Silicon Mac 网页转 Markdown 单机工具。你�
 
 ### 链接转换
 
-在“链接转换”页粘贴 HTTP/HTTPS 网页链接，点击“转换为 MD”后由本机安全抓取、提取正文并处理图片。动态网页可使用内置 Chromium 回退；链接、网页和图片不会上传到 MD-Convertor 服务。
+在“链接转换”页粘贴 HTTP/HTTPS 网页链接，点击“转换为 MD”后由本机安全抓取、提取正文并处理图片。点击“清空链接”可同时清除 URL、校验提示和旧结果；转换进行中该操作不可用。动态网页可使用内置 Chromium 回退；链接、网页和图片不会上传到 MD-Convertor 服务。
+
+结果较长时，页面右下角会在滚动后显示“返回顶部”；它只负责平滑回到输入区，不会清除链接、富文本内容或转换结果。
 
 ### 富文本转换
 
@@ -41,7 +45,7 @@ MD-Convertor 是一个 Apple Silicon Mac 网页转 Markdown 单机工具。你�
 
 粘贴模式不会重新抓取来源网页、读取浏览器 Cookie 或恢复登录态。懒加载图片缺少真实 URL，或图片依赖登录态、临时签名、`blob:` URL 时，应用会保留替代文本和警告。
 
-当前版本不会保留只在客户端渲染后出现的 Mermaid/内联 SVG 图表；这类图表可能从结果中缺失。Mermaid 源码保留、安全栅格化与明确警告已登记为后续功能，不在 v0.2 范围内。
+Mermaid 源码会保留为 fenced `mermaid` 代码块；应用预览把它显示为代码，支持 Mermaid 的 Markdown 阅读器可自行渲染。链接页面若只有客户端渲染结果，应用会在受控 Chromium 中截图为 PNG。富文本粘贴若只有 Mermaid SVG，会先移除脚本、外部资源和危险属性，再在本机转为 PNG；无法安全转换或只有 Canvas 时保留占位文本并提示。两条路径生成的 PNG 都按现有图片数量和文件大小预算内嵌，原始 SVG 不进入 Markdown。
 
 ## 在其他电脑使用
 
@@ -52,7 +56,7 @@ MD-Convertor 是一个 Apple Silicon Mac 网页转 Markdown 单机工具。你�
 - 解压后建议把 `MD-Convertor.app` 拖入“应用程序”。当前产物未签名和 notarize，首次启动可能需要在 Finder 中右键应用并选择“打开”，或在“隐私与安全性”中允许启动；部分 Mac 会直接提示“文件已经损坏”。
 - 不同电脑不会同步历史或结果，需要在当前电脑下载 `.md` 文件自行保留。
 
-当前 0.2.0 ZIP 已包含 `feat-015`“一键清空”，并通过完整发布门禁、打包应用启动/转换冒烟和真实窗口验收。文件为 `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.2.0.zip`，大小 `354,603,624` bytes，SHA-256 为 `7f6f39873056a34414706362356cb461d1617cb1cb73c9b76952fe587dd658c6`。
+当前 0.2.0 ZIP 已包含 `feat-015` 和 feat-013 的链接/富文本 Mermaid 完整修复，并通过完整发布门禁；文件为 `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.2.0.zip`，大小 `354,631,314` bytes，SHA-256 为 `b212b359405e53f1a0cc924b51c48c986335a3f74b4520f06f9fb825357d505c`。
 
 0.1.3 应用已在第二台 Apple Silicon Mac 上完成真实安装和使用验收。该电脑首次启动时出现“文件已经损坏”提示；确认 ZIP 的 SHA-256 与本文记录一致后，移除应用的 quarantine 属性即可启动：
 
@@ -86,10 +90,11 @@ npx playwright install chromium firefox webkit
 ./init.sh
 npm run test:e2e
 npm run test:live
+npm run test:live:wechat
 npm run desktop:package
 ```
 
-`npm run test:live` 会联网对照指定的真实微信公众号文章，只用于发布前门禁。目标 Apple Silicon 发布流程使用 `npm run desktop:release`，依次执行基线、三浏览器 E2E、真实网页对照与 ZIP 打包；脚本会拒绝旧 ZIP，核验版本、arm64 架构和包结构，并输出新产物大小与 SHA-256。现状、命令分层、环境变量、冒烟方式和人工验收清单见 [`docs/TESTING.md`](docs/TESTING.md)。
+`npm run test:live` 会联网验证 WalkingLabs 链接/粘贴 Mermaid，是发布前阻断门禁；`npm run test:live:wechat` 保留微信公众号真实对照，但因微信上游验证与超时波动只作为非阻断诊断。目标 Apple Silicon 发布流程使用 `npm run desktop:release`，依次执行基线、三浏览器 E2E、稳定真实网页对照与 ZIP 打包；脚本会拒绝旧 ZIP，核验版本、arm64 架构和包结构，并输出新产物大小与 SHA-256。现状、命令分层、环境变量、冒烟方式和人工验收清单见 [`docs/TESTING.md`](docs/TESTING.md)。
 
 v0.2 的 `desktop:release` 只在 T10 执行：它要求目标版本为 `0.2.0`，并在任何检查或打包命令前保护 `main`/`v0.1.3`、外部只读归档及 0.1.0–0.1.3 历史 ZIP。T9A 的 guard、真实 live、0.2.0 打包与打包窗口人工验收均已通过。
 

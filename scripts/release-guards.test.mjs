@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { chmod, copyFile, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { chmod, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -442,5 +442,21 @@ describe("desktop release protection orchestration", () => {
 
     await expect(runRelease(options)).rejects.toThrow(RELEASE_VERSION_ERROR);
     expect(events).toEqual([]);
+  });
+});
+
+describe("desktop release live checks", () => {
+  it("keeps the upstream-variable WeChat comparison outside the blocking live command", async () => {
+    const packageJson = JSON.parse(await readFile(
+      new URL("../package.json", import.meta.url),
+      "utf8",
+    ));
+
+    expect(packageJson.scripts["test:live"]).toBe(
+      "vitest run --config vitest.live.config.ts tests/live/mermaid-page.test.ts",
+    );
+    expect(packageJson.scripts["test:live:wechat"]).toBe(
+      "vitest run --config vitest.live.config.ts tests/live/wechat-article.test.ts",
+    );
   });
 });
