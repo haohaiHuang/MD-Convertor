@@ -43,6 +43,7 @@
 ### Testing
 
 - feat-016 按 TDD 固化链接清空、loading 禁用、390px/1180px 返回顶部与状态保留；Node.js 24.14.1 基线通过 317 tests，三引擎 E2E 60/60，真实 Electron 窗口验收通过。
+- feat-016 完整发布门禁通过 317 tests、三引擎 60/60、WalkingLabs live 2/2、Forge 与 fresh ZIP 校验；新 0.2.0 arm64 ZIP 为 354,636,241 bytes，SHA-256 `5becae36...16485`。
 - 新增 Mermaid 源码、粘贴 SVG 安全栅格化/失败降级、Chromium 截图/预算/取消、可信图片交接和 WalkingLabs 链接/粘贴真实网页门禁。
 - feat-013 质检整改后的基线与真实窗口验收通过；微信上游超时改为非阻断诊断后，最终 `desktop:release` 通过 315 tests、三引擎 51/51、WalkingLabs 链接/粘贴 live 2/2、Forge 与 fresh ZIP 校验。新 0.2.0 arm64 ZIP 为 354,631,314 bytes，SHA-256 `b212b359...7d505c`。
 - 新增富文本单元/API/三浏览器 E2E 验证；T10 连续通过 24 files / 282 tests、三引擎 48/48、真实微信门禁、Forge、fresh ZIP 与打包应用冒烟，用户已确认真实窗口人工验收通过；提交前安全整改后的最终基线为 24 files / 285 tests。

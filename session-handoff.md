@@ -5,7 +5,7 @@
 - Goal: 交付可在 Apple Silicon Mac 本地安装使用的 MD-Convertor；0.1.3 已封版，v0.2 富文本粘贴转换（`feat-012`）、一键清空（`feat-015`）与 Mermaid 保留（`feat-013`）均已完成，按用户决定暂不合并。
 - Active: 无。`feat-016 — Quick Return and Clear Link` 已完成代码、Node.js 24 基线、三浏览器 E2E 与真实 Electron 窗口验收；`feat-014` 已取消。
 - Quality status: 0.1.3 自动发布门禁、本机操作和第二台 Apple Silicon Mac 验收均已通过；v0.2 最小安全升级后生产审计为 0，完整树剩余 1 critical / 26 high / 3 low 且未进入应用包；feat-015 后的完整发布门禁、打包应用冒烟与真实窗口人工验收均已通过；对外分发签名仍待完成。
-- Branch: `codex/feat-013-mermaid`；从已完成 feat-015 的提交 `7d78c1a` 建立。`main` 固定在 0.1.3 封版提交 `ce041c9`，标签为 `v0.1.3`。最新 0.2.0 ZIP 已包含 feat-013 链接与粘贴 SVG 修复；当前改动尚未提交，按用户决定暂不合并。
+- Branch: `codex/feat-013-mermaid`；从已完成 feat-015 的提交 `7d78c1a` 建立，feat-013 与 feat-016 已提交为 `b17341a`。`main` 固定在 0.1.3 封版提交 `ce041c9`，标签为 `v0.1.3`；最新 0.2.0 ZIP 已包含 feat-013 与 feat-016，按用户决定暂不合并。
 
 ## Current Scope
 
@@ -89,6 +89,7 @@
 | feat-012 final review remediation | Passed | Node.js 24.14.1；远程伪装格式与 ZIP 包内版本/arm64 均先 RED 后 GREEN；最终 `./init.sh` 24 files / 285 tests、coverage/build；现有 ZIP 包内只读复验通过 |
 | feat-015 release gate | Passed | Node.js 24.14.1；24 files / 287 tests、51/51 E2E、live、Forge、fresh ZIP、启动和 `example.com` 转换冒烟；用户确认新打包窗口“一键清空”通过 |
 | feat-013 final release gate | Passed | Node.js 24.14.1；27 files / 315 tests、51/51 E2E、WalkingLabs 链接/粘贴 live 2/2、Forge、fresh ZIP；0.2.0 arm64 ZIP 354,631,314 bytes / `b212b359...7d505c` |
+| feat-016 release gate | Passed | Node.js 24.14.1；27 files / 317 tests、60/60 E2E、WalkingLabs 链接/粘贴 live 2/2、Forge、fresh ZIP；0.2.0 arm64 ZIP 354,636,241 bytes / `5becae36...16485` |
 | 0.1.3 Node 24 `./init.sh` | Passed | lint、typecheck、coverage gate、18 files / 93 tests、Next build；2026-07-21 取消方案并清理 Harness 后复跑通过 |
 | 0.1.3 `npm run test:e2e` | Passed | 21 checks across Chromium, Firefox, WebKit, including new button labels |
 | 0.1.3 `npm run test:live` | Passed with variability | first upstream timeout; unchanged-threshold rerun passed |
@@ -110,8 +111,8 @@
 ## Artifact
 
 - v0.2 current ZIP: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.2.0.zip`
-- SHA-256: `b212b359405e53f1a0cc924b51c48c986335a3f74b4520f06f9fb825357d505c`
-- Size: `354,631,314` bytes; arm64; minimum macOS `12.0`; version `0.2.0`; includes feat-015 and the complete feat-013 link/paste Mermaid remediation.
+- SHA-256: `5becae36a53e91129a0dbcb93c3f7f5f3197326b2c83df6f10cb8494d8116485`
+- Size: `354,636,241` bytes; arm64; minimum macOS `12.0`; version `0.2.0`; includes feat-015, the complete feat-013 link/paste Mermaid remediation, and feat-016 quick interactions.
 - Current packaged App: `out/MD-Convertor-darwin-arm64/MD-Convertor.app`，arm64 / 0.2.0，来自同一轮完整 release gate。
 - 0.1.3 frozen ZIP and external archive remain `239,281,512` bytes / SHA-256 `66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89`.
 
@@ -127,8 +128,8 @@
 
 - 0.1.3 正式源码：`main` / `ce041c9` / `v0.1.3`。
 - 0.1.3 正式 ZIP：`~/Downloads/MD-Convertor-0.1.3-release/MD-Convertor-darwin-arm64-0.1.3.zip`，只读，SHA-256 `66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89`。
-- v0.2 开发基线：`codex/feat-012-v0.2` / `23294e4`，版本 `0.2.0`；当前工作分支为 `codex/feat-013-mermaid`，改动尚未提交。只有在用户确认后才允许合并。
+- v0.2 开发基线：`codex/feat-012-v0.2` / `23294e4`，版本 `0.2.0`；当前工作分支为 `codex/feat-013-mermaid`，feat-013 与 feat-016 功能提交为 `b17341a`。只有在用户确认后才允许合并。
 
 ## Recommended Next Step
 
-等待用户决定是否提交已验收的 feat-013 与 feat-016 工作树，或另行授权运行完整发布门禁生成包含 feat-016 的新 ZIP。feat-016 自动证据为 Node.js 24.14.1 基线 27 files / 317 tests、三引擎 E2E 60/60，真实窗口验收通过；仍不自动运行 live、打包、合并到 `main` 或提交 Git。
+feat-013 与 feat-016 已提交并生成通过完整门禁的新 0.2.0 ZIP。下一步由用户决定是否对新打包窗口补一次人工抽查，以及是否合并当前分支到 `main`；不自动合并。

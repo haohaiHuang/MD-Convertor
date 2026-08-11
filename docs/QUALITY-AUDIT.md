@@ -6,9 +6,15 @@
 - Audited version: `0.1.2`; follow-up validation: `0.1.3`; current development version: `0.2.0`
 - Platform: Apple Silicon Mac (`darwin/arm64`)
 - Historical active feature: 无；`feat-010 — Personal Mac Release` 已完成
-- Current review scope: `feat-013 — Mermaid Diagram Preservation` 的源码、测试、安全边界、人工验收与发布收口；`feat-012`、`feat-015` 保留为已完成回归基线
+- Current review scope: `feat-013 — Mermaid Diagram Preservation` 与 `feat-016 — Quick Return and Clear Link` 的源码、测试、人工验收与发布收口；`feat-012`、`feat-015` 保留为已完成回归基线
 - Audit type: 文档一致性、代码与安全审查、自动化验证、真实网页门禁、依赖审计和打包产物抽查
-- Overall verdict: **0.1.3 personal release remains frozen; feat-013 remediation, real-window acceptance and fresh 0.2.0 arm64 ZIP release gate pass; external distribution remains unsigned**
+- Overall verdict: **0.1.3 personal release remains frozen; feat-013 and feat-016 are committed, accepted and included in a fresh 0.2.0 arm64 ZIP; external distribution remains unsigned**
+
+## Seventh-Round Quick Interaction Release Closeout — 2026-08-11
+
+- feat-016 以 TDD 完成链接清空、loading 禁用和长结果返回顶部；用户确认当前源码真实 Electron 窗口正常，功能提交为 `b17341a`。
+- Node.js 24.14.1 `desktop:release` 通过 27 files / 317 tests、coverage/build、三引擎 60/60、WalkingLabs live 2/2、Forge、fresh ZIP 与包内 0.2.0 / arm64 校验。
+- 当前 0.2.0 arm64 ZIP 为 `354,636,241` bytes，SHA-256 `5becae36a53e91129a0dbcb93c3f7f5f3197326b2c83df6f10cb8494d8116485`；0.1.x 固定清单与外部只读归档保护复核通过。新包尚未签名或 notarize，只适合个人测试。
 
 ## Sixth-Round Mermaid Release Closeout — 2026-08-11
 

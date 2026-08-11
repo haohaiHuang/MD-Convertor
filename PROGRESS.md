@@ -4,7 +4,7 @@
 
 - Last updated: 2026-08-11
 - Active feature: 无；`feat-016 — Quick Return and Clear Link` 已完成自动验证与真实窗口验收。`feat-014` 已取消。
-- Overall status: 0.1.3 已以提交 `ce041c9`、标签 `v0.1.3` 和只读 ZIP 归档封版。v0.2 `feat-012`、`feat-015` 与 `feat-013` 已完成；最新 0.2.0 ZIP 已通过自动门禁和真实窗口验收，但按用户决定尚未合并到 `main`。
+- Overall status: 0.1.3 已以提交 `ce041c9`、标签 `v0.1.3` 和只读 ZIP 归档封版。v0.2 `feat-012`、`feat-015`、`feat-013` 与 `feat-016` 已完成；源码提交 `b17341a`，最新 0.2.0 ZIP 已通过完整发布门禁，但尚未合并到 `main`。
 
 ## Completed
 
@@ -79,7 +79,8 @@
 - Passed with Node.js 24.14.1 after paste-Mermaid remediation and quality review: 用户实际 1170×266 黑图确认来源 CSS 丢失导致黑色回退，固定浅色 palette 后真实页面目视及重新打包应用人工验收通过。后续质检以四项 RED 复现动态多图跳过、纯源码误选、内联样式覆盖和 31 图统计缺口，并发现小型生成 PNG 占位误判；整改后聚焦浏览器/粘贴/图片 123/123，`./init.sh` 27 files / 314 tests、coverage 与 build。随后再次 `desktop:package`，产物确认 0.2.0 / arm64 / macOS 12.0+，用户复测 WalkingLabs 富文本转换正常。此前三引擎 E2E 51/51、WalkingLabs 链接/深色粘贴 live 2/2。正式 `desktop:release` 仍受微信上游 504 阻断，未生成新 ZIP。
 - Latest release attempt on 2026-08-11: Node.js 24.14.1 `desktop:release` 通过 314 tests、coverage/build、三引擎 E2E 51/51 与 WalkingLabs live 2/2；固定微信样本 `uFxJIK83ZEgW5QMjogujSw` 在转换阶段约 28 秒后返回 `504 CONVERSION_TIMEOUT`，流程在 Forge 前安全停止。既有 ZIP 保持 354,619,347 bytes / SHA-256 `e84ce4bd...e81328c0`，未被覆盖。
 - Passed with Node.js 24.14.1: 用户确认微信上游超时不再阻断个人测试包发布；`test:live` 固定为 WalkingLabs 链接/粘贴 Mermaid 2 项阻断门禁，微信同轮对照保留为 `test:live:wechat` 诊断命令。拆分配置测试先 RED 后 GREEN，release guards 25/25；最终 `desktop:release` 通过 27 files / 315 tests、coverage/build、三引擎 E2E 51/51、WalkingLabs live 2/2、Forge 与 fresh ZIP 校验。新 0.2.0 arm64 ZIP 为 354,631,314 bytes，SHA-256 `b212b359405e53f1a0cc924b51c48c986335a3f74b4520f06f9fb825357d505c`。
-- Passed with Node.js 24.14.1: feat-016 TDD — `paste-client.test.ts` 21/21；Chromium 链接页 10/10；`./init.sh` 27 files / 317 tests、coverage gate 与 build；三引擎全量 E2E 60/60、tracked-file check passed。用户随后确认当前源码真实 Electron 窗口验收通过；未运行 live、未打包。
+- Passed with Node.js 24.14.1: feat-016 TDD — `paste-client.test.ts` 21/21；Chromium 链接页 10/10；`./init.sh` 27 files / 317 tests、coverage gate 与 build；三引擎全量 E2E 60/60、tracked-file check passed。用户随后确认当前源码真实 Electron 窗口验收通过。
+- Passed with Node.js 24.14.1: feat-016 `desktop:release` — 27 files / 317 tests、coverage/build、三引擎 E2E 60/60、WalkingLabs 链接/粘贴 live 2/2、Forge、fresh ZIP 与包内 0.2.0 / arm64 校验；新 ZIP 为 354,636,241 bytes，SHA-256 `5becae36a53e91129a0dbcb93c3f7f5f3197326b2c83df6f10cb8494d8116485`。
 - Passed: feat-015 pre-package source Electron window — 用户在重新发布前确认“一键清空”交互通过；后续发布与打包窗口证据见下一条。
 - Passed with Node.js 24.14.1: feat-015 `npm run desktop:release` — 24 files / 287 tests、coverage gate、三引擎 51/51、真实微信门禁、Forge 与 fresh ZIP 校验全部通过；打包应用启动和 `example.com` browser-mode 270-byte 转换冒烟通过，用户确认新打包窗口的“一键清空”无问题。
 - Passed: 0.2.0 packaged runtime — loopback standalone 启动；长微信 direct mode 17,643 non-Base64 chars / 30 images / 7,749,111 bytes；打包应用未包含 Forge、concurrently 或 tar；用户已确认真实窗口富文本模式人工验收通过。
@@ -122,7 +123,7 @@
 ## Artifacts
 
 - v0.2 current App: `out/MD-Convertor-darwin-arm64/MD-Convertor.app` — arm64；最低 macOS 12.0；版本 0.2.0；来自最新完整 release gate。
-- v0.2 current ZIP: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.2.0.zip` — 354,631,314 bytes；SHA-256 `b212b359405e53f1a0cc924b51c48c986335a3f74b4520f06f9fb825357d505c`；包含 feat-015 与 feat-013 完整链接/粘贴 Mermaid 修复。
+- v0.2 current ZIP: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.2.0.zip` — 354,636,241 bytes；SHA-256 `5becae36a53e91129a0dbcb93c3f7f5f3197326b2c83df6f10cb8494d8116485`；包含 feat-015、feat-013 完整 Mermaid 修复与 feat-016 快捷交互。
 - 0.1.3 frozen ZIP 保持 `239,281,512` bytes / SHA-256 `66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89`；外部只读归档和 0.1.0–0.1.3 四个历史哈希均未变化。
 
 ## Blockers and Risks
@@ -140,4 +141,4 @@
 
 ## Recommended Next Step
 
-等待用户决定是否提交当前已验收的 feat-013 与 feat-016 工作树，或另行授权运行完整发布门禁生成包含 feat-016 的新 ZIP；未经授权不自动执行 Git 提交、live、打包或合并。
+feat-013 与 feat-016 已提交并生成通过完整门禁的新 0.2.0 ZIP。下一步仅需用户决定是否对新打包窗口补一次人工抽查，以及是否把当前分支合并到 `main`；未经授权不自动合并。

@@ -56,7 +56,7 @@ Mermaid 源码会保留为 fenced `mermaid` 代码块；应用预览把它显示
 - 解压后建议把 `MD-Convertor.app` 拖入“应用程序”。当前产物未签名和 notarize，首次启动可能需要在 Finder 中右键应用并选择“打开”，或在“隐私与安全性”中允许启动；部分 Mac 会直接提示“文件已经损坏”。
 - 不同电脑不会同步历史或结果，需要在当前电脑下载 `.md` 文件自行保留。
 
-当前 0.2.0 ZIP 已包含 `feat-015` 和 feat-013 的链接/富文本 Mermaid 完整修复，并通过完整发布门禁；文件为 `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.2.0.zip`，大小 `354,631,314` bytes，SHA-256 为 `b212b359405e53f1a0cc924b51c48c986335a3f74b4520f06f9fb825357d505c`。
+当前 0.2.0 ZIP 已包含 `feat-015`、feat-013 的链接/富文本 Mermaid 完整修复，以及 feat-016 的清空链接与返回顶部，并通过完整发布门禁；文件为 `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.2.0.zip`，大小 `354,636,241` bytes，SHA-256 为 `5becae36a53e91129a0dbcb93c3f7f5f3197326b2c83df6f10cb8494d8116485`。
 
 0.1.3 应用已在第二台 Apple Silicon Mac 上完成真实安装和使用验收。该电脑首次启动时出现“文件已经损坏”提示；确认 ZIP 的 SHA-256 与本文记录一致后，移除应用的 quarantine 属性即可启动：
 

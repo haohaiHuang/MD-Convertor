@@ -78,9 +78,9 @@ MD_CONVERTOR_MERMAID_LIVE_URL=https://example.com/mermaid-page npm run test:live
 
 当前 v0.2 候选包使用 Node.js 24.14.1 / npm 11.11.0 生成。Node.js 24.16.0 可通过日常基线，但本机 Forge 仍会在 finalizing 阶段无产物退出；fresh ZIP 门禁已再次确认会将该情况判定为失败，因此打包阶段以 24.14.1 为已验证组合。T10 的基线、三浏览器、live、Forge、fresh ZIP、启动、长微信转换冒烟和真实窗口人工验收均已通过。
 
-Electron 43 起 `npm install` 不再自动下载 Electron 运行时；`desktop:prepare` 已显式调用官方 `install-electron`，首次打包会联网下载并缓存对应的 darwin/arm64 ZIP，后续复用缓存。2026-08-11 在 feat-013 完成后重新生成的当前产物为 `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.2.0.zip`，大小 `354,631,314` bytes，SHA-256 `b212b359405e53f1a0cc924b51c48c986335a3f74b4520f06f9fb825357d505c`。
+Electron 43 起 `npm install` 不再自动下载 Electron 运行时；`desktop:prepare` 已显式调用官方 `install-electron`，首次打包会联网下载并缓存对应的 darwin/arm64 ZIP，后续复用缓存。2026-08-11 在 feat-016 完成后重新生成的当前产物为 `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.2.0.zip`，大小 `354,636,241` bytes，SHA-256 `5becae36a53e91129a0dbcb93c3f7f5f3197326b2c83df6f10cb8494d8116485`。
 
-当前 ZIP 包含 feat-015 与 feat-013 的链接及富文本 Mermaid 修复。Node.js 24.14.1 完整 `desktop:release` 通过 27 files / 315 tests、三引擎 51/51、WalkingLabs 链接/粘贴 live 2/2、Forge、fresh ZIP 与包内版本/arm64 校验。微信公众号对照已拆为 `test:live:wechat` 非阻断诊断项；用户已人工确认公开微信文章仍可正常转换。
+当前 ZIP 包含 feat-015、feat-013 的链接及富文本 Mermaid 修复，以及 feat-016 的清空链接与返回顶部。Node.js 24.14.1 完整 `desktop:release` 通过 27 files / 317 tests、三引擎 60/60、WalkingLabs 链接/粘贴 live 2/2、Forge、fresh ZIP 与包内版本/arm64 校验。微信公众号对照为 `test:live:wechat` 非阻断诊断项；用户已人工确认公开微信文章仍可正常转换。
 
 ## 0.1.3 人工验收
 
