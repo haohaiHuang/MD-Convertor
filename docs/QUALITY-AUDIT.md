@@ -3,12 +3,12 @@
 ## Audit Metadata
 
 - Audit date: 2026-07-18; second-round audit: 2026-07-18; consistency reviews: 2026-08-10 and 2026-08-11
-- Audited version: `0.1.2`; follow-up validation: `0.1.3`; current development version: `0.2.0`
+- Audited version: `0.1.2`; follow-up validation: `0.1.3`; current release: `0.2.0`
 - Platform: Apple Silicon Mac (`darwin/arm64`)
 - Historical active feature: 无；`feat-010 — Personal Mac Release` 已完成
 - Current review scope: `feat-013 — Mermaid Diagram Preservation` 与 `feat-016 — Quick Return and Clear Link` 的源码、测试、人工验收与发布收口；`feat-012`、`feat-015` 保留为已完成回归基线
 - Audit type: 文档一致性、代码与安全审查、自动化验证、真实网页门禁、依赖审计和打包产物抽查
-- Overall verdict: **0.1.3 personal release remains frozen; feat-013 and feat-016 are committed, accepted and included in a fresh 0.2.0 arm64 ZIP; external distribution remains unsigned**
+- Overall verdict: **v0.2 is the current release on `main`; v0.1.3 remains an immutable historical baseline; the validated arm64 ZIP remains unsigned and intended for personal testing**
 
 ## Seventh-Round Quick Interaction Release Closeout — 2026-08-11
 

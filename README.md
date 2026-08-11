@@ -51,7 +51,7 @@ Mermaid source is preserved as a fenced `mermaid` code block. The built-in previ
 
 ## Using the app on another computer
 
-Both 0.1.3 and the currently verified v0.2 (`0.2.0`) ZIP are self-contained Apple Silicon Mac applications. The target Mac does not need Node.js, npm, Chrome, Playwright, an AI API, or any other development environment.
+Both the current v0.2 (`0.2.0`) release and historical 0.1.3 ZIP are self-contained Apple Silicon Mac applications. The target Mac does not need Node.js, npm, Chrome, Playwright, an AI API, or any other development environment.
 
 - Requires an Apple Silicon Mac with an M1, M2, M3, M4, or later arm64 chip; Intel Macs, Windows, and Linux are not supported.
 - Requires macOS 12.0 or later. Link conversion and re-embedding remote HTTP(S) images in rich text mode require an internet connection; plain text and `data:` images can be converted offline.
@@ -98,7 +98,7 @@ npm run desktop:package
 
 `npm run test:live` runs the release-blocking online checks for WalkingLabs link and pasted Mermaid conversion. `npm run test:live:wechat` retains the real WeChat comparison as a non-blocking diagnostic because WeChat verification and timeout behavior can vary. The Apple Silicon release workflow uses `npm run desktop:release` to run the baseline, three-browser E2E tests, stable live-page comparisons, and ZIP packaging. The script rejects stale ZIPs, verifies the version, arm64 architecture, and package structure, and prints the new artifact size and SHA-256. See [`docs/TESTING.md`](docs/TESTING.md) for command tiers, environment variables, smoke tests, and the manual acceptance checklist.
 
-The v0.2 `desktop:release` workflow is restricted to T10. It requires version `0.2.0` and protects `main`/`v0.1.3`, the external read-only archive, and all historical 0.1.0–0.1.3 ZIPs before running any validation or packaging command. The T9A guards, live checks, 0.2.0 packaging, and packaged-window acceptance have all passed.
+The v0.2 `desktop:release` workflow requires version `0.2.0` and protects the immutable `v0.1.3` tag, external read-only archive, and all historical 0.1.0–0.1.3 ZIPs before running any validation or packaging command. The release guards, live checks, 0.2.0 packaging, and packaged-window acceptance have all passed.
 
 ## Building the Apple Silicon app
 
@@ -118,4 +118,4 @@ Its SHA-256 is `66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89
 
 After extracting the ZIP, move `MD-Convertor.app` to Applications. If right-clicking and choosing Open in Finder still reports that the app is damaged, verify the ZIP SHA-256 first, then remove the quarantine attribute using the command under “Using the app on another computer.”
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for architecture and security boundaries, and [`docs/PRODUCT.md`](docs/PRODUCT.md) for the product scope.
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for architecture and security boundaries, [`docs/PRODUCT.md`](docs/PRODUCT.md) for the product scope, and [`CHANGELOG.md`](CHANGELOG.md) for release history.

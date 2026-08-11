@@ -96,9 +96,9 @@ npm run test:live:wechat
 npm run desktop:package
 ```
 
-`npm run test:live` 会联网验证 WalkingLabs 链接/粘贴 Mermaid，是发布前阻断门禁；`npm run test:live:wechat` 保留微信公众号真实对照，但因微信上游验证与超时波动只作为非阻断诊断。目标 Apple Silicon 发布流程使用 `npm run desktop:release`，依次执行基线、三浏览器 E2E、稳定真实网页对照与 ZIP 打包；脚本会拒绝旧 ZIP，核验版本、arm64 架构和包结构，并输出新产物大小与 SHA-256。现状、命令分层、环境变量、冒烟方式和人工验收清单见 [`docs/TESTING.md`](docs/TESTING.md)。
+`npm run test:live` 会联网验证 WalkingLabs 链接/粘贴 Mermaid，是发布前阻断门禁；`npm run test:live:wechat` 保留微信公众号真实对照，但因微信上游验证与超时波动只作为非阻断诊断。目标 Apple Silicon 发布流程使用 `npm run desktop:release`，依次执行基线、三浏览器 E2E、稳定真实网页对照与 ZIP 打包；脚本会拒绝旧 ZIP，核验版本、arm64 架构和包结构，并输出新产物大小与 SHA-256。现状、命令分层、环境变量、冒烟方式和人工验收清单见 [`docs/TESTING.zh.md`](docs/TESTING.zh.md)。
 
-v0.2 的 `desktop:release` 只在 T10 执行：它要求目标版本为 `0.2.0`，并在任何检查或打包命令前保护 `main`/`v0.1.3`、外部只读归档及 0.1.0–0.1.3 历史 ZIP。T9A 的 guard、真实 live、0.2.0 打包与打包窗口人工验收均已通过。
+v0.2 的 `desktop:release` 要求目标版本为 `0.2.0`，并在任何检查或打包命令前保护不可变的 `v0.1.3` 标签、外部只读归档及 0.1.0–0.1.3 历史 ZIP。发布 guard、真实 live、0.2.0 打包与打包窗口人工验收均已通过。
 
 ## 构建 Apple Silicon 应用
 
@@ -118,4 +118,4 @@ out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.1.3.zip
 
 解压后可把 `MD-Convertor.app` 拖入“应用程序”。如果 Finder 右键“打开”仍提示应用损坏，请先核对 ZIP 的 SHA-256，再按“在其他电脑使用”中的命令移除 quarantine 属性。
 
-架构与安全边界见 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)，产品范围见 [`docs/PRODUCT.md`](docs/PRODUCT.md)。
+架构与安全边界见 [`docs/ARCHITECTURE.zh.md`](docs/ARCHITECTURE.zh.md)，产品范围见 [`docs/PRODUCT.zh.md`](docs/PRODUCT.zh.md)，版本记录见 [`CHANGELOG.zh.md`](CHANGELOG.zh.md)。
