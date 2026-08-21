@@ -5,7 +5,7 @@
 - Last updated: 2026-08-22
 - Current release: `0.2.1`
 - Active feature: none
-- Release branch: `codex/v0.2.1-cleanup` until the release PR is merged into `main`
+- Branch: `main` is the published source of truth; release PR [#3](https://github.com/haohaiHuang/MD-Convertor/pull/3) is merged
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+
 
 ## Completed in 0.2.1
@@ -27,6 +27,7 @@
 - Size: `354,635,067` bytes
 - SHA-256: `32c1d96af58a7701e6d2fe0bf619be0f8f224803355c6ef63aad43c85569463e`
 - Package: version `0.2.1`, `arm64`, macOS 12.0+
+- GitHub Release: https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.2.1
 
 ## Open Constraints
 
