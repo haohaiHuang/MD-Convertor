@@ -139,14 +139,15 @@ describe("protected historical 0.1.x ZIP snapshot guard", () => {
       "MD-Convertor-darwin-arm64-0.1.1.zip": "d3fc7e83cf7c7ffb370f2413c614e41d3bf52a689195b6d80dcbba15175c53ef",
       "MD-Convertor-darwin-arm64-0.1.2.zip": "fbb645e1ad55b28373bc94f3974c85ca3a9aa3de58f73ce2530b9628ac84baf5",
       "MD-Convertor-darwin-arm64-0.1.3.zip": "66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89",
+      "MD-Convertor-darwin-arm64-0.2.0.zip": "5becae36a53e91129a0dbcb93c3f7f5f3197326b2c83df6f10cb8494d8116485",
     });
   });
 
   async function makeHistoricalFixture() {
-    const root = await mkdtemp(path.join(tmpdir(), "release-history-"));
-    const directory = path.join(root, "out", "make", "zip", "darwin", "arm64");
+    const home = await mkdtemp(path.join(tmpdir(), "release-history-"));
+    const directory = path.join(home, "Downloads", "MD-Convertor-archive", "releases");
     await mkdir(directory, { recursive: true });
-    return { root, directory };
+    return { home, directory };
   }
 
   async function writeHistoricalFiles(directory, names = historicalNames) {
@@ -158,56 +159,56 @@ describe("protected historical 0.1.x ZIP snapshot guard", () => {
   }
 
   it("captures every fixed manifest ZIP with its fixed SHA-256", async () => {
-    const { root, directory } = await makeHistoricalFixture();
+    const { home, directory } = await makeHistoricalFixture();
     try {
       await writeHistoricalFiles(directory);
       await writeFile(path.join(directory, "MD-Convertor-darwin-arm64-0.1.3-beta.zip"), "ignored");
-      await writeFile(path.join(directory, "MD-Convertor-darwin-arm64-0.2.0.zip"), "ignored");
+      await writeFile(path.join(directory, "archive-notes.txt"), "ignored");
 
-      await expect(captureHistoricalZipSnapshot({ root, hashFile: async (filePath) => manifestHash(filePath) }))
+      await expect(captureHistoricalZipSnapshot({ homedir: home, hashFile: async (filePath) => manifestHash(filePath) }))
         .resolves.toEqual(historicalNames.map((name) => ({
           path: path.join(directory, name),
           sha256: PROTECTED_HISTORICAL_ZIP_MANIFEST[name],
         })));
     } finally {
-      await rm(root, { recursive: true, force: true });
+      await rm(home, { recursive: true, force: true });
     }
   });
 
   it("rejects a missing historical ZIP directory", async () => {
-    const root = await mkdtemp(path.join(tmpdir(), "release-history-missing-directory-"));
+    const home = await mkdtemp(path.join(tmpdir(), "release-history-missing-directory-"));
     try {
-      await expect(captureHistoricalZipSnapshot({ root })).rejects.toThrow(HISTORICAL_ZIP_ERROR);
+      await expect(captureHistoricalZipSnapshot({ homedir: home })).rejects.toThrow(HISTORICAL_ZIP_ERROR);
     } finally {
-      await rm(root, { recursive: true, force: true });
+      await rm(home, { recursive: true, force: true });
     }
   });
 
   it("rejects a missing manifest ZIP", async () => {
-    const { root, directory } = await makeHistoricalFixture();
+    const { home, directory } = await makeHistoricalFixture();
     try {
       await writeHistoricalFiles(directory, historicalNames.slice(1));
-      await expect(captureHistoricalZipSnapshot({ root, hashFile: async (filePath) => manifestHash(filePath) }))
+      await expect(captureHistoricalZipSnapshot({ homedir: home, hashFile: async (filePath) => manifestHash(filePath) }))
         .rejects.toThrow(HISTORICAL_ZIP_ERROR);
     } finally {
-      await rm(root, { recursive: true, force: true });
+      await rm(home, { recursive: true, force: true });
     }
   });
 
   it("accepts an exact unchanged fixed manifest snapshot", async () => {
-    const { root, directory } = await makeHistoricalFixture();
+    const { home, directory } = await makeHistoricalFixture();
     try {
       await writeHistoricalFiles(directory);
       const hashFile = async (filePath) => manifestHash(filePath);
-      const snapshot = await captureHistoricalZipSnapshot({ root, hashFile });
-      await expect(assertHistoricalZipSnapshotUnchanged(snapshot, { root, hashFile })).resolves.toBeUndefined();
+      const snapshot = await captureHistoricalZipSnapshot({ homedir: home, hashFile });
+      await expect(assertHistoricalZipSnapshotUnchanged(snapshot, { homedir: home, hashFile })).resolves.toBeUndefined();
     } finally {
-      await rm(root, { recursive: true, force: true });
+      await rm(home, { recursive: true, force: true });
     }
   });
 
   it("rejects a modified manifest hash", async () => {
-    const { root, directory } = await makeHistoricalFixture();
+    const { home, directory } = await makeHistoricalFixture();
     try {
       await writeHistoricalFiles(directory);
       let modified = false;
@@ -215,45 +216,45 @@ describe("protected historical 0.1.x ZIP snapshot guard", () => {
       const hashFile = async (filePath) => modified && path.basename(filePath) === target
         ? "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         : manifestHash(filePath);
-      const snapshot = await captureHistoricalZipSnapshot({ root, hashFile });
+      const snapshot = await captureHistoricalZipSnapshot({ homedir: home, hashFile });
       modified = true;
-      await expect(assertHistoricalZipSnapshotUnchanged(snapshot, { root, hashFile }))
+      await expect(assertHistoricalZipSnapshotUnchanged(snapshot, { homedir: home, hashFile }))
         .rejects.toThrow(HISTORICAL_ZIP_ERROR);
     } finally {
-      await rm(root, { recursive: true, force: true });
+      await rm(home, { recursive: true, force: true });
     }
   });
 
-  it("rejects a newly added strict 0.1.x ZIP", async () => {
-    const { root, directory } = await makeHistoricalFixture();
+  it("rejects a newly added strict historical ZIP", async () => {
+    const { home, directory } = await makeHistoricalFixture();
     try {
       await writeHistoricalFiles(directory);
       const hashFile = async (filePath) => manifestHash(filePath);
-      const snapshot = await captureHistoricalZipSnapshot({ root, hashFile });
-      await writeFile(path.join(directory, "MD-Convertor-darwin-arm64-0.1.4.zip"), "new-zip");
-      await expect(assertHistoricalZipSnapshotUnchanged(snapshot, { root, hashFile }))
+      const snapshot = await captureHistoricalZipSnapshot({ homedir: home, hashFile });
+      await writeFile(path.join(directory, "MD-Convertor-darwin-arm64-0.2.1.zip"), "new-zip");
+      await expect(assertHistoricalZipSnapshotUnchanged(snapshot, { homedir: home, hashFile }))
         .rejects.toThrow(HISTORICAL_ZIP_ERROR);
     } finally {
-      await rm(root, { recursive: true, force: true });
+      await rm(home, { recursive: true, force: true });
     }
   });
 
   it("keeps historical errors private", async () => {
-    const { root, directory } = await makeHistoricalFixture();
+    const { home, directory } = await makeHistoricalFixture();
     const sentinelHash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     try {
       await writeHistoricalFiles(directory);
       await expect(captureHistoricalZipSnapshot({
-        root,
+        homedir: home,
         hashFile: async () => sentinelHash,
       })).rejects.toSatisfy((error) => {
         expect(error.message).toBe(HISTORICAL_ZIP_ERROR);
-        expect(error.message).not.toContain(root);
+        expect(error.message).not.toContain(home);
         expect(error.message).not.toContain(sentinelHash);
         return true;
       });
     } finally {
-      await rm(root, { recursive: true, force: true });
+      await rm(home, { recursive: true, force: true });
     }
   });
 });
@@ -292,17 +293,17 @@ describe("fresh desktop ZIP verification", () => {
 <key>CFBundleVersion</key><string>${version}</string>
 </dict></plist>`;
 
-  async function makeFreshArtifactFixture({ zipVersion = "0.2.0", zipExecutable = "/bin/echo" } = {}) {
+  async function makeFreshArtifactFixture({ zipVersion = "0.2.1", zipExecutable = "/bin/echo" } = {}) {
     const root = await mkdtemp(path.join(tmpdir(), "release-artifact-"));
     const sideApp = path.join(root, "out", "MD-Convertor-darwin-arm64", "MD-Convertor.app");
     const sideContents = path.join(sideApp, "Contents");
     const zipRoot = path.join(root, "zip-input");
     const zipApp = path.join(zipRoot, "MD-Convertor.app");
     const zipContents = path.join(zipApp, "Contents");
-    const zipPath = path.join(root, "out", "make", "zip", "darwin", "arm64", "MD-Convertor-darwin-arm64-0.2.0.zip");
+    const zipPath = path.join(root, "out", "make", "zip", "darwin", "arm64", "MD-Convertor-darwin-arm64-0.2.1.zip");
 
     await mkdir(path.join(sideContents, "MacOS"), { recursive: true });
-    await writeFile(path.join(sideContents, "Info.plist"), plist("0.2.0"));
+    await writeFile(path.join(sideContents, "Info.plist"), plist("0.2.1"));
     await copyFile("/bin/echo", path.join(sideContents, "MacOS", "MD-Convertor"));
     await mkdir(path.join(zipContents, "MacOS"), { recursive: true });
     await writeFile(path.join(zipContents, "Info.plist"), plist(zipVersion));
@@ -319,7 +320,7 @@ describe("fresh desktop ZIP verification", () => {
   it("rejects a ZIP whose bundled version differs from the verified side application", async () => {
     const { root } = await makeFreshArtifactFixture({ zipVersion: "0.1.3" });
     try {
-      expect(() => verifyFreshArtifact({ root, version: "0.2.0", startedAtMs: 0 }))
+      expect(() => verifyFreshArtifact({ root, version: "0.2.1", startedAtMs: 0 }))
         .toThrow("ZIP application version mismatch");
     } finally {
       await rm(root, { recursive: true, force: true });
@@ -329,7 +330,7 @@ describe("fresh desktop ZIP verification", () => {
   it("rejects a ZIP whose bundled executable is not arm64", async () => {
     const { root } = await makeFreshArtifactFixture({ zipExecutable: "not a Mach-O executable" });
     try {
-      expect(() => verifyFreshArtifact({ root, version: "0.2.0", startedAtMs: 0 }))
+      expect(() => verifyFreshArtifact({ root, version: "0.2.1", startedAtMs: 0 }))
         .toThrow("ZIP application architecture is not arm64");
     } finally {
       await rm(root, { recursive: true, force: true });
@@ -344,7 +345,7 @@ describe("desktop release protection orchestration", () => {
       events,
       options: {
         root: "/tmp/release-orchestration-root",
-        version: "0.2.0",
+        version: "0.2.1",
         runCommand: (command, args) => {
           events.push(`run:${command} ${args.join(" ")}`.trim());
         },

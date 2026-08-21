@@ -176,6 +176,33 @@ function promotePasteTableHeaders(body: Element): void {
   });
 }
 
+function codeNodeText(node: Element): string {
+  const clone = node.cloneNode(true) as Element;
+  clone.querySelectorAll("br").forEach((lineBreak) => {
+    lineBreak.replaceWith(clone.ownerDocument.createTextNode("\n"));
+  });
+  return clone.textContent ?? "";
+}
+
+function normalizeMultiCodeBlocks(body: Element): void {
+  body.querySelectorAll("pre").forEach((pre) => {
+    const codeNodes = Array.from(pre.children).filter((child) => child.tagName.toLowerCase() === "code");
+    if (codeNodes.length < 2 || codeNodes.length !== pre.children.length) return;
+
+    const hasSignificantTextNode = Array.from(pre.childNodes).some((node) =>
+      node.nodeType === 3 && Boolean(node.textContent?.trim()),
+    );
+    if (hasSignificantTextNode) return;
+
+    const mergedCode = pre.ownerDocument.createElement("code");
+    Array.from(codeNodes[0].attributes).forEach((attribute) => {
+      mergedCode.setAttribute(attribute.name, attribute.value);
+    });
+    mergedCode.textContent = codeNodes.map(codeNodeText).join("\n");
+    pre.replaceChildren(mergedCode);
+  });
+}
+
 function flattenPasteTableLists(body: Element): void {
   body.querySelectorAll("td, th").forEach((cell) => {
     Array.from(cell.querySelectorAll("ul, ol")).reverse().forEach((list) => {
@@ -200,6 +227,7 @@ function renderPastedHtml(html: string, title: string, sourceUrl: string | undef
     }
     promotePasteTableHeaders(body);
     flattenPasteTableLists(body);
+    normalizeMultiCodeBlocks(body);
     normalizePasteLinks(body, sourceUrl?.trim() || undefined);
     return createPasteTurndown().turndown(body).trim();
   } finally {
@@ -244,6 +272,7 @@ export function htmlToMarkdown(
       link.removeAttribute("href");
     }
   });
+  normalizeMultiCodeBlocks(dom.window.document.body);
 
   const turndown = new TurndownService({
     headingStyle: "atx",

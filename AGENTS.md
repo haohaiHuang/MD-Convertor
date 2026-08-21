@@ -28,9 +28,9 @@
 - **Stay in scope**：只修改当前事项需要的文件，不顺手重构或扩展未获授权的功能。
 - 保持 Node.js 24、Next.js 16、Electron、npm 和当前锁文件；未经批准不要替换框架或包管理器。
 - 当前项目只构建和验收 `darwin/arm64`；Windows、多平台仓库迁移均已取消，未经用户重新明确授权不得恢复。
-- 直接粘贴内容转换：0.1.x 阶段取消；已于 2026-08-06 在 v0.2（`feat-012`）以「富文本粘贴转换」形式重新授权，范围以 `docs/PLAN-V0.2.md` 为准（仅处理用户主动复制的剪贴板 HTML/纯文本，不绕过任何访问限制）。
+- 富文本粘贴转换只处理用户主动复制的剪贴板 HTML/纯文本，不读取浏览器登录态，也不绕过任何访问限制；现行范围以 `docs/PRODUCT.md` 和 `docs/ARCHITECTURE.md` 为准。
 - **所有代码开发必须遵循 TDD**：先写失败测试（RED），再写最小实现使其通过（GREEN），最后清理重构（REFACTOR）；每个实现步骤都应有对应的自动化测试作为证据，禁止先实现后补测试。
-- **v0.2 是当前正式版本，0.1.3 为不可变历史基线**：`main` 代表当前版本；`v0.1.3` 标签固定在提交 `ce041c9`，0.1.3 正式 ZIP 归档于 `~/Downloads/MD-Convertor-0.1.3-release/`（SHA-256 `66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89`）。后续版本不得移动历史标签、覆盖或删除 0.1.x 产物；0.1.3 既有 93 tests 与 21 E2E 继续作为扩展回归集的一部分保持通过。
+- **v0.2.1 是当前正式版本，0.1.3 为不可变历史基线**：`main` 代表当前版本；`v0.1.3` 标签固定在提交 `ce041c9`。历史文档和 ZIP 归档于 `~/Downloads/MD-Convertor-archive/`，原 0.1.3 正式归档继续保留于 `~/Downloads/MD-Convertor-0.1.3-release/`。后续版本不得移动历史标签、覆盖或删除受保护产物；既有回归继续包含在扩展测试集中。
 - 产品或架构决策写入相应项目文档；会话状态写入 `PROGRESS.md`，不要依赖聊天记录延续上下文。
 - 面向用户的显著变化记录到 `CHANGELOG.md` 的 `[Unreleased]`。
 - 不提交密钥、令牌、Cookie、个人数据、受版权保护的完整网页内容或其他敏感材料。
@@ -81,10 +81,20 @@
 npm run test:e2e
 ```
 
-真实网页对照只在发布前执行 `npm run test:live`，不得加入日常单元测试；它会联网但不得保存或输出网页正文。桌面打包、环境变量、冒烟和人工验收统一按 `docs/TESTING.md` 执行。当前正式 v0.2 发布门禁使用 `npm run desktop:release`，且只允许目标版本 `0.2.0`；脚本必须保护 0.1.3 基线与历史 ZIP，并自动验证新 ZIP 的新鲜度、版本、arm64 架构、包结构和 SHA-256，不能把 Forge 无产物退出视为成功。签名和 notarization 尚未配置时必须明确报告产物仅适合个人测试。
+真实网页对照只在发布前执行 `npm run test:live`，不得加入日常单元测试；它会联网但不得保存或输出网页正文。桌面打包、环境变量、冒烟和人工验收统一按 `docs/TESTING.md` 执行。当前正式发布门禁使用 `npm run desktop:release`，且只允许目标版本 `0.2.1`；脚本必须从外部归档保护历史 ZIP，并自动验证新 ZIP 的新鲜度、版本、arm64 架构、包结构和 SHA-256，不能把 Forge 无产物退出视为成功。签名和 notarization 尚未配置时必须明确报告产物仅适合个人测试。
 
 ## Escalation
 
 - 产品边界、交付形态或关键技术取舍不清：先查项目企划与架构文档；仍不清楚则询问用户。
 - 同一验证连续失败：在 `PROGRESS.md` 记录命令、错误和已尝试方案，再请求协助。
 - 当前事项需要扩大范围或改动无关文件：暂停并取得授权。
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

@@ -8,12 +8,13 @@ export const PROTECTED_BASELINE_COMMIT = "ce041c9c826eb7ebdb576482dfa8ef5a6ac3e2
 export const PROTECTED_BASELINE_ERROR = "Protected 0.1.3 source baseline is not intact.";
 export const PROTECTED_ARCHIVE_SHA256 = "66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89";
 export const PROTECTED_ARCHIVE_ERROR = "Protected 0.1.3 archive is not intact.";
-export const HISTORICAL_ZIP_ERROR = "Protected 0.1.x artifacts changed.";
+export const HISTORICAL_ZIP_ERROR = "Protected historical release artifacts changed.";
 export const PROTECTED_HISTORICAL_ZIP_MANIFEST = Object.freeze({
   "MD-Convertor-darwin-arm64-0.1.0.zip": "674720e2348c8948746bedcea91b5ef22191575cb2213199d0d595d70dae0593",
   "MD-Convertor-darwin-arm64-0.1.1.zip": "d3fc7e83cf7c7ffb370f2413c614e41d3bf52a689195b6d80dcbba15175c53ef",
   "MD-Convertor-darwin-arm64-0.1.2.zip": "fbb645e1ad55b28373bc94f3974c85ca3a9aa3de58f73ce2530b9628ac84baf5",
   "MD-Convertor-darwin-arm64-0.1.3.zip": PROTECTED_ARCHIVE_SHA256,
+  "MD-Convertor-darwin-arm64-0.2.0.zip": "5becae36a53e91129a0dbcb93c3f7f5f3197326b2c83df6f10cb8494d8116485",
 });
 
 function resolveGitRef(ref, root) {
@@ -61,14 +62,17 @@ export async function assertProtectedArchive({ homedir = defaultHomedir(), hashF
   }
 }
 
-function historicalZipDirectory(root) {
-  return path.join(root, "out", "make", "zip", "darwin", "arm64");
+export function getHistoricalZipArchiveDirectory(homedir = defaultHomedir()) {
+  return path.join(homedir, "Downloads", "MD-Convertor-archive", "releases");
 }
 
-const HISTORICAL_ZIP_NAME = /^MD-Convertor-darwin-arm64-0\.1\.\d+\.zip$/;
+const HISTORICAL_ZIP_NAME = /^MD-Convertor-darwin-arm64-\d+\.\d+\.\d+\.zip$/;
 
-export async function captureHistoricalZipSnapshot({ root = process.cwd(), hashFile = sha256File } = {}) {
-  const directory = historicalZipDirectory(root);
+export async function captureHistoricalZipSnapshot({
+  homedir = defaultHomedir(),
+  hashFile = sha256File,
+} = {}) {
+  const directory = getHistoricalZipArchiveDirectory(homedir);
   try {
     const entries = readdirSync(directory, { withFileTypes: true });
     const byName = new Map(entries.map((entry) => [entry.name, entry]));
@@ -94,11 +98,11 @@ export async function captureHistoricalZipSnapshot({ root = process.cwd(), hashF
 
 export async function assertHistoricalZipSnapshotUnchanged(
   previousSnapshot,
-  { root = process.cwd(), hashFile = sha256File } = {},
+  { homedir = defaultHomedir(), hashFile = sha256File } = {},
 ) {
   try {
     const previous = [...previousSnapshot].sort((a, b) => a.path.localeCompare(b.path));
-    const current = await captureHistoricalZipSnapshot({ root, hashFile });
+    const current = await captureHistoricalZipSnapshot({ homedir, hashFile });
     if (JSON.stringify(current) !== JSON.stringify(previous)) throw new Error(HISTORICAL_ZIP_ERROR);
   } catch {
     throw new Error(HISTORICAL_ZIP_ERROR);

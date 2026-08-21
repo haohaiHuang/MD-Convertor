@@ -58,6 +58,7 @@ Both modes then share the following stages:
 - Paste body limits check both declared `Content-Length` and streamed bytes. Authentication and limits run before conversion. Paste conversion has a 45-second server deadline; client cancellation records `499 CLIENT_ABORTED`.
 - Images requiring authentication, cookies, temporary signatures, or `blob:` URLs may fail and fall back to alt text with a warning. The app does not read cookies or attempt to bypass access controls.
 - Markdown preview does not parse raw HTML. It allows only application-generated raster Data URIs. Fenced Mermaid is displayed as code and is not executed in the app.
+- Before Turndown, the shared Markdown stage normalizes only `pre` elements with multiple direct `code` children into one complete code block; ordinary code blocks and Mermaid markers remain unchanged.
 - Client cancellation aborts the same-origin request and propagates through direct fetches, browser rendering, and image requests so local resources are released promptly.
 
 ## Data and logs
@@ -70,10 +71,10 @@ The application code uses no database, object storage, cookies, LocalStorage, or
 - `npm run dev:desktop` starts local development.
 - `npm run desktop:package` creates an unpacked app; `npm run desktop:make` creates the distributable ZIP.
 - The daily baseline includes exact synthetic webpage-to-Markdown golden tests. `npm run test:live` uses stable WalkingLabs fixtures as the release-blocking link/paste Mermaid gate. `npm run test:live:wechat` retains the real WeChat comparison as a non-blocking diagnostic because upstream verification and timeouts vary.
-- `./init.sh` and release scripts require Node.js 24.x. The v0.2 release script requires version `0.2.0` and protects the immutable `v0.1.3` tag, external read-only 0.1.3 archive, and fixed 0.1.0–0.1.3 ZIP manifest before running baseline, E2E, live, or Forge commands. Historical artifacts are checked again after success or failure. `npm run desktop:release` then verifies that the new ZIP belongs to the current run, contains the current version and an arm64 executable, has a complete package structure, and prints its size and SHA-256.
+- `./init.sh` and release scripts require Node.js 24.x. The release script requires version `0.2.1` and verifies the immutable historical ZIP manifest in `~/Downloads/MD-Convertor-archive/releases/` before running baseline, E2E, live, or Forge commands. Historical artifacts are checked again after success or failure. `npm run desktop:release` then verifies that the new ZIP belongs to the current run, contains the current version and an arm64 executable, has a complete package structure, and prints its size and SHA-256.
 - E2E runs against the production standalone service and fails if tracked files change.
 - See [`TESTING.md`](TESTING.md) for commands, environment variables, smoke tests, and manual acceptance.
 - The current artifact is unsigned and intended for personal testing. Developer ID signing and notarization are required for broad external distribution.
-- v0.2 is the current release. The 0.1.3 tag, external archive, and four historical 0.1.x ZIPs remain immutable regression references.
+- v0.2.1 is the current release. Historical tags and the external 0.1.0–0.2.0 ZIP archive remain immutable regression references.
 - A second-Mac acceptance test confirmed that Gatekeeper may report an unsigned app as damaged. Personal testers should verify the ZIP SHA-256 before removing only `com.apple.quarantine`. This is not a substitute for signing or notarization.
 - Desktop preparation packages the Apple Silicon Chromium Headless Shell matching the current Playwright version and launches it through an explicit executable path, avoiding reliance on browser caches installed on the target Mac.
