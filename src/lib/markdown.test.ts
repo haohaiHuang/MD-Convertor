@@ -34,6 +34,69 @@ describe("Markdown output", () => {
     expect(markdown).toContain("data:image/png;base64,AAAA");
   });
 
+  it("preserves every line when a pre contains multiple code nodes", () => {
+    const markdown = htmlToMarkdown(
+      [
+        "<pre>",
+        '<code><span leaf>first line</span></code>',
+        '<code><span leaf>second &amp; line</span></code>',
+        '<code><span leaf></span></code>',
+        '<code><span leaf>  <span class="token">indented</span> &lt; line</span></code>',
+        "</pre>",
+      ].join(""),
+      "微信式代码块",
+      "https://example.com/wechat-code",
+      "2026-08-21T00:00:00.000Z",
+    );
+
+    expect(markdown).toContain([
+      "```",
+      "first line",
+      "second & line",
+      "",
+      "  indented < line",
+      "```",
+    ].join("\n"));
+  });
+
+  it("does not merge a normal single-code block or lose its language", () => {
+    const markdown = htmlToMarkdown(
+      '<pre><code class="language-typescript"><span>const answer = 42;</span>\n<span>console.log(answer);</span></code></pre>',
+      "普通代码块",
+      "https://example.com/code",
+      "2026-08-21T00:00:00.000Z",
+    );
+
+    expect(markdown).toContain([
+      "```typescript",
+      "const answer = 42;",
+      "console.log(answer);",
+      "```",
+    ].join("\n"));
+  });
+
+  it("turns br elements inside a multi-code block into line breaks", () => {
+    const markdown = htmlToMarkdown(
+      "<pre><code><span leaf>before<br>after</span></code><code><span leaf>last</span></code></pre>",
+      "带换行的代码块",
+      "https://example.com/code-break",
+      "2026-08-21T00:00:00.000Z",
+    );
+
+    expect(markdown).toContain("```\nbefore\nafter\nlast\n```");
+  });
+
+  it("uses the same complete multi-code normalization for pasted HTML", () => {
+    const markdown = pastedContentToMarkdown({
+      mode: "html",
+      html: "<pre><code><span leaf>paste first</span></code><code><span leaf>paste second</span></code></pre>",
+      title: "Pasted code",
+      convertedAt: "2026-08-21T00:00:00.000Z",
+    });
+
+    expect(markdown).toContain("```\npaste first\npaste second\n```");
+  });
+
   it("renders plain pasted text with a source-free header and preserved newlines", () => {
     const markdown = pastedContentToMarkdown({
       mode: "text",

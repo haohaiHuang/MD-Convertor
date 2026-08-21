@@ -1,174 +1,36 @@
 {
+  "project": "MD-Convertor",
+  "currentVersion": "0.2.1",
+  "updatedAt": "2026-08-22",
+  "activeFeature": null,
   "features": [
     {
-      "id": "feat-001",
-      "name": "Harness Bootstrap",
-      "description": "建立项目级指令、状态追踪、变更记录、验证入口和跨会话交接机制。",
+      "id": "feat-017",
+      "name": "Complete Multi-node Code Blocks",
+      "title": "Complete Multi-node Code Blocks",
+      "status": "done",
       "dependencies": [],
-      "status": "done",
-      "done_criteria": ["Harness 文件齐全", "结构验证通过"],
-      "evidence": "2026-07-17: ./init.sh passed; harness structural audit 100/100."
-    },
-    {
-      "id": "feat-002",
-      "name": "Product and Technical Planning",
-      "description": "确定单链接转换、输出规则、隐私与安全边界；桌面交付范围由 feat-008 补充。",
-      "dependencies": ["feat-001"],
-      "status": "done",
-      "done_criteria": ["产品范围已记录", "技术架构与安全边界已记录"],
-      "evidence": "2026-07-18: docs/PRODUCT.md and docs/ARCHITECTURE.md created from approved plan."
-    },
-    {
-      "id": "feat-003",
-      "name": "Project Scaffolding",
-      "description": "创建 Next.js 16、TypeScript strict、npm、测试与生产构建配置。",
-      "dependencies": ["feat-002"],
-      "status": "done",
-      "done_criteria": ["依赖锁定", "类型检查、代码检查和生产构建通过"],
-      "evidence": "2026-07-18: npm run typecheck, npm run lint and npm run build passed."
-    },
-    {
-      "id": "feat-004",
-      "name": "Secure Conversion Pipeline",
-      "description": "实现 SSRF 防护、固定 IP 抓取、正文提取、动态浏览器兜底、超时与限流。",
-      "dependencies": ["feat-003"],
-      "status": "done",
-      "done_criteria": ["公开 HTML 可转换", "私网目标被拒绝", "动态网页可兜底"],
-      "evidence": "2026-07-18: 403 private-target smoke passed; live MDN conversion passed using browser mode."
-    },
-    {
-      "id": "feat-005",
-      "name": "Markdown and Embedded Images",
-      "description": "生成带来源元数据的 GFM，优化并 Base64 内嵌图片，限制最终文件为 20 MiB。",
-      "dependencies": ["feat-004"],
-      "status": "done",
-      "done_criteria": ["跨平台文件名", "图片内嵌与预算回退已测试"],
-      "evidence": "2026-07-18: Markdown/image tests cover five supported formats, unsupported and oversized images, 30-image limit, resize, animation fallback and 20 MiB body-first degradation; exact webpage-to-Markdown golden fixture passed."
-    },
-    {
-      "id": "feat-006",
-      "name": "Cross-browser Web Interface",
-      "description": "实现简体中文链接校验、确认后转换、停止、结果统计、预览、复制回退、下载和响应式界面。",
-      "dependencies": ["feat-005"],
-      "status": "done",
-      "done_criteria": ["Chromium、Firefox、WebKit 关键流程通过"],
-      "evidence": "2026-07-18: 21 Playwright checks passed across Chromium, Firefox and WebKit, including paste-without-submit, Enter/button submit, trusted stop click, validation, statistics, copy/download and 960/1180px typography."
-    },
-    {
-      "id": "feat-007",
-      "name": "Docker and Public HTTPS Rollout",
-      "description": "构建 Node 24/Chromium 容器，通过 Caddy 和公网域名提供 HTTPS。",
-      "dependencies": ["feat-006"],
-      "status": "cancelled",
-      "done_criteria": ["Docker 镜像健康检查通过", "公网 HTTPS 地址完成跨系统验收"],
-      "evidence": "2026-07-18: 用户将产品方向调整为个人使用的单机版，公网发布不再属于第一阶段范围。"
-    },
-    {
-      "id": "feat-008",
-      "name": "Apple Silicon Desktop Foundation",
-      "description": "用 Electron 承载现有界面与本地转换服务，并生成 darwin/arm64 应用包。",
-      "dependencies": ["feat-006"],
-      "status": "done",
-      "done_criteria": ["桌面窗口仅加载回环地址", "渲染进程隔离配置已启用", "darwin/arm64 应用目录可成功打包"],
-      "evidence": "2026-07-18: arm64 Mach-O .app packaged; local Next server started on 127.0.0.1 random port; automatic launch smoke passed."
-    },
-    {
-      "id": "feat-009",
-      "name": "Packaged Conversion Runtime",
-      "description": "确保静态、动态页面、图片内嵌、停止转换与结果统计在打包后的 Mac 应用内完整工作，并建立 0.1.3 质量门禁。",
-      "dependencies": ["feat-008"],
-      "status": "done",
-      "done_criteria": ["打包应用可转换静态页面", "内置动态页面渲染可用", "复制与保存文件通过真实应用验收"],
-      "evidence": "2026-07-18: 0.1.3 passed 93 coverage-gated tests, 21 three-engine E2E checks, live comparison and packaged runtime smoke. In the real packaged window, stop preserved an editable URL; Copy showed 已复制; clipboard and downloaded Markdown matched; a downloaded long WeChat article contained 17,643 non-Base64 chars and 30 embedded images in 7,749,363 bytes. Browser proxy request/byte budgets and real HTTP/CONNECT regression tests resolved the reopened QA-004 and QA-009."
-    },
-    {
-      "id": "feat-010",
-      "name": "Personal Mac Release",
-      "description": "生成可供个人安装的 Apple Silicon Mac 分发包和安装说明。",
-      "dependencies": ["feat-009"],
-      "status": "done",
-      "done_criteria": ["arm64 ZIP 产物生成", "全新目录安装与首次启动验收", "签名状态与安全提示已明确记录"],
-      "evidence": "2026-07-20: Node.js 24.14.1 remediation desktop:release passed 93 tests, 21 E2E checks, live comparison, Forge make and automatic fresh-artifact validation. The promoted arm64 ZIP is 239,281,512 bytes with SHA-256 66909aa8759ec41fdde875204773958d32b33a2c903e7b4eb0858a50fb1bdf89. Current-Mac manual checks and second-Mac acceptance passed. On the second Mac, Gatekeeper initially reported the unsigned app as damaged; removing its quarantine extended attribute with xattr allowed successful use. The package remains ad-hoc signed and is only approved for personal testing."
-    },
-    {
-      "id": "feat-011",
-      "name": "Multi-platform Repository Migration",
-      "description": "在 Mac 个人发布收口后，把仓库重组为独立的 macOS 与 Windows 应用目录，并建立只含稳定规则的跨平台契约层。",
-      "dependencies": ["feat-010"],
-      "status": "cancelled",
-      "done_criteria": ["feat-010 已完成且存在干净 Mac 基线提交", "macOS 已迁入 apps/macos 并通过完整迁移回归", "根目录跨平台 Harness 与 contracts 已建立", "Windows 目录尚未与结构迁移混合实现"],
-      "evidence": "2026-07-21: 用户取消 Windows 版本和多平台仓库迁移。原方案未执行，未创建或移动平台目录、源码、依赖或构建配置；docs/MULTIPLATFORM-PLAN.md 已删除。"
-    },
-    {
-      "id": "feat-012",
-      "name": "Paste Rich-Text Conversion (v0.2)",
-      "description": "v0.2：用户复制受限访问网页的富文本并粘贴到应用，转换为与链接模式同规格的 Markdown。参考 MiaoYan HtmlToMarkdown 的结构门控与清洗思路，复用现有 Turndown/GFM、DOMPurify、图片内嵌与 SSRF 管线。",
-      "dependencies": [],
-      "status": "done",
-      "done_criteria": [
-        "富文本粘贴全流程（粘贴→转换→预览→复制→下载）在打包应用中可用",
-        "DOM 语义门控、HTML/text 降级、data: URI 完整图片处理、远程图片 SSRF 拒绝均有自动化测试证据",
-        "三浏览器 E2E、覆盖率门禁与 desktop:release 在 Node.js 24.x 全部通过，版本 0.2.0",
-        "PRODUCT/ARCHITECTURE/TESTING/README/CHANGELOG/PLAN-V0.2 文档同步，验证证据已记录",
-        "链接模式 0.1.x 行为回归通过"
+      "scope": "Preserve every line and code symbol when a webpage represents one code block as multiple sibling code nodes under a single pre element.",
+      "nonGoals": [
+        "No OCR or AI reconstruction",
+        "No change to ordinary single-node code blocks",
+        "No change to Mermaid conversion"
       ],
-      "evidence": "2026-08-06: docs/PLAN-V0.2.md 已创建并获用户批准；全部代码开发遵循 TDD，PLAN 与 TASK 分离。2026-08-09: main 与 v0.1.3 标签固定在 ce041c9；创建 codex/feat-012-v0.2 分支并将版本隔离为 0.2.0；0.1.3 ZIP 恢复为只读外部归档且 SHA-256 一致。同日完成开工评审并获用户确认：API HTML/text 双通道、编辑后降级纯文本、扩大 DOM 语义门控、无标题使用正文首行、接受登录态图片限制、Data URI 完整校验优化、live 仅在 T10 阻断；TASKS 已拆分为 T3/T4/T5/T6A/T6B/T7A/T7B/T8/T9A/T9B/T10。T3 已按 TDD 完成：paste.ts / paste.test.ts 提供 DOM 语义门控、安全清洗、标题优先级、HTML/text 降级、lazy 属性定向保留和 textLength；专项 32 tests 与 Node.js 24.14.0 ./init.sh（19 files / 125 tests、lint、typecheck、coverage、build）通过。T4 已按 TDD 完成：新增粘贴 HTML/纯文本 Markdown、可选来源、链接与文件名规则；专项 37 tests 与 ./init.sh（19 files / 159 tests、lint、typecheck、coverage、build）通过，审查发现全部关闭，链接模式回归不变。T5 已按 TDD 完成：显式 link/paste 图片策略、lazy-first、严格 Data URI 五格式/AVIF 防伪、无 base、占位/优化/动图/预算/取消/SSRF 交接；images 46 tests、完整 ./init.sh 19 files / 191 tests 通过，审查发现关闭且链接模式零回归。T6A 已按 TDD 完成：独立粘贴编排、paste 类型、来源规范化、422/413、末图预算、统计警告和取消；marker 单次渲染算法关闭高内存与代码误判风险，专项20/完整211 tests通过。T6B 已按 TDD 完成：5 MiB有界请求体、/api/convert-paste、鉴权限流、45秒总时限、隐私日志和流/截止竞态均覆盖；专项及旧路由40 tests，Node.js 24.16.0完整245 tests、coverage/build通过。T7A 已按 TDD 完成：前端clipboard快照、rich/plain/edited状态、payload/source trim、UTF-8 JSON 5MiB边界、双模式保留/切换清理，17 tests及联合51 tests通过；客户端/服务端共享限制常量。T7B 已完成双模式页面与结果复用；静态布局、build及旧Chromium7项通过，审查关闭副标题/selector、状态ref和stop重提交流程回归。T8 已完成9组粘贴E2E；Node.js24.16.0完整262 tests/build和三引擎48/48、tracked check通过，未运行live。T9A 已完成封版自动保护：固定 Git refs、外部只读归档和四个 0.1.x ZIP manifest，拒绝非0.2.0目标并在成功/失败后复核历史；22项guard tests与Node24完整281 tests/build通过，真实只读校验4/4通过，未运行live/make。T9B 已完成文档同步：九个授权文档已对齐两模式、粘贴 API、安全限制、图片预算、安装条件与 T9A 证据；JSON、关键词/死引用、Node.js 24.16.0 ./init.sh（23 files / 281 tests）和 git diff-check 通过。T10 进入后，neat-freak 只读审计确认 QA-005 已漂移为生产 5 high/1 moderate、完整树 1 critical/30 high/1 moderate/3 low；经用户授权升级 Next.js 16.3.0、Undici 8.10.0、DOMPurify 3.4.13、Electron 43.3.0 与兼容 Nano ID 锁版本后，生产审计为0，完整树剩余1 critical/26 high/3 low且未进入应用包。Node.js 24.14.1 desktop:release 连续通过24 files/282 tests、三引擎48/48、live、Forge与fresh ZIP；0.2.0 arm64 ZIP 354,594,827 bytes，SHA-256 ab2a463cf0a98a51cacdcad3a2cab5ed34b458b47b504ac644d56b7914a7b7b4；启动和长微信17,643字符/30图转换冒烟通过。X 匿名图片失败与客户端 Mermaid/SVG 图表缺失均由用户接受为 v0.2 已知限制；Mermaid 支持转入 feat-013。2026-08-09 用户确认真实打包窗口的富文本模式人工验收通过，T10 与 feat-012 完成。提交前双轴审查以失败测试复现并关闭远程图片格式伪装与 ZIP 旁路校验问题；Node.js 24.14.1 ./init.sh 最终通过24 files/285 tests、coverage与build，现有0.2.0 ZIP经包内版本/arm64只读复验通过。"
-    },
-    {
-      "id": "feat-013",
-      "name": "Mermaid Diagram Preservation",
-      "description": "在不放宽不可信 SVG 安全边界的前提下，保留网页或富文本中的 Mermaid 图表：优先输出 Mermaid 代码块，只有渲染结果可用时安全栅格化，无法保留时给出明确警告。",
-      "dependencies": ["feat-012"],
-      "status": "done",
-      "done_criteria": [
-        "可获得 Mermaid 源码时输出 fenced mermaid 代码块",
-        "只有客户端渲染 SVG 时可安全转换为 PNG，或在无法转换时显示明确警告",
-        "不允许原始不可信 SVG、脚本或主动内容进入 Markdown 预览与文件",
-        "链接模式与富文本模式均有 TDD、真实 fixture 和打包应用验收证据"
+      "acceptanceCriteria": [
+        "Link and pasted-HTML conversion preserve all multi-node code lines, blank lines, br breaks, indentation, entities, nested text, and punctuation",
+        "Ordinary code blocks and Mermaid regressions remain green",
+        "The supplied WeChat article matches block by block without saving or printing its body",
+        "A fresh 0.2.1 arm64 ZIP passes the complete desktop release gate"
       ],
-      "evidence": "2026-08-09: WalkingLabs 人工样本确认静态 HTML 只有空 .mermaid 占位，客户端 JavaScript 才生成内联 SVG；v0.2 当时会按安全规则移除 SVG，导致图表缺失且无警告。2026-08-11: 用户授权启动 feat-013；公共测试 seam 固定为 convertUrlToMarkdown、convertPastedContent 和 renderDynamicPage。独立分支 codex/feat-013-mermaid 建立，开工 Node.js 24.14.1 ./init.sh 通过 24 files / 287 tests、coverage 与 build。链接路径按 TDD 完成源码 fence、动态 PNG 截图、可信图片映射、预算/统计/取消和浏览器失败警告；Google Fonts CSS 挂起固定代理的问题以失败回归定向修复；desktop:release 通过 26 files / 306 tests、三引擎 E2E 51/51、live 2/2、Forge 与 fresh ZIP，生成 354,619,347 bytes / e84ce4bd...e81328c0 的 0.2.0 ZIP。用户随后发现同一页面经富文本粘贴仍缺图，确认真实剪贴板 HTML 只有 Mermaid SVG 并授权解决；新增专用白名单清洗和 Sharp PNG 栅格化，脚本/事件/外部资源与原始 SVG 不泄漏，foreignObject 纯文本化，最长边 2048px，失败仍占位警告。完整 desktop:release 两次和微信单独复验均因微信上游 504 失败，未生成新正式 ZIP。前两次人工复验暴露透明画布与深色内容问题；用户最终提供实际下载 Markdown，Data URI PNG 检查确认白底已生效，但来源 CSS 丢失使 SVG 节点、线条和文字回退为黑色。深色 fixture 节点像素先 RED（31）后改为移除来源 CSS、写入固定浅色 palette GREEN；真实 WalkingLabs 页面生成图目视可读。重新 desktop:package 并打开 arm64 / 0.2.0 本机 .app 后，用户确认真实窗口验收通过。验收后质检再以失败测试复现并关闭动态多图跳过、纯源码误选、内联 style 覆盖、31 图统计/警告和小型生成 PNG 占位误判；聚焦 123/123，Node.js 24.14.1 ./init.sh 通过 27 files / 314 tests、coverage/build。质检整改版再次 desktop:package，确认为 0.2.0 / arm64 / macOS 12.0+，用户复测 WalkingLabs 富文本转换正常。固定微信样本因上游波动 504，经用户确认改为可单独运行的非阻断 test:live:wechat 诊断项；WalkingLabs 链接/粘贴真实样本继续阻断发布。配置测试先 RED 后 GREEN；最终 Node.js 24.14.1 desktop:release 通过 27 files / 315 tests、三引擎 E2E 51/51、WalkingLabs live 2/2、Forge 与 fresh ZIP 校验，生成 354,631,314 bytes / b212b359405e53f1a0cc924b51c48c986335a3f74b4520f06f9fb825357d505c 的 0.2.0 arm64 ZIP。用户已在最新整改应用中确认真实 WalkingLabs 富文本转换正常，feat-013 完成。"
-    },
-    {
-      "id": "feat-014",
-      "name": "UI Layout and Visual Polish",
-      "description": "在后续迭代中集中处理界面布局、视觉层级与交互细节；具体调整点在开工前与用户确认，不纳入 v0.2 封版范围。",
-      "dependencies": ["feat-012"],
-      "status": "cancelled",
-      "done_criteria": [
-        "开工前记录用户确认的具体 UI 问题、目标与非目标",
-        "关键桌面宽度与窄屏布局有截图或自动化回归证据",
-        "链接转换与富文本转换的核心流程和可访问性不回归",
-        "打包应用完成真实窗口人工验收"
-      ],
-      "evidence": "2026-08-09: v0.2 人工验收通过后，用户要求把 UI 调整作为后续迭代课题。2026-08-10: 用户确认现有 UI/UX 可以接受，取消该泛化优化事项，不实施。"
-    },
-    {
-      "id": "feat-015",
-      "name": "Clear Pasted Content Action",
-      "description": "在富文本转换模式提供一键清空操作，同时移除已捕获的 HTML、纯文本和可选来源链接，方便直接粘贴下一份内容。",
-      "dependencies": ["feat-012"],
-      "status": "done",
-      "done_criteria": [
-        "富文本内容或来源链接存在时提供清晰且可访问的一键清空入口",
-        "单次操作清除 HTML 快照、纯文本、来源 URL 并恢复空内容状态",
-        "清空后再次粘贴和转换不会携带上一份内容或来源链接",
-        "转换中是否允许清空、是否同时清除已有结果在开工前确认并由自动化测试固化"
-      ],
-      "evidence": "2026-08-10: 用户在 v0.2 人工使用后提出，富文本模式缺少同时清空粘贴内容和来源链接的操作，导致每次转换前需要手工全选删除；随后授权按最小范围实施：清空 HTML、文本、来源和旧结果，转换中禁用，不弹确认框；不打包、不运行 live、不合并。按 TDD 新增纯状态 seam 与页面入口：单元测试先因缺函数和 loading guard RED，最终 19/19；Chromium E2E 先因缺按钮 RED，最终富文本三引擎 30/30。Node.js 24.14.1 ./init.sh 通过 24 files / 287 tests、coverage 与 build；用户在当前源码的真实 Electron 窗口人工验收通过。2026-08-11: 用户另行授权重新发布；Node.js 24.14.1 desktop:release 通过 287 tests、三引擎 51/51、真实微信门禁、Forge、fresh ZIP 与包内校验；启动和 example.com 转换冒烟通过，用户确认新打包窗口无问题。0.2.0 arm64 ZIP 为 354,603,624 bytes，SHA-256 7f6f39873056a34414706362356cb461d1617cb1cb73c9b76952fe587dd658c6。"
-    },
-    {
-      "id": "feat-016",
-      "name": "Quick Return and Clear Link",
-      "description": "长结果页面提供快速返回顶部入口；链接转换模式提供一键清空当前 URL，减少再次转换前的手工操作。",
-      "dependencies": ["feat-013"],
-      "status": "done",
-      "done_criteria": [
-        "长结果页面可以通过清晰且可访问的入口返回顶部输入区",
-        "链接模式可以一键清空 URL 与相关校验状态",
-        "转换中行为、是否清除已有结果及响应式位置在开工前确认并由测试固化",
-        "链接与富文本既有转换、停止、复制、下载流程不回归"
-      ],
-      "evidence": "2026-08-11: 用户在微信文章与 Mermaid 验收后提出两个后续体验点：长结果缺少快速返回顶部入口，链接模式缺少一键清空 URL。开工前已确认：清空链接同时清除校验和旧结果、不弹确认框、转换中禁用；页面滚动约 500px 后在右下角显示返回顶部，平滑回到输入区且保留内容；桌面与窄屏、三浏览器均需覆盖。按 TDD 新增 clearLinkInput 纯状态 seam：缺函数与 loading 守卫分别 RED，最终 paste-client 21/21；页面按钮先因缺入口 RED，loading 禁用再 RED；返回顶部 390px 用例先因缺入口 RED，最小实现后 Chromium 完整链接页 10/10。Node.js 24.14.1 ./init.sh 通过 27 files / 317 tests、coverage 与 build；三引擎全量 E2E 60/60、tracked-file check passed。用户随后在当前源码的真实 Electron 窗口确认两项交互均正常，feat-016 完成。功能以提交 b17341a 收口；用户授权重新生成安装包后，Node.js 24.14.1 desktop:release 通过 317 tests、60/60 E2E、WalkingLabs live 2/2、Forge、fresh ZIP 及包内版本/arm64 校验。新 0.2.0 ZIP 为 354,636,241 bytes，SHA-256 5becae36a53e91129a0dbcb93c3f7f5f3197326b2c83df6f10cb8494d8116485。同日 PR #1 已将完整 v0.2 合并到 main；用户确认 0.2.0 为当前正式版本，v0.1.3 标签与历史归档继续保持不可变。"
+      "evidence": [
+        "Node.js 24.14.1 npm run desktop:release passed 322 tests, 60/60 E2E checks, WalkingLabs live 2/2, Forge, and fresh artifact validation",
+        "The supplied WeChat diagnostic matched 12/12 code blocks and 279 source lines in memory",
+        "MD-Convertor-darwin-arm64-0.2.1.zip: 354635067 bytes, SHA-256 32c1d96af58a7701e6d2fe0bf619be0f8f224803355c6ef63aad43c85569463e"
+      ]
     }
-  ]
+  ],
+  "history": {
+    "location": "~/Downloads/MD-Convertor-archive/docs/pre-v0.2.1/",
+    "note": "The pre-0.2.1 feature ledger and completed task documents are archived outside the current repository workspace; Git history remains authoritative and unchanged."
+  }
 }

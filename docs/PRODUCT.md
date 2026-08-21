@@ -20,6 +20,7 @@ MD-Convertor is designed for individuals who want to archive web content. The fi
 - Documents contain an H1 title, UTC conversion time, and body. Link mode includes the original source URL; rich text mode includes a source line only when a valid `sourceUrl` is provided.
 - JPEG, PNG, WebP, GIF, and AVIF images are embedded as Base64 Data URIs with no asset directory. SVG, BMP, TIFF, and other unsupported formats fall back to alt text.
 - Mermaid source becomes a fenced `mermaid` block. When only a rendered Mermaid result is available, the appropriate security boundary rasterizes it to PNG under the existing image and output budgets. The built-in preview does not execute Mermaid source.
+- Standard fenced code blocks are preserved. When one webpage code block is represented by multiple sibling `code` nodes inside a single `pre`, their lines, breaks, indentation, entities, nested text, and punctuation are normalized into one complete fenced block.
 - Filenames are macOS-compatible, limited to 80 characters, and retain cross-platform safety rules for files copied to other computers.
 - At most 30 images are processed. Each source image is limited to 8 MiB. Images over 2 MiB or 2048px on the longest edge are converted to WebP at quality 82. Animated images that require compression keep only the first frame.
 - The final file has a hard 20 MiB limit. When over budget, embedded images are replaced with alt text starting from the last image so that all body text is preserved. An error is returned only when text alone still exceeds the limit.

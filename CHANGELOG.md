@@ -8,6 +8,22 @@ This project follows the principles of [Keep a Changelog](https://keepachangelog
 
 No unreleased changes.
 
+## [0.2.1] - 2026-08-22
+
+### Fixed
+
+- Fixed WeChat-style code blocks where one `<pre>` contains multiple sibling `<code>` nodes; all source lines, blank lines, `<br>` breaks, indentation, entities, and nested text are now preserved in the generated fenced Markdown block.
+
+### Testing
+
+- Added TDD regression coverage for multi-node code blocks in link and pasted-HTML rendering, plus an in-memory per-block comparison for the supplied WeChat article that retains code punctuation, operators, and string symbols.
+- Passed 322 automated tests, 60/60 Chromium/Firefox/WebKit E2E checks, 2/2 stable live comparisons, and fresh Apple Silicon package verification.
+
+### Maintenance
+
+- Archived completed plans, task records, prior state snapshots, WorkBuddy data, and release ZIPs through 0.2.0 outside the repository workspace.
+- Updated release guards to verify immutable historical ZIP hashes from the external archive while keeping only the latest build output in the working folder.
+
 ## [0.2.0] - 2026-08-11
 
 ### Added

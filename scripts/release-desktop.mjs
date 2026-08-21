@@ -16,7 +16,7 @@ import {
   PROTECTED_BASELINE_ERROR,
 } from "./release-guards.mjs";
 
-export const RELEASE_VERSION_ERROR = "Release version must be 0.2.0.";
+export const RELEASE_VERSION_ERROR = "Release version must be 0.2.1.";
 
 function getArtifactPaths(root, version) {
   const zipPath = path.join(
@@ -132,7 +132,7 @@ function combineReleaseErrors(primaryError, historicalError) {
 }
 
 /**
- * Run the complete release workflow with the 0.1.3 protection guards around it.
+ * Run the complete release workflow with source and archived-release guards around it.
  * Dependencies are injectable so guard ordering and failure handling stay tested
  * without running live checks or producing a desktop artifact.
  */
@@ -150,7 +150,7 @@ export async function runRelease({
   startedAtMs: startedAtOverride,
   previousZip: previousZipOverride,
 } = {}) {
-  if (version !== "0.2.0") throw new Error(RELEASE_VERSION_ERROR);
+  if (version !== "0.2.1") throw new Error(RELEASE_VERSION_ERROR);
   const paths = getArtifactPaths(root, version);
   const startedAtMs = startedAtOverride ?? now();
   const previousZip = previousZipOverride === undefined
@@ -180,7 +180,7 @@ export async function runRelease({
       throw new Error(PROTECTED_ARCHIVE_ERROR);
     }
     try {
-      snapshot = await captureSnapshot({ root });
+      snapshot = await captureSnapshot();
     } catch {
       throw new Error(HISTORICAL_ZIP_ERROR);
     }
@@ -200,7 +200,7 @@ export async function runRelease({
   let historicalError;
   if (snapshotCaptured) {
     try {
-      await assertSnapshotUnchanged(snapshot, { root });
+      await assertSnapshotUnchanged(snapshot);
     } catch {
       historicalError = new Error(HISTORICAL_ZIP_ERROR);
     }
