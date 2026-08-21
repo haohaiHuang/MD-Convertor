@@ -4,7 +4,7 @@
 
 - Current release: `0.2.1`
 - Active feature: none
-- Expected branch after release closeout: `main`
+- Branch: `main`; release PR #3 is merged
 - Product scope: local Apple Silicon Mac app with Link Conversion and Rich Text Conversion
 - Full historical project records: `~/Downloads/MD-Convertor-archive/docs/pre-v0.2.1/`
 - Historical release ZIPs: `~/Downloads/MD-Convertor-archive/releases/`
@@ -23,6 +23,7 @@
 - ZIP: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.2.1.zip`
 - Bytes: `354,635,067`
 - SHA-256: `32c1d96af58a7701e6d2fe0bf619be0f8f224803355c6ef63aad43c85569463e`
+- GitHub Release: https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.2.1
 
 ## Important Boundaries
 
