@@ -3,10 +3,10 @@
 ## Current State
 
 - Last updated: 2026-09-20
-- Current version: `0.3.1`（源码；`package.json`、`package-lock.json`、`feature_list.json` 与发布门禁都已改为 `0.3.1`）。**`0.3.1` 尚未跑 `npm run desktop:release`**，因此还没有 `0.3.1` 的 ZIP；`docs/TESTING.md` 记录的 `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip`（`358,562,540` bytes，SHA-256 `2a0e236e…1147`）是修复**前**的 0.3.0 构建，仅作历史
-- Active feature: none（`feat-024` – `feat-031` 已 done）
-- Next release step: 跑 `npm run desktop:release`（目标版本已是 `0.3.1`）并记录新 ZIP 的大小与 SHA-256，再把 `CHANGELOG`(+zh) 的 `[Unreleased]` 归档为 `[0.3.1]`；QA-012 依赖升级已完成（`next@16.3.5`、`sharp@0.35.4`，`npm audit --omit=dev` 0 漏洞）
-- Branch: `main`；本轮全部改动（0.3.0 S1–S6 + `feat-024` – `feat-031`，112 个文件）已提交并推送到 GitHub（SHA 见 `git log -1`）；提交前已跑完提交门 ponytail → code-review → neat-freak（本轮为自审，`subagent` 在本机不可用）
+- Current version: `0.3.1`（`package.json`、`package-lock.json`、`feature_list.json` 与发布门禁均为 `0.3.1`）。**`0.3.1` 门禁已于 2026-09-20 跑通（exit 0）并发布为 GitHub Release `v0.3.1`**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.1.zip`（`358,723,706` bytes，SHA-256 `c7411c58…161b`）。`0.3.0` 的 ZIP（`358,562,540` bytes，`2a0e236e…1147`）是修复**前**的构建，仅作历史
+- Active feature: none（`feat-024` – `feat-032` 已 done）
+- Next release step: 无待办——`0.3.1` 已过门禁、已发布（`v0.3.1`，tag 指向 `af7f6db`）、已安装到 `/Applications`（替换 0.2.1）；下一轮若再改代码，需要新的版本号再跑一次 `npm run desktop:release`
+- Branch: `main`；本轮源码改动（`feat-031` + `feat-032`）已提交（`af7f6db`）并推送到 GitHub，作为 `v0.3.1` 发布；提交前已跑完提交门 ponytail → code-review → neat-freak（自审，`subagent` 在本机不可用）
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+
 
 ## Completed in 0.2.1
@@ -171,19 +171,35 @@
 - 全量证据：`./init.sh` exit 0（61 files / **855 tests**、statements 95.28%；`/tmp/s15-init.log`）；`npm run test:e2e` exit 0 ⇒ **178 passed / 2 skipped**（三浏览器，`/tmp/s15-e2e2.log`）。首跑有 1 个 firefox 用例 `NS_ERROR_PROXY_CONNECTION_REFUSED`（e2e server 中途掉线的已知偶发），单跑 firefox **59 passed / 1 skipped**（`/tmp/s15-ff.log`），整跑重来即全绿。
 - 断网构建实证：`sandbox-exec -p '(version 1)(allow default)(deny network*)' npm run build` exit 0；先量了沙箱本身有效（同一沙箱里 `fetch('https://fonts.gstatic.com/...')` 报 ENOTFOUND），因此这次通过是**真的不需要网络**，不是沙箱没生效。
 - 真机：`npm run desktop:package` exit 0；包内 `Contents/Resources/server/.next/static/media/Michroma_Regular-s.p.*.woff2` 与仓库文件 SHA-256 相同，且 `Contents/Resources/server/public/fonts/{Michroma-Regular.woff2,OFL.txt}` 都在（`/fonts/OFL.txt` 由运行中的应用直接可访问）。重启打包应用后 CDP 探针（`/tmp/brand/probe-app.mjs`）实测：族名 `michroma, "michroma Fallback", …`、品牌框仍 143×21、只有一个 loaded 人脸、唯一的字体请求是应用自身的 `/_next/static/media/…`、SHA-256 与仓库一致、**0 个 Google 请求**；截图 `/tmp/brand/app-header.png`；`settings.json` SHA-256 仍为 `93204f32…30b4`。
-- 未做（非本次范围）：不改 hero 标题字体（Michroma 无中文字形，中文会整体回退）、不改字号以外的排版、不跑发布门禁、不发布到 GitHub Releases。
+- 未做（非本次范围）：不改 hero 标题字体（Michroma 无中文字形，中文会整体回退）、不改字号以外的排版。
+- 后续一轮已完成：提交（`af7f6db`）→ 门禁 → 发布 `v0.3.1` → 安装到本机（见下节）。
+
+## 已完成 in 0.3.1（发布与安装）
+
+- 提交：`af7f6db`（`feat-031` + `feat-032` + UI 评审归档 + 自带字体，16 个文件）已推送到 `origin main`；提交门 ponytail → code-review → neat-freak 已跑完（自审）。顺手把 `src/app/page.tsx` 里一处属性顺序的无意义改动还原，使该文件的差异只剩删掉「MD」方块那一行。
+- 门禁：`npm run desktop:release`（Node.js 24.15.0）**exit 0**，日志 `/tmp/s16-release.log` —— `./init.sh` 61 files / 855 tests、statements 95.28%、三浏览器 e2e **178 passed / 2 skipped**、live **2/2**、`electron-forge make` 与产物校验通过。产物 `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.1.zip`，`358,723,706` bytes，SHA-256 `c7411c587b3842a76f79118ecdc6d061993a0a99c98e4801c14ff947f10e161b`；结尾照旧列出 5 个退役 ZIP 与退役的 0.1.3 副本。
+- 独立复核：`shasum -a 256` 与门禁一致、`unzip -t` 无错、包内 `CFBundleShortVersionString = 0.3.1`、`file` = `Mach-O 64-bit executable arm64`、包内 Michroma woff2 与仓库文件同哈希（`b12098180dae…56cf`）、CSS 为 `--font-brand:"michroma", "michroma Fallback"`。
+- 发布：`gh release create v0.3.1`（tag 指向 `af7f6db` = 该 ZIP 的源码提交），资产 `MD-Convertor-darwin-arm64-0.3.1.zip` 上传成功且大小为 `358,723,706`；发布说明含变更摘要、验证数字、大小与 SHA-256，并说明未签名、仅供个人测试。
+- 安装：`/Applications/MD-Convertor.app` 由 `0.2.1` 替换为 `0.3.1`（替换前先退出运行中的旧进程）；具体步骤与验证见 `session-handoff.md`。
+- 文档：`CHANGELOG.md`(+zh) 的 `[Unreleased]` 已归档为 `[0.3.1] - 2026-09-20`；`README.md`(+zh)、`docs/TESTING.md`(+zh)、`docs/QUALITY-AUDIT.md` 的产品数字与测试计数（61 files / 855 tests、178 passed）已对齐。
 
 ## 下一轮（建议顺序）
 
-1. **提交**（用户已同意提交到 GitHub）：本轮改动先过提交门 ponytail → code-review → neat-freak，报告后再提交；`release` 相关步骤放其后。工作区现有未提交项：`feat-031` 的改动 + 本次页头品牌字（含新增未跟踪的 `public/fonts/{Michroma-Regular.woff2,OFL.txt}` 与 `tests/brand-font.test.ts`）+ `docs/UI-REVIEW-2026-09-20.md`（UI 评审归档，用户决定不整改）。
-2. **跑 `npm run desktop:release`**（目标版本已是 `0.3.1`）：它会依次跑 `./init.sh`、`npm run test:e2e`、`npm run test:live`、`electron-forge make` 与产物校验；拿到新 ZIP 后把大小与 SHA-256 记入 `docs/TESTING.md`(+zh)、`docs/QUALITY-AUDIT.md`、`README.md`(+zh)、`PROGRESS.md`，并把 `CHANGELOG.md`(+zh) 的 `[Unreleased]` 归档为 `[0.3.1]`。
-3. **决定是否把 `0.3.1` ZIP 发布到 GitHub Releases**（用户此前选「稍后」）。
-4. **真机小点**（用户此前选「稍后再完善」）：这部分落地后再跑门禁才不会白白作废一个哈希。
-5. 若将来 0.1.x/0.2.0 归档重新出现，守卫会自动恢复严格校验；不要把已退役的条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删掉。
+1. **真机小点**：用户提到「稍后把真机测试的一些小点完善了再说」，等清单给出后再评估是否单独一轮。
+2. 若有任何代码改动，需要新的版本号（≥ `0.3.2`）并重跑一次 `npm run desktop:release`；`0.3.1` 的产物与 tag 已发布，不要移动或覆盖。
+3. 若将来 0.1.x/0.2.0 归档重新出现，守卫会自动恢复严格校验；不要把已退役的条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删掉。
 
 ## Verification Evidence
 
-### feat-031 版本 0.3.1 / 依赖升级 / 界面微调（本次）
+### 0.3.1 发布与安装（本次）
+
+- 门禁：`npm run desktop:release` **exit 0**（Node.js 24.15.0，15 分钟上限内完成，日志 `/tmp/s16-release.log`）——61 files / **855 tests**、statements 95.28%、`npm run test:e2e` **178 passed / 2 skipped (1.4m)**、`npm run test:live` **2/2**、`electron-forge make` 成功；末尾打印 `Release Artifact Verified` 与 `Historical Archive Notice`（5 个退役 ZIP + 退役的 0.1.3 副本）。
+- 产物独立复核：`stat` = `358723706`、`shasum -a 256` = `c7411c58…161b`（与门禁一致）、`unzip -t` 无错、`plutil -extract CFBundleShortVersionString` = `0.3.1`、`file` = `Mach-O 64-bit executable arm64`；解包后包内 Michroma woff2 SHA-256 = `b12098180dae…56cf`（与仓库文件相同）、CSS `--font-brand:"michroma", "michroma Fallback"`。
+- 发布：`gh release create v0.3.1` exit 0；`gh release view v0.3.1` → `publishedAt 2026-09-20T03:32:10Z`、资产 `MD-Convertor-darwin-arm64-0.3.1.zip 358723706 uploaded`；`git ls-remote --tags origin v0.3.1` → tag 指向 `af7f6db`，与该 ZIP 的源码提交一致。
+- 安装：`/Applications/MD-Convertor.app` 替换为 `0.3.1`，安装后 `defaults read … CFBundleShortVersionString` = `0.3.1`。
+- 顺带：`src/app/page.tsx` 里 `Link` 的属性顺序还原，使该文件差异只剩一行删除（重新跑过受影响用例）。
+
+### feat-031 版本 0.3.1 / 依赖升级 / 界面微调（历史）
 
 - RED（版本门禁）：fixture 已指向 `0.3.1` 而脚本仍要求 `0.3.0` ⇒ `npm test -- release-guards` 失败；GREEN：把 `scripts/release-desktop.mjs` + `package.json` + `package-lock.json` + `feature_list.json` 改为 `0.3.1` 后 → **29 passed**，`RELEASE_VERSION_ERROR = "Release version must be 0.3.1."`。「旧版本必须被拒」的 fixture 已固定为 `{ version: "0.2.1" }`（整文件替换曾把它也改成目标版本，断言会因此恒真）。
 - RED（界面）：`npx playwright test e2e/home.spec.ts --project=chromium` 在改动前的构建上 → **9 failed / 3 passed**；GREEN → **12 passed**。右边缘对齐那条先实测 `|按钮右边缘 − 粘贴框右边缘| = 210.4375`（阈值 4px），把 `.sourceInput` 改成 `flex: 1 1 auto` 后为 **0**。
@@ -327,7 +343,7 @@
 - **feat-030 起云端只能有一条配置**：设置页只渲染一张 `<article aria-label="云端 Provider">`，读写「当前生效的那条」（`activeProviderId` → 否则 `providers[0]`），保存时把 `cloud.providers` 收敛为单条目。契约（`providers[] + activeProviderId`）与 `SETTINGS_VERSION` 未变，但**手工在 `settings.json` 里追加的多条 Provider 会在下次保存时被丢弃**；要做多条并存必须先恢复列表 UI（`feat-026` 的 `drafts`/`newProvider` 版本可从 git 历史取回）。
 - **feat-026 / feat-029 / feat-030 之后「保存」是 Provider 记录的唯一写入入口**：`拉取模型` 只读端点（结果先放草稿态），模型与密钥都不再随意落盘，因此改完名称 / Base URL / 密钥 / 模型后必须先点「保存」才生效；密钥来源只有系统密钥库一个（`apiKeyEnv` 已退役）。
 - **feat-025 隐藏了自定义语言入口（保留字段与函数）**：`languages.custom` 仍在契约里、`addCustomLanguage()` 与其单测仍在，存量自定义标签仍出现在目标语言下拉里；但新标签暂时只能靠手改 `settings.json` 添加。若将来要恢复入口，只需恢复 `settings/page.tsx` 的那段 JSX 与 `setNote("language", …)` 分支。
-- **`0.3.1` 尚未跑门禁（2026-09-20）**：版本号与门禁目标都已是 `0.3.1`，但 `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip`（`358,562,540` bytes / `2a0e236e…1147`）是 `feat-024` 之前的旧构建，只作历史；修复后的 `npm run desktop:package` 产物已在真机验证但**未过门禁、无哈希记录**。跑完门禁后必须同步 `docs/TESTING.md`(+zh)、`docs/QUALITY-AUDIT.md`、`README.md`(+zh)、`PROGRESS.md` 的产物数字，并把 `CHANGELOG`(+zh) 的 `[Unreleased]` 归档为 `[0.3.1]`。
+- **`0.3.1` 已发布（2026-09-20）**：门禁通过并已发布为 GitHub Release `v0.3.1`（tag `af7f6db`），ZIP 为 `358,723,706` bytes / SHA-256 `c7411c58…161b`；文档（`docs/TESTING.md`(+zh)、`docs/QUALITY-AUDIT.md`、`README.md`(+zh)、`CHANGELOG.md`(+zh)）均已同步。`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip` 仍留在本机，只作历史，**不要在后续门禁里把它当成当前产物**；下一次发布必须先把版本号升到 `0.3.2` 或更高（门禁硬校验目标版本）。
 - **feat-031 起密钥输入框在已保存时为只读**：`readOnly={Boolean(cloudProvider?.keyStored)}`，占位文案「••••••••（已保存，先清除密钥再更换）」。不用 `disabled` 是为了保留可聚焦与屏幕阅读器可达；「清除密钥」语义未变（删除密钥库条目 + `keyStored:false` ⇒ 输入框恢复可编辑，再点「保存」才能写入新密钥）。不要把密钥读回页面。
 - **批次数由「≤20 块」而非字符数主导**：长文段落多时批次数偏多、`pi` 的固定启动开销被重复支付（实测 8,000 字符批次 7s，含启动）。修复后已能跑完，因此**未**改动 `TRANSLATE_BATCH_MAX_BLOCKS`；若将来同类文章仍然慢，把这个上限提高是第一个候选优化（代价：单批输出更长，解析与质量风险上升，需另开测试）。
 - The app is not Developer ID signed or notarized. Gatekeeper may require an explicit Open action or removal of the quarantine attribute after the checksum is verified.
@@ -358,12 +374,7 @@
 
 ## Next Step
 
-`feat-031`（版本 `0.3.1`、依赖升级、界面三项与密钥框限制）已实现，`./init.sh` / 三浏览器 e2e / live / 打包与真机都通过，**代码已提交并推送到 GitHub**（`main`）。剩余顺序：
-
-1. **提交门 + 提交（已完成）**：ponytail（反过度工程）→ code-review（Standards/Spec）→ neat-freak（文档对齐）已按各自 SKILL.md 跑完并报告（自审，`subagent` 在本机不可用），用户确认后提交并推送到 `origin main`。
-2. **跑 `npm run desktop:release`**（目标版本 `0.3.1`）→ 记录新 ZIP 大小/SHA-256，更新 `docs/TESTING.md`(+zh)、`docs/QUALITY-AUDIT.md`、`README.md`(+zh)、`PROGRESS.md`，并把 `CHANGELOG`(+zh) 的 `[Unreleased]` 归档为 `[0.3.1] - <日期>`。
-3. **决定是否发布到 GitHub Releases**（用户此前选「稍后」；`0.2.1` 是最近一次正式发布）。
-4. **真机小点**：用户提到「稍后把真机测试的一些小点完善了再说」，等清单给出后再评估是否单独一轮。
+`feat-031` + `feat-032`（版本 `0.3.1`、依赖升级、界面微调、自带 Michroma 品牌字）已实现、已提交（`af7f6db`，17 个文件）、已推送、**已跑完发布门禁并发布为 GitHub Release `v0.3.1`**，产物（`358,723,706` bytes / SHA-256 `c7411c58…161b`）已安装到 `/Applications/MD-Convertor.app` 替换 0.2.1。文档（`CHANGELOG`, `README`, `docs/TESTING`, `docs/QUALITY-AUDIT`, `PROGRESS`, `session-handoff`, `feature_list.json`）已同步发布结果，`[Unreleased]` 已归档为 `[0.3.1] - 2026-09-20`。剩余待办：
 5. **签名/notarization：用户 2026-09-20 决定不做**（`docs/QUALITY-AUDIT.md` 的 QA-008 已改为 accepted / not planned，判词与 Release Decision 同步）。要恢复需 Apple Developer 付费会员 + **Developer ID Application** 证书 + notarytool 凭据，再在 `forge.config.cjs` 加 `osxSign`/`osxNotarize`（凭据走环境变量）；签名后产物哈希会变，必须重跑门禁并更新记录。在那之前所有产物都只适合个人测试。
 6. **UI 评审已完成，用户决定不整改（2026-09-20）**：用 design-references 环节 4 快速通道评审了 `0.3.1` 的网页与桌面 UI（真实截图 + `getBoundingClientRect` 实测 + WCAG 对比度计算 + 键盘 Tab 焦点扫描 + `design_audit`/`design_contrast`），产出 `docs/UI-REVIEW-2026-09-20.md`（P0×6 + P1×10，均附实测数字；配套的现状/改后对照板是临时 HTML，用户看过即删）。用户看过对照板后决定**全部不改**。因此 `e2e/home.spec.ts` 的像素级对齐断言（转换按钮右边缘与粘贴框右边缘差值 < 4px、与「来源 URL」输入框同行）继续是刻意锁定的效果 —— 若将来真要改 `.sourceInput` 的 `flex`、按钮宽度或 `.sourceRow` 的 gap，先改断言。**不要在没有新证据、也没有用户指认具体条目的情况下重提这批发现。** 本轮代码零改动，`settings.json` 在校验探针前后 SHA-256 一致。
 

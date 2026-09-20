@@ -38,17 +38,17 @@ Do not run this command for an app whose source or checksum you do not trust.
 
 ## Current Release
 
-- Current version: `0.3.1` — document translation (Apple Silicon Mac, macOS 12.0+). The `0.3.0` gate passed; the `0.3.1` gate has not been run yet, so no `0.3.1` artifact exists and nothing is published on GitHub.
-- Latest published release: `0.2.1`.
+- Current version: `0.3.1` — document translation (Apple Silicon Mac, macOS 12.0+). The `0.3.1` gate passed on 2026-09-20.
+- Latest published release: [`v0.3.1`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.1).
 - No build is Developer ID signed or notarized, so every artifact is suitable for personal testing only.
 
-Last gated artifact (`0.3.0`, predates the fixes above):
+Current gated artifact (`0.3.1`):
 
-- ZIP: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip`
-- Size: `358,562,540` bytes
-- SHA-256: `2a0e236e97e51d97fd24c7002a923ef5703ad8245234531f2eb3aa1350c81147`
+- ZIP: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.1.zip`
+- Size: `358,723,706` bytes
+- SHA-256: `c7411c587b3842a76f79118ecdc6d061993a0a99c98e4801c14ff947f10e161b`
 
-Last published artifact (`0.2.1`): `354,635,067` bytes, SHA-256 `32c1d96af58a7701e6d2fe0bf619be0f8f224803355c6ef63aad43c85569463e`.
+Previous published artifact (`0.2.1`): `354,635,067` bytes, SHA-256 `32c1d96af58a7701e6d2fe0bf619be0f8f224803355c6ef63aad43c85569463e`.
 
 Download the ZIP from the [GitHub Releases](https://github.com/haohaiHuang/MD-Convertor/releases) page.
 
