@@ -127,6 +127,18 @@ test.describe("设置页", () => {
     await expect(page.getByRole("heading", { level: 1, name: "设置" })).toBeVisible();
   });
 
+  test("设置页品牌与首页一致（无方块，用 Michroma）", async ({ page }) => {
+    await page.goto("/settings");
+
+    const brand = page.locator('[aria-label="MD-Convertor"]');
+    await expect(brand).toHaveText("MD-Convertor");
+    await expect(brand.locator("span").filter({ hasText: /^MD$/ })).toHaveCount(0);
+
+    await page.evaluate(() => document.fonts.ready);
+    // next/font/local names the family after the binding in layout.tsx, hence the loose match.
+    expect(await brand.evaluate((node) => getComputedStyle(node).fontFamily)).toMatch(/michroma/i);
+  });
+
   test("真实 API 往返：默认设置 → 保存 → 重载保持", async ({ page, browserName, request }) => {
     // Every project shares one temporary user data directory, so the only real write runs once.
     test.skip(browserName !== "chromium", "real settings store is shared across projects");

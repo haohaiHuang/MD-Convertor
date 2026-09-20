@@ -1,6 +1,17 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import localFont from "next/font/local";
 import "./globals.css";
+
+// Vendored in `public/fonts` so the build never reaches Google and the packaged app
+// ships the exact woff2 it was built with. Licence text sits next to the file.
+const michroma = localFont({
+  src: "../../public/fonts/Michroma-Regular.woff2",
+  weight: "400",
+  style: "normal",
+  display: "swap",
+  variable: "--font-brand",
+});
 
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
@@ -31,7 +42,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="zh-CN">
+    <html lang="zh-CN" className={michroma.variable}>
       <body>{children}</body>
     </html>
   );

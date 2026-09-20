@@ -1,3 +1,7 @@
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
 import { expect, test } from "@playwright/test";
 
 const response = {
@@ -213,6 +217,40 @@ test.describe("页头", () => {
     const entry = page.getByRole("link", { name: "设置" });
     await expect(entry).toBeVisible();
     await expect(entry).toHaveText("设置");
+  });
+
+  test("品牌只有文字，且用仓库内自托管的 Michroma", async ({ page }) => {
+    const brand = page.locator('[aria-label="MD-Convertor"]');
+    await expect(brand).toHaveText("MD-Convertor");
+    await expect(brand.locator("span").filter({ hasText: /^MD$/ })).toHaveCount(0);
+
+    await page.evaluate(() => document.fonts.ready);
+    // next/font/local names the family after the binding in layout.tsx, hence the loose match.
+    expect(await brand.evaluate((node) => getComputedStyle(node).fontFamily)).toMatch(/michroma/i);
+
+    const served = await page.evaluate(async () => {
+      const url = performance
+        .getEntriesByType("resource")
+        .map((entry) => entry.name)
+        .find((name) => name.endsWith(".woff2"));
+      const bytes = url ? new Uint8Array(await (await fetch(url)).arrayBuffer()) : new Uint8Array(0);
+      const digest = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))]
+        .map((byte) => byte.toString(16).padStart(2, "0"))
+        .join("");
+      const loaded = Array.from(document.fonts)
+        .filter((face) => face.status === "loaded")
+        .map((face) => face.family);
+      return { digest, loaded, url: url ?? "" };
+    });
+
+    // The face the page actually renders with is the file kept in the repository, not a fallback
+    // and not something downloaded from Google at runtime or at build time.
+    const vendored = createHash("sha256")
+      .update(readFileSync(path.join(process.cwd(), "public", "fonts", "Michroma-Regular.woff2")))
+      .digest("hex");
+    expect(served.loaded.some((family) => /michroma/i.test(family))).toBe(true);
+    expect(served.digest).toBe(vendored);
+    expect(served.url).not.toMatch(/fonts\.(googleapis|gstatic)\.com/);
   });
 });
 

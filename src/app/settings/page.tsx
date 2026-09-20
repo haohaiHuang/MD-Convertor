@@ -285,7 +285,6 @@ export default function SettingsPage() {
       <div className={styles.shell}>
         <header className={styles.header}>
           <div className={styles.brand} aria-label="MD-Convertor">
-            <span className={styles.brandMark} aria-hidden="true">MD</span>
             <span>MD-Convertor</span>
           </div>
           <div className={styles.headerActions}>

@@ -555,7 +555,6 @@ export default function Home() {
       <div className={styles.shell}>
         <header className={styles.header}>
           <div className={styles.brand} aria-label="MD-Convertor">
-            <span className={styles.brandMark} aria-hidden="true">MD</span>
             <span>MD-Convertor</span>
           </div>
           <Link href="/settings" className={styles.settingsLink} aria-label="设置" title="设置">

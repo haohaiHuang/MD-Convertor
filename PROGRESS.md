@@ -161,9 +161,21 @@
 - 真机：`npm run desktop:package` 产物 `CFBundleShortVersionString = 0.3.1`、包内 `sharp 0.35.4`；CDP 量测 `textarea.right = 990`、`submit.right = 990`（`rightEdgeDelta = 0`，URL 框宽 570.4px），截图 `/tmp/s13-paste-row.png`；用户真机测试通过。
 - 未做（非本次范围）：不跑发布门禁、不发布到 GitHub、不改阈值/契约/端点策略、不碰历史归档与标签。
 
+## 已完成 in 0.3.1 之后（页头品牌字：去掉 MD 方块 + Michroma）
+
+- 来源：用户要求「去掉左上角 MD 图标、只留标题文字」，并把品牌字换成 Google Fonts 的 **Michroma**。
+- 关键约束与选择：应用是**离线单机**，因此不用 Google CDN 的 `<link>`（那是运行时外链，断网就回退 Arial）。第一版用 `next/font/google`（构建期下载一次、产物自托管在 `/_next/static/media/*.woff2`）；用户随后问「字体能否直接嵌入产品代码」，于是改为**仓库内自带**：`public/fonts/Michroma-Regular.woff2` + 同目录 `public/fonts/OFL.txt`（OFL 1.1 许可证），用 `next/font/local` 加载 —— 构建期是本地文件读取，**整个构建不再需要联网**。Michroma 只有 400 字重、无中文字形 ⇒ 只用在纯拉丁的品牌字上，`font-weight` 760→400、去掉 `-0.03em` 负字距（Michroma 本身宽，负字距会挤），字号 15px。
+- 只 vendored **latin** 子集：`next/font/local` 不产出 `unicode-range`，把 latin 与 latin-ext 一起传进去会生成两条描述符相同的 `@font-face`，后者对所有字形生效，而 latin-ext 没有 ASCII ⇒ 品牌字会回退到 Arial。因此只放一个文件（latin 覆盖 Latin-1，含 é/ü/ñ）。
+- 改动：`src/app/layout.tsx` 用 `localFont({ src: "../../public/fonts/Michroma-Regular.woff2", weight: "400", variable: "--font-brand" })` 并挂到 `<html className>`；两个页面删掉 `<span className={styles.brandMark}>MD</span>`，两处 `.brand` 改用 `var(--font-brand)` 并删除 `.brandMark` 规则；未触碰 hero 大标题、eyebrow 与设置按钮。许可证不需要改打包脚本：`prepare-desktop.mjs` 已经把 `public/` 整体拷进 `Contents/Resources/server/public/`。
+- 测试（TDD）：`e2e/home.spec.ts` 新增「品牌只有文字，且用仓库内自托管的 Michroma」（断言文本等于 `MD-Convertor`、无 `MD` span、computed family 命中 `/michroma/i`、有 loaded 的人脸、**页面实际加载的 woff2 与仓库文件 SHA-256 逐字节相同**、且没有 Google 请求）、`e2e/settings.spec.ts` 新增同款精简用例；RED **2 failed / 35 passed**（实收 `"MDMD-Convertor"`）。新增 `tests/brand-font.test.ts` 守住「字体与许可证都在仓库里」：先 RED（两个文件 ENOENT）再加文件 ⇒ 2 passed。切到 `next/font/local` 后，族名由 layout.tsx 里的绑定名生成（`"michroma"` / `"michroma Fallback"`），故断言从字面 `"Michroma"` 改为 `/michroma/i`，并用 SHA-256 相等补强（比原来更强）。
+- 全量证据：`./init.sh` exit 0（61 files / **855 tests**、statements 95.28%；`/tmp/s15-init.log`）；`npm run test:e2e` exit 0 ⇒ **178 passed / 2 skipped**（三浏览器，`/tmp/s15-e2e2.log`）。首跑有 1 个 firefox 用例 `NS_ERROR_PROXY_CONNECTION_REFUSED`（e2e server 中途掉线的已知偶发），单跑 firefox **59 passed / 1 skipped**（`/tmp/s15-ff.log`），整跑重来即全绿。
+- 断网构建实证：`sandbox-exec -p '(version 1)(allow default)(deny network*)' npm run build` exit 0；先量了沙箱本身有效（同一沙箱里 `fetch('https://fonts.gstatic.com/...')` 报 ENOTFOUND），因此这次通过是**真的不需要网络**，不是沙箱没生效。
+- 真机：`npm run desktop:package` exit 0；包内 `Contents/Resources/server/.next/static/media/Michroma_Regular-s.p.*.woff2` 与仓库文件 SHA-256 相同，且 `Contents/Resources/server/public/fonts/{Michroma-Regular.woff2,OFL.txt}` 都在（`/fonts/OFL.txt` 由运行中的应用直接可访问）。重启打包应用后 CDP 探针（`/tmp/brand/probe-app.mjs`）实测：族名 `michroma, "michroma Fallback", …`、品牌框仍 143×21、只有一个 loaded 人脸、唯一的字体请求是应用自身的 `/_next/static/media/…`、SHA-256 与仓库一致、**0 个 Google 请求**；截图 `/tmp/brand/app-header.png`；`settings.json` SHA-256 仍为 `93204f32…30b4`。
+- 未做（非本次范围）：不改 hero 标题字体（Michroma 无中文字形，中文会整体回退）、不改字号以外的排版、不跑发布门禁、不发布到 GitHub Releases。
+
 ## 下一轮（建议顺序）
 
-1. **提交**（用户已同意提交到 GitHub）：本轮改动先过提交门 ponytail → code-review → neat-freak，报告后再提交；`release` 相关步骤放其后。
+1. **提交**（用户已同意提交到 GitHub）：本轮改动先过提交门 ponytail → code-review → neat-freak，报告后再提交；`release` 相关步骤放其后。工作区现有未提交项：`feat-031` 的改动 + 本次页头品牌字（含新增未跟踪的 `public/fonts/{Michroma-Regular.woff2,OFL.txt}` 与 `tests/brand-font.test.ts`）+ `docs/UI-REVIEW-2026-09-20.md`（UI 评审归档，用户决定不整改）。
 2. **跑 `npm run desktop:release`**（目标版本已是 `0.3.1`）：它会依次跑 `./init.sh`、`npm run test:e2e`、`npm run test:live`、`electron-forge make` 与产物校验；拿到新 ZIP 后把大小与 SHA-256 记入 `docs/TESTING.md`(+zh)、`docs/QUALITY-AUDIT.md`、`README.md`(+zh)、`PROGRESS.md`，并把 `CHANGELOG.md`(+zh) 的 `[Unreleased]` 归档为 `[0.3.1]`。
 3. **决定是否把 `0.3.1` ZIP 发布到 GitHub Releases**（用户此前选「稍后」）。
 4. **真机小点**（用户此前选「稍后再完善」）：这部分落地后再跑门禁才不会白白作废一个哈希。
@@ -353,6 +365,6 @@
 3. **决定是否发布到 GitHub Releases**（用户此前选「稍后」；`0.2.1` 是最近一次正式发布）。
 4. **真机小点**：用户提到「稍后把真机测试的一些小点完善了再说」，等清单给出后再评估是否单独一轮。
 5. **签名/notarization：用户 2026-09-20 决定不做**（`docs/QUALITY-AUDIT.md` 的 QA-008 已改为 accepted / not planned，判词与 Release Decision 同步）。要恢复需 Apple Developer 付费会员 + **Developer ID Application** 证书 + notarytool 凭据，再在 `forge.config.cjs` 加 `osxSign`/`osxNotarize`（凭据走环境变量）；签名后产物哈希会变，必须重跑门禁并更新记录。在那之前所有产物都只适合个人测试。
-6. **下一轮：UI 优化（用户已定，2026-09-20，单开新会话）**。按 Startup Workflow 先读 `PROGRESS.md` → `session-handoff.md` → `feature_list.json` → `docs/PRODUCT.md`，再跑 `./init.sh` 建立基线；需求分析（grill/think）先于实现。注意 `e2e/home.spec.ts` 有像素级断言（转换按钮右边缘与粘贴框右边缘差值 < 4px，且与「来源 URL」输入框同行），改 `.sourceInput` 的 `flex`、按钮宽度或 `.sourceRow` 的 gap 会撞上它——这是刻意锁定的效果，要改先改断言。
+6. **UI 评审已完成，用户决定不整改（2026-09-20）**：用 design-references 环节 4 快速通道评审了 `0.3.1` 的网页与桌面 UI（真实截图 + `getBoundingClientRect` 实测 + WCAG 对比度计算 + 键盘 Tab 焦点扫描 + `design_audit`/`design_contrast`），产出 `docs/UI-REVIEW-2026-09-20.md`（P0×6 + P1×10，均附实测数字；配套的现状/改后对照板是临时 HTML，用户看过即删）。用户看过对照板后决定**全部不改**。因此 `e2e/home.spec.ts` 的像素级对齐断言（转换按钮右边缘与粘贴框右边缘差值 < 4px、与「来源 URL」输入框同行）继续是刻意锁定的效果 —— 若将来真要改 `.sourceInput` 的 `flex`、按钮宽度或 `.sourceRow` 的 gap，先改断言。**不要在没有新证据、也没有用户指认具体条目的情况下重提这批发现。** 本轮代码零改动，`settings.json` 在校验探针前后 SHA-256 一致。
 
 不要重做 S1–S6 与 `feat-024` – `feat-030` 已完成的部分；不要放宽端点、密钥或归档守卫；不要把已退役的历史 ZIP 条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删除。

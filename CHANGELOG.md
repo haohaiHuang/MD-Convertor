@@ -14,6 +14,7 @@ This project follows the principles of [Keep a Changelog](https://keepachangelog
 - Settings page UI: the working-mode picker is now a titled card instead of a legend that rode over the row, and switching modes no longer shows a「当前生效」badge (it pushed the two options sideways while it moved). The custom-language-tag entry is hidden (tags saved earlier still show up in the target language picker). "返回转换" is now a button with a save-status badge that waits for an in-flight save and refuses to leave when saving failed.
 - Home header: the「本机处理 · 不保存内容」hint and the ⚙ glyph were removed, leaving a plain 设置 button.
 - Both panels now label the convert button「转换」(it was「转换为 MD」), and in the rich-text panel it sits on the same row as the optional 来源 URL box, whose right edge lines up with the paste box above it.
+- Home and settings headers: the green「MD」square is gone, leaving the plain text wordmark, and「MD-Convertor」is now set in Michroma. The font file is kept in the repository (`public/fonts/Michroma-Regular.woff2`, licence next to it) and loaded with `next/font/local`, so the build needs no network at all and the packaged app serves the exact file it was built with from its own `/_next/static/media`, with no request to Google.
 
 ### Fixed
 
