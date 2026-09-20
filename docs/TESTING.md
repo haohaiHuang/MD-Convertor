@@ -25,6 +25,8 @@ Use `npm ci` to restore dependencies after a clean checkout.
 
 Live comparisons do not save or print webpage bodies. Override live fixtures only through the documented environment variables in the test sources; never commit private or copyrighted page content.
 
+Translation tests need no network and no key: `scripts/start-e2e-server.mjs` sets `MD_CONVERTOR_TEST_PROVIDER=1`, which makes `/api/translate/*` use an in-process stub model. The branch does not exist when the flag is unset, so a production run still returns 409 `TRANSLATE_NOT_CONFIGURED` without a configured model. Keep the flag out of any production or release command.
+
 ## Coverage
 
 The baseline covers:
@@ -35,30 +37,64 @@ The baseline covers:
 - rich-text semantic gating, sanitization, HTML/plain-text fallback, and 5 MiB request limits
 - image formats, lazy sources, Data URI validation, 8 MiB source limit, 30-image limit, optimization, and 20 MiB output degradation
 - copy, download, clear actions, stop, statistics, responsive layout, and Back to Top
+- settings contract and `settings.json` storage, key encryption and the preload bridge, provider endpoint policy, model listing, local CLI scan/models, language presets
+- translation segmentation and reassembly, prompt contract and parsing, provider adapters, limits and error codes, language-ratio decisions, and non-target byte fidelity
+- the translation task budget: `translateTaskTimeoutMs(batchCount)` returns `max(120s, batches × 180s + 30s)`, and both endpoints size their deadline from the real batch count (a long article of many short paragraphs is not cut off at a fixed 120s)
+- the translation checkbox, 原文 / 译文 tabs, copy and download per tab, progress, cancel, retry, and the ratio dialog
 
-E2E runs against the production standalone service and fails if tracked files change.
+`vitest.config.ts` limits coverage to `src/lib/**/*.ts` plus the convert and translate routes, excludes test files and `src/types/**`, and sets per-file thresholds. Every `src/lib/translate/**` module has its own threshold (95/90/100/95, or 90/75/100/90 for `segment.ts`). Coverage is currently 95.28% statements over 60 files / 853 tests.
+
+E2E runs against the production standalone service and fails if tracked files change. `playwright.config.ts` sets `workers: 1` because the translation engine holds one process-wide task slot; parallel workers would collide with 429 `TRANSLATE_BUSY`.
 
 ## Release Guard
 
 `npm run desktop:release` requires:
 
-- package version exactly `0.2.1`
+- package version exactly `0.3.1`
 - Node.js 24.x
-- unchanged fixed hashes for historical ZIPs in `~/Downloads/MD-Convertor-archive/releases/`
+- the historical archive set: every manifest ZIP that still exists must keep its fixed SHA-256, and no unlisted release ZIP may appear in `~/Downloads/MD-Convertor-archive/releases/`
 - a ZIP created during the current run
-- packaged version `0.2.1`
+- packaged version `0.3.1`
 - an arm64 executable and complete application bundle
 
 The guard rechecks historical artifacts on both success and failure. A Forge command that exits without a new ZIP is a failure.
 
-## Verified 0.2.1 Artifact
+The 0.1.3 read-only archive copy and the 0.1.0–0.2.0 ZIPs were lost from this Mac and cannot be restored, so the guard retires an absent entry: it prints a `Historical Archive Notice` for each missing file and continues. Anything that does exist is still hash-checked, a writable or tampered file still aborts the run, and unknown release ZIPs are still rejected. `0.2.1` was re-downloaded from its GitHub release on 2026-09-18 and matched its recorded SHA-256 byte for byte, so that entry is enforced again. The `v0.1.3` source tag remains a hard precondition.
 
-- Path: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.2.1.zip`
+The `0.3.0` gate ran on 2026-09-18 and passed end to end (baseline, three-engine E2E, live, packaging).
+
+A later fix for long-article translation timeouts (`feat-024`, 2026-09-18) changed the task budget to scale with the batch count. A later round (`feat-029`, 2026-09-18) made a cloud provider's four fields mandatory to save, let the settings page pull models from an unsaved draft without writing anything, and replaced the saved key in its input box with an eight-dot placeholder. It is covered by unit tests for the form rules and the draft model route (`src/lib/settings/provider-form.test.ts`, `src/app/api/provider/models/route.test.ts`) plus three new settings E2E cases and three rewritten ones (the old「拉取模型先保存草稿」expectations no longer hold). Another round raised the per-call ceiling from 60s to 180s (`feat-027`) and fixed a timeout that was reported as an unreadable answer, and it removed the「当前生效」mode badge (`feat-028`). All of it was verified by unit tests, a full `./init.sh` baseline, a three-engine E2E run, and a real-machine probe against the user's cloud provider (a 121-block document that used to fail at the 60s ceiling now returns 200). The version decision landed on `0.3.1`: `package.json`, the lock file, `feature_list.json` and the release guard all read `0.3.1` (the guard test moved to RED first, then to 29 passing). A further round (`feat-031`, 2026-09-20) raised `next` to 16.3.5 and `sharp` to 0.35.4 so `npm audit --omit=dev` reports no production advisories, dropped the gear glyph from the header, renamed both convert buttons to 「转换」, aligned the rich-text convert button's right edge with the paste box above it, and made the key box read-only while a key is stored. None of it has been through `npm run desktop:release` yet: the artifact recorded below is the pre-fix `0.3.0` build, kept as history, and the `0.3.1` gate runs on request.
+
+## Historical Artifact (0.3.0, predates the fixes above; a `0.3.1` gate writes a new ZIP)
+
+- Path: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip`
+- Size: `358,562,540` bytes
+- SHA-256: `2a0e236e97e51d97fd24c7002a923ef5703ad8245234531f2eb3aa1350c81147`
+- Package: version `0.3.0`, arm64, macOS 12.0+
+- Automated evidence: 58 files / 835 tests, 95.25% statements, three-engine E2E 142 passed / 2 skipped, live 2/2
+- Packaged smoke: preload bridge and runtime secret round trip passed
+- Signing: not Developer ID signed or notarized, so the artifact is suitable for personal testing only
+
+## Historical Anchor (0.2.1)
+
+- Path: `~/Downloads/MD-Convertor-archive/releases/MD-Convertor-darwin-arm64-0.2.1.zip`
 - Size: `354,635,067` bytes
 - SHA-256: `32c1d96af58a7701e6d2fe0bf619be0f8f224803355c6ef63aad43c85569463e`
 - Package: version `0.2.1`, arm64, macOS 12.0+
 - Automated evidence: 322 tests, 60/60 three-engine E2E, stable live 2/2
 - WeChat diagnostic: 12/12 code blocks and 279 lines matched in memory
+
+## Packaged Smoke Test
+
+Run the packaged app with the smoke environment variables to verify the preload bridge and the provider key path without manual clicking:
+
+```bash
+ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1 \
+  out/MD-Convertor-darwin-arm64/MD-Convertor.app/Contents/MacOS/MD-Convertor
+```
+
+- `ELECTRON_SMOKE_TEST=1` checks that `window.mdConvertor.secrets` exists and that `safeStorage` reports encryption as available.
+- `ELECTRON_SMOKE_TEST_SECRETS=1` additionally proves the key path: a provider without any key returns 409 `TRANSLATE_NOT_CONFIGURED`, saving a key makes the running server reach the endpoint (502 `TRANSLATE_PROVIDER_ERROR` against the test address) without a restart, and removing the key returns to 409. The smoke removes the key and restores settings before exiting. No environment variable can supply a provider key any more, so the smoke sets one through the bridge only.
 
 ## Manual Acceptance
 

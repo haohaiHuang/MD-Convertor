@@ -94,7 +94,7 @@ test("rich text paste converts with statistics, preview, warning, copy, and down
   await pasteIntoTextarea(page, html, text);
 
   await expect(page.getByText("已识别富文本内容（约 17 字符），将转换为 Markdown")).toBeVisible();
-  await page.getByRole("button", { name: "转换为 MD" }).click();
+  await page.getByRole("button", { name: "转换", exact: true }).click();
 
   await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toBeVisible();
   const stats = page.getByLabel("转换结果统计");
@@ -122,7 +122,7 @@ test("rich text paste converts with statistics, preview, warning, copy, and down
 test("clear removes pasted content, source URL, and the previous result before a new paste", async ({ page }) => {
   await pasteIntoTextarea(page, "<p>第一份内容</p>", "第一份内容");
   await page.getByLabel("来源 URL（可选）").fill("https://example.com/first");
-  await page.getByRole("button", { name: "转换为 MD" }).click();
+  await page.getByRole("button", { name: "转换", exact: true }).click();
   await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toBeVisible();
 
   await page.getByRole("button", { name: "清空", exact: true }).click();
@@ -130,10 +130,10 @@ test("clear removes pasted content, source URL, and the previous result before a
   await expect(page.getByLabel("粘贴的正文内容")).toHaveValue("");
   await expect(page.getByLabel("来源 URL（可选）")).toHaveValue("");
   await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "转换为 MD" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "转换", exact: true })).toBeDisabled();
 
   await pasteIntoTextarea(page, "<p>第二份内容</p>", "第二份内容");
-  await page.getByRole("button", { name: "转换为 MD" }).click();
+  await page.getByRole("button", { name: "转换", exact: true }).click();
   await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toBeVisible();
   expect(pasteRequests).toEqual([
     { html: "<p>第一份内容</p>", text: "第一份内容", sourceUrl: "https://example.com/first" },
@@ -146,7 +146,7 @@ test("plain text paste shows the fallback hint and omits HTML and source fields"
   await pasteIntoTextarea(page, "", text);
 
   await expect(page.getByText("未检测到富文本格式，将按纯文本转换")).toBeVisible();
-  await page.getByRole("button", { name: "转换为 MD" }).click();
+  await page.getByRole("button", { name: "转换", exact: true }).click();
   await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toBeVisible();
   expect(pasteRequests).toEqual([{ text }]);
 });
@@ -157,7 +157,7 @@ test("editing pasted rich text switches to edited mode and omits HTML", async ({
   await textarea.fill("手工修改后的正文");
 
   await expect(page.getByText("内容已修改，将按纯文本转换")).toBeVisible();
-  await page.getByRole("button", { name: "转换为 MD" }).click();
+  await page.getByRole("button", { name: "转换", exact: true }).click();
   await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toBeVisible();
   expect(pasteRequests).toEqual([{ text: "手工修改后的正文" }]);
 });
@@ -168,7 +168,7 @@ test("a second paste replaces the first HTML and plain-text snapshot", async ({ 
 
   await expect(page.getByLabel("粘贴的正文内容")).toHaveValue("第二段");
   await expect(page.getByText("已识别富文本内容（约 3 字符），将转换为 Markdown")).toBeVisible();
-  await page.getByRole("button", { name: "转换为 MD" }).click();
+  await page.getByRole("button", { name: "转换", exact: true }).click();
   await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toBeVisible();
   expect(pasteRequests).toEqual([{ html: "<h1>第二段</h1>", text: "第二段" }]);
 });
@@ -176,7 +176,7 @@ test("a second paste replaces the first HTML and plain-text snapshot", async ({ 
 test("source URL is trimmed before a paste request is submitted", async ({ page }) => {
   await pasteIntoTextarea(page, "<p>有来源正文</p>", "有来源正文");
   await page.getByLabel("来源 URL（可选）").fill("  https://example.com/article  ");
-  await page.getByRole("button", { name: "转换为 MD" }).click();
+  await page.getByRole("button", { name: "转换", exact: true }).click();
   await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toBeVisible();
   const preview = page.getByLabel("Markdown 预览");
   await expect(preview).toContainText("来源");
@@ -196,7 +196,7 @@ test("source URL is trimmed before a paste request is submitted", async ({ page 
 test("blank source URL is omitted from a paste request", async ({ page }) => {
   await pasteIntoTextarea(page, "<p>无来源正文</p>", "无来源正文");
   await page.getByLabel("来源 URL（可选）").fill("   ");
-  await page.getByRole("button", { name: "转换为 MD" }).click();
+  await page.getByRole("button", { name: "转换", exact: true }).click();
   await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toBeVisible();
   const preview = page.getByLabel("Markdown 预览");
   await expect(preview).toContainText("转换时间：2026-08-09T00:00:00.000Z");
@@ -212,7 +212,7 @@ test("blocks a real UTF-8 JSON payload over 5 MiB before making a request", asyn
   await pasteIntoTextarea(page, "", oversizedText);
 
   await expect(page.getByText("粘贴内容超过 5 MiB，请减少内容后重试。")).toBeVisible();
-  await expect(page.getByRole("button", { name: "转换为 MD" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "转换", exact: true })).toBeDisabled();
   expect(pasteRequests).toEqual([]);
 });
 
@@ -231,7 +231,7 @@ test("shows a Chinese error when the paste service responds with 413", async ({ 
   const html = "<p>小正文</p>";
   const text = "小正文";
   await pasteIntoTextarea(page, html, text);
-  await page.getByRole("button", { name: "转换为 MD" }).click();
+  await page.getByRole("button", { name: "转换", exact: true }).click();
 
   await expect(page.getByText("请求内容过大。", { exact: true })).toBeVisible();
   expect(pasteRequests).toEqual([{ html, text }]);
@@ -256,7 +256,7 @@ test("disables tabs during a slow paste conversion and preserves editable input 
   const source = page.getByLabel("来源 URL（可选）");
   await pasteIntoTextarea(page, "<p>慢请求正文</p>", "慢请求正文");
   await source.fill("https://example.com/slow");
-  await page.getByRole("button", { name: "转换为 MD" }).click();
+  await page.getByRole("button", { name: "转换", exact: true }).click();
 
   await expect(page.getByRole("tab", { name: "链接转换" })).toBeDisabled();
   await expect(page.getByRole("tab", { name: "富文本转换" })).toBeDisabled();

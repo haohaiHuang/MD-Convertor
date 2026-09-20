@@ -1,9 +1,192 @@
 {
   "project": "MD-Convertor",
-  "currentVersion": "0.2.1",
-  "updatedAt": "2026-08-22",
+  "currentVersion": "0.3.1",
+  "updatedAt": "2026-09-20",
   "activeFeature": null,
   "features": [
+    {
+      "id": "feat-018",
+      "name": "Settings Infrastructure (0.3.0)",
+      "title": "Settings Infrastructure (0.3.0)",
+      "status": "done",
+      "dependencies": [],
+      "scope": "docs/features/translation/S1-settings-infra.md: settings.json store with atomic 0600 writes, safeStorage secrets store, GET/PUT /api/settings, main-process environment injection, preload secrets bridge, settings page skeleton and gear entry.",
+      "nonGoals": [
+        "No provider network calls (model listing, translation requests)",
+        "No translation engine or language-ratio logic",
+        "No changes to existing conversion, extraction, image, Mermaid, or security pipelines"
+      ],
+      "acceptanceCriteria": [
+        "T1.1-T1.9 of S1-settings-infra.md complete with RED-first tests for every task",
+        "settings.json and secrets.json are written atomically with mode 0600 and never contain plaintext keys",
+        "./init.sh and npm run test:e2e are green"
+      ],
+      "evidence": [
+        "T1.1-T1.9 done with RED-first tests: src/types/settings.test.ts (45), src/lib/settings/store.test.ts (14), src/app/api/settings/route.test.ts (23), electron/env.test.mjs (23), electron/secrets.test.mjs (11), electron/preload.test.cjs (17).",
+        "./init.sh passed with Node.js 24.15.0: 34 test files / 455 tests, coverage 94.46% statements, production build OK.",
+        "npm run test:e2e passed: 79 passed / 2 skipped across Chromium, Firefox, and WebKit (e2e/settings.spec.ts adds 7 cases; the real store round trip runs once because projects share one temporary user data directory).",
+        "npm run desktop:package succeeded and the packaged app smoke test printed \"Preload bridge smoke passed: secrets.set function, encryptionAvailable true\".",
+        "settings.json and secrets.json writes use a temporary file plus rename with mode 0600; store and secrets tests cover permissions, atomic replacement, corrupt files, and refusal to overwrite an unreadable secrets file.",
+        "Fixed during verification: sandboxed preloads cannot require relative files, so the bridge moved into the self-contained electron/preload.cjs with electron/preload-contract.cjs holding the shared channels, asserted equal by electron/preload.test.cjs."
+      ]
+    },
+    {
+      "id": "feat-019",
+      "name": "Provider And Language Settings",
+      "title": "Provider And Language Settings",
+      "status": "done",
+      "dependencies": [
+        "feat-018"
+      ],
+      "scope": "docs/features/translation/S2-providers-and-languages.md: cloud provider CRUD and model listing, local CLI scan and management, active mode selection, target language settings, default translation toggle.",
+      "nonGoals": [
+        "No translation requests (S3 owns the engine)"
+      ],
+      "acceptanceCriteria": [
+        "T2.1-T2.9 of S2-providers-and-languages.md complete with RED-first tests",
+        "Provider endpoint policy, model listing, local CLI scan/models, language presets and the default translation toggle are covered by unit tests",
+        "./init.sh, npm run test:e2e, npm run desktop:package and the packaged smoke test are green",
+        "Saving or clearing a key takes effect in the running server without a restart and falls back to the environment variable afterwards"
+      ],
+      "evidence": [
+        "T2.1-T2.9 done with RED-first tests: src/lib/provider/endpoint.test.ts (42), credentials.test.ts (9), models.test.ts (12), src/lib/local-cli/registry.test.ts (3), scan.test.ts (9), models.test.ts (12), src/lib/settings/languages.test.ts (10), src/lib/local-api + the four route test files (47), electron/runtime-secrets.test.mjs (6).",
+        "npm run test:coverage passed with Node.js 24.15.0: 46 test files / 605 tests, 94.79% statement coverage, production build OK (./init.sh).",
+        "npm run test:e2e passed: 103 passed / 2 skipped across Chromium, Firefox, and WebKit; e2e/settings.spec.ts grew from 7 to 15 cases.",
+        "npm run desktop:package succeeded and the packaged smoke test printed \"Preload bridge smoke passed\" and \"Runtime secret smoke passed: TRANSLATE_NOT_CONFIGURED → TRANSLATE_PROVIDER_ERROR → TRANSLATE_NOT_CONFIGURED, env fallback TRANSLATE_PROVIDER_ERROR\".",
+        "Provider endpoint policy (src/lib/provider/endpoint.ts) is deliberately separate from the web-scrape SSRF policy (src/lib/security/url.ts): a translation endpoint must be reachable on loopback and private networks while the scraper stays public-only; metadata addresses stay blocked in both.",
+        "Fixed during verification: cliEnvironment() copies process.env and deletes MD_CONVERTOR_* keys, and runCliCommand assigns its timeout after spawning so lint's prefer-const passes."
+      ]
+    },
+    {
+      "id": "feat-020",
+      "name": "Translation Engine",
+      "title": "Translation Engine",
+      "status": "done",
+      "dependencies": [
+        "feat-019"
+      ],
+      "scope": "docs/features/translation/S3-translation-engine.md: segmentation and reassembly, analyze/run endpoints, prompt contract and parsing, HTTP and CLI adapters, limits, timeouts, cancellation, test provider stub.",
+      "nonGoals": [
+        "No front-end tabs or checkboxes (S4 owns them)"
+      ],
+      "acceptanceCriteria": [
+        "T3.1-T3.11 of S3-translation-engine.md complete with RED-first tests and byte-identical identity reassembly",
+        "Segmentation and reassembly are byte-identical by construction: every segment is an ordered raw character range, verified on the golden article and on the live HTTP smoke document (CRLF, tabs, table pipes, fenced code, base64 image)",
+        "./init.sh is green with coverage thresholds for every src/lib/translate module and both translate routes",
+        "Both endpoints follow validateConvertApiCaller, expose the FSD §5 error codes, and never leak document text, keys or CLI output",
+        "MD_CONVERTOR_TEST_PROVIDER=1 drives analyze and run over real HTTP; without the flag the branch does not exist (409 TRANSLATE_NOT_CONFIGURED)"
+      ],
+      "evidence": [
+        "T3.1: scripts/probe-local-cli.mjs probed pi 0.85.1 and claude 2.1.273; the measured conclusions (stdin-only prompts, --no-tools / --tools \"\" flags, model flag, 126 KB stdin OK, empty stdout = invalid response, claude has no reachable model locally) are recorded in the S3 doc table \"T3.1 探针结论\" and encoded in src/lib/local-cli/registry.ts (printArgs / modelFlag).",
+        "T3.2-T3.3: src/lib/translate/segment.ts + segment.test.ts (76 tests) — layer A line classification, layer B inline span extraction, per-cell table rows, escaped pipes, meta-line skipping, byte-round-trip on src/lib/fixtures/golden-article.md; assertBlockAlignment throws 409 TRANSLATE_ANALYSIS_STALE.",
+        "T3.4: prompt.ts + prompt.test.ts (23 tests) — id-set equality, duplicate/missing ids, fenced and prose-wrapped answers, BCP-47 validation, one retry then 502 TRANSLATE_INVALID_RESPONSE.",
+        "T3.5: provider/openai-compatible.ts + openai-compatible.test.ts (10 tests) — Bearer header, stream:false, non-2xx and network mapping, injected lookup so no real DNS is queried; T3.6: provider/local-cli.ts + local-cli.test.ts (12 tests) — argument construction, prompt over stdin only, shell:false, temp cwd, non-zero exit and timeout mapping; src/lib/local-cli/models.ts gained CliRunResult.failure plus an injectable cwd/input/signal (models.test.ts 16 tests, registry.test.ts 3 tests).",
+        "T3.7 + T3.8: run.ts + run.test.ts (22 tests) — batchBlocks (<=20 blocks / <=8000 chars, oversized block never split), analyze/run share one task lock (429 TRANSLATE_BUSY), 200,000-character ceiling (413), empty prose (400), scope non-target filtering with the \"没有需要翻译的段落。\" warning, task deadline 504 vs client cancel 499, stale analysis 409; analysis.ts + analysis.test.ts (6 tests) for the ratio.",
+        "T3.9: src/app/api/translate/analyze/route.ts and run/route.ts plus src/lib/translate/request.ts; route.test.ts (29 tests) covers cross-origin and token refusal, non-JSON content type, the 40 MiB body ceiling, all request-field rejections and every error-code mapping.",
+        "T3.10: real HTTP smoke against the standalone build (production mode, session token, temp user data): 14/14 checks passed with MD_CONVERTOR_TEST_PROVIDER=1 (analyze 200 with 25 blocks / targetChars 66, run(all) byte-identical after removing the \"[zh-Hans] \" marker, CRLF/tabs/base64 image preserved, run(non-target) leaving Chinese alone, stale analysis 409) and without the flag the same request returns 409 TRANSLATE_NOT_CONFIGURED.",
+        "T3.11: vitest.config.ts adds the two translate routes to coverage include and per-file thresholds for all nine src/lib/translate modules; ./init.sh green with Node.js 24.15.0 (55 test files / 805 tests, 95.15% statements, production build OK); npm run test:e2e green (103 passed / 2 skipped across Chromium, Firefox and WebKit).",
+        "Scope kept: no new runtime dependency, no streaming, no UI, no change to currentVersion (still 0.2.1), no conversion/extraction/image/Mermaid/security-limit pipeline touched, and npm run desktop:release was not run."
+      ]
+    },
+    {
+      "id": "feat-021",
+      "name": "Translation Front-End",
+      "title": "Translation Front-End",
+      "status": "done",
+      "dependencies": [
+        "feat-020"
+      ],
+      "scope": "docs/features/translation/S4-frontend-tabs.md: shared translation checkbox, automatic trigger, original/translated tabs, copy and download per tab, progress, cancel, failure retry.",
+      "nonGoals": [
+        "No ratio threshold UX (S5 owns it)"
+      ],
+      "acceptanceCriteria": [
+        "T4.1-T4.7 of S4-frontend-tabs.md complete with RED-first e2e/unit tests",
+        "Both input panels share one translation checkbox whose initial value comes from settings.translation.defaultEnabled and is not persisted by the checkbox itself",
+        "A checked conversion analyzes then translates automatically; the result area shows 原文 / 译文 tabs (keyboard operable) and no tab appears when translation is off or unconfigured",
+        "Copy and download act on the active tab; the translated download name carries the language suffix (e.g. 粘贴测试文章-en.md)",
+        "Progress, cancel and retry are covered: cancelled shows 已取消翻译。 and can be retried with the stored analysis; 409 TRANSLATE_NOT_CONFIGURED shows a settings link instead of tabs",
+        "./init.sh and npm run test:e2e are green with no contract change to the S3 endpoints or settings shape"
+      ],
+      "evidence": [
+        "T4.1: src/lib/translate/filename.ts + filename.test.ts (5 tests) — languageSuffix trims/lowercases and collapses non [a-z0-9] runs, translatedFilename falls back to the original name on an empty suffix; vitest.config.ts adds per-file thresholds (95/90/100/95).",
+        "T4.2: src/lib/translate/client.ts + client.test.ts (12 tests) — fixed JSON content-type, server error.message first then FALLBACK_MESSAGES then a generic message, abort (signal or AbortError) => 499 TRANSLATE_CANCELLED, fetch rejection => 0 TRANSLATE_NETWORK_ERROR; no header or key ever logged.",
+        "T4.3: e2e/translate.spec.ts — page loads settings on mount, the checkbox mirrors translation.defaultEnabled, both panels render the same checkbox, the toggle disappears when settings cannot be read; a failed settings read hides it instead of blocking conversion.",
+        "T4.4: e2e/translate.spec.ts (chromium) — checked conversion auto-analyzes and auto-translates, the result tablist (转换结果) appears with tabpanel 原文/译文, ArrowLeft/Right/Home/End move the roving tabindex; without the checkbox the result area keeps the exact 0.2.1 DOM (only <article aria-label=\"Markdown 预览\">).",
+        "T4.5: e2e/translate.spec.ts — copy and download follow the active tab and the translated download is named 粘贴测试文章-en.md while the original stays 粘贴测试文章.md; assertions are byte-exact against the stub provider output.",
+        "T4.6: e2e/translate.spec.ts — progress cards for analyzing/translating with a 取消 button, cancelled state 已取消翻译。 plus retry, failure card role=alert with 重试, and 409 TRANSLATE_NOT_CONFIGURED showing the settings notice and no tabs.",
+        "T4.7: ./init.sh green with Node.js 24.15.0 (57 test files / 822 tests, coverage 95.24% statements, production build OK); npm run test:e2e green (127 passed / 2 skipped across Chromium, Firefox and WebKit, workers: 1).",
+        "Test infra: scripts/start-e2e-server.mjs sets MD_CONVERTOR_TEST_PROVIDER=1 (only stub switch, real HTTP to /api/translate/*); playwright.config.ts sets workers: 1 because the S3 task lock is process-wide (parallel runs collided with 429 TRANSLATE_BUSY); e2e/settings.spec.ts now restores the shared real settings store in a finally block, because a persisted translation.defaultEnabled = true made unrelated specs auto-translate.",
+        "Known limits: 409 TRANSLATE_ANALYSIS_STALE is unreachable from the page (analyze and run share one markdown string) so no re-analysis flow was added; copy/download are not disabled while a translation is still pending (they silently fall back to the original text).",
+        "Scope kept: no new runtime dependency, no streaming, no Markdown source view, no ratio dialog or >=97% notice (S5), no settings field added, no change to currentVersion (still 0.2.1), no conversion/extraction/image/Mermaid/security-limit pipeline touched, npm run desktop:release not run."
+      ]
+    },
+    {
+      "id": "feat-022",
+      "name": "Language Ratio Decision",
+      "title": "Language Ratio Decision",
+      "status": "done",
+      "dependencies": [
+        "feat-021"
+      ],
+      "scope": "docs/features/translation/S5-language-ratio.md: threshold decision UX, two-option confirmation, 97% informational notice, non-target scope fidelity.",
+      "nonGoals": [
+        "No release gate or version changes (S6 owns them)"
+      ],
+      "acceptanceCriteria": [
+        "T5.1-T5.6 of S5-language-ratio.md complete with RED-first tests",
+        "decideTranslation(analysis) is a pure function with SKIP_RATIO = 0.97 / CONFIRM_RATIO = 0.7: totalChars === 0 or ratio >= 0.97 => skip (reason empty / target-language, percent for display), ratio >= 0.70 => confirm with percent, otherwise translate-all; boundaries use raw ratio with >= semantics while the displayed percent is rounded",
+        "scope=\"non-target\" keeps every target-language block byte-identical, replaces only non-target blocks and leaves order and structure unchanged",
+        "The page shows a two-option confirmation dialog for 70%-97% (只翻译非目标语言部分 => run scope=\"non-target\", 不翻译 => no translated tab, original kept, checkbox stays checked, no second dialog), a one-line notice for >= 97% and for an empty-prose analysis, and translates directly with scope=\"all\" below 70%",
+        "Translation is never requested (no /api/translate/run) on the skip paths; ./init.sh and npm run test:e2e are green with no change to S3 endpoint contracts, settings fields or currentVersion"
+      ],
+      "evidence": [
+        "T5.1: src/lib/translate/decision.ts + decision.test.ts (7 tests) — exports SKIP_RATIO = 0.97 and CONFIRM_RATIO = 0.7 and decideTranslation(analysis); totalChars === 0 beats the ratio check so an empty document reports {action: \"skip\", reason: \"empty\"}; exact boundaries 0.699/0.70/0.969/0.97/1 and 0 map to the documented actions; percent is Math.round(ratio * 100) for display while comparisons use the raw ratio (0.9699 => confirm 97%, 0.97 => skip 97%). vitest.config.ts adds per-file thresholds (95/90/100/95); decision.ts reports 100% statements.",
+        "T5.2: src/lib/translate/run.test.ts — golden case on a document that mixes a heading, inline code, a link, GFM table cells (both languages in one row), bold, a list, a blockquote, a fenced code block and a trailing paragraph: the provider wraps every translated block in «», so the test asserts (a) the exact marked output, (b) removing the markers reproduces the input character for character, (c) all 5 target-language segments survive verbatim and are never wrapped, (d) all 11 other segments are wrapped, (e) meta reports scope non-target and translatedBlocks = 11. Existing engine tests for scope=\"non-target\" remain green (76 segment + 23 run = 99 tests).",
+        "T5.2 test sensitivity: with the scope filter in runTranslation temporarily replaced by an always-true predicate the golden case and the older non-target case both fail ([zh] 中文段落。 instead of the untouched text); the mutation was reverted immediately (git diff empty for run.ts).",
+        "T5.3-T5.5: e2e/translate.spec.ts — 5 new cases. Ratio control happens by mocking the analyze response only (route.fetch() then rewriting totalChars/targetChars/ratio and blocks[].language over a 10-paragraph fixture whose paragraphs have equal length, so N/10 is exact); /api/translate/run keeps using the real endpoint, which is what proves the non-target fidelity end to end. Cases: 80% => dialog 检测到正文约 80% 已是英语，是否只翻译其余部分？ , choosing 只翻译非目标语言部分 sends exactly one run with scope \"non-target\" while the 8 target paragraphs stay unwrapped and the last 2 are translated; 不翻译 sends no run at all (runs 0, analyses 1), closes the dialog, shows no 转换结果 tablist, keeps the original preview and the checkbox checked, and prints 已选择不翻译; 100% (10/10) and an all-skipped analysis print 正文已是英语，无需翻译 / 正文没有可翻译的段落 and never call run; 60% shows no dialog and translates with scope \"all\".",
+        "RED evidence before the implementation: the four new skip/confirm cases failed on the untouched S4 build (chromium: getByRole('dialog') and getByRole('status') not found; the 60% case passed because S4 always translated with scope \"all\", which is exactly what T5.5 locks down) — log kept at /tmp/s5-e2e-red.log.",
+        "T5.3-T5.5 implementation: src/app/page.tsx — decideTranslation() replaces the S4 decideTranslationScope() placeholder; the translation state machine gains {status: \"confirming\", analysis, percent} and {status: \"skipped\", reason: \"target-language\" | \"empty\" | \"declined\"}, showResultTabs excludes both so no empty translated tab can appear, a native <dialog> (showModal/close via effect, Esc => 不翻译) offers 不翻译 / 只翻译非目标语言部分, the chosen scope is remembered in translationScopeRef (reset to \"all\" on every new conversion) so retry reuses it and never asks twice, and the notice line renders 正文已是<目标语言>，无需翻译 / 正文没有可翻译的段落，无需翻译。/ 已选择不翻译，结果保留原文。. src/app/page.module.css adds .confirmDialog (+ ::backdrop) / .confirmText / .confirmActions.",
+        "T5.6: ./init.sh green with Node.js 24.15.0 (58 test files / 830 tests, coverage 95.25% statements, lint and tsc --noEmit clean, production build OK); npm run test:e2e green across Chromium, Firefox and WebKit (142 passed / 2 skipped, workers: 1) against the S4 baseline of 127 passed / 2 skipped.",
+        "Known limits: the totalChars === 0 branch is defensive (the engine rejects a document with no prose at analyze time, so the page only reaches it if an answer reports zero prose) and it is covered by rewriting the analyze response; translation errors still cannot hit 409 TRANSLATE_ANALYSIS_STALE from the page; copy/download are still not disabled while the translation is pending.",
+        "Scope kept: no threshold settings field, no local language detection, no second sampling, no S3 engine change (no defect found), no new runtime dependency, no change to currentVersion (0.2.1), no change to the conversion/extraction/image/Mermaid/security-limit pipelines, npm run desktop:release not run, test-results/ and playwright-report/ cleaned."
+      ]
+    },
+    {
+      "id": "feat-023",
+      "name": "Release 0.3.0 Gate And Docs",
+      "title": "Release 0.3.0 Gate And Docs",
+      "status": "done",
+      "dependencies": [
+        "feat-022"
+      ],
+      "scope": "docs/features/translation/S6-release-and-docs.md: version 0.3.0 and release gate rework, coverage thresholds, PRODUCT/ARCHITECTURE/TESTING/QUALITY-AUDIT updates, packaging and artifact verification.",
+      "nonGoals": [
+        "No new product capability"
+      ],
+      "acceptanceCriteria": [
+        "T6.1-T6.6 of S6-release-and-docs.md complete; desktop:release passes for 0.3.0",
+        "scripts/release-guards.test.mjs is changed first (RED) and then passes with target version 0.3.0; the history and freshness guards keep hash-checking every archive that still exists, reject tampering and unknown release ZIPs, and were retired only for the entries the user explicitly authorized after those archives proved unrecoverable",
+        "src/lib/translate/** stays inside the coverage include glob with per-file thresholds met",
+        "PRODUCT/ARCHITECTURE/TESTING/QUALITY-AUDIT/README(+zh)/AGENTS and their .zh.md mirrors describe the shipped translation behaviour with no residual conflicting statement",
+        "npm run desktop:release produces a fresh ZIP with version 0.3.0 and an arm64 executable and reports size and SHA-256; ./init.sh, npm run test:e2e and the packaged smoke run are green and npm run test:live is recorded",
+        "feature_list.json, PROGRESS.md, session-handoff.md and CHANGELOG.md are aligned and activeFeature is null"
+      ],
+      "evidence": [
+        "T6.1 RED: scripts/release-guards.test.mjs fixture defaults moved to 0.3.0 (artifact plist/zip paths, previous-release fixture) plus a new case \"accepts only the current 0.3.0 release target\" => 4 failed / 21 passed against the unmodified script (log /tmp/s6-t61-red.log). GREEN: scripts/release-desktop.mjs RELEASE_VERSION_ERROR and the \"version !==\" guard now read 0.3.0, the package.json and package-lock.json version fields are 0.3.0 and feature_list.json currentVersion is 0.3.0 => \"npm test -- release-guards\" 25 passed. A regex that had also rewritten the dependency versions is-arrayish and node-api-version to 0.3.0 was reverted to 0.2.1.",
+        "T6.1 scope kept: scripts/release-guards.mjs PROTECTED_BASELINE_COMMIT, PROTECTED_ARCHIVE_SHA256, PROTECTED_HISTORICAL_ZIP_MANIFEST, the fresh-ZIP check and the v0.1.3 tag protection are unchanged; only the target-version constant moved.",
+        "T6.2 verified with no change: vitest.config.ts already includes src/lib/**/*.ts plus the convert and translate routes and already sets per-file thresholds for every src/lib/translate/** module, so there was no coverage gap to close. npm run test:coverage at this revision: 58 files / 831 tests, statements 95.25%.",
+        "T6.3 done: docs/PRODUCT.md and PRODUCT.zh.md drop the \"No OpenAI or other AI API, API key, model usage\" non-goal, add the translation capability with the eleven preset target languages, and rewrite the privacy section per PRD-translation section 5 (article text reaches the endpoint the user configured, checking the box is the consent, keys stay encrypted, MD-Convertor still keeps no history or cache). docs/ARCHITECTURE.md and .zh.md gain a settings/translation section: the new local routes, settings.json and secrets.json storage with mode 0600 atomic writes and the env -> .env -> runtime key order, the deliberate split between the provider endpoint policy (loopback/private allowed) and the scraping SSRF policy (public-only, unchanged), and the CLI process boundary (shell:false, fixed registry, stdin prompt, one-use temp cwd, MD_CONVERTOR_* stripped, 1 MiB caps). docs/TESTING.md and .zh.md add the translation coverage list, the MD_CONVERTOR_TEST_PROVIDER stub switch, the per-file thresholds and the workers: 1 reason. docs/QUALITY-AUDIT.md adds QA-009 (provider keys), QA-010 (content egress) and QA-011 (CLI subprocess) with re-verify commands plus a 0.3.0 re-verification checklist. README.md and README.zh.md state that translation needs a model the user configures and that checked translation is the only path that sends article text. AGENTS.md records the docs/PRD-*.md and docs/features/** read timing (landed with S1-S5) and moves its current-version references to 0.3.0.",
+        "T6.3 grep check: no 'no AI API' / '不调用 OpenAI' / '模型调用费用' statement remains in docs/, README.md or README.zh.md; the only remaining 0.2.1 strings are the last-verified-artifact records (docs/TESTING.md, docs/TESTING.zh.md, docs/QUALITY-AUDIT.md, README.md, README.zh.md), which are explicitly labelled as the last published artifact because 0.3.0 has no ZIP yet.",
+        "T6.4 done after the user authorized retiring the historical-archive precondition (option A on 2026-09-18): the 0.1.0-0.2.0 ZIPs and the 0.1.3 read-only copy are permanently lost from this Mac (empty Trash, no iCloud copy, no external volume, no backup tooling, no snapshots, absent from GitHub for 0.1.x/0.2.0), so scripts/release-guards.mjs now reports an absent entry as retired instead of aborting, while an archive that still exists is hash-checked exactly as before, a writable or tampered file still throws PROTECTED_ARCHIVE_ERROR / HISTORICAL_ZIP_ERROR, an unknown release ZIP is still rejected and assertProtectedBaseline (the v0.1.3 tag) is untouched. Guard rework RED: 6 failed / 23 passed against the unmodified script (log /tmp/s6-t64a-red.log); the 0.2.1 manifest entry was added RED-first as well (1 failed / 28 passed) and then GREEN: 29 passed.",
+        "T6.5 done: ./init.sh green with Node.js 24.15.0 (58 files / 835 tests, statements 95.25%, lint and tsc --noEmit clean, production build OK), npm run test:e2e green (142 passed / 2 skipped across Chromium, Firefox and WebKit, workers: 1, E2E tracked-file check passed), npm run test:live recorded (tests/live/mermaid-page.test.ts 2/2 passed) and the packaged smoke run printed \"Preload bridge smoke passed: secrets.set function, encryptionAvailable true\" and \"Runtime secret smoke passed: TRANSLATE_NOT_CONFIGURED -> TRANSLATE_PROVIDER_ERROR -> TRANSLATE_NOT_CONFIGURED, env fallback TRANSLATE_PROVIDER_ERROR\" with exit 0.",
+        "T6.6 done: CHANGELOG.md and CHANGELOG.zh.md moved [Unreleased] to [0.3.0] - 2026-09-18 with the personal-testing and retired-archive notes; docs/TESTING.md and TESTING.zh.md replaced the blocked-gate paragraph with the verified 0.3.0 artifact, the new guard semantics and the 0.2.1 historical anchor and updated the test count to 835; docs/QUALITY-AUDIT.md retitled the verdict, added the 0.3.0 and 0.2.1 tables, updated the repository-hygiene line and the re-verification checklist; README.md and README.zh.md state 0.3.0 as the current release with size and SHA-256 and describe the guard change; AGENTS.md no longer claims the 0.1.3 archive and the 0.1.0-0.2.0 ZIPs are stored locally; feature_list.json sets currentVersion 0.3.0, feat-023 done and activeFeature null; PROGRESS.md and session-handoff.md record the artifact.",
+        "Scope kept: no change to src/**, no new dependency, no settings field, no threshold or interface change, no relaxation of any URL safety policy, no movement of the v0.1.3 tag or of historical artifacts, no fabricated artifact numbers, and no unrelated cleanup of the uncommitted S1-S5 work.",
+        "T6.4 historical anchor restored: MD-Convertor-darwin-arm64-0.2.1.zip was re-downloaded from the GitHub v0.2.1 release into ~/Downloads/MD-Convertor-archive/releases/; it is 354635067 bytes, its SHA-256 is 32c1d96af58a7701e6d2fe0bf619be0f8f224803355c6ef63aad43c85569463e (byte-identical to the recorded 0.2.1 artifact) and unzip -t reports no errors, so it is pinned in PROTECTED_HISTORICAL_ZIP_MANIFEST and is verified again on every release.",
+        "T6.4 gate passed: npm run desktop:release (Node.js 24.15.0) exited 0 on 2026-09-18 after ./init.sh, npm run test:e2e, npm run test:live and electron-forge make, and printed Path out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip, Version 0.3.0, Architecture arm64, Bytes 358562540, SHA-256 2a0e236e97e51d97fd24c7002a923ef5703ad8245234531f2eb3aa1350c81147 plus the Historical Archive Notice for the five retired ZIPs and the retired 0.1.3 copy (log /tmp/s6-release-3.log contains 0 ERROR lines). Independent re-check: stat reports 358562540 bytes, shasum -a 256 matches, Info.plist CFBundleShortVersionString is 0.3.0 and the executable is a Mach-O 64-bit arm64 binary.",
+        "QA-012 opened: npm audit --omit=dev reports 1 critical (next 16.0.0-16.3.2 unauthenticated RCE advisories), 1 high (sharp < 0.35.4 libheif advisories) and 1 moderate (baseline-browser-mapping) advisory; installed are next@16.3.0 and sharp@0.35.3. Dependency upgrades are outside the S6 scope, so the finding is recorded in docs/QUALITY-AUDIT.md with the fix path (next above 16.3.2, sharp 0.35.4 or newer, then re-run the full gate) for a separately authorized iteration."
+      ]
+    },
     {
       "id": "feat-017",
       "name": "Complete Multi-node Code Blocks",
@@ -27,6 +210,274 @@
         "The supplied WeChat diagnostic matched 12/12 code blocks and 279 source lines in memory",
         "MD-Convertor-darwin-arm64-0.2.1.zip: 354635067 bytes, SHA-256 32c1d96af58a7701e6d2fe0bf619be0f8f224803355c6ef63aad43c85569463e"
       ]
+    },
+    {
+      "id": "feat-024",
+      "name": "Adaptive Translation Task Budget",
+      "title": "Adaptive Translation Task Budget",
+      "status": "done",
+      "dependencies": [
+        "feat-020"
+      ],
+      "scope": "Size the whole-task translation deadline from the real batch count so a long article is not cut off at a fixed 120s. Batching, the per-call 60s ceiling, the 200,000-character ceiling, the single-task lock and the cancel path stay as they are.",
+      "nonGoals": [
+        "No change to the per-call 60s ceiling",
+        "No change to batch size (20 blocks or 8,000 characters)",
+        "No per-batch progress UI",
+        "No retry, resume or checkpoint of a timed-out task",
+        "No dependency upgrade (QA-012 stays open)"
+      ],
+      "acceptanceCriteria": [
+        "translateTaskTimeoutMs(batchCount) returns max(120s, batches*60s+30s) and is unit tested",
+        "Both analyze and run size their AbortSignal.timeout deadline from the real batch count",
+        "The 429 lock, the 499 cancel mapping and the 504 timeout mapping keep their behaviour",
+        "A real-machine long-article translation completes instead of failing with TRANSLATE_TIMEOUT",
+        "Baseline, coverage, lint, type-check and production build stay green"
+      ],
+      "evidence": [
+        "RED: new src/lib/translate/limits.test.ts failed 3/3 (translateTaskTimeoutMs undefined); new run.test.ts case received NaN for AbortSignal.timeout instead of 2*60000+30000",
+        "GREEN: npx vitest run src/lib/translate/limits.test.ts src/lib/translate/run.test.ts -> 27 passed (limits 3, run 24)",
+        "./init.sh exit 0 (/tmp/s6-dyn-init.log): 59 files, 839 tests, statements 95.27%, lint + tsc --noEmit + production build clean",
+        "Root cause evidence: pi succeeds in 1-2s for a small prompt and 7s for an 8,000-character batch with the production args and --model deepseek-flash, so the 120s fixed task budget was the limit",
+        "Real-machine reproduction before the fix: status 504 TRANSLATE_TIMEOUT durationMs 120006 in the packaged 0.3.0 app; UI wording was the task-level timeout",
+        "Real-machine verification after the fix: npm run desktop:package exit 0, user re-ran the same article in out/MD-Convertor-darwin-arm64/MD-Convertor.app and it succeeded; server log shows only the 1244ms conversion and no TRANSLATE_TIMEOUT line",
+        "Packaged content check: built chunk contains Math.max(12e4,6e4*batchCount+3e4) and app.asar references translateTaskTimeoutMs 13 times",
+        "Docs updated: PRD Q6.4 and large-document row, FSD section 5 contract table, S3 limitation table and error table, CHANGELOG.md and CHANGELOG.zh.md [Unreleased] (duplicate Unreleased/0.3.0 headings repaired)",
+        "Not done: version bump and release gate. The 0.3.0 ZIP already recorded in docs is the pre-fix build, so the user must choose 0.3.1 or a fresh 0.3.0 before npm run desktop:release"
+      ]
+    },
+    {
+      "id": "feat-025",
+      "name": "Settings UI Feedback and Header Cleanup",
+      "title": "Settings UI Feedback and Header Cleanup",
+      "status": "done",
+      "dependencies": [
+        "feat-018",
+        "feat-021"
+      ],
+      "scope": "Six user-reported UI issues: drop the home header privacy hint, make the settings entry carry its label, turn the bare mode fieldset into a titled card with a 当前生效 badge on the selected option, hide the custom-language entry, and replace the silent save with a status pill plus a back button that waits for an in-flight save.",
+      "nonGoals": [
+        "No change to the settings contract, validation or the languages.custom field",
+        "No change to the translation engine, thresholds or API routes",
+        "No deletion of addCustomLanguage or its unit tests (the entry point is hidden, not removed)",
+        "No dependency upgrade and no version decision (separate items)",
+        "No copy rewrite beyond the six reported points"
+      ],
+      "acceptanceCriteria": [
+        "The home header no longer renders the privacy hint and its CSS is gone",
+        "The settings entry link shows the visible text 设置 and keeps the accessible name 设置",
+        "The mode area is a card titled 翻译服务提供方, with a 当前生效 badge inside the selected option only, following the selection",
+        "The custom-language input and 添加语言 button are not rendered, while languages.custom stays in the contract and already-saved custom tags remain selectable",
+        "返回转换 is a button next to a save-status pill (保存中… / 已保存) and it waits for an in-flight save before navigating home",
+        "Unit baseline, e2e across chromium/firefox/webkit, lint, type-check and production build stay green"
+      ],
+      "evidence": [
+        "RED: npx playwright test e2e/home.spec.ts e2e/settings.spec.ts --project=chromium -> 6 failed / 23 passed (/tmp/s7-red.log)",
+        "GREEN: same command -> 29 passed (/tmp/s7-green3.log), after adding exact:true to the section-heading loop so 翻译 no longer also matches 翻译服务提供方",
+        "npm run test:e2e (chromium/firefox/webkit) -> 154 passed / 2 skipped, exit 0, tracked-file check passed (/tmp/s7-e2e-final.log). One earlier full run had 3 firefox failures (an e2e-server disconnect); a firefox-only rerun passed 51/51 (/tmp/s7-ff-rerun.log)",
+        "./init.sh exit 0 (/tmp/s7-init.log): 59 files, 839 tests, statements 95.27%, lint + tsc --noEmit + production build clean",
+        "Unit tests unchanged: the change is UI only (vitest covers src/lib); src/lib/settings/languages.ts and addCustomLanguage keep their tests, the custom-language entry point is hidden from the page instead",
+        "Real-machine visual check: npm run desktop:package exit 0, launched out/MD-Convertor-darwin-arm64/MD-Convertor.app, screenshots /tmp/v2-home.png, /tmp/v2-settings.png, /tmp/v2-settings-local.png; the 当前生效 badge sits at the top-right of the selected option without overlapping the neighbour, and 返回转换 navigated back to / (url http://127.0.0.1:60451/)",
+        "Settings state restored after the screenshots: mode is back to cloud and settings.json matches its original content",
+        "Docs updated: CHANGELOG.md + CHANGELOG.zh.md [Unreleased] -> Changed/变更, docs/PRD-translation.md R1a wording, PROGRESS.md, session-handoff.md"
+      ]
+    },
+    {
+      "id": "feat-026",
+      "name": "Cloud Provider Configuration UX",
+      "title": "Cloud Provider Configuration UX",
+      "status": "done",
+      "dependencies": [
+        "feat-019"
+      ],
+      "scope": "Seven user-reported cloud-provider issues: keep a saved key in its input, drop the 环境变量名 field together with every environment-variable key source, replace the per-card 保存 Provider / 保存密钥 buttons with one 保存 that writes name, Base URL and (when typed) the key together, move 拉取模型 to the right of Base URL and save the draft before pulling, drop 添加 Provider in favour of an always-present blank card, and make provider deletion clear the keychain entry.",
+      "nonGoals": [
+        "No new provider field and no settings version bump: the retired apiKeyEnv key is still tolerated and dropped on write",
+        "No change to the endpoint address policy or to the scraping SSRF policy",
+        "No change to the translation engine, thresholds, routes or limits",
+        "No dependency upgrade and no version decision (separate items)",
+        "No restore of the hidden custom-language entry (feat-025 scope)"
+      ],
+      "acceptanceCriteria": [
+        "A saved key stays visible in its input box; only 清除密钥 empties it, and the plaintext key never reaches the settings API or any log",
+        "The 环境变量名 field and the apiKeyEnv contract field are gone, resolveProviderKey reads the runtime key table only, and a settings.json that still carries apiKeyEnv loads without error",
+        "One 保存 button per card writes name, Base URL and (when typed) the key; there is no 添加 Provider, no 保存 Provider and no 保存密钥 button",
+        "拉取模型 renders on the same row to the right of Base URL and saves the draft before requesting the model list",
+        "A blank 新建 Provider card is always rendered and becomes a list entry on save, carrying the typed key into the new card",
+        "Deleting a provider clears its keychain entry through the preload bridge",
+        "Baseline, coverage, lint, type-check, production build, three-browser e2e and the packaged smoke stay green"
+      ],
+      "evidence": [
+        "RED: npx playwright test e2e/settings.spec.ts e2e/home.spec.ts --project=chromium -> 4 failed / 27 passed, exactly the four new provider cases (/tmp/s8-red.log)",
+        "Contract layer: npx vitest run -> 59 files / 837 tests passed after removing apiKeyEnv and ProviderKeySource (/tmp/s8-b1-green2.log)",
+        "GREEN: npx playwright test e2e/settings.spec.ts --project=chromium -> 19 passed (/tmp/s8-green3.log)",
+        "./init.sh exit 0 -> 59 files / 837 tests, statements 95.26%, lint, tsc --noEmit and production build clean (/tmp/s8-init.log)",
+        "npm run test:e2e -> 157 passed / 2 skipped, tracked-file check passed (/tmp/s8-e2e.log)",
+        "npm run desktop:package exit 0 (/tmp/s8-package.log); the secret smoke now proves not-configured -> stored -> provider error -> cleared -> not-configured with no environment variable involved",
+        "Real machine: packaged app on port 50925, Base URL input at x=596 y=558 w=286 h=39 and the 拉取模型 button at x=892 on the same y -> same row, button to the right (/tmp/p1-settings-cloud.png, /tmp/p1-new-card.png)",
+        "One residual keychain entry for a provider deleted before this fix was removed by hand; secrets.json now holds only the active provider entry"
+      ]
+    },
+    {
+      "id": "feat-027",
+      "name": "Cloud Translation Timeout",
+      "title": "Cloud Translation Timeout",
+      "status": "done",
+      "dependencies": [
+        "feat-020",
+        "feat-024"
+      ],
+      "scope": "User-reported cloud-provider failure「Provider token-plan-cn.xiaomimimo.com 返回了无法识别的回答」. Diagnosis on the real provider showed two defects: a 60s per-call ceiling that a cloud reasoning model cannot meet (measured 38-60s of reasoning tokens for one small batch), and an abort landing during the response-body read being swallowed and reported as an unreadable answer. The per-call ceiling is raised to 180s (the whole-task budget uses the same value), and an abort during the body read now maps to 504 TRANSLATE_TIMEOUT / 499 TRANSLATE_CANCELLED like every other abort.",
+      "nonGoals": [
+        "No change to batch size (20 blocks / 8,000 characters), the 200,000-character ceiling, the single-task lock, or the error-code set",
+        "No new setting for the ceiling",
+        "No change to the endpoint address policy or to the local CLI adapter",
+        "No dependency upgrade and no version decision (separate items)"
+      ],
+      "acceptanceCriteria": [
+        "TRANSLATE_CALL_TIMEOUT_MS is 180000 and translateTaskTimeoutMs(batchCount) is max(120s, batchCount * 180s + 30s), so both endpoints size their deadline from the same per-call value",
+        "A timeout or cancellation that fires while the response body is being read reports 504 TRANSLATE_TIMEOUT or 499 TRANSLATE_CANCELLED instead of 502 TRANSLATE_PROVIDER_ERROR",
+        "A response body that fails to parse without any abort still reports the unreadable-answer error",
+        "The error message never contains body text, the key or the model output",
+        "docs/PRD-translation.md, docs/features/translation/FSD.md, S3-translation-engine.md, docs/TESTING.md(+zh) and docs/QUALITY-AUDIT.md (QA-013) record 180s and the reason for the change"
+      ],
+      "evidence": [
+        "RED: new case「maps a timeout that lands while the body is being read to TRANSLATE_TIMEOUT」 produced {status:502, code:TRANSLATE_PROVIDER_ERROR} before the fix (openai-compatible.test.ts, 1 failed / 10 passed)",
+        "RED: new case「leaves room for the thinking tokens of a reasoning model」 failed on the 60000 constant (limits.test.ts, 1 failed / 3 passed)",
+        "GREEN: npx vitest run src/lib/translate/ -> 12 files / 198 tests passed",
+        "Real-provider measurement (self-authored probe text, key never printed): analyze one batch 13-23s, analyze 7 batches 85s, translate one batch (404 chars) aborted at exactly 60.0s four times and completed in 38s / 39s once the endpoint was faster; upstream reasoning_content 2,417-4,885 characters against content 92-246 characters, i.e. a reasoning model",
+        "App log evidence of the misreport: durationMs 60019 and 60002 both returned code TRANSLATE_PROVIDER_ERROR at the 60s per-call ceiling; the reported 210099ms case is the three-batch task deadline (3 x 60s + 30s)",
+        "Diagnosis used a throwaway loopback shape proxy (baseUrl pointed at 127.0.0.1:51999) that logged response shape only; settings.json was restored byte-identical (diff clean) and the proxy stopped",
+        "Full unit run after the fix: 59 files / 838 tests passed"
+      ],
+      "notes": "QA-013 records the trade-off a longer per-call ceiling brings (a stuck provider can hold a task open longer)."
+    },
+    {
+      "id": "feat-028",
+      "name": "Mode Badge Removal",
+      "title": "Mode Badge Removal",
+      "status": "done",
+      "dependencies": [
+        "feat-025"
+      ],
+      "scope": "User-reported layout jump in the settings page: the「当前生效」badge on the selected working mode pushed the two mode options sideways while switching. The badge is removed; the radio itself still shows which mode is active.",
+      "nonGoals": [
+        "No change to the mode contract, the radio group semantics or the save path",
+        "No change to the provider cards' 已配置/未配置 badge",
+        "No other settings-page layout change"
+      ],
+      "acceptanceCriteria": [
+        "The settings page renders no「当前生效」badge at any time, including right after switching modes",
+        "Switching modes still PUTs the new mode and the radio reflects it",
+        "The mode picker keeps its titled card and radiogroup semantics, and the two options do not move when the selection changes"
+      ],
+      "evidence": [
+        "RED: e2e case「翻译服务提供方卡片切换时不再渲染「当前生效」标签」 failed on the first toHaveCount(0) assertion while the badge was still rendered (chromium)",
+        "GREEN: npx playwright test e2e/settings.spec.ts --project=chromium -> 19 passed",
+        "Removed the badge markup in src/app/settings/page.tsx and the now-unused .activeBadge rule in page.module.css"
+      ],
+      "notes": null
+    },
+    {
+      "id": "feat-029",
+      "name": "Cloud Provider Save Rules",
+      "title": "Cloud Provider Save Rules",
+      "status": "done",
+      "dependencies": [
+        "feat-026"
+      ],
+      "scope": "User-reported settings-page problems: the API key box looked empty on every re-entry (and worried the user that the key was lost), and a cloud provider could be saved with fields missing. Saving a provider now requires all four fields (name, Base URL, API key, model) and reports the missing one in place; the blank「新建 Provider」card gained a model field and can pull the endpoint's model list from the typed address and key before it is saved; 拉取模型 only reads the endpoint and never writes settings, so no half-saved provider is produced; a saved key is shown as an eight-dot placeholder (never read back from the keychain).",
+      "nonGoals": [
+        "No new IPC channel and no secrets:get / secrets:copy: the key is never read back into the renderer, and the dots are a placeholder, not a value",
+        "No change to the settings contract, the secrets storage, the endpoint address policy, or the translation engine",
+        "No change to 清除密钥 semantics beyond the new save rule",
+        "No dependency upgrade and no version decision (separate items)"
+      ],
+      "acceptanceCriteria": [
+        "Saving a cloud provider fails unless name, an absolute http(s) Base URL, a key (stored or typed) and a selected model are all present, and the message names the first missing field",
+        "Nothing is written to settings and no key is stored while the form is incomplete",
+        "POST /api/provider/models accepts a draft {baseUrl, apiKey} (either half falling back to the saved provider) and still accepts {providerId}; a draft request writes nothing and never echoes the key",
+        "A pulled model list is offered in the card's model picker without being written to settings until the user picks one",
+        "The key input of a provider with a stored key renders empty with an eight-dot placeholder and the keychain is never read back",
+        "The message that names the first missing field is rendered in the warning colour, not the body colour; progress and success notes stay muted"
+      ],
+      "evidence": [
+        "RED: new src/lib/settings/provider-form.test.ts failed with \"Failed to resolve import\" before the module existed; RED: six new draft-mode cases in src/app/api/provider/models/route.test.ts failed (6 failed / 14 passed) against the providerId-only route",
+        "GREEN: npx vitest run src/app/api/provider/models/route.test.ts -> 20 passed",
+        "GREEN: npx playwright test e2e/settings.spec.ts --project=chromium -> 22 passed (3 new cases: 保存要求四项齐全，缺一项就提示且不写盘 / 新建卡片先拉取模型：只读取端点，模型选中后才保存 / 已保存的密钥以黑点占位显示，不回填明文)",
+        "Baseline: ./init.sh exit 0 -> 853 tests passed, statements 95.28%, lint, tsc --noEmit and the production build clean (/tmp/s10-init.log)",
+        "Full E2E: npm run test:e2e exit 0 -> 166 passed / 2 skipped across chromium, firefox and webkit (/tmp/s10-e2e.log)",
+        "Warning colour: e2e asserts toHaveCSS(\"color\", \"rgb(138, 90, 18)\") on the missing-field note; RED with noteClass forced back to the muted class -> got rgb(101, 112, 109); GREEN after restoring; ./init.sh exit 0 (853 tests, 95.28%) and npm run test:e2e exit 0 (166 passed / 2 skipped) re-run (/tmp/s10b-init.log, /tmp/s10b-e2e.log); packaged app probe reported color rgb(138, 90, 18) for 请填写 Provider 名称。 (screenshot /tmp/s10b-warning.png)"
+      ],
+      "notes": "The four-field rule conflicts with the old 拉取模型 first-saves-the-draft behaviour, because a card cannot be completed without a pulled model and a pull required a saved provider: the draft endpoint removes that circular dependency. The new card's model box is an input with a datalist, so a manual model name still works when the endpoint cannot be reached."
+    },
+    {
+      "id": "feat-030",
+      "name": "Single Cloud Configuration",
+      "title": "Single Cloud Configuration",
+      "status": "done",
+      "dependencies": [
+        "feat-029"
+      ],
+      "scope": "User direction change: keep only one cloud model entry instead of a provider list that can be appended to, and drop the「当前使用」badge. The settings page now renders one cloud card (name, Base URL, model, API key) whose single 保存 button writes that one provider and makes it the active one; the provider list, the always-blank「新建 Provider」card, the「设为当前 Provider」radio, the「当前使用」badge, the 删除 button, and the separate 手填模型 field (one free-text model input with the pulled names as suggestions replaces it) are gone. An old file that still holds several providers is edited through its active entry and collapses to one entry on save. Two smaller layout fixes from the same round: the Base URL column no longer clips a long address, and the model placeholder no longer claims 先拉取模型 when models already exist.",
+      "nonGoals": [
+        "No settings-contract change: cloud keeps providers[] + activeProviderId, SETTINGS_VERSION stays 1, no retirement keys and no migration",
+        "No new IPC channel, no secrets:get, no change to the keychain or the endpoint address policy",
+        "No change to the translation engine, the local CLI section, or the 翻译服务提供方 (cloud/local) mode picker",
+        "No dependency upgrade and no version decision (separate items)"
+      ],
+      "acceptanceCriteria": [
+        "The cloud section renders exactly one configuration card; no 添加 Provider, no 新建 Provider card, no 设为当前 Provider radio, no 当前使用 badge, no 删除 button",
+        "保存 writes cloud.providers as a one-entry list whose id becomes activeProviderId, and a typed key is stored through the keychain bridge and then cleared from the input",
+        "保存 still refuses to write anything unless name, an absolute http(s) Base URL, a key (stored or typed) and a model are all present, reporting the first missing field in the warning colour",
+        "拉取模型 reads the endpoint only (never writes settings) and its result lands in the model datalist; a manually typed model name is accepted too",
+        "清除密钥 flips keyStored back to false, clears the input, and keeps the provider entry",
+        "When the loaded file holds several providers, the card edits the active one and saving collapses the list to that entry",
+        "A long Base URL is readable without scrolling inside the input at the default window width"
+      ],
+      "evidence": [
+        "RED: rewritten e2e/settings.spec.ts cloud describe (10 cases) against the multi-provider build -> 11 failed / 12 passed (10 cloud cases + the 密钥 case that still targeted the old per-card selector)",
+        "GREEN: npx playwright test e2e/settings.spec.ts --project=chromium -> 23 passed (5.4s), including 保存按钮位于卡片头部 and 旧文件里有多条 Provider 时，只编辑当前使用的那一条",
+        "Baseline: ./init.sh exit 0 -> 60 test files / 853 tests passed, statements 95.28%, lint, tsc --noEmit and the production build clean (/tmp/s11-init.log)",
+        "Full E2E: npm run test:e2e exit 0 -> 169 passed / 2 skipped across chromium, firefox and webkit, tracked-file check passed (/tmp/s11-e2e.log)",
+        "Packaged app + CDP probe (npm run desktop:package, server port 62389): card count 1, old cards 0, buttons [保存, 拉取模型, 清除密钥], 保存 inside the card header, and 当前使用 / 设为当前 / 手填模型 / 添加模型 / 删除 all absent; the real configuration is rendered as Mimo + the full Base URL + mimo-v2.5-pro + the eight-dot key placeholder (screenshot /tmp/s11-cloud-card.png). No save was triggered, so the user's settings.json was not written by the probe."
+      ],
+      "notes": "Collapsing the UI to one entry deliberately keeps the array-shaped contract: reading `providers.find(id === activeProviderId) ?? providers[0]` in the page is a two-line expression, so no migration, no version bump and no new module were added. Writing a one-entry list would drop extra entries if a file ever held them; the user's file holds exactly one provider, so nothing is lost."
+    },
+    {
+      "id": "feat-031",
+      "name": "Version 0.3.1, Dependency Upgrade And UI Tweaks",
+      "title": "Version 0.3.1, Dependency Upgrade And UI Tweaks",
+      "status": "done",
+      "dependencies": [
+        "feat-030"
+      ],
+      "scope": "The batch of user requests that also carried three deferred items. Version bumped to 0.3.1 across `package.json`, `package-lock.json`, `feature_list.json` and the release guard (the guard test went RED first, then 29 passed). `next` raised to 16.3.5 and `sharp` to 0.35.4, which closes QA-012 (`npm audit --omit=dev` reports 0 production advisories). Three home-page changes: the ⚙ glyph was dropped so the header entry is a plain 「设置」button, both convert buttons were renamed from 「转换为 MD」to 「转换」, and the rich-text convert/stop button moved into the 来源 URL row so its right edge lines up with the paste box above it. The provider key input is read-only while a key is stored (placeholder 「••••••••（已保存，先清除密钥再更换）」), with 「清除密钥」unchanged as the only way to change the key.",
+      "nonGoals": [
+        "No release gate run: `npm run desktop:release` waits for the pre-commit checks and the real-machine follow-ups the user deferred, so the recorded ZIP is still the pre-fix 0.3.0 build",
+        "No GitHub Releases publish, no Developer ID signing or notarization",
+        "No change to translation thresholds, the settings contract, the provider endpoint policy, the scraping SSRF policy, or the secrets IPC contract",
+        "No new IPC channel, no `secrets:get`, no key read back into the page",
+        "No historical tag move and no change to the archived ZIPs or `PROTECTED_HISTORICAL_ZIP_MANIFEST`"
+      ],
+      "acceptanceCriteria": [
+        "`package.json`, `package-lock.json` and `feature_list.json` read 0.3.1 and the release guard rejects any other version; `npm test -- release-guards` passes with the superseded-version fixture still distinct from the target",
+        "`npm audit --omit=dev` reports no production advisories with `next@16.3.5` and `sharp@0.35.4` installed",
+        "The header shows a plain 「设置」entry, both convert buttons read 「转换」, and the rich-text convert button's right edge aligns with the paste box within 4px while staying on the 来源 URL row",
+        "A saved key cannot be edited in the page (read-only, still focusable) and 「清除密钥」restores an editable empty field",
+        "`./init.sh`, `npm run test:e2e` and `npm run test:live` are green and the packaged app reports version 0.3.1"
+      ],
+      "evidence": [
+        "Version: `scripts/release-guards.test.mjs` moved to RED first, then the guard, `package.json`, `package-lock.json` and `feature_list.json` moved to 0.3.1 => `npm test -- release-guards` 29 passed; `RELEASE_VERSION_ERROR` is \"Release version must be 0.3.1.\". The superseded-version fixture was pinned to `{ version: \"0.2.1\" }` because a blanket 0.3.0 -> 0.3.1 rewrite had made it equal to the target and the assertion trivially true.",
+        "Dependencies: `npm install next@16.3.5 sharp@0.35.4` exit 0; `npm audit --omit=dev` went from 1 critical / 1 high / 1 moderate to 0 vulnerabilities; `npm ls next sharp` reports next@16.3.5 and sharp@0.35.4.",
+        "UI RED/GREEN: `npx playwright test e2e/home.spec.ts --project=chromium` was 9 failed / 3 passed before the change and 12 passed after; the alignment assertion measured 210.4375px before and 0px after `.sourceInput` became `flex: 1 1 auto`. `e2e/settings.spec.ts`「已保存的密钥以黑点占位显示」was 1 failed / 22 passed before `readOnly` and 23 passed after; the 清除密钥 case asserts the field becomes editable again.",
+        "Baseline: `./init.sh` exit 0 (/tmp/s12b-init.log) - 60 files / 853 tests, 95.28% statements, lint, `tsc --noEmit` and the production build clean.",
+        "Full E2E: `npm run test:e2e` exit 0 - 172 passed / 2 skipped across chromium, firefox and webkit (/tmp/s12b-e2e.log), tracked-file check passed. Live: first run failed on a transient DNS error (curl exit 6, /tmp/s12b-live.log), immediate retry passed 2/2 (/tmp/s12c-live.log).",
+        "Packaged and real machine: `npm run desktop:package` exit 0 (/tmp/s12-package.log), `CFBundleShortVersionString` = 0.3.1, packaged server `sharp` = 0.35.4; CDP measurement `textarea.right = 990`, `submit.right = 990` (delta 0, URL field 570.4px wide), screenshot /tmp/s13-paste-row.png; the user confirmed the real-machine round passed.",
+        "Docs synced: docs/TESTING.md(+zh) target version and artifact heading, docs/QUALITY-AUDIT.md (QA-012 resolved + post-0.3.0 rounds table), README.md(+zh), docs/ARCHITECTURE.md(+zh), AGENTS.md version references, CHANGELOG.md(+zh) Unreleased entries, PROGRESS.md and session-handoff.md.",
+        "Not run: `npm run desktop:release` for 0.3.1, so out/make/zip/darwin/arm64/ still holds only the pre-fix 0.3.0 ZIP."
+      ],
+      "notes": "The deferred items are deliberate: the user chose 「稍后」 for the GitHub Releases publish and for the remaining real-machine polish, so the release gate stays un-run to avoid burning a hash that would be invalidated by the follow-ups. The key box uses `readOnly` rather than `disabled` so it stays focusable and reachable for screen readers while still preventing edits; `readOnly={Boolean(cloudProvider?.keyStored)}` alone is enough because clearing the key sets `keyStored: false` and the field becomes editable again before the next save."
     }
   ],
   "history": {

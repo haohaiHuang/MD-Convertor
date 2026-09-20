@@ -6,9 +6,46 @@ This project follows the principles of [Keep a Changelog](https://keepachangelog
 
 ## [Unreleased]
 
-No unreleased changes.
+### Changed
 
-## [0.2.1] - 2026-08-22
+- Cloud configuration is now a single card for a single provider: one 保存 button writes the four fields (name, Base URL, API key, model), and a missing field is reported in place in the warning colour without writing anything. The provider list, the「添加 Provider」button, the always-blank「新建 Provider」card, the「设为当前 Provider」radio, the「当前使用」badge and the 删除 button are gone; the「环境变量名」field, and the separate「保存 Provider」/「保存密钥」buttons were already removed. Editing an old file that still holds several providers edits the active one and collapses the list to it on save.
+- 拉取模型 reads the endpoint's model list straight from the typed address and key, and only reads it — pulling never writes settings. The model field is a free-text input with the pulled names as suggestions, so a provider can still be configured by hand when its endpoint is unreachable.
+- A saved key is no longer shown in its input box. The field displays eight black dots as a placeholder plus「已保存，先清除密钥再更换」and is read-only while a key is stored (a placeholder is not selectable, copyable, or submittable, and the keychain is still never read back into the page);「清除密钥」is the only way to change it.
+- Settings page UI: the working-mode picker is now a titled card instead of a legend that rode over the row, and switching modes no longer shows a「当前生效」badge (it pushed the two options sideways while it moved). The custom-language-tag entry is hidden (tags saved earlier still show up in the target language picker). "返回转换" is now a button with a save-status badge that waits for an in-flight save and refuses to leave when saving failed.
+- Home header: the「本机处理 · 不保存内容」hint and the ⚙ glyph were removed, leaving a plain 设置 button.
+- Both panels now label the convert button「转换」(it was「转换为 MD」), and in the rich-text panel it sits on the same row as the optional 来源 URL box, whose right edge lines up with the paste box above it.
+
+### Fixed
+
+- Deleting a provider no longer exists as an action; a key is removed with「清除密钥」. Provider keys can no longer come from an environment variable, so saving a key is the only way to configure a provider.
+- Fixed long-article translation being cut off at a fixed 120-second task deadline. The whole-task budget is now sized from the real batch count (60s per batch plus a 30s margin, never below 120s); the 200,000-character ceiling and cancellation are unchanged.
+- Fixed cloud translation failing with「Provider … 返回了无法识别的回答」. Two things were wrong: the per-call ceiling of 60s was too short for a cloud reasoning model (measured 38-60s of reasoning tokens for one small batch), and an abort that landed while the response body was being read was reported as an unreadable answer instead of a timeout. The per-call ceiling is now 180s and the whole-task budget follows it (180s per batch plus a 30s margin); such an abort now reports a timeout (or a cancellation) like every other abort.
+
+### Security
+
+- Raised Next.js to 16.3.5 and sharp to 0.35.4, which clears the published advisories in both (an unauthenticated RCE affecting Windows-hosted Next.js servers, and libheif issues in sharp). `npm audit --omit=dev` now reports no production vulnerabilities.
+
+## [0.3.0] - 2026-09-18
+
+### Added
+
+- Added a Settings page, reachable from the 设置 button in the page header, that stores preferences in the local `settings.json` and reads them back through `GET/PUT /api/settings`. It covers the working mode (cloud provider or local CLI), target language, and the "translate the article by default when converting" switch.
+- Added cloud provider management: add, rename, re-point, select, and delete providers, fetch the model list of an OpenAI-compatible endpoint, pick a model, or type a model name by hand. Deleting a provider asks for confirmation.
+- Added local CLI detection: the settings page scans the current `PATH`, shows where `pi` and `claude` were found, and can list the models a CLI reports, enable or disable each agent, and choose a model per agent.
+- Added a target language picker with eleven presets plus custom BCP-47 tags, and a read-only note that the source language is detected by the model.
+- Added document translation: the link panel and the rich-text paste panel share one "translate into <target language>" checkbox whose initial value comes from the settings default. With it checked, a successful conversion is translated automatically. The result area now has 原文 / 译文 tabs (keyboard operable), copy and download act on the active tab, and the translated download is named `<original>-<language>.md` (for example `article-en.md`).
+- Translation shows progress and can be cancelled; on failure the translated tab shows the reason plus a retry button that reuses the completed language analysis. When no model is configured, no tabs appear and the page points to Settings instead.
+- Added a language check before translating: when the article is already mostly in the target language, the page asks first. Above 97% it only shows one line and skips translation; between 70% and 97% a confirmation dialog offers "只翻译非目标语言部分" (translate everything except the parts already in the target language) or "不翻译"; below 70% the document is translated directly without a prompt. Parts kept in the original language are preserved byte for byte.
+- Added a desktop-only secrets panel that keeps provider API keys in the macOS keychain through Electron `safeStorage`. Keys never reach `settings.json`, the local server, or logs, and the panel is hidden when the page runs outside the packaged app. Saving or removing a key now takes effect in the running app immediately, without a restart; after removal the provider falls back to its configured environment variable or `.env` entry.
+
+### Changed
+
+- The settings page sections for cloud providers, local CLIs, and languages are no longer placeholders. Translation itself is now available: article text only leaves the machine when the translation checkbox is on and a conversion finishes, and it goes only to the local CLI or cloud provider you configured yourself. MD-Convertor still uploads nothing on its own, keeps no history, and stores no article text.
+
+### Notes
+
+- The `0.3.0` build is not Developer ID signed or notarized, so it is suitable for personal testing only.
+- The release gate no longer blocks when a historical release ZIP is absent from this Mac. The 0.1.0–0.2.0 archives and the 0.1.3 read-only copy were lost and cannot be restored; every archive that still exists is still hash-checked, and the retired entries are printed as a notice on each release.
 
 ### Fixed
 

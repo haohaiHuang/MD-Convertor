@@ -6,8 +6,9 @@ MD-Convertor is a local webpage-to-Markdown app for Apple Silicon Macs. Convert 
 
 ## Highlights
 
-- Runs locally with no account, server, AI API, API key, or subscription
+- Runs locally with no account, no MD-Convertor server, and no subscription; no model of its own is bundled or billed
 - Supports explicit Link Conversion and Rich Text Conversion workflows
+- Optionally translates the converted article into eleven preset target languages (Simplified Chinese, English, Japanese, Korean, French, German, Spanish, Portuguese, Italian, Russian, Arabic) plus custom BCP-47 tags, using a local agent CLI or a cloud provider you configure
 - Extracts static pages and uses bundled Chromium when JavaScript rendering is needed
 - Preserves headings, paragraphs, links, lists, tables, fenced code blocks, and GFM
 - Preserves Mermaid source as a fenced `mermaid` block; safe rendered Mermaid can be embedded as PNG
@@ -16,7 +17,9 @@ MD-Convertor is a local webpage-to-Markdown app for Apple Silicon Macs. Convert 
 - Keeps body text first under a 20 MiB output limit; unsupported or over-budget images fall back to alt text with warnings
 - Supports stopping a conversion, clearing either input mode, copying, downloading, result statistics, and quick return to the input area
 
-The app does not bypass login pages, paywalls, CAPTCHAs, or access restrictions. Rich Text Conversion processes only clipboard content explicitly supplied by the user. Images that require cookies, authenticated sessions, temporary signatures, or `blob:` URLs may not be retrievable.
+- Translation uses a model you configure yourself: an agent CLI already installed on the Mac (`pi` or `claude`), or one OpenAI-compatible cloud provider you configure in Settings. Nothing is translated until you check the translation box, and no MD-Convertor key or account exists.
+
+The app does not bypass login pages, paywalls, CAPTCHAs, or access restrictions. Rich Text Conversion processes only clipboard content explicitly supplied by the user. Images that require cookies, authenticated sessions, temporary signatures, or `blob:` URLs may not be retrievable. With the translation box checked, the converted article text is sent to the endpoint you configured — that transfer is the only time document content leaves the machine, and MD-Convertor keeps no history or cache of it.
 
 ## Requirements
 
@@ -35,11 +38,17 @@ Do not run this command for an app whose source or checksum you do not trust.
 
 ## Current Release
 
-- Version: `0.2.1`
-- Platform: Apple Silicon Mac, macOS 12.0+
-- ZIP: `MD-Convertor-darwin-arm64-0.2.1.zip`
-- Size: `354,635,067` bytes
-- SHA-256: `32c1d96af58a7701e6d2fe0bf619be0f8f224803355c6ef63aad43c85569463e`
+- Current version: `0.3.1` — document translation (Apple Silicon Mac, macOS 12.0+). The `0.3.0` gate passed; the `0.3.1` gate has not been run yet, so no `0.3.1` artifact exists and nothing is published on GitHub.
+- Latest published release: `0.2.1`.
+- No build is Developer ID signed or notarized, so every artifact is suitable for personal testing only.
+
+Last gated artifact (`0.3.0`, predates the fixes above):
+
+- ZIP: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip`
+- Size: `358,562,540` bytes
+- SHA-256: `2a0e236e97e51d97fd24c7002a923ef5703ad8245234531f2eb3aa1350c81147`
+
+Last published artifact (`0.2.1`): `354,635,067` bytes, SHA-256 `32c1d96af58a7701e6d2fe0bf619be0f8f224803355c6ef63aad43c85569463e`.
 
 Download the ZIP from the [GitHub Releases](https://github.com/haohaiHuang/MD-Convertor/releases) page.
 
@@ -67,6 +76,6 @@ npm run test:live
 npm run desktop:release
 ```
 
-The release workflow requires version `0.2.1`, protects the immutable historical artifact manifest stored outside the repository, rejects stale output, and validates the packaged version, arm64 architecture, bundle structure, size, and SHA-256.
+The release workflow requires version `0.3.1`, hash-checks every historical artifact that still exists outside the repository (missing entries are reported as retired instead of blocking), rejects stale output, and validates the packaged version, arm64 architecture, bundle structure, size, and SHA-256.
 
 See [Product](docs/PRODUCT.md), [Architecture](docs/ARCHITECTURE.md), [Testing](docs/TESTING.md), [Quality Audit](docs/QUALITY-AUDIT.md), and [Changelog](CHANGELOG.md).

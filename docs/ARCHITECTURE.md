@@ -20,6 +20,31 @@ These APIs are internal to the local application and its tests, not public integ
 
 Error responses use `400`, `403`, `413`, `422`, `429`, `502`, or `504` with Simplified Chinese user-facing messages. Explicit client cancellation is logged internally as `499 CLIENT_ABORTED`, while the UI reports that conversion stopped. The server deadline maps to `504 CONVERSION_TIMEOUT`. Extraction modes remain available for diagnostics but are not shown in the ordinary result UI.
 
+## Settings, translation API, and outbound boundaries
+
+`0.3.0` adds a settings surface and the translation API. They are local APIs too: every route below requires the same `application/json` content type, loopback Host, same-origin `Origin` / `Sec-Fetch-Site`, and per-launch session token as the conversion endpoints, and their logs contain only `{requestId, status, code, durationMs}`.
+
+- `GET/PUT /api/settings` reads and replaces the whole settings object (no partial update). Bodies are limited to 64 KiB. `settings.json` is written atomically (temporary file + rename) with mode `0600` under `MD_CONVERTOR_USER_DATA`, which defaults to `~/.md-convertor`.
+- `POST /api/provider/models` lists the models of an OpenAI-compatible endpoint (`GET {base}/models` with a Bearer key). It accepts either a saved provider (`{providerId}`) or a settings-page draft (`{baseUrl, apiKey}`, where either half may be omitted and falls back to the saved provider), so a form can probe an endpoint before it is saved; a draft request never writes settings and the typed key is never echoed or logged. The address is validated by the same Provider endpoint policy as every other Provider call.
+- `POST /api/local-clis/scan` and `POST /api/local-clis/models` scan `PATH` for the supported agent CLIs (`pi`, `claude`) and list the models one reports.
+- `POST /api/runtime/secrets` is the runtime key path. Only the Electron main process calls it; keys stay in memory, are never written to disk, and the request body is never logged. Pushing a save or a clear takes effect in the running server without a restart, and a cleared key leaves that provider unconfigured.
+- `POST /api/translate/analyze` and `POST /api/translate/run` segment the Markdown, ask the configured model which blocks are already in the target language, then translate the remaining blocks. Their request body limit is 40 MiB because a Markdown document can carry Base64 images.
+
+### Settings and key storage
+
+`settings.json` holds the provider list, the local CLI list, the target language, and the default translation toggle. Electron `safeStorage` encrypts provider API keys in `secrets.json` (mode `0600`, the same atomic write). A provider key has exactly one source: the runtime key table seeded from that encrypted store (injected into the server environment by the Electron main process at start, updated in memory on every save or clear). Keys never enter `settings.json`, the renderer process, logs, or error messages, and a `secrets.json` that cannot be parsed is never overwritten.
+
+### Two separate address policies
+
+Translation endpoints and webpage scraping deliberately use independent address policies, and neither may be relaxed to match the other:
+
+- Webpage scraping (`src/lib/security/url.ts`) stays public-network-only: loopback, private, link-local, reserved, and cloud-metadata addresses are rejected for pages, redirect hops, browser subresources, and images.
+- A translation provider (`src/lib/provider/endpoint.ts`) must be able to reach the user's own Mac or LAN, so unicast, loopback, private, unique-local, and carrier-grade NAT addresses are allowed. The three cloud-metadata addresses (`169.254.169.254`, `fd00:ec2::254`, `100.100.100.200`, including IPv4-mapped IPv6) stay blocked in both. Redirects are allowed only within the same scheme and host, up to three hops.
+
+### Local CLI process boundary
+
+A local translation call spawns the configured CLI with `shell: false`, an argument list from a fixed registry, the prompt on stdin only, and a one-use temporary working directory. The child environment is a copy of the server environment with every `MD_CONVERTOR_*` variable removed, so the session token and the serialized secret map never reach the child. stdout and stderr are capped at 1 MiB and are never echoed back; a non-zero exit reports only the status code and exit code. Timeouts kill the process.
+
 ## Conversion pipelines
 
 Link mode:
@@ -71,10 +96,10 @@ The application code uses no database, object storage, cookies, LocalStorage, or
 - `npm run dev:desktop` starts local development.
 - `npm run desktop:package` creates an unpacked app; `npm run desktop:make` creates the distributable ZIP.
 - The daily baseline includes exact synthetic webpage-to-Markdown golden tests. `npm run test:live` uses stable WalkingLabs fixtures as the release-blocking link/paste Mermaid gate. `npm run test:live:wechat` retains the real WeChat comparison as a non-blocking diagnostic because upstream verification and timeouts vary.
-- `./init.sh` and release scripts require Node.js 24.x. The release script requires version `0.2.1` and verifies the immutable historical ZIP manifest in `~/Downloads/MD-Convertor-archive/releases/` before running baseline, E2E, live, or Forge commands. Historical artifacts are checked again after success or failure. `npm run desktop:release` then verifies that the new ZIP belongs to the current run, contains the current version and an arm64 executable, has a complete package structure, and prints its size and SHA-256.
+- `./init.sh` and release scripts require Node.js 24.x. The release script requires version `0.3.1` and verifies the immutable historical ZIP manifest in `~/Downloads/MD-Convertor-archive/releases/` before running baseline, E2E, live, or Forge commands. Historical artifacts are checked again after success or failure. `npm run desktop:release` then verifies that the new ZIP belongs to the current run, contains the current version and an arm64 executable, has a complete package structure, and prints its size and SHA-256.
 - E2E runs against the production standalone service and fails if tracked files change.
 - See [`TESTING.md`](TESTING.md) for commands, environment variables, smoke tests, and manual acceptance.
 - The current artifact is unsigned and intended for personal testing. Developer ID signing and notarization are required for broad external distribution.
-- v0.2.1 is the current release. Historical tags and the external 0.1.0–0.2.0 ZIP archive remain immutable regression references.
+- v0.3.1 is the current version (the recorded `0.3.0` artifact is historical). Historical tags and the external 0.1.0–0.2.0 ZIP archive remain immutable regression references.
 - A second-Mac acceptance test confirmed that Gatekeeper may report an unsigned app as damaged. Personal testers should verify the ZIP SHA-256 before removing only `com.apple.quarantine`. This is not a substitute for signing or notarization.
 - Desktop preparation packages the Apple Silicon Chromium Headless Shell matching the current Playwright version and launches it through an explicit executable path, avoiding reliance on browser caches installed on the target Mac.

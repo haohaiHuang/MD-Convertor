@@ -55,7 +55,7 @@ test("pasting a URL waits for explicit conversion", async ({ page }) => {
   await expect(page.getByLabel("网页链接")).toHaveValue("https://example.com/article");
   expect(requestCount).toBe(0);
 
-  await page.getByRole("button", { name: "转换为 MD" }).click();
+  await page.getByRole("button", { name: "转换", exact: true }).click();
 
   await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toBeVisible();
   await expect(page.getByLabel("Markdown 预览")).toContainText("这是一段测试正文");
@@ -87,7 +87,7 @@ test("stops an in-progress conversion and preserves the URL", async ({ page }) =
 
   const input = page.getByLabel("网页链接");
   await input.fill("https://example.com/slow");
-  await page.getByRole("button", { name: "转换为 MD" }).click();
+  await page.getByRole("button", { name: "转换", exact: true }).click();
   await expect(input).toHaveAttribute("readonly", "");
   await expect(page.getByRole("button", { name: "清空链接" })).toBeDisabled();
   await page.getByRole("button", { name: "停止转换" }).click();
@@ -105,7 +105,7 @@ test("rejects invalid pasted content without converting", async ({ page }) => {
 
   await pasteIntoUrlInput(page, "这不是一个网页链接");
   await expect(page.getByText("请输入完整的 HTTP 或 HTTPS 网页链接。")).toBeVisible();
-  await expect(page.getByRole("button", { name: "转换为 MD" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "转换", exact: true })).toBeDisabled();
   expect(requestCount).toBe(0);
 });
 
@@ -119,18 +119,18 @@ test("clears the link validation and previous conversion result", async ({ page 
   await expect(page.getByText("请输入完整的 HTTP 或 HTTPS 网页链接。")).toHaveCount(0);
 
   await input.fill("https://example.com/article");
-  await page.getByRole("button", { name: "转换为 MD" }).click();
+  await page.getByRole("button", { name: "转换", exact: true }).click();
   await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toBeVisible();
   await page.getByRole("button", { name: "清空链接" }).click();
 
   await expect(input).toHaveValue("");
   await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "转换为 MD" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "转换", exact: true })).toBeDisabled();
 });
 
 test("shows user-facing statistics without repeating the article title", async ({ page }) => {
   await page.getByLabel("网页链接").fill("https://example.com/article");
-  await page.getByRole("button", { name: "转换为 MD" }).click();
+  await page.getByRole("button", { name: "转换", exact: true }).click();
 
   await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toBeVisible();
   await expect(page.getByText("128 B")).toBeVisible();
@@ -183,7 +183,7 @@ for (const width of [390, 1180]) {
     const input = page.getByLabel("网页链接");
     await expect(page.getByRole("button", { name: "返回顶部" })).toHaveCount(0);
     await input.fill("https://example.com/long-article");
-    await page.getByRole("button", { name: "转换为 MD" }).click();
+    await page.getByRole("button", { name: "转换", exact: true }).click();
     await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toBeVisible();
     await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight }));
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(500);
@@ -205,3 +205,34 @@ for (const width of [390, 1180]) {
     await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toBeAttached();
   });
 }
+
+test.describe("页头", () => {
+  test("只保留带文字的设置入口", async ({ page }) => {
+    await expect(page.getByText("本机处理 · 不保存内容")).toHaveCount(0);
+
+    const entry = page.getByRole("link", { name: "设置" });
+    await expect(entry).toBeVisible();
+    await expect(entry).toHaveText("设置");
+  });
+});
+
+test.describe("富文本转换表单", () => {
+  test("转换按钮与来源 URL 同一行，且与正文框右边缘对齐", async ({ page }) => {
+    await page.getByRole("tab", { name: "富文本转换" }).click();
+
+    const textarea = await page.getByLabel("粘贴的正文内容").boundingBox();
+    const sourceInput = await page.getByLabel("来源 URL（可选）").boundingBox();
+    const submit = await page.getByRole("button", { name: "转换", exact: true }).boundingBox();
+    expect(textarea).not.toBeNull();
+    expect(sourceInput).not.toBeNull();
+    expect(submit).not.toBeNull();
+
+    // Same row: the button sits to the right of the URL box and overlaps its vertical band.
+    expect(submit!.x).toBeGreaterThan(sourceInput!.x);
+    expect(Math.abs(submit!.y - sourceInput!.y)).toBeLessThan(sourceInput!.height);
+    // The button's right edge lines up with the paste box above it.
+    const buttonRight = submit!.x + submit!.width;
+    const textareaRight = textarea!.x + textarea!.width;
+    expect(Math.abs(buttonRight - textareaRight)).toBeLessThan(4);
+  });
+});

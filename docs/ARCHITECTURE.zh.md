@@ -20,6 +20,31 @@ Electron 渲染进程启用沙箱与上下文隔离，关闭 Node.js 集成。�
 
 错误状态固定使用 `400`、`403`、`413`、`422`、`429`、`502` 或 `504`，正文为简体中文错误信息。客户端主动停止在服务端内部记录为 `499 CLIENT_ABORTED`，浏览器端仍按“已停止转换”处理；服务端总时限使用 `504 CONVERSION_TIMEOUT`。技术提取模式保留在接口和诊断日志中，不在普通用户结果区展示。
 
+## 设置、翻译接口与出网边界
+
+`0.3.0` 增加了设置面和翻译接口。它们同样是本地接口：下列每个路由都与转换端点一样要求 `application/json` content-type、loopback Host、同源 `Origin` / `Sec-Fetch-Site` 与每次启动的会话令牌，日志只包含 `{requestId, status, code, durationMs}`。
+
+- `GET/PUT /api/settings` 读取和整体替换 Settings 对象（不支持部分更新），请求体上限 64 KiB。`settings.json` 以临时文件 + rename 原子写入，权限 `0600`，目录由 `MD_CONVERTOR_USER_DATA` 决定（缺省 `~/.md-convertor`）。
+- `POST /api/provider/models` 拉取 OpenAI 兼容端点的模型列表（`GET {base}/models`，Bearer 密钥）。请求体可以是已保存的 Provider（`{providerId}`），也可以是设置页尚未保存的草稿（`{baseUrl, apiKey}`，两者可只给其一并回退到已保存的 Provider），因此表单在保存前就能探测端点；草稿请求不写 settings，用户输入的密钥不回显、不记日志。地址校验沿用 Provider 端点策略。
+- `POST /api/local-clis/scan` 与 `POST /api/local-clis/models` 按 `PATH` 探测受支持的 agent CLI（`pi`、`claude`）并列出其报告的模型。
+- `POST /api/runtime/secrets` 是运行时密钥通道。只有 Electron 主进程会调用它；密钥只存在于内存，不落盘，请求体不记日志。保存或删除密钥即时对运行中的服务生效，无需重启；删除后该 Provider 即回到「未配置」。
+- `POST /api/translate/analyze` 与 `POST /api/translate/run` 对 Markdown 分段，让当前生效的模型判定哪些块已是目标语言，再翻译其余块。请求体上限为 40 MiB，因为 Markdown 可能内嵌 Base64 图片。
+
+### 设置与密钥存储
+
+`settings.json` 保存 Provider 列表、本地 CLI 列表、目标语言与默认翻译开关。Electron `safeStorage` 把 Provider 的 API Key 加密存入 `secrets.json`（权限 `0600`，同样是原子写入）。密钥只有一个来源：由加密存储播种的运行时密钥表（主进程在服务启动时注入，保存或删除后即时更新）。密钥不会进入 `settings.json`、渲染进程、日志或错误消息；`secrets.json` 不可解析时拒绝覆写。
+
+### 两套独立的地址策略
+
+翻译端点与网页抓取刻意使用独立的地址策略，任何一边都不得为对齐另一边而放宽：
+
+- 网页抓取（`src/lib/security/url.ts`）保持仅公网：页面、重定向跳转、浏览器子资源与图片一律拒绝 loopback、私网、link-local、reserved 与云元数据地址。
+- 翻译 Provider（`src/lib/provider/endpoint.ts`）必须能访问用户自己的 Mac 或局域网，因此允许 unicast、loopback、私网、unique-local 与 carrier-grade NAT 地址。三个云元数据地址（`169.254.169.254`、`fd00:ec2::254`、`100.100.100.200`，含 IPv4-mapped IPv6）两边都保持拉黑。重定向只允许同协议同主机，最多 3 跳。
+
+### 本地 CLI 进程边界
+
+本地翻译调用以 `shell: false` 启动配置的 CLI，参数来自固定注册表，prompt 只走 stdin，工作目录为一次性临时目录。子进程环境是服务端环境的副本，但剔除全部 `MD_CONVERTOR_*` 变量，因此会话令牌与序列化密钥表不会到达子进程。stdout/stderr 上限 1 MiB 且永不回显；非零退出只报告状态码与退出码。超时会杀掉进程。
+
 ## 转换管线
 
 链接模式：
@@ -71,10 +96,10 @@ Electron 渲染进程启用沙箱与上下文隔离，关闭 Node.js 集成。�
 - 开发入口为 `npm run dev:desktop`。
 - 本地应用目录构建为 `npm run desktop:package`；分发 ZIP 构建为 `npm run desktop:make`。
 - 日常基线包含合成网页与固定 Markdown 的精确金标准测试；`npm run test:live` 以稳定 WalkingLabs 样本验证链接/粘贴 Mermaid，只作为发布前阻断门禁。微信公众号真实对照保留为 `npm run test:live:wechat`，但因上游验证与超时波动不阻断个人测试包发布。
-- `./init.sh` 与发布脚本只接受 Node.js 24.x。发布脚本要求目标版本严格为 `0.2.1`，并在任何 `init.sh`、E2E、live 或 Forge 命令前校验 `~/Downloads/MD-Convertor-archive/releases/` 中不可变历史 ZIP 的固定文件名与 SHA-256；命令成功或后续失败都会再次复核历史清单。`npm run desktop:release` 随后依次执行完整基线、Chromium/Firefox/WebKit E2E、真实网页门禁与 Apple Silicon ZIP 打包，并强制验证 ZIP 是本轮新产物、解压后包内应用版本为当前版本、包内可执行文件为 arm64 且结构完整，最后输出大小与 SHA-256。
+- `./init.sh` 与发布脚本只接受 Node.js 24.x。发布脚本要求目标版本严格为 `0.3.1`，并在任何 `init.sh`、E2E、live 或 Forge 命令前校验 `~/Downloads/MD-Convertor-archive/releases/` 中不可变历史 ZIP 的固定文件名与 SHA-256；命令成功或后续失败都会再次复核历史清单。`npm run desktop:release` 随后依次执行完整基线、Chromium/Firefox/WebKit E2E、真实网页门禁与 Apple Silicon ZIP 打包，并强制验证 ZIP 是本轮新产物、解压后包内应用版本为当前版本、包内可执行文件为 arm64 且结构完整，最后输出大小与 SHA-256。
 - E2E 使用 production standalone 服务；执行器会比较测试前后的 tracked diff，发现测试修改源码或项目文档时直接失败。
 - 完整命令矩阵、环境变量、打包冒烟和人工验收步骤见 `docs/TESTING.md`。
 - 第一阶段产物可不签名，仅用于开发和个人测试；对外分发前必须补充 Apple Developer ID 签名与 notarization。
-- v0.2.1 是当前版本，但产物仍只面向 Apple Silicon Mac 个人测试；历史标签和外部 0.1.0–0.2.0 ZIP 归档继续作为不可变回归基准。
+- v0.3.1 是当前版本（`0.3.0` 的记录产物属历史构建），但产物仍只面向 Apple Silicon Mac 个人测试；历史标签和外部 0.1.0–0.2.0 ZIP 归档继续作为不可变回归基准。
 - 第二台 Mac 验收确认未签名应用可能被 Gatekeeper 显示为“文件已经损坏”；个人测试时应先核对 ZIP SHA-256，再只移除 `com.apple.quarantine` 属性。该处理不等同于签名或 notarization，不扩大分发范围。
 - 打包准备脚本把当前 Playwright 版本对应的 Apple Silicon Chromium Headless Shell 放入应用资源，并通过明确的可执行路径启动，避免依赖用户电脑上的浏览器缓存。

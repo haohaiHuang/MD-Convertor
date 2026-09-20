@@ -11,12 +11,14 @@ import {
   assertProtectedArchive,
   assertProtectedBaseline,
   captureHistoricalZipSnapshot,
+  HISTORICAL_ARCHIVE_RETIRED_NOTICE,
   HISTORICAL_ZIP_ERROR,
+  listRetiredHistoricalZips,
   PROTECTED_ARCHIVE_ERROR,
   PROTECTED_BASELINE_ERROR,
 } from "./release-guards.mjs";
 
-export const RELEASE_VERSION_ERROR = "Release version must be 0.2.1.";
+export const RELEASE_VERSION_ERROR = "Release version must be 0.3.1.";
 
 function getArtifactPaths(root, version) {
   const zipPath = path.join(
@@ -150,7 +152,7 @@ export async function runRelease({
   startedAtMs: startedAtOverride,
   previousZip: previousZipOverride,
 } = {}) {
-  if (version !== "0.2.1") throw new Error(RELEASE_VERSION_ERROR);
+  if (version !== "0.3.1") throw new Error(RELEASE_VERSION_ERROR);
   const paths = getArtifactPaths(root, version);
   const startedAtMs = startedAtOverride ?? now();
   const previousZip = previousZipOverride === undefined
@@ -165,6 +167,7 @@ export async function runRelease({
 
   let snapshot;
   let snapshotCaptured = false;
+  let archiveStatus = "verified";
   let primaryError;
   let result;
 
@@ -175,7 +178,7 @@ export async function runRelease({
       throw new Error(PROTECTED_BASELINE_ERROR);
     }
     try {
-      await assertArchive();
+      archiveStatus = (await assertArchive())?.status ?? "verified";
     } catch {
       throw new Error(PROTECTED_ARCHIVE_ERROR);
     }
@@ -192,7 +195,14 @@ export async function runRelease({
     await run("npm", ["run", "desktop:make"], { root });
     const zip = await verifyArtifact({ root, version, previousZip, startedAtMs, paths });
     const digest = await hashFile(paths.zipPath);
-    result = { zip, digest, zipPath: paths.zipPath, version };
+    result = {
+      zip,
+      digest,
+      zipPath: paths.zipPath,
+      version,
+      archiveStatus,
+      retiredZips: listRetiredHistoricalZips(snapshot),
+    };
   } catch (error) {
     primaryError = error;
   }
@@ -213,13 +223,19 @@ export async function runRelease({
 }
 
 async function main() {
-  const { zip, digest, zipPath, version } = await runRelease();
+  const { zip, digest, zipPath, version, archiveStatus, retiredZips } = await runRelease();
   console.log("=== Release Artifact Verified ===");
   console.log(`Path: ${zipPath}`);
   console.log(`Version: ${version}`);
   console.log("Architecture: arm64");
   console.log(`Bytes: ${zip.size}`);
   console.log(`SHA-256: ${digest}`);
+  if (archiveStatus !== "verified" || retiredZips.length > 0) {
+    console.log("=== Historical Archive Notice ===");
+    console.log(HISTORICAL_ARCHIVE_RETIRED_NOTICE);
+    if (archiveStatus !== "verified") console.log("Retired: the read-only 0.1.3 archive copy");
+    if (retiredZips.length > 0) console.log(`Retired: ${retiredZips.join(", ")}`);
+  }
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

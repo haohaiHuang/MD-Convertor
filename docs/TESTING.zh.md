@@ -25,6 +25,8 @@
 
 真实网页对照不保存或打印网页正文。只按测试源码中记录的环境变量替换样本，禁止提交私有或受版权保护的页面内容。
 
+翻译测试不需要联网也不需要密钥：`scripts/start-e2e-server.mjs` 会设置 `MD_CONVERTOR_TEST_PROVIDER=1`，让 `/api/translate/*` 使用进程内伪模型。未设置该标志时分支不存在，因此生产环境在未配置模型时仍返回 409 `TRANSLATE_NOT_CONFIGURED`。不要把该标志带入任何生产或发布命令。
+
 ## 覆盖范围
 
 日常基线覆盖：
@@ -35,30 +37,64 @@
 - 富文本语义门控、净化、HTML/纯文本降级和 5 MiB 请求上限
 - 图片格式、懒加载、Data URI、8 MiB 单图、30 图、优化和 20 MiB 正文优先降级
 - 复制、下载、清空、停止、统计、响应式布局和返回顶部
+- 设置契约与 `settings.json` 存储、密钥加密与 preload 桥、Provider 端点策略、模型拉取、本地 CLI 扫描/模型、语言预置
+- 翻译分段与重组、prompt 契约与解析、Provider 适配器、限额与错误码、语言占比决策、非目标语言逐字节保真
+- 翻译任务预算：`translateTaskTimeoutMs(batchCount)` 返回 `max(120s, 批次数 × 180s + 30s)`，两个端点都按真实批次数决定 deadline（段数多的长文不再被固定 120s 切断）
+- 翻译勾选框、原文/译文 Tab、按 Tab 分流的复制与下载、进度、取消、重试与占比弹窗
 
-E2E 使用 production standalone 服务，并在测试后检查 tracked 文件未变化。
+`vitest.config.ts` 把覆盖率限定在 `src/lib/**/*.ts` 与 convert、translate 路由，排除测试文件与 `src/types/**`，并为每个文件设置门槛。`src/lib/translate/**` 的每个模块都有自己的门槛（95/90/100/95，`segment.ts` 为 90/75/100/90）。当前覆盖率为 60 files / 853 tests、statements 95.28%。
+
+E2E 使用 production standalone 服务，并在测试后检查 tracked 文件未变化。`playwright.config.ts` 设 `workers: 1`，因为翻译引擎持有一个进程级任务槽，并行 worker 会互相撞出 429 `TRANSLATE_BUSY`。
 
 ## 发布保护
 
 `npm run desktop:release` 要求：
 
-- package 版本严格为 `0.2.1`
+- package 版本严格为 `0.3.1`
 - Node.js 24.x
-- `~/Downloads/MD-Convertor-archive/releases/` 中历史 ZIP 的固定哈希不变
+- 历史归档集合：清单中仍然存在的 ZIP 必须保持固定 SHA-256，`~/Downloads/MD-Convertor-archive/releases/` 中不得出现未登记的发布 ZIP
 - ZIP 必须由本轮命令新生成
-- 包内版本为 `0.2.1`
+- 包内版本为 `0.3.1`
 - 可执行文件为 arm64，应用结构完整
 
 成功和失败路径都会再次校验历史产物。Forge 未生成新 ZIP 即使退出也必须判为失败。
 
-## 已验证的 0.2.1 产物
+0.1.3 只读归档副本与 0.1.0–0.2.0 的 ZIP 已从本机丢失且无法恢复，因此守卫对缺失项改为「退役」：为每个缺失文件打印一条 `Historical Archive Notice` 后继续发布。任何仍然存在的文件依然要过哈希校验，被改动或可写的文件仍然会中断发布，未登记的发布 ZIP 仍然被拒绝。`0.2.1` 已于 2026-09-18 从 GitHub release 重新下载并逐字节匹配其记录哈希，因此该条目重新受到强制校验。`v0.1.3` 源码标签仍是硬前置条件。
 
-- 路径：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.2.1.zip`
+`0.3.0` 门禁已于 2026-09-18 完整通过（基线、三引擎 E2E、live、打包）。
+
+之后新增的长文翻译超时修复（`feat-024`，2026-09-18）把任务预算改为按批次数动态计算。更后一轮（`feat-029`，2026-09-18）让云端 Provider 保存时四项必填、允许设置页用未保存的草稿拉取模型（拉取不写设置），并把已保存密钥的输入框改为八个黑点占位；覆盖它的单测见 `src/lib/settings/provider-form.test.ts` 与 `src/app/api/provider/models/route.test.ts`，另有 3 个新增设置页 e2e 用例与 3 个改写用例（原先「拉取模型先保存草稿」的断言已不成立）。另一轮把单次调用上限从 60s 调高到 180s（`feat-027`）并修掉了「超时被误报成无法识别的回答」，同时删除了设置页「当前生效」标签（`feat-028`）。这些改动已通过单元测试、`./init.sh` 全量基线、三浏览器 e2e 与真机探针（用户云端 Provider 上一个原本撞 60s 上限失败的 121 块文档现在返回 200）。版本决策已定为 `0.3.1`：`package.json`、锁文件、`feature_list.json` 与发布门禁都已改为 `0.3.1`（门禁测试先改到 RED，再回到 29 passed）。之后一轮（`feat-031`，2026-09-20）把 `next` 升到 16.3.5、`sharp` 升到 0.35.4，使 `npm audit --omit=dev` 不再报生产依赖公告；同时去掉页头齿轮图标、把两个转换按钮改名为「转换」、让富文本面板的转换按钮右边缘与上方粘贴框对齐，并在已保存密钥时把密钥输入框设为只读。这些改动**尚未**跑过 `npm run desktop:release`：下文记录的产物是修复**前**的 `0.3.0` 构建（保留为历史），`0.3.1` 门禁按需执行。
+
+## 历史产物（0.3.0，早于上述修复；`0.3.1` 门禁会产出新 ZIP）
+
+- 路径：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip`
+- 大小：`358,562,540` bytes
+- SHA-256：`2a0e236e97e51d97fd24c7002a923ef5703ad8245234531f2eb3aa1350c81147`
+- 包：版本 `0.3.0`、arm64、macOS 12.0+
+- 自动证据：58 files / 835 tests、statements 95.25%、三引擎 E2E 142 passed / 2 skipped、live 2/2
+- 打包冒烟：preload 桥与运行时密钥往返均通过
+- 签名：未做 Developer ID 签名与 notarization，产物仅适合个人测试
+
+## 历史锚点（0.2.1）
+
+- 路径：`~/Downloads/MD-Convertor-archive/releases/MD-Convertor-darwin-arm64-0.2.1.zip`
 - 大小：`354,635,067` bytes
 - SHA-256：`32c1d96af58a7701e6d2fe0bf619be0f8f224803355c6ef63aad43c85569463e`
 - 包：版本 `0.2.1`、arm64、macOS 12.0+
 - 自动证据：322 tests、三引擎 E2E 60/60、稳定 live 2/2
 - 微信诊断：12/12 代码块、279 行内存对照一致
+
+## 打包冒烟测试
+
+用以下环境变量运行打包后的应用，即可在无人点击的情况下验证 preload 桥与密钥链路：
+
+```bash
+ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1 \
+  out/MD-Convertor-darwin-arm64/MD-Convertor.app/Contents/MacOS/MD-Convertor
+```
+
+- `ELECTRON_SMOKE_TEST=1`：检查 `window.mdConvertor.secrets` 存在且 `safeStorage` 报告加密可用。
+- `ELECTRON_SMOKE_TEST_SECRETS=1`：额外验证密钥链路——无密钥的 Provider 返回 409 `TRANSLATE_NOT_CONFIGURED`；保存密钥后无需重启即可让运行中的服务访问该端点（对测试地址为 502 `TRANSLATE_PROVIDER_ERROR`）；删除密钥后回到 409。冒烟结束前会删除该密钥并还原设置。已经不能再用环境变量提供 Provider 密钥，因此冒烟只通过 preload 桥写入。
 
 ## 人工验收
 

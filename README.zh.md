@@ -6,8 +6,9 @@ MD-Convertor 是一个 Apple Silicon Mac 网页转 Markdown 单机工具。你�
 
 ## 主要能力
 
-- 本机运行，无需账号、服务器、AI API、API Key 或订阅
+- 本机运行，无需账号、MD-Convertor 服务或订阅；不自带也不代付任何模型费用
 - 提供相互独立的“链接转换”和“富文本转换”
+- 可选把转换结果翻译为 11 种预置目标语言（简体中文、英语、日语、韩语、法语、德语、西班牙语、葡萄牙语、意大利语、俄语、阿拉伯语），也可手填 BCP-47 追加；模型来自本机 agent CLI 或你自行配置的云端 Provider
 - 提取静态页面，必要时使用随应用打包的 Chromium 渲染 JavaScript 页面
 - 保留标题、段落、链接、列表、表格、fenced 代码块和 GFM 结构
 - Mermaid 源码保留为 `mermaid` 代码块；安全的渲染图可转为 PNG 内嵌
@@ -16,7 +17,9 @@ MD-Convertor 是一个 Apple Silicon Mac 网页转 Markdown 单机工具。你�
 - 最终文件上限 20 MiB，优先保留正文；不支持或超预算的图片降级为替代文本并提示
 - 支持停止转换、清空两种输入、复制、下载、结果统计和快速返回输入区
 
-应用不绕过登录页、付费墙、验证码或其他访问限制。富文本模式只处理用户主动提供的剪贴板内容；依赖 Cookie、登录态、临时签名或 `blob:` URL 的图片可能无法获取。
+- 翻译使用你自行配置的模型：本机已安装的 agent CLI（`pi` 或 `claude`），或你在设置页配置的 OpenAI 兼容云端 Provider（只保存一条）。不勾选翻译勾选框就不会发起翻译，MD-Convertor 也不提供任何密钥或账号。
+
+应用不绕过登录页、付费墙、验证码或其他访问限制。富文本模式只处理用户主动提供的剪贴板内容；依赖 Cookie、登录态、临时签名或 `blob:` URL 的图片可能无法获取。勾选翻译后，转换出的正文会发送到你所配置的端点——这是正文唯一离开本机的时机，MD-Convertor 不保留其历史或缓存。
 
 ## 使用条件
 
@@ -35,11 +38,17 @@ xattr -dr com.apple.quarantine "/Applications/MD-Convertor.app"
 
 ## 当前版本
 
-- 版本：`0.2.1`
-- 平台：Apple Silicon Mac，macOS 12.0+
-- ZIP：`MD-Convertor-darwin-arm64-0.2.1.zip`
-- 大小：`354,635,067` bytes
-- SHA-256：`32c1d96af58a7701e6d2fe0bf619be0f8f224803355c6ef63aad43c85569463e`
+- 当前版本：`0.3.1`——文档翻译（Apple Silicon Mac，macOS 12.0+）。`0.3.0` 的门禁已通过；`0.3.1` 门禁尚未跑，因此还没有 `0.3.1` 产物，也未发布到 GitHub。
+- 最近一次正式发布：`0.2.1`。
+- 所有产物均未做 Developer ID 签名与 notarization，仅适合个人测试。
+
+最后一次通过门禁的产物（`0.3.0`，早于上述修复）：
+
+- ZIP：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip`
+- 大小：`358,562,540` bytes
+- SHA-256：`2a0e236e97e51d97fd24c7002a923ef5703ad8245234531f2eb3aa1350c81147`
+
+已发布的上一版产物（`0.2.1`）：`354,635,067` bytes，SHA-256 `32c1d96af58a7701e6d2fe0bf619be0f8f224803355c6ef63aad43c85569463e`。
 
 请从 [GitHub Releases](https://github.com/haohaiHuang/MD-Convertor/releases) 下载。
 
@@ -67,6 +76,6 @@ npm run test:live
 npm run desktop:release
 ```
 
-发布流程只接受 `0.2.1`，从仓库外的归档保护历史产物清单，拒绝旧产物，并校验包内版本、arm64 架构、应用结构、大小和 SHA-256。
+发布流程只接受 `0.3.1`，对仓库外仍然存在的历史产物逐个校验哈希（缺失项报为退役而不阻断发布），拒绝旧产物，并校验包内版本、arm64 架构、应用结构、大小和 SHA-256。
 
 更多信息见[产品说明](docs/PRODUCT.zh.md)、[架构说明](docs/ARCHITECTURE.zh.md)、[测试手册](docs/TESTING.zh.md)、[质量报告](docs/QUALITY-AUDIT.md)和[版本记录](CHANGELOG.zh.md)。

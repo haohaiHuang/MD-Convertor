@@ -2,10 +2,11 @@
 
 ## Current State
 
-- Last updated: 2026-08-22
-- Current release: `0.2.1`
-- Active feature: none
-- Branch: `main` is the published source of truth; release PR [#3](https://github.com/haohaiHuang/MD-Convertor/pull/3) is merged
+- Last updated: 2026-09-20
+- Current version: `0.3.1`（源码；`package.json`、`package-lock.json`、`feature_list.json` 与发布门禁都已改为 `0.3.1`）。**`0.3.1` 尚未跑 `npm run desktop:release`**，因此还没有 `0.3.1` 的 ZIP；`docs/TESTING.md` 记录的 `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip`（`358,562,540` bytes，SHA-256 `2a0e236e…1147`）是修复**前**的 0.3.0 构建，仅作历史
+- Active feature: none（`feat-024` – `feat-031` 已 done）
+- Next release step: 跑 `npm run desktop:release`（目标版本已是 `0.3.1`）并记录新 ZIP 的大小与 SHA-256，再把 `CHANGELOG`(+zh) 的 `[Unreleased]` 归档为 `[0.3.1]`；QA-012 依赖升级已完成（`next@16.3.5`、`sharp@0.35.4`，`npm audit --omit=dev` 0 漏洞）
+- Branch: `main`；本轮全部改动（0.3.0 S1–S6 + `feat-024` – `feat-031`，112 个文件）已提交并推送到 GitHub（SHA 见 `git log -1`）；提交前已跑完提交门 ponytail → code-review → neat-freak（本轮为自审，`subagent` 在本机不可用）
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+
 
 ## Completed in 0.2.1
@@ -16,7 +17,287 @@
 - Changed release guards to verify the immutable historical ZIP manifest from the external archive instead of retaining old builds in the repository workspace.
 - Removed completed PLAN/TASK documents from the current working tree; Git history remains intact.
 
+## 已完成 in 0.3.0 S1（设置基建，feat-018 done）
+
+- 设置契约与校验：`src/types/settings.ts`（严格白名单校验，`SettingsValidationError` 只报字段路径）。
+- 设置存储：`src/lib/settings/paths.ts` / `store.ts`，`settings.json` 临时文件 + rename 原子写入且权限 0600；目录由 `MD_CONVERTOR_USER_DATA` 决定，缺省 `~/.md-convertor`。
+- 本地 API：`src/app/api/settings/route.ts` 的 `GET/PUT /api/settings`，受 `validateConvertApiCaller` 保护；PUT 体积上限 64 KiB（超限 413 `REQUEST_TOO_LARGE`），错误码 `INVALID_SETTINGS`(400) / `SETTINGS_STORE_ERROR`(409) / `SETTINGS_UNAVAILABLE`(500)，日志只含 `{requestId,status,code,durationMs}`。
+- 主进程环境注入：`electron/env.mjs`（PATH 合并、登录 shell PATH、`.env` 解析、`buildServerEnv` 注入 `MD_CONVERTOR_USER_DATA`/`MD_CONVERTOR_SECRETS`）。
+- 密钥库：`electron/secrets.mjs` 用 `safeStorage` 加密，`secrets.json` 同样 0600 原子写入；`secrets.json` 不可解析时拒绝覆写（`SECRETS_FILE_INVALID`）。
+- preload 桥与 IPC：`electron/preload.cjs`（自包含）+ `electron/preload-contract.cjs`（通道契约，主进程共用）；通道 `md-convertor:secrets:{set,clear,status}`，IPC 失败只返回 `{ok:false,code:"IPC_FAILED"}`，不回传 message。
+- 设置页：`src/app/settings/page.tsx` + `page.module.css`，页头齿轮入口；密钥面板仅在 `window.mdConvertor` 存在时渲染。
+- 验证登记：`feature_list.json` 中 `feat-018` 置为 `done` 并附证据；`e2e/settings.spec.ts` 新增 7 个用例。
+
+## 已完成 in 0.3.0 S2（Provider / 模型与语言设置，feat-019 done）
+
+- Provider 端点策略：`src/lib/provider/endpoint.ts`——允许 unicast/loopback/private/uniqueLocal/carrierGradeNat，单独拉黑云元数据地址（`169.254.169.254`、`fd00:ec2::254`、`100.100.100.200`，含 IPv4-mapped IPv6 归一化）；重定向只允许同协议同主机，最多 3 跳。**与网页抓取 SSRF 策略 `src/lib/security/url.ts` 是两套独立实现**：抓取保持公网限定，翻译端点必须可达本机/私网，两边不互相放宽。
+- 密钥解析：`src/lib/provider/credentials.ts`——`resolveProviderKey({id, apiKeyEnv})` 同步返回 `{key, source: "env" | "runtime"} | null`，顺序为 `process.env[apiKeyEnv]` → 运行时密钥表（由 `MD_CONVERTOR_SECRETS` 惰性播种）；`setRuntimeSecret` / `resetRuntimeSecrets`（测试钩子）。`<userData>/.env` 通过主进程环境注入进入第 1 步。
+- 模型拉取：`src/lib/provider/models.ts`——`listProviderModels` 以 `authorization: Bearer` 请求 `{base}/models`，空密钥返回 409 `TRANSLATE_NOT_CONFIGURED`，失败返回 502 `TRANSLATE_PROVIDER_ERROR`（消息只含状态码与主机名）。
+- 本地 CLI：`src/lib/local-cli/registry.ts`（`pi` 用 `--list-models`，`claude` 无列表命令 ⇒ `listModelsArgs: null`）、`scan.ts`（按 `PATH` 探测）、`models.ts`（`parseCliModelList` 解析表格、`runCliCommand` 以 `shell:false`、1 MiB 上限、超时 SIGKILL 执行，子进程环境剔除所有 `MD_CONVERTOR_*`）。
+- 语言：`src/lib/settings/languages.ts`——11 个预置目标语言 + `addCustomLanguage`（BCP-47 校验失败只报字段路径，不回显值）。
+- 四个本地 API：`/api/provider/models`、`/api/local-clis/scan`、`/api/local-clis/models`、`/api/runtime/secrets`，共用 `src/lib/local-api.ts`（`handleLocalApi` / `readJsonBody` / `readField`，体积上限 64 KiB，日志只含 `{requestId,status,code,durationMs}`）；错误码 `INVALID_PROVIDER_ID`/`INVALID_CLI_ID`/`INVALID_SECRET_VALUE`(400)、`TRANSLATE_NOT_CONFIGURED`(409)、`TRANSLATE_PROVIDER_ERROR`(502)。S1 的 `/api/settings` 路由未改动。
+- 设置页四节（`src/app/settings/page.tsx` + `client.ts` + `page.module.css`）：Provider 增删改选/模型拉取与手填/密钥保存与清除、本地 CLI 扫描与启停、目标语言与自定义标签、默认翻译开关；无 preload 时只显示「密钥只能通过桌面应用保存」提示。
+- 密钥即时生效：`electron/runtime-secrets.mjs` 把已保存/已删除的密钥推送到运行中的本地服务（`POST /api/runtime/secrets`），`electron/main.mjs` 在 `secrets.set`/`secrets.clear` 后 await 该推送，因此无需重启；删除后回退到环境变量/`.env`。推送失败只告警不抛出（密钥已安全落盘，下次启动生效）。
+
+## 已完成 in 0.3.0 S3（翻译引擎，feat-020 done）
+
+- 分段与重组：`src/lib/translate/segment.ts`——A 层按行结构分类（标题/列表/引用/表格/围栏代码/HTML 块/元信息行），B 层把行内受保护片段（代码 span、链接、图片、自动链接、HTML 标签、裸 URL）切成 `kind:"skip"` 段，URL 与标签原文放在 `prefix`/`suffix`。**逐字节一致由构造保证**：每段是有序的原始字符区间，重组只是按序拼接 + 替换 `text` 段，不依赖模型守约。表格行按单元格切分（管道永不进入 `text`，转义 `\|` 不算分隔符）；`> 转换时间：`/`> 来源：` 两行均跳过。`assertBlockAlignment(segments, blocks)` 块数不一致时抛 409 `TRANSLATE_ANALYSIS_STALE`。
+- 契约与解析：`src/lib/translate/prompt.ts`——`buildAnalyzeMessages` / `buildTranslateMessages`（翻译调用比判定调用多一行前缀 `Target language: <tag>`）、`readEnvelope`（剥最外层围栏、取最外层 `{…}`）、`readEntries`（编号集合必须完全相等、不得重复、数量一致、值必须是字符串）、`parseAnalyzeResponse`（校验 BCP-47）、`parseTranslateResponse`（拒绝空串与 trim 后为空、拒绝被围栏包裹的 `t`）；`requestWithRetry` 只对 `TRANSLATE_INVALID_RESPONSE` 重试一次；所有解析失败统一 502。
+- 限额：`src/lib/translate/limits.ts`——200,000 散文字符、批次 ≤20 块且 ≤8,000 字符（超长单块自成一批，绝不切块）、单次调用 60s、任务总 120s、请求体 40 MiB（markdown 含 base64 图片，故不能用 64 KiB 的本地 API 上限）。
+- Provider 解析与调用：`src/lib/translate/provider/provider.ts`——`resolveEffectiveModel(settings, env)` 依次判定 `MD_CONVERTOR_TEST_PROVIDER` → cloud（active Provider + `selectedModel`）→ local（active CLI + `enabled` + `detectedPath`），失败一律 409；`createModelCaller(config, {deps, signal, timeoutMs})` 把信号与超时绑定进 `ModelCaller`（`(messages) => Promise<string>`），cloud 档在建 caller 时提前解析密钥（缺失 409）。HTTP 适配器 `openai-compatible.ts` 走 `fetchProviderEndpoint`（S2 端点策略原样复用，未放宽抓取侧 SSRF 策略），Bearer + `stream:false`，非 2xx 只报主机名与状态码；CLI 适配器 `local-cli.ts` 参数取自 T3.1 探针结论（pi：`-p --no-tools --no-session --no-extensions --no-skills --no-context-files --mode text`；claude：`-p --tools "" --output-format text`），prompt 只走 stdin，cwd 为一次性临时目录，非零退出/空 stdout ⇒ 502，超时 ⇒ 504，取消 ⇒ 499，CLI 输出永不回显。
+- 引擎：`src/lib/translate/run.ts`——`analyzeTranslation` / `runTranslation` 共用一个进程内任务锁（并发 ⇒ 429 `TRANSLATE_BUSY`）；任务总超时用 `AbortSignal.timeout` 与调用方 `AbortSignal` 合并，超时映射 504、调用方取消映射 499；`scope:"non-target"` 只翻译标记为 `other`/`unknown` 的块，无可译块时原文返回并给出警告「没有需要翻译的段落。」；`batchBlocks` 导出以便测试。
+- 判定统计：`src/lib/translate/analysis.ts` + `src/types/translation.ts`——占比按字符数（`skipped` 为 0 字符并计入块列表，`totalChars`/`targetChars` 只统计非 skipped 块），语言比较用 BCP-47 主标签。
+- 端点：`src/app/api/translate/analyze/route.ts`、`run/route.ts` 共用 `src/lib/translate/request.ts`（`readAnalyzeBody` / `readRunBody`），全部经 `validateConvertApiCaller`；请求体上限 40 MiB；错误码 `INVALID_REQUEST_BODY`/`INVALID_TARGET_LANGUAGE`/`INVALID_ANALYSIS`/`INVALID_SCOPE`(400) 与引擎错误码原样透传；响应与日志都不含正文、密钥或 CLI 输出。
+- 测试桩：`MD_CONVERTOR_TEST_PROVIDER=1` 时 `resolveEffectiveModel` 直接返回 `kind:"test"`（连 settings 都不读），判定按块内是否含 CJK 返回 `zh-Hans`/`en`，翻译返回 `[<lang>] <text>`；未设置时该分支不可达。生产路径不依赖它。
+- 未改动 `currentVersion`（仍为 `0.2.1`），未启动任何 UI（S4 负责），未运行 `npm run desktop:release`。本轮无用户可见变化，故未改 `CHANGELOG.md`（翻译 UI 属 S4/S5；`[Unreleased]` 里「翻译尚未可用」的说明仍然成立）。
+
+## 已完成 in 0.3.0 S4（前端翻译交互，feat-021 done）
+
+- 纯函数与客户端：`src/lib/translate/filename.ts`（`languageSuffix` / `translatedFilename`，译文下载名形如 `文章-en.md`）、`src/lib/translate/client.ts`（`analyzeDocument` / `translateDocument` / `TranslationError` / `isCancelled` / `TRANSLATE_CANCELLED`；abort ⇒ 499 `TRANSLATE_CANCELLED`，fetch 失败 ⇒ 0 `TRANSLATE_NETWORK_ERROR`，错误文案优先用服务端 `error.message`）。两者已在 `vitest.config.ts` 设逐文件 coverage 门槛。
+- 页面（`src/app/page.tsx` + `page.module.css`）：链接与富文本两个面板共用同一个「翻译为 <目标语言>」勾选框（初始值取 settings 的 `translation.defaultEnabled`，读取失败时不显示勾选框，不在本机持久化）；转换成功且勾选时自动翻译；结果区在翻译任务开始时出现「原文 / 译文」双 Tab（方向键/Home/End 可切换），未启用翻译时结果区 DOM 与 0.2.1 一致。
+- 复制与下载跟随当前 Tab：译文 Tab 复制译文、下载名带语言后缀；译文未就绪时静默回落原文。
+- 进度/取消/失败重试：`analyzing` 与 `translating` 各有文案与「取消」按钮（`AbortController` 中断在途请求）；失败显示 `role="alert"` 与「重试」（复用已有 `analysis`，不重新判定）；未配置翻译模型（409 `TRANSLATE_NOT_CONFIGURED`）时不出现 Tab，只显示提示与 `设置` 链接。
+- 未做（属 S5）：占比弹窗、≥97% 提示（S5 已完成，见下节；阈值开关最终未纳入 S5 范围）；`decideTranslationScope()` 当时恒返回 `"all"`，是 S5 的唯一接入点，S5 已用 `decideTranslation()` + `translationScopeRef` 取代它。
+- 测试接入：`scripts/start-e2e-server.mjs` 增设 `MD_CONVERTOR_TEST_PROVIDER=1`（测试桩唯一开关）；新增 `e2e/translate.spec.ts` 8 个用例 × 3 浏览器；`playwright.config.ts` 设 `workers: 1`（进程级翻译锁会被并行用例撞出 429）。
+- 未改动 `currentVersion`（仍为 `0.2.1`），未运行 `npm run desktop:release`。
+
+## 已完成 in 0.3.0 S5（语言占比判定与局部翻译，feat-022 done）
+
+- 决策纯函数：`src/lib/translate/decision.ts`——导出 `SKIP_RATIO = 0.97`、`CONFIRM_RATIO = 0.7` 与 `decideTranslation(analysis)`；先判 `totalChars === 0`（⇒ `{action:"skip",reason:"empty"}`），再 `ratio >= 0.97`（⇒ `skip` / `target-language`），再 `ratio >= 0.70`（⇒ `confirm`），否则 `translate-all`；比较用原始 `ratio`，展示用 `Math.round(ratio*100)`（0.9699 ⇒ confirm 97%，0.97 ⇒ skip 97%）。逐文件 coverage 门槛 95/90/100/95，实测 100%。
+- 局部翻译保真由 golden 用例锁定（`src/lib/translate/run.test.ts`）：测试用 Provider 把每个被翻译块包成 `«…»`，断言（a）标记后的输出逐字符等于预期文本，（b）去掉标记后与输入逐字节一致，（c）全部 5 个目标语言分段原样保留且从未被包裹，（d）其余 11 个分段都被包裹，（e）`meta` 为 `scope: "non-target"`、`translatedBlocks: 11`。fixture 覆盖标题、行内代码、链接、同行的中英表格单元格、粗体、列表、引用、围栏代码与尾段。
+- 页面接入（`src/app/page.tsx`）：删除 S4 的 `decideTranslationScope()` 占位函数，改调 `decideTranslation()`；翻译状态机新增 `{status:"confirming",analysis,percent}` 与 `{status:"skipped",reason:"target-language"|"empty"|"declined"}`，`showResultTabs` 同时排除这两个状态（因此不会留下空译文 Tab）。
+- 确认框：原生 `<dialog>`（`useEffect` 里 `showModal()`/`close()`，Esc ⇒ 按「不翻译」处理，`aria-labelledby` 指向提示文案），两个按钮「不翻译」与「只翻译非目标语言部分」（后者 ⇒ `scope="non-target"`）；选择结果存在 `translationScopeRef`（每次新转换重置为 `"all"`），重试复用该选择，**不再二次弹窗**。
+- 提示行：≥97% ⇒「正文已是<目标语言>，无需翻译」；空散文 ⇒「正文没有可翻译的段落，无需翻译。」；选择「不翻译」⇒「已选择不翻译，结果保留原文。」。三条路径都**不发起 `run` 请求**。
+- 样式：`src/app/page.module.css` 新增 `.confirmDialog`（含 `::backdrop`）、`.confirmText`、`.confirmActions`。
+- e2e 占比构造方式：只 mock `/api/translate/analyze`（`route.fetch()` 后改写 `totalChars`/`targetChars`/`ratio` 与 `blocks[].language`，fixture 为 10 个等长段落，故 N/10 为精确占比），`/api/translate/run` 走真实端点——这正是端到端证伪不了局部翻译保真的原因。
+- 未改动 `currentVersion`（仍为 `0.2.1`），未运行 `npm run desktop:release`。
+
+## 已完成 in 0.3.0 S6（发布门禁与文档，feat-023 done）
+
+- T6.1（done）：`scripts/release-guards.test.mjs` 先改到 RED（4 failed / 21 passed，日志 `/tmp/s6-t61-red.log`），再把 `scripts/release-desktop.mjs` 的目标版本与 `package.json`/`package-lock.json` 版本字段改为 `0.3.0`，`npm test -- release-guards` 25 passed。
+- T6.2（done，无需改动）：`vitest.config.ts` 早已把 `src/lib/**/*.ts` 纳入 `include` 并对每个 `src/lib/translate/**` 模块设了逐文件门槛，无缺口可补。
+- T6.3（done）：六份文档及其 `.zh.md` 镜像已按 PRD §5 与实现更新（PRODUCT 删除「不使用 AI API/密钥」非目标并改写隐私段；ARCHITECTURE 补本地 API 与密钥存储、两套地址策略的差异、CLI 进程边界；TESTING 补翻译验证面与测试桩开关；QUALITY-AUDIT 补 QA-009/010/011 与复验清单；README 中英说明翻译前置；AGENTS 补规划文档读取时机并同步版本号）。`grep` 复核无残留冲突表述。
+- T6.4（done，经用户授权改门禁语义）：用户选择方案 A，即「历史归档缺失不再阻断发布，但存在的归档照旧校验」。守卫改动仍走 TDD：`release-guards.test.mjs` → RED 6 failed / 23 passed（`/tmp/s6-t64a-red.log`），把 0.2.1 加入 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 又是一轮 RED（1 failed / 28 passed），最终 29 passed。`assertProtectedArchive` 缺文件返回 `{status:"retired"}`，`captureHistoricalZipSnapshot` 只对存在的条目校验哈希、缺失项记为 retired，新增 `listRetiredHistoricalZips()` 与 `HISTORICAL_ARCHIVE_RETIRED_NOTICE`，`release-desktop.mjs` 在结尾打印退役公告；被改动/可写的归档、未登记的发布 ZIP、`v0.1.3` 标签仍会硬失败。
+- T6.4 锚点恢复：`MD-Convertor-darwin-arm64-0.2.1.zip` 从 GitHub `v0.2.1` release 重下到 `~/Downloads/MD-Convertor-archive/releases/`，SHA-256 `32c1d96a…463e` 与记录逐字节一致（354,635,067 bytes，`unzip -t` 无错），因此该条目重新被强制校验。
+- T6.4 门禁通过：`npm run desktop:release`（Node.js 24.15.0）在 2026-09-18 exit 0，依次跑完 `./init.sh`、`npm run test:e2e`、`npm run test:live`、`electron-forge make` 与产物校验，输出 `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip`、版本 `0.3.0`、arm64、`358,562,540` bytes、SHA-256 `2a0e236e…1147`，并列出 5 个退役 ZIP 与退役的 0.1.3 副本（日志 `/tmp/s6-release-3.log`，0 条 ERROR）。
+- T6.5（done）：`./init.sh` 58 files / 835 tests、statements 95.25%、lint/tsc/build 全绿；`npm run test:e2e` 三浏览器 142 passed / 2 skipped 且 tracked-file 检查通过；`npm run test:live` 2/2 passed；打包应用冒烟 exit 0，打印 `Preload bridge smoke passed: secrets.set function, encryptionAvailable true` 与 `Runtime secret smoke passed: TRANSLATE_NOT_CONFIGURED → TRANSLATE_PROVIDER_ERROR → TRANSLATE_NOT_CONFIGURED, env fallback TRANSLATE_PROVIDER_ERROR`。
+- T6.6（done）：`CHANGELOG.md`(+zh) 的 `[Unreleased]` → `[0.3.0] - 2026-09-18`（含个人测试与归档退役说明），TESTING/QUALITY-AUDIT/README/AGENTS 对齐产物数字与新的守卫语义，`feature_list.json` 的 `feat-023` 置 `done`、`activeFeature` 置 `null`，`session-handoff.md` 同步。
+- 本轮新开风险 **QA-012**：`npm audit --omit=dev` 报 1 critical（`next` 16.0.0–16.3.2 的未认证 RCE 公告）、1 high（`sharp` < 0.35.4 libheif）、1 moderate（`baseline-browser-mapping`）；实装 `next@16.3.0`、`sharp@0.35.3`。升依赖不属于 S6 范围，只记录在 `docs/QUALITY-AUDIT.md` 并给出修复路径，等单独授权的一轮处理。
+
+## 已完成 in 0.3.0 之后（长文翻译超时修复，feat-024 done）
+
+- 现象与根因：真机用 `pi` + `deepseek-flash` 翻译一篇 9,100 字文章时，界面报「翻译任务超时」，服务端日志 `{"status":504,"code":"TRANSLATE_TIMEOUT","durationMs":120006}` —— 恰好撞上 `TRANSLATE_TASK_TIMEOUT_MS = 120_000` 这个**固定**总预算。实测 `pi` 本身不慢（同一参数、同一模型：小 prompt 1–2s，8,000 字符批次 7s），因此问题在预算而非 CLI。分批规则是「≤20 块 **且** ≤8,000 字符」，段数多的长文批次数会远超按字符数的直觉估计，固定 120s 必然不够。
+- 修复（TDD，先红后绿）：`src/lib/translate/limits.ts` 新增 `TRANSLATE_TASK_BASE_TIMEOUT_MS = 30_000` 与 `translateTaskTimeoutMs(batchCount) = max(120s, 批次数 × 60s + 30s)`；`TRANSLATE_TASK_TIMEOUT_MS` 语义改为「下限」。`src/lib/translate/run.ts` 把分段/分批（纯计算）移到任务锁之外，`analyzeTranslation` 与 `runTranslation` 都用**真实批次数**决定 `AbortSignal.timeout` 预算（`withTask` 新增第 4 个参数，优先级 `deps.taskTimeoutMs`（测试钩子）→ 计算值 → 常量）。单批 60s 上限、200,000 字符上限、429 单任务锁、499 取消映射、504 超时映射全部不变。
+- RED/GREEN：新建 `src/lib/translate/limits.test.ts`（3 用例，RED：`translateTaskTimeoutMs` 未定义）；`run.test.ts` 新增「deadline 按批次数放大」（21 个短段落 = 2 批 ⇒ 期望 `120000 + …` 实收 `NaN`，RED）→ 实现后两文件 **27 passed**。
+- 文档同步：`docs/PRD-translation.md` Q6.4 与「大文档耗时与成本」、`docs/features/translation/FSD.md` §5 契约表、`docs/features/translation/S3-translation-engine.md` 限额表与错误码表、`CHANGELOG.md`/`CHANGELOG.zh.md` 的 `[Unreleased] → 修复/Fixed`。顺带修掉 T6.6 遗留的 CHANGELOG 结构错误（`[Unreleased]` 与 `[0.3.0]` 重复标题把 0.3.0 内容挂在 Unreleased 下）。
+- 真机验证：重新 `npm run desktop:package` 后从 `out/MD-Convertor-darwin-arm64/MD-Convertor.app` 启动（PID 24236），用户用同一篇文章重测**成功**（转换 200 / 1244ms；无 `TRANSLATE_TIMEOUT` 行）。`app.asar` 内已确认含新逻辑 `Math.max(12e4, 6e4 × 批次数 + 3e4)`（13 处引用）。
+- 未做（留待决定）：版本号与发布门禁。修复后的构建与 `docs/TESTING.md` 记录的 0.3.0 ZIP 哈希不再对应，需要用户选择 bump `0.3.1` 还是就地重打 `0.3.0`；两者都必须重跑 `npm run desktop:release`。
+
+## 已完成 in 0.3.0 之后（设置页 UI 反馈与页头清理，feat-025 done）
+
+- 来源：用户提出 6 个 UI/UX 问题（云端 Provider 尚未实测，先处理界面）。按 AGENTS.md 先走需求分析：读码 + 截图取证据 → 列逐条方案与 Q1/Q2/Q3 → 用户选 **Q1②**（齿轮改带文字的「⚙ 设置」胶囊）、**Q2①**（只用「入口藏起来」，不动其它）、**Q3①**（「返回转换」改按钮 + 保存状态胶囊，并在离开前等待在途保存）。
+- 主页（`src/app/page.tsx` + `page.module.css`）：删除右上角「本机处理 · 不保存内容」（连同 `.privacy` / `.privacyDot` 与窄屏下的 `display: none` 规则），齿轮图标改为带文字的「⚙ 设置」链接（38px 高胶囊、`--ink` 文字、`aria-label`/可见文字均为「设置」）。
+- 设置页模式区（`src/app/settings/page.tsx`）：`fieldset` + `legend` 换成标题卡片 `section.card` + `h2`「翻译服务提供方」，`role="radiogroup"` + `aria-label`；根因是 `fieldset{display:flex}` 会把 `legend` 当 flex 项，浏览器便把它画在上边框上、看起来和选项重叠。“当前生效”改为挂在选中项文字右侧偏上的胶囊（`.activeBadge`，`margin-top:-6px` 的 in-flow flex 项，不脱离文档流，因此不会侵入相邻选项）。radio 补 `disabled={saving}`（原 `fieldset disabled` 的语义不再自动生效）。
+- 自定义语言入口：删掉输入框 + 「添加语言」按钮及 `customLanguage` state、`addCustomTargetLanguage`，并移除页面里已不可达的 `notes.language` 渲染。**`languages.custom` 字段与 `addCustomLanguage()` 及其单测保留**，存量自定义标签仍出现在目标语言下拉里（e2e 锁定）。
+- 保存反馈：`save()` 记录在途 Promise（`pendingSave` ref）并维护 `saveStatus`（`idle`/`saving`/`saved`/`error`）；成功不再写页首 message（`message` 只留错误与备注），改为页头状态胶囊「保存中…」/「已保存」，失败显示「未保存」+ 页首错误文案。「返回转换」由 `Link` 改为 `button` + `router.push("/")`，点击会 await 在途保存，**保存失败则不离开**。
+- 测试：`e2e/settings.spec.ts` 重写语言相关用例（新 `模式卡片`、`保存反馈` 两个 describe，`语言与默认开关` 只留切换与「已保存的自定义标签仍可选中、入口不再渲染」），15 处保存断言改用 `getByText("已保存", { exact: true })`，章节标题断言加 `exact: true`（否则「翻译」也会匹配「翻译服务提供方」）；`e2e/home.spec.ts` 新增 `页头` 用例。
+- 未做（不属于本次范围）：不改设置契约/校验、不改翻译引擎与限额、不动 `addCustomLanguage` 及其单测、不做依赖升级与版本号决定。
+
+## 已完成 in 0.3.0 之后（云端 Provider 配置体验，feat-026 done）
+
+- 来源：用户实测云端 Provider 配置后提出的 7 个界面问题。按 AGENTS.md 先走需求分析（读码 + 截图 + curl → 逐条方案 + 4 个问题），用户确认：环境变量名与「添加 Provider」都不要；保存后保留输入框；保留「清除密钥」。
+- 契约层：`src/types/settings.ts` 删除 `ENV_NAME_PATTERN`/`ENV_NAME` 与 `CloudProviderSettings.apiKeyEnv`，新增 `RETIRED_PROVIDER_KEYS = ["apiKeyEnv"]`，`readFields(value, path, allowed, retired = [])` 容忍退役键 → 旧 `settings.json` 仍可加载、写出时自动丢弃（**未升 `SETTINGS_VERSION`**）。`src/lib/provider/credentials.ts` 删除 `ProviderKeySource` 与 `source`，`resolveProviderKey({ id })` 只读运行时密钥表；`src/lib/translate/provider/provider.ts` 与 `/api/provider/models` 的调用同步收窄。
+- 界面层：`src/app/settings/page.tsx` 删除 `addProvider` / `saveProviderFields` / `saveProviderKey`，改为 `saveProvider(provider)`（一个「保存」写名称 + Base URL + 有值时写密钥，失败不部分写入）、`createProvider()`（常驻空卡片 → 列表项，密钥跟到新卡片）、`pullProviderModels()`（先 `saveProvider` 再拉取，用草稿值覆盖写入）、`clearProviderKey()`（清空输入框 + 清库），`removeProvider()` 现在先 `bridge.clear(id)` 再保存列表。
+- 卡片结构：`<article aria-label="Provider <名称>">`，头部 = radio + 名称 + 「已配置/未配置」徽标 + 「当前使用」徽标 + `[保存][删除]`；Base URL 与「拉取模型」同一行（`.urlRow`）；模型行与密钥行保持原样。新增常驻 `<article aria-label="新建 Provider">`（字段标签统一用「新建 Provider …」前缀，避免与列表卡片标签重名）。
+- 「拉取模型」的保存语义：端点从 `settings.json` 读取 baseUrl 与密钥，所以必须先落盘再拉取；保存失败则不发请求。（**已被 feat-029 推翻**：拉取改为只读端点，草稿模式见 feat-029 一节。）
+- 真机验证：重新 `npm run desktop:package` 后启动（端口 50925），CDP 截图确认 Base URL 输入框与「拉取模型」同一行（y=558.47，按钮 x=892 > 输入框 x=596），「环境变量名」「添加 Provider」「保存密钥」均已消失。
+- 顺带清理：用户此前删除的 Provider 在 `secrets.json` 中残留一条密钥（`cc3df153-…`），已手工移除；当前只剩活跃 Provider 一条。
+
+## 已完成 in 0.3.0 之后（云端翻译超时与模式标签，feat-027 / feat-028 done）
+
+- 来源：用户实测云端 Provider 报「Provider token-plan-cn.xiaomimimo.com 返回了无法识别的回答」。按 AGENTS.md 先走诊断：真机探针（自撰文本）复现后确认**两个叠加缺陷**——① 单次调用 60s 上限对云端推理模型太短（`reasoning_content` 2,417–4,885 字符 vs `content` 92–246 字符，实测单批 38–60s）；② 在读响应体途中发生的 abort 被 `catch { payload = null }` 吞掉，误报成 502「无法识别的回答」。诊断用一次性回环 shape 代理（只记响应形状、不记正文），`settings.json` 已按字节还原、代理已停。
+- 用户选 **A**：单次上限 60s → 180s；`translateTaskTimeoutMs(batchCount) = max(120s, batchCount × 180s + 30s)` 公式不变、只跟常量走，所以任务预算自动跟着放大。
+- 误报修复（TDD RED→GREEN）：`src/lib/translate/provider/openai-compatible.ts` 读体 catch 改为 `if (combined.aborted) throw failedCall(error, endpoint.host, signal);`，超时/取消分别映射 504 `TRANSLATE_TIMEOUT` / 499 `TRANSLATE_CANCELLED`；非 abort 的解析失败仍报 502。
+- 限额层（TDD RED→GREEN）：`TRANSLATE_CALL_TIMEOUT_MS = 180_000`；`limits.test.ts` 新增「leaves room for the thinking tokens of a reasoning model」，并把「never drops below the base budget」的 1 批断言改为 `上限 + 30s`（1 批现在必然高于 120s 下限）。
+- `feat-028`：设置页「当前生效」标签整体删除（切换时会挤动两个选项）——`page.tsx` 去掉 `.activeBadge` span、`page.module.css` 删掉该规则；e2e `模式卡片` 用例改为断言 `当前生效` 计数恒为 0（切换前后）且仍 PUT 新 mode。
+- 真机端到端（打包应用，端口 63338 / CDP 9222，自撰探针）：3 段文档 `ANALYZE 200 @ 16.0s`、**`RUN 200 @ 26.8s`**（修复前同一探针恒为 `502 @ 60.0s`）；60 段 / 121 块（用户原始失败场景）`ANALYZE 200 @ 78.9s`、**`RUN 200 @ 284.4s`** 且译文正确，日志无 `TRANSLATE_TIMEOUT`、无正文泄漏。模式单选位置在三次切换前后完全一致（`x/y` 逐项相等）。
+- 新开 **QA-013**（`docs/QUALITY-AUDIT.md`）：单次上限变长 ⇒ 卡死的 Provider 会把任务占住更久（任务总预算与「取消」仍兜底），属已接受的取舍。
+- 未做：不改批次大小（20 块 / 8,000 字符）、不改 200,000 字符上限与错误码集合、不加「单次上限」设置项、不改端点地址策略。
+
+## 已完成 in 0.3.0 之后（云端 Provider 保存规则与密钥占位，feat-029 done）
+
+- 来源：用户反馈两点 ——（1）每次进 `/settings`，API 密钥输入框都是空的，担心密钥丢了；（2）云端 Provider 需要校验必填项。需求分析中定下的规则：**保存时名称、URL、API 密钥、模型四项必填，缺一项即拒绝保存并提示**；密钥输入框接受「黑点占位」方案（不可选中、不可复制、不参与提交）。
+- 提示色：校验不通过、密钥库不可用、拉取失败、模型名为空等**问题类**提示统一用警告色（`page.module.css` 新增 `.warning { color: var(--warning) }`，必须排在 `.status` 之后 —— 同特异性靠源码顺序决胜），进度「正在获取模型…」与成功「已保存。」仍用 `--muted`。`notes` 的取值从字符串改为 `Note = { text, warn? }`，`setNote(key, text, warn = false)` 与 `save(..., {key, text, warn})` 透传，「端点没有返回模型。」也归为警告。
+- 表单规则（纯函数 `src/lib/settings/provider-form.ts`）：`providerFormError({name, baseUrl, keyStored, keyInput, selectedModel})` 按表单顺序返回第一条缺失提示 ——「请填写 Provider 名称。」/「请填写完整的 http(s) 接口地址。」（用 `isHttpUrl` 校验 trim 后的值）/「请先填写 API 密钥。」（`!keyStored && !keyInput.trim()`，即库里没有且本次也没填）/「请先拉取或选择模型。」，齐全返回 `null`。`saveProvider()` 与 `createProvider()` 都先过这道闸；不齐全时不写 settings、不写密钥库。
+- 死结与解法：卡片填不满就存不了，而「拉取模型」原本必须已有保存过的 Provider（端点按 `providerId` 读 settings + 密钥库）⇒ 新建卡片永远拉不到模型。因此 `POST /api/provider/models` 新增草稿模式：`{baseUrl, apiKey}` 可直接探测（新建卡片），缺的一半回退到已保存的 Provider（已保存卡片改地址或只换密钥时用），仍兼容旧的 `{providerId}`；草稿请求**不写 settings**，用户输入的密钥不回显、不记日志，地址仍走 `parseProviderUrl` 与 Provider 端点策略（非法协议 ⇒ 400 `INVALID_PROVIDER_URL`，无可用密钥 ⇒ 409 `TRANSLATE_NOT_CONFIGURED`「请先填写 API 密钥。」）。
+- 拉取不再写盘：`pullProviderModels()`（已保存卡片）与 `pullNewProviderModels()`（新建卡片）都把结果放进本地草稿态（`ProviderDraft.models` / `newProvider.models`），**settings.json 只在用户选模型或点保存时改变**，因此不再有「拉取顺手把半成品写进去」的路径。
+- 新建卡片新增模型字段：一个 `<input list>` + `<datalist>`（拉取结果作为候选，同时允许手填，端点不可达时仍能保存），紧邻一个「拉取模型」按钮，用刚填的地址与密钥探测。
+- 密钥显示：已配置的 Provider 输入框 `value` 恒为空（页面依旧不读回密钥库），placeholder 为八个黑点加「（已保存，留空不修改）」；未配置时为「请输入 API 密钥」。占位符不可选中/复制/提交，从不写入密钥库。**未新增任何 IPC 通道**，`electron/preload*.cjs` 未改动。
+- 测试：`src/lib/settings/provider-form.test.ts`（8 用例，RED 为模块不存在）、`src/app/api/provider/models/route.test.ts` 新增 6 个草稿用例（RED 6 failed / 14 passed → GREEN 20 passed）、`e2e/settings.spec.ts` 新增 3 个用例并改写 3 个旧用例（拉取不再是「先保存草稿」）。
+- 真机验证（打包应用，服务端口 52057 / CDP 9222；只走查看与失败路径，未写盘）：用户真实 Provider 的密钥框 `value` 为空且 placeholder 为八个黑点、新建卡片模型字段存在、四个缺失提示按序出现；`settings.json` 内容与 mtime 均未变。
+- 未做（非本次范围）：不改设置契约/密钥存储/端点策略/翻译引擎，不改「清除密钥」语义，不做依赖升级与版本号决定。
+
+## 已完成 in 0.3.0 之后（云端配置收敛为单条 + 保存按钮位置，feat-030 done）
+
+- 来源与需求分析：用户改向 ——「只保留一个云端模型录入，不需要可以追加多个模型」，并去掉「当前使用」标签。按 AGENTS.md 先做需求分析，提出三问，用户选 **Q1=A**（单条云端配置，取消多条并存与 active 选择）、**Q2=留**（保留名称字段）、**Q3=不留**（删掉删除按钮）。
+- 契约层刻意不动：`cloud.providers[] + activeProviderId` 保持不变，页面只读写「当前生效的那条」（`editingProvider(cloud) = providers.find(id === activeProviderId) ?? providers[0] ?? null`），`保存` 写出单条目列表并把该 id 设为 active。因此**未升 `SETTINGS_VERSION`、不加退役键、无迁移**；用户文件里本来就只有一条 Provider（`Mimo`），无丢失风险。
+- 页面（`src/app/settings/page.tsx`）：删除 `drafts` / `newProvider` / `ProviderDraft` / `providerDraft()` / `EMPTY_NEW_PROVIDER` / `NEW_PROVIDER_NOTE` / `patchProvider()` / `removeProvider()` / `createProvider()` / `addManualModel()`，改为单一 `cloudForm: CloudDraft`（`{name, baseUrl, keyInput, selectedModel, models}`）+ `patchCloudForm()` + `saveCloudProvider()` + `pullCloudModels()` + `clearCloudKey()`。JSX 只剩一张 `<article aria-label="云端 Provider">`：头部 `[已配置/未配置] + 保存`（`.providerHead .actions` 右对齐，沿用上一轮的位置约定），字段 名称 / Base URL + 拉取模型 / 模型 / API 密钥 + 清除密钥，note 为卡片最后一个元素。
+- 模型字段：`<input list="cloud-models">` + `<datalist>`（候选 = 已保存的 `models` ∪ 本次拉取结果），既可下拉选也可手填，**模型不再随输入即时落盘**，只随「保存」写入；`mergeModels()` 保留。
+- 顺带修掉两个可见问题：① `.grid` 从 `repeat(auto-fit, minmax(220px,1fr))` 改为 `minmax(150px,1fr) minmax(300px,3fr)`（`≤640px` 退回单列），Base URL 在默认窗口宽度下不再被截断；② 模型字段的占位文案按 `cloudModels.length` 判断，已有模型时不再误报「先拉取模型」。
+- 上一轮同类问题的收尾：新建卡片的「保存」原本在卡片底部左侧（与已保存卡片的右上角不一致），已移入卡片头部；该卡片随本轮改造一并消失。
+- 测试：`e2e/settings.spec.ts` 的云端 describe 重写为 10 个用例，RED **11 failed / 12 passed**（10 个云端用例 + 「密钥」里仍指向旧卡片选择器的那一例），实现后 chromium **23 passed**；`./init.sh` exit 0（60 files / **853 tests**、statements **95.28%**，lint/tsc/build 干净）；三浏览器 e2e **169 passed / 2 skipped**（`/tmp/s11-e2e.log`）。本轮为纯前端改动，`src/lib` 无新增模块（故无新单测与覆盖率门槛条目）。
+- 真机验证（打包应用，服务端口 62389 / CDP 9222；只做读取与截图，未点「保存」）：卡片 1 张、旧「新建 Provider」卡片 0、按钮 `[保存, 拉取模型, 清除密钥]`、`保存` 位于卡片头部、`当前使用`/`设为当前`/`手填模型`/`添加模型`/`删除` 全部不存在；真实配置回填为 `Mimo` + 完整 Base URL + `mimo-v2.5-pro` + 八个黑点占位；截图 `/tmp/s11-cloud-card.png`。**未跑发布门禁**（版本决策仍未定）。
+- 未做（非本次范围）：不动设置契约/密钥存储/端点策略/翻译引擎，不动本地 CLI 分区与「云端 / 本地」模式单选，不删「清除密钥」，不做依赖升级与版本号决定。
+- 观察（未能归因，非本轮改动引入）：`~/Library/Application Support/MD-Convertor/settings.json` 的 mtime 在本轮某次打包应用启动后变为 `9月18 17:02`，但**大小仍为 1484 bytes、内容与预期配置逐字一致**（本轮探针只读、日志无 PUT、优雅退出不再改写、e2e 用的是临时目录）。已备份为 `/tmp/settings-before-s11.json`（SHA-256 `7f1bdbeb0a12b8cd…`）供后续比对。
+
+## 已完成 in 0.3.0 之后（feat-031：版本 0.3.1、依赖升级与界面微调）
+
+- 来源：用户一次提出 9 项（版本号、依赖升级、发布到 GitHub、密钥框与「清除密钥」语义、真机小点、Apple 签名问题、去掉齿轮图标、「转换为 MD」改名、把转换按钮移入「来源 URL」行）。**发布到 GitHub Releases** 与**真机小点**用户明确「稍后」；**签名/notarization** 属问答（需 Apple Developer 付费会员 + Developer ID Application 证书 + notarytool 凭据，`forge.config.cjs` 加 `osxSign`/`osxNotarize`，凭据走环境变量，签名后哈希必然变化故必须重跑门禁）；**密钥框**用户确认「清除密钥」语义不变、已保存时输入框限制为不可编辑。
+- 版本 `0.3.1`（TDD）：`scripts/release-guards.test.mjs` 先改到 RED，再把 `scripts/release-desktop.mjs`（`RELEASE_VERSION_ERROR` + `version !== "0.3.1"`）、`package.json`、`package-lock.json`（root 与 `packages[""]`）与 `feature_list.json` 的 `currentVersion` 改为 `0.3.1` ⇒ `npm test -- release-guards` **29 passed**。**踩到的坑**：整文件替换 `0.3.0`→`0.3.1` 会把「旧版本必须被拒」的 fixture 一起改掉，断言因此恒真；该 fixture 已固定为互不相同的 `{ version: "0.2.1" }`。
+- 依赖升级（用户单独授权）：`next` 16.3.0 → **16.3.5**、`sharp` 0.35.3 → **0.35.4**（连带 `@img/sharp-*` → 0.35.4、`@img/sharp-libvips-*` → 1.3.3）；`npm audit --omit=dev` 由 1 critical / 1 high / 1 moderate 变为 **0 漏洞**（剩余 28 条只在 electron-forge 构建链的开发依赖里）。**QA-012 就此关闭**。
+- 界面三项：① 页头去掉 ⚙ 图标，只留文字「设置」（`.settingsLink` 去掉 `gap` 并补回 `:hover`，删除 `.settingsIcon`）；② 两个面板的「转换为 MD」→「转换」；③ 富文本面板的转换/停止按钮从 `.pasteActions` 移入 `.sourceRow`（跟在 `sourceInput` 之后），`.sourceInput` 由 `flex: 0 1 360px` 改为 `flex: 1 1 auto`，使按钮右边缘与上方粘贴框右边缘对齐（「清空」仍留在 `.pasteActions`）。
+- 密钥框限制（用户选的方案）：已保存密钥时输入框 `readOnly`（可聚焦、屏幕阅读器可达，**不用 `disabled`**），占位文案改为「••••••••（已保存，先清除密钥再更换）」；「清除密钥」语义不变（删除密钥库条目 + `keyStored:false` ⇒ 输入框恢复可编辑）。
+- 测试：`e2e/home.spec.ts` —— 页头断言 `toHaveText("设置")`、`富文本转换表单` 用例改为断言按钮右边缘与粘贴框右边缘差值 `< 4px`（RED 实测 `210.4375`）；`e2e/settings.spec.ts` —— 「已保存的密钥以黑点占位显示」加 `not.toBeEditable()`、「清除密钥」后加 `toBeEditable()`（RED 1 failed / 22 passed）。`./init.sh` exit 0（60 files / **853 tests**、statements **95.28%**）；`npm run test:e2e` **172 passed / 2 skipped**；`npm run test:live` 首跑因 DNS 瞬时失败（`curl` exit 6），重跑 **2/2 passed**。
+- 真机：`npm run desktop:package` 产物 `CFBundleShortVersionString = 0.3.1`、包内 `sharp 0.35.4`；CDP 量测 `textarea.right = 990`、`submit.right = 990`（`rightEdgeDelta = 0`，URL 框宽 570.4px），截图 `/tmp/s13-paste-row.png`；用户真机测试通过。
+- 未做（非本次范围）：不跑发布门禁、不发布到 GitHub、不改阈值/契约/端点策略、不碰历史归档与标签。
+
+## 下一轮（建议顺序）
+
+1. **提交**（用户已同意提交到 GitHub）：本轮改动先过提交门 ponytail → code-review → neat-freak，报告后再提交；`release` 相关步骤放其后。
+2. **跑 `npm run desktop:release`**（目标版本已是 `0.3.1`）：它会依次跑 `./init.sh`、`npm run test:e2e`、`npm run test:live`、`electron-forge make` 与产物校验；拿到新 ZIP 后把大小与 SHA-256 记入 `docs/TESTING.md`(+zh)、`docs/QUALITY-AUDIT.md`、`README.md`(+zh)、`PROGRESS.md`，并把 `CHANGELOG.md`(+zh) 的 `[Unreleased]` 归档为 `[0.3.1]`。
+3. **决定是否把 `0.3.1` ZIP 发布到 GitHub Releases**（用户此前选「稍后」）。
+4. **真机小点**（用户此前选「稍后再完善」）：这部分落地后再跑门禁才不会白白作废一个哈希。
+5. 若将来 0.1.x/0.2.0 归档重新出现，守卫会自动恢复严格校验；不要把已退役的条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删掉。
+
 ## Verification Evidence
+
+### feat-031 版本 0.3.1 / 依赖升级 / 界面微调（本次）
+
+- RED（版本门禁）：fixture 已指向 `0.3.1` 而脚本仍要求 `0.3.0` ⇒ `npm test -- release-guards` 失败；GREEN：把 `scripts/release-desktop.mjs` + `package.json` + `package-lock.json` + `feature_list.json` 改为 `0.3.1` 后 → **29 passed**，`RELEASE_VERSION_ERROR = "Release version must be 0.3.1."`。「旧版本必须被拒」的 fixture 已固定为 `{ version: "0.2.1" }`（整文件替换曾把它也改成目标版本，断言会因此恒真）。
+- RED（界面）：`npx playwright test e2e/home.spec.ts --project=chromium` 在改动前的构建上 → **9 failed / 3 passed**；GREEN → **12 passed**。右边缘对齐那条先实测 `|按钮右边缘 − 粘贴框右边缘| = 210.4375`（阈值 4px），把 `.sourceInput` 改成 `flex: 1 1 auto` 后为 **0**。
+- RED（密钥框）：`e2e/settings.spec.ts:331`「已保存的密钥以黑点占位显示，不回填明文」→ **1 failed / 22 passed**（`readOnly` 未加）；GREEN：加上 `readOnly={Boolean(cloudProvider?.keyStored)}` 后 chromium **23 passed**。
+- 依赖：`npm install next@16.3.5 sharp@0.35.4` exit 0；`npm audit --omit=dev` → **0 vulnerabilities**（此前 3）；`npm ls next sharp` → `next@16.3.5`、`sharp@0.35.4`。
+- 基线：`./init.sh` **exit 0**（`/tmp/s12b-init.log`）—— 60 files / **853 tests**、statements **95.28%**、lint、`tsc --noEmit`、生产构建全绿。
+- 全量 e2e：`npm run test:e2e` exit 0 → **172 passed / 2 skipped**（`/tmp/s12b-e2e.log`），tracked-file 检查通过；live 重跑 **2/2 passed**（`/tmp/s12c-live.log`；首跑 `/tmp/s12b-live.log` 是 DNS 瞬时失败，`curl` exit 6）。
+- 打包与真机：`npm run desktop:package` exit 0（`/tmp/s12-package.log`）→ `plutil -extract CFBundleShortVersionString` = `0.3.1`、包内 server 的 `sharp` = `0.35.4`；CDP 量测 `rightEdgeDelta = 0`（`textarea right 990` / `submit right 990`，URL 框宽 570.4px），截图 `/tmp/s13-paste-row.png`；用户真机确认通过。
+- **未跑发布门禁**：`out/make/zip/darwin/arm64/` 里的 `0.3.0` ZIP 仍是修复前构建，`0.3.1` 门禁等提交与真机小点确定后再跑。
+
+### feat-030 云端配置收敛为单条（历史）
+
+- RED：`npx playwright test e2e/settings.spec.ts --project=chromium` 在未改动的多 Provider 构建上 → **11 failed / 12 passed**（10 个云端用例全红 + 「密钥 › 密钥库不可用…」因仍指向旧卡片选择器而红）；实现后同命令 → **23 passed (5.4s)**。
+- 基线：`./init.sh` **exit 0**（`/tmp/s11-init.log`）—— 60 files / **853 tests**、statements **95.28%**、lint、`tsc --noEmit`、生产构建全绿。
+- 全量 e2e：`npm run test:e2e` exit 0 → **169 passed / 2 skipped**（三浏览器，`/tmp/s11-e2e.log`），tracked-file 检查通过。上一轮为 166 passed / 2 skipped（+3 = 上一轮新增的「保存按钮位于卡片头部」×3）。
+- 打包与真机：`npm run desktop:package` exit 0（`/tmp/s11b-package.log`）→ 启动 `out/MD-Convertor-darwin-arm64/MD-Convertor.app --remote-debugging-port=9222`（日志 `/tmp/md035.log`，服务端口 **62389**）→ `/tmp/shot-cloud-single.mjs` 实测：`cardCount 1`、`oldCards 0`、`buttons ["保存","拉取模型","清除密钥"]`、`saveInHead true`、`badge "已配置"`、`stale` 五项全 false；字段回填 `Mimo` / `https://token-plan-cn.xiaomimimo.com/v1` / `mimo-v2.5-pro` / 空值 + 八个黑点占位；截图 `/tmp/s11-cloud-card.png`（Base URL 完整可见）、`/tmp/s11-settings.png`（整页）。
+- 未跑发布门禁（版本决策仍未定）；`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip` 与 `docs/TESTING.md` 记录的哈希仍是修复前构建。
+- 占位文案回归用例的敏感性证据：“拉取模型只读取端点” 用例新增 `toHaveAttribute("placeholder", "从下拉选择或直接填写模型名")`；先把源码改回旧逻辑（`cloudForm.models.length`）重新 `npm run build` 后单跑该用例 → **1 failed**（placeholder 为「先拉取模型，或直接填写模型名」），恢复 `cloudModels.length` 重建后 → **23 passed**；随后 `./init.sh` exit 0（853 tests / 95.28%，`/tmp/s11d-init.log`）与三浏览器 `npm run test:e2e` exit 0（**169 passed / 2 skipped**，`/tmp/s11d-e2e.log`）。
+
+### feat-029 Provider 保存规则与密钥占位（上一轮）
+
+- RED：`npx vitest run src/app/api/provider/models/route.test.ts` → **6 failed / 14 passed**（6 个新草稿用例全部失败，路由当时只认 `providerId`）；`src/lib/settings/provider-form.test.ts` 因模块不存在而无法解析导入。
+- 警告色敏感性证据：把 `noteClass()` 临时改回恒用 `.status` 后重跑「保存要求四项齐全」用例 → 失败（`Expected "rgb(138, 90, 18)"` / `Received "rgb(101, 112, 109)"`），还原后通过；真机打包探针读取「请填写 Provider 名称。」的 `color` = `rgb(138, 90, 18)`（截图 `/tmp/s10b-warning.png`）。改色后重跑基线 `./init.sh` exit 0（853 tests / 95.28%，`/tmp/s10b-init.log`）与全量 e2e exit 0（166 passed / 2 skipped，`/tmp/s10b-e2e.log`）；`npm run desktop:package` exit 0（`/tmp/s10b-package.log`，服务端口 54907 / CDP 9222）。
+- GREEN：`npx vitest run src/app/api/provider/models/route.test.ts` → **20 passed**；`npx playwright test e2e/settings.spec.ts --project=chromium` → **22 passed**（新增 3 个用例：保存要求四项齐全缺一项就提示且不写盘 / 新建卡片先拉取模型只读取端点 / 已保存的密钥以黑点占位显示）。
+- 基线：`./init.sh` **exit 0**（`/tmp/s10-init.log`）—— **60 files / 853 tests**、statements **95.28%**、lint、`tsc --noEmit`、生产构建全绿。
+- 全量 e2e：`npm run test:e2e` exit 0 → **166 passed / 2 skipped**（三浏览器，`/tmp/s10-e2e.log`），tracked-file 检查通过；上一轮为 157 passed / 2 skipped。
+- 打包与真机：`npm run desktop:package` exit 0（`/tmp/s10-package.log`）→ 启动 `out/MD-Convertor-darwin-arm64/MD-Convertor.app --remote-debugging-port=9222`（日志 `/tmp/md032.log`，服务端口 **52057**）→ 用 `/tmp/shot-settings.mjs` 与 `/tmp/probe-validation.mjs` 实测：密钥框 `value` 为空 + 八个黑点占位、新建卡片模型字段 count 1、四个缺失提示按序出现；`settings.json`（1484 bytes，mtime `9月18 16:18`）未被写入；截图 `/tmp/s10-settings.png`。
+- 未跑发布门禁（版本决策仍未定）；`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip` 与 `docs/TESTING.md` 记录的哈希仍是修复前构建。
+
+### feat-027 云端翻译超时 / feat-028 模式标签（上一轮）
+
+- RED：`openai-compatible.test.ts` 新增「maps a timeout that lands while the body is being read to TRANSLATE_TIMEOUT」→ 1 failed / 10 passed（实收 `{502, TRANSLATE_PROVIDER_ERROR}`，期望 `{504, TRANSLATE_TIMEOUT}`）；`limits.test.ts` 新增「leaves room for the thinking tokens of a reasoning model」→ 1 failed / 3 passed（60000 ≠ 180000）；e2e「翻译服务提供方卡片切换时不再渲染「当前生效」标签」→ 首条 `toHaveCount(0)` 失败。
+- GREEN：`npx vitest run src/lib/translate/` → **12 files / 198 tests passed**；`npx playwright test e2e/settings.spec.ts --project=chromium` → **19 passed**。
+- 基线：`./init.sh` **exit 0**（`/tmp/s9-init.log`）—— 59 files / **839 tests**、statements **95.26%**、lint、`tsc --noEmit`、生产构建全绿。
+- 全量 e2e：`npm run test:e2e` → **157 passed / 2 skipped，exit 0**（`/tmp/s9-e2e.log`），tracked-file 检查通过。
+- 打包与真机：`npm run desktop:package` exit 0（`/tmp/s9-package.log`）→ 直接跑 `out/MD-Convertor-darwin-arm64/MD-Convertor.app/Contents/MacOS/MD-Convertor --remote-debugging-port=9222`（PID 65384、服务端口 63338，日志 `/tmp/md031.log`）；产物内容校验：`Contents/Resources/server/.next/server/chunks/src_lib_translate_limits_ts_0a46et0._.js` 含 `Math.max(12e4,18e4*e+3e4)`。
+- 探针证据（`/tmp/probe-cloud3.mjs`，自撰文本，密钥不出内存）：3 段 ⇒ `ANALYZE 200 @ 16011ms` / `RUN 200 @ 26834ms`；60 段（121 块）⇒ `ANALYZE 200 @ 78869ms` / `RUN 200 @ 284433ms`；两者修复前分别为 `502 @ 60011ms` 与 `RUN 502 @ 60039ms`。
+- 界面证据：`/tmp/shot-mode.mjs` 三次切换前后两个 radio 的 `boundingBox()` 逐项相等（`cloud x=190 y=315.53`、`local x=344.42 y=315.53`），`当前生效` 计数恒为 0；截图 `/tmp/p2-settings-modes.png`。测试后 `settings.json` 已还原为 `mode: cloud` + `mimo-v2.5-pro`（`baseUrl https://token-plan-cn.xiaomimimo.com/v1`）。
+- 已知打包事实（预先存在，非本轮引入）：`app.asar` 未排除 `docs/`、`.pi/`、`AGENTS.md`、`CHANGELOG*`（asar 2,240,986 B，其中含文档文本）；运行时服务来自 `Contents/Resources/server/`（`extraResource`），因此以该目录为准核对产物逻辑。
+
+### feat-026 云端 Provider 配置体验（历史）
+
+- RED：`npx playwright test e2e/settings.spec.ts e2e/home.spec.ts --project=chromium` → **4 failed / 27 passed**（`/tmp/s8-red.log`，恰好是四个新 provider 用例）。
+- 契约层：`npx vitest run` → **59 files / 837 tests passed**（`/tmp/s8-b1-green2.log`）。
+- GREEN：`npx playwright test e2e/settings.spec.ts --project=chromium` → **19 passed**（`/tmp/s8-green3.log`）。中途两个必须修掉的问题：① e2e 选择器写的是 `section[aria-label=…]` 而卡片元素是 `<article>`；② 卡片头部原本用 `.providerHead .button { margin-left:auto }`，两个按钮各占 auto 会被拉开，改为包一层 `.actions`。
+- 基线：`./init.sh` **exit 0**（`/tmp/s8-init.log`）—— 59 files / **837 tests** passed，statements **95.26%**，lint、`tsc --noEmit`、生产构建全绿。
+- 全量 e2e：`npm run test:e2e` → **157 passed / 2 skipped，exit 0**（`/tmp/s8-e2e.log`），tracked-file 检查通过。
+- 打包与真机：`npm run desktop:package` exit 0（`/tmp/s8-package.log`）→ 启动打包应用（CDP 9222 / 服务端口 50925）→ 截图 `/tmp/p1-settings-cloud.png`、`/tmp/p1-new-card.png`；`boundingBox()` 实测 Base URL 输入框 `x=596 y=558.47 w=286 h=39`、拉取模型按钮 `x=892` 同一 y ⇒ 同行且在右侧。
+- 密钥库残留：`secrets.json` 原有两条（活跃 `8b14f5d6…` 与已删除 provider 的 `cc3df153-…`），移除后者后只剩活跃条目；备份留在 `/tmp/secrets-backup.json`。
+
+### feat-025 设置页 UI 反馈与页头清理（历史）
+
+- RED：`npx playwright test e2e/home.spec.ts e2e/settings.spec.ts --project=chromium` → **6 failed / 23 passed**（`/tmp/s7-red.log`；含「本机处理」仍在、「翻译服务提供方」标题不存在、无状态胶囊、`添加语言` 仍渲染）。
+- GREEN：同命令 → **29 passed**（`/tmp/s7-green3.log`）。中途两个必须修掉的问题：① e2e server 用的是 `.next/standalone`，改完前端要先 `npm run build`，否则页面仍是旧版；② 章节标题断言需 `exact: true`，否则「翻译」同时匹配「翻译服务提供方」触发 strict mode。
+- 全量 e2e：`npm run test:e2e` → **154 passed / 2 skipped，exit 0**，tracked-file 检查通过（`/tmp/s7-e2e-final.log`）。前一次全量有 3 个 firefox 用例失败（先是一个下载用例 30s 超时，随后两个 `NS_ERROR_PROXY_CONNECTION_REFUSED` —— e2e server 中途掉线导致的连锁失败）；单跑 firefox **51 passed / 1 skipped** 全绿（`/tmp/s7-ff-rerun.log`），归为偶发。
+- 基线：`./init.sh` **exit 0**（`/tmp/s7-init.log`）—— 59 files / **839 tests** passed，statements **95.27%**，lint、`tsc --noEmit`、生产构建全绿。本改动是纯前端，`src/lib` 无新增单测（`addCustomLanguage` 及其单测保留）。
+- 真机视觉校验：`npm run desktop:package` exit 0（`/tmp/s7-package3.log`）→ 启动 `out/MD-Convertor-darwin-arm64/MD-Convertor.app`（`--remote-debugging-port=9222`，服务端口 60451）→ 截图 `/tmp/v2-home.png`、`/tmp/v2-settings.png`、`/tmp/v2-settings-local.png`。第一版 badge 用 `position:absolute` 会压到相邻选项（截图发现），改为 in-flow flex 项后才正确；「返回转换」点击后真实导航回 `/`（`http://127.0.0.1:60451/`）。
+- 截图副作用已还原：`mode` 点回 `cloud`，`~/Library/Application Support/MD-Convertor/settings.json` 内容与原始一致（`languages.custom` 为空、`target: zh-Hans`、`defaultEnabled: false`）。
+- 文档同步：`CHANGELOG.md` + `CHANGELOG.zh.md` 的 `[Unreleased] → Changed/变更`，`docs/PRD-translation.md` R1a 措辞（gear → 「⚙ 设置」按钮），`feature_list.json`（feat-025 → done，activeFeature → null）。
+
+### feat-024 长文翻译超时修复（历史）
+
+- RED：新建 `src/lib/translate/limits.test.ts` 3 用例全部失败（`translateTaskTimeoutMs` 未定义）；`run.test.ts` 新增「scales the task deadline with the batch count」失败（`AbortSignal.timeout` 收到 `NaN`，期望 `2×60000+30000`）。
+- GREEN：`npx vitest run src/lib/translate/limits.test.ts src/lib/translate/run.test.ts` → **27 passed**（limits 3 + run 24）。
+- 全量：`./init.sh` **exit 0**（`/tmp/s6-dyn-init.log`）—— 59 files / **839 tests** passed，statements **95.27%**，lint、`tsc --noEmit`、生产构建全绿。
+- 根因证据（本机实测，均用生产同款参数与 `--model deepseek-flash`）：小 prompt **1–2s**；8,000 字符批次 **7s**（exit 0，输出 9,505 B）⇒ CLI 不慢。
+- 真机复现证据：修复前 `open` 启动的 app 日志 `{"requestId":"ba692e5c…","status":504,"code":"TRANSLATE_TIMEOUT","durationMs":120006}`（恰好 120s 上限）；用户确认界面文案为「翻译任务超时」（= 任务级而非单批级）。
+- 修复后真机：`npm run desktop:package` exit 0（`/tmp/s6-dyn-package.log`）→ 启动 `out/MD-Convertor-darwin-arm64/MD-Convertor.app`（PID 24236）→ 用户用同一篇文章重测**成功**；服务端日志只有转换 `{"status":200,"durationMs":1244,"outputBytes":10589}`，**无任何 TRANSLATE_TIMEOUT 行**（成功路径按设计不写日志）。
+- 产物内容校验：`.next/standalone/.next/server/chunks/src_lib_translate_limits_ts_0a46et0._.js` 含 `Math.max(12e4,6e4*e+3e4)`；`app.asar`（2,193,267 B，mtime `9月18 11:02`）内 `translateTaskTimeoutMs` 出现 **13** 次。
+
+### 0.3.0 S6（历史）
+
+- `npm test -- release-guards`：T6.1 RED 4 failed / 21 passed（`/tmp/s6-t61-red.log`）→ GREEN 25 passed；T6.4 退役改造 RED 6 failed / 23 passed（`/tmp/s6-t64a-red.log`）→ 加 0.2.1 条目再 RED 1 failed / 28 passed → GREEN **29 passed**。
+- 守卫真实行为抽样（本机）：`assertProtectedArchive()` → `{"status":"retired"}`；`assertProtectedBaseline()` → verified；`captureHistoricalZipSnapshot()` → 只含 `MD-Convertor-darwin-arm64-0.2.1.zip`（哈希校验通过），`listRetiredHistoricalZips()` → 0.1.0/0.1.1/0.1.2/0.1.3/0.2.0。
+- `npm run desktop:release`（Node.js 24.15.0）：**exit 0**，日志 `/tmp/s6-release-3.log`（0 条 ERROR）——`./init.sh` 58 files / 835 tests、statements 95.25%、`npm run test:e2e` 142 passed、`npm run test:live` 2/2、`electron-forge make` 成功；产物 `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip`，`358,562,540` bytes，SHA-256 `2a0e236e97e51d97fd24c7002a923ef5703ad8245234531f2eb3aa1350c81147`，包内版本 `0.3.0`、arm64。
+- 产物独立复核：`stat` 大小一致、`shasum -a 256` 一致、`plutil -extract CFBundleShortVersionString` = `0.3.0`、`file` = `Mach-O 64-bit executable arm64`。
+- 打包冒烟：`ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1` 跑 `out/MD-Convertor-darwin-arm64/MD-Convertor.app/Contents/MacOS/MD-Convertor`，exit 0，preload 桥与运行时密钥往返均通过。
+- 0.2.1 锚点恢复证据：GitHub `v0.2.1` 资产 354,635,067 bytes 与记录一致；重下后 `shasum -a 256` = `32c1d96af58a7701e6d2fe0bf619be0f8f224803355c6ef63aad43c85569463e`，`unzip -t` 无错。
+- QA-012 证据：`npm audit --omit=dev --json` → `{critical:1, high:1, moderate:1, total:3}`；`npm ls next sharp` → `next@16.3.0`、`sharp@0.35.3`。
+
+### 0.3.0 S5（历史）
+
+- `./init.sh` passed with Node.js `24.15.0`: 58 test files / 830 tests, coverage 95.25% statements, production build OK（lint 干净、`tsc --noEmit` 干净）；`vitest.config.ts` 新增 `src/lib/translate/decision.ts` 逐文件门槛（95/90/100/95）。
+- `npm run test:e2e` passed: 142 passed / 2 skipped across Chromium, Firefox and WebKit（`workers: 1`，约 1.3 分钟；S4 基线为 127 passed / 2 skipped，新增 5 个用例 × 3 浏览器）。
+- T5.1 测试计数：`src/lib/translate/decision.test.ts` 7 个用例（0 / 0.699 / 0.70 / 0.969 / 0.97 / 1 六个边界 + 空散文 + 展示百分比）。
+- T5.2 测试计数：`run.test.ts` 23 个（含新增 golden 用例）、`segment.test.ts` 76 个，共 99 个通过。
+- T5.2 测试敏感性证据（回归用例本身不可能是「新增即红」）：临时把 `runTranslation` 里的 `scope` 过滤条件改成恒真后，golden 用例与既有 non-target 用例同时失败（输出变成 `[zh] 中文段落。`），随即还原（`git diff src/lib/translate/run.ts` 为空）。
+- T5.3–T5.5 RED 证据（在未改动的 S4 构建上跑新用例，chromium）：4 个用例失败——`getByRole('dialog')` 与 `getByRole('status')` 均未找到，仅「<70% 直译」用例通过（S4 恒用 `scope:"all"`，正是 T5.5 要锁定的行为）；日志 `/tmp/s5-e2e-red.log`。
+- T5.3–T5.5 GREEN：同文件 chromium 13 passed；三浏览器全量 142 passed / 2 skipped。
+- 新用例覆盖：80% ⇒ 弹窗文案「检测到正文约 80% 已是英语，是否只翻译其余部分？」、选「只翻译非目标语言部分」后仅一次 `run` 且 `scope: "non-target"`、前 8 段不被 `[en] ` 包裹而末 2 段被翻译；「不翻译」⇒ `runs 0` / `analyses 1`、弹窗关闭、无 `转换结果` tablist、原文预览可用、勾选框仍勾选、提示「已选择不翻译」；100% ⇒ 提示「正文已是英语，无需翻译」且 `runs 0`；全 skipped 的 analyze 响应 ⇒ 提示「正文没有可翻译的段落」且 `runs 0`；60% ⇒ 无弹窗、`scopes == ["all"]`、译文 Tab 出现 `[en] ` 前缀。
+- 本轮未发现 S3 缺陷，因此未改动 `src/lib/translate/` 的引擎实现（`run.ts` 仅作为临时变异实验被改写并立即还原）。
+
+### 0.3.0 S4（历史）
+
+- `./init.sh` passed with Node.js `24.15.0`: 57 test files / 822 tests, coverage 95.24% statements, production build OK（lint 干净、`tsc --noEmit` 干净）；新增 `src/lib/translate/filename.ts` 与 `client.ts` 的逐文件门槛（95/90/100/95）。
+- `npm run test:e2e` passed: 127 passed / 2 skipped across Chromium, Firefox, WebKit（`workers: 1`，约 1.2 分钟）；新增 `e2e/translate.spec.ts` 8 个用例 × 3 浏览器。用例覆盖：默认开关取值与勾选、勾选后自动出现双 Tab 与译文、未勾选时无 Tab 且 DOM 与旧版一致、复制/下载按 Tab 分流（含 `粘贴测试文章-en.md`）、取消后显示「已取消翻译。」且可重试、失败显示错误与重试、未配置模型时只显示提示与设置链接。
+- T4.1–T4.6 均先 RED 再 GREEN（每个任务先写失败用例/断言，再最小实现），期间修掉的真实问题：analyze 响应需取 `.analysis`；结果 Tab 的 panel 名由 `aria-labelledby` 决定；非 Tab 场景多包一层 tabpanel 会使 `getByLabel("Markdown 预览")` 触发 strict mode 冲突（已改为不启用翻译时不加包裹层）；复制与翻译完成存在竞态（用例补 `waitForTranslation`）；`e2e/settings.spec.ts` 真实存储未还原导致 firefox/webkit 自动翻译（已用 `try/finally` + `request.put` 还原默认设置）。
+- 已知未实现：页面路径上 `409 TRANSLATE_ANALYSIS_STALE` 不可达（analyze 与 run 用同一 markdown），因此未做「重新判定后重试」；译文未就绪时不禁用复制/下载。
+
+### 0.3.0 S3（历史）
+
+- `./init.sh` passed with Node.js `24.15.0`: 55 test files / 805 tests, coverage 95.15% statements, production build OK（lint 干净、`tsc --noEmit` 干净）。`vitest.config.ts` 新增两个端点进 coverage `include`，并为 9 个 `src/lib/translate/**` 模块设定逐文件门槛。
+- `npm run test:e2e` passed: 103 passed / 2 skipped across Chromium, Firefox and WebKit（与 S2 基线一致；翻译 UI 属 S4，本阶段不新增 e2e 用例）。
+- 真实 HTTP 冒烟（T3.10；临时脚本已删除、不入库，复现方式：`npm run build` 后以 `HOSTNAME=127.0.0.1 NODE_ENV=production PORT=<port> MD_CONVERTOR_USER_DATA=<临时目录> MD_CONVERTOR_SESSION_TOKEN=<令牌> node .next/standalone/server.js` 启动，向 `/api/translate/{analyze,run}` 发 JSON 请求并带 `x-md-convertor-token`）：启动两个实例（3100 带 `MD_CONVERTOR_TEST_PROVIDER=1`、3101 不带），14/14 检查通过——analyze 200（25 块 / targetChars 66 / 围栏代码块标为 skipped）、run(all) 去掉 `[zh-Hans] ` 标记后与输入**逐字节相同**、CRLF 与制表符保留、base64 图片数据未被改动、run(non-target) 不动中文、变更后的文档 ⇒ 409 `TRANSLATE_ANALYSIS_STALE`；未设置标志时同一请求 ⇒ 409 `TRANSLATE_NOT_CONFIGURED`；错误响应体不含正文文本。
+- S3 测试计数：`segment.test.ts` 76、`analysis.test.ts` 6、`prompt.test.ts` 23、`run.test.ts` 22、`provider/provider.test.ts` 13、`openai-compatible.test.ts` 10、`local-cli.test.ts` 12、`test-provider.test.ts` 5、`src/app/api/translate/route.test.ts` 29、`src/lib/local-cli/models.test.ts` 16、`registry.test.ts` 3。
+- S2 模块扩展（保持既有测试全绿）：`CliRunResult` 增加 `failure`，`runCliCommand` 增加可注入 `input`/`cwd`/`signal`；`LocalCliDefinition` 增加 `printArgs` 与 `modelFlag`。
+- 本轮修掉的类型问题：`resolveEffectiveModel` 的 env 参数改为 `ModelEnv = Readonly<Record<string, string | undefined>>`（测试不再需要伪造 `NODE_ENV`）；两处 S2 测试的 CLI mock 补齐 `failure: null`；路由测试的 `it.each` 元组改为显式 `Route` / `RequestBuilder` 类型。
+
+### 0.3.0 S2
+
+- `./init.sh` passed with Node.js `24.15.0`: 46 test files / 605 tests, coverage 94.79% statements, production build OK（lint 干净、`tsc --noEmit` 干净）。
+- `npm run test:e2e` passed: 103 passed / 2 skipped across Chromium, Firefox, and WebKit；`e2e/settings.spec.ts` 由 7 个用例扩展到 15 个（真实 API 往返仍为 chromium-only）。
+- `npm run desktop:package` succeeded；打包应用冒烟 `ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1 MD_CONVERTOR_SMOKE_KEY=sk-env-smoke-placeholder out/MD-Convertor-darwin-arm64/MD-Convertor.app/Contents/MacOS/MD-Convertor` 打印 `Preload bridge smoke passed: secrets.set function, encryptionAvailable true` 与 `Runtime secret smoke passed: TRANSLATE_NOT_CONFIGURED → TRANSLATE_PROVIDER_ERROR → TRANSLATE_NOT_CONFIGURED, env fallback TRANSLATE_PROVIDER_ERROR`（保存即时生效 → 删除即时生效 → 环境变量回退，全程未重启；冒烟结束后 `secrets.json` 为 `{}`，settings 已还原，无残留）。
+- S2 测试计数：`src/lib/provider/endpoint.test.ts` 42、`credentials.test.ts` 9、`models.test.ts` 12、`src/lib/local-cli/registry.test.ts` 3、`scan.test.ts` 9、`models.test.ts` 12、`src/lib/settings/languages.test.ts` 10、四个路由测试共 47、`electron/runtime-secrets.test.mjs` 6。
+- 修复记录：`cliEnvironment()` 改为复制 `process.env` 后删除 `MD_CONVERTOR_*`（同时解决 `NODE_ENV` 必填的类型错误）；`runCliCommand` 的 timeout 变量改为 spawn 之后的 `const` 以通过 lint。
+- 0.3.0 未触碰转换/抽取/图片/Mermaid/既有安全限额管线，未改动 `currentVersion`（仍为 `0.2.1`），未运行 `npm run desktop:release`（其版本守卫锁定 `0.2.1`，且历史 ZIP 不可覆写）。
+
+### 0.3.0 S1（历史）
+
+- `./init.sh` passed with Node.js `24.15.0`: 34 test files / 455 tests, coverage 94.46% statements, production build OK.
+- `npm run test:e2e` passed twice: 79 passed / 2 skipped across Chromium, Firefox, and WebKit (7 new settings cases; the real-store round trip is chromium-only because all projects share one temporary user data directory).
+- `npm run desktop:package` succeeded; packaged app smoke (`ELECTRON_SMOKE_TEST=1 out/MD-Convertor-darwin-arm64/MD-Convertor.app/Contents/MacOS/MD-Convertor`) printed `Preload bridge smoke passed: secrets.set function, encryptionAvailable true`.
+- S1 test counts: `src/types/settings.test.ts` 45, `src/lib/settings/store.test.ts` 14, `src/app/api/settings/route.test.ts` 23, `electron/env.test.mjs` 23, `electron/secrets.test.mjs` 11, `electron/preload.test.cjs` 17.
+- 0.3.0 未触碰转换/抽取/图片/Mermaid/既有安全限额管线，未改动 `currentVersion`（仍为 `0.2.1`），未运行 `npm run desktop:release`（其版本守卫锁定 `0.2.1`，且历史 ZIP 不可覆写）。
+
+### 0.2.1（历史）
 
 - `npm run desktop:release` passed with Node.js 24.14.1.
 - Baseline: lint, typecheck, coverage, production build, 28 test files / 322 tests.
@@ -31,10 +312,47 @@
 
 ## Open Constraints
 
+- **feat-030 起云端只能有一条配置**：设置页只渲染一张 `<article aria-label="云端 Provider">`，读写「当前生效的那条」（`activeProviderId` → 否则 `providers[0]`），保存时把 `cloud.providers` 收敛为单条目。契约（`providers[] + activeProviderId`）与 `SETTINGS_VERSION` 未变，但**手工在 `settings.json` 里追加的多条 Provider 会在下次保存时被丢弃**；要做多条并存必须先恢复列表 UI（`feat-026` 的 `drafts`/`newProvider` 版本可从 git 历史取回）。
+- **feat-026 / feat-029 / feat-030 之后「保存」是 Provider 记录的唯一写入入口**：`拉取模型` 只读端点（结果先放草稿态），模型与密钥都不再随意落盘，因此改完名称 / Base URL / 密钥 / 模型后必须先点「保存」才生效；密钥来源只有系统密钥库一个（`apiKeyEnv` 已退役）。
+- **feat-025 隐藏了自定义语言入口（保留字段与函数）**：`languages.custom` 仍在契约里、`addCustomLanguage()` 与其单测仍在，存量自定义标签仍出现在目标语言下拉里；但新标签暂时只能靠手改 `settings.json` 添加。若将来要恢复入口，只需恢复 `settings/page.tsx` 的那段 JSX 与 `setNote("language", …)` 分支。
+- **`0.3.1` 尚未跑门禁（2026-09-20）**：版本号与门禁目标都已是 `0.3.1`，但 `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip`（`358,562,540` bytes / `2a0e236e…1147`）是 `feat-024` 之前的旧构建，只作历史；修复后的 `npm run desktop:package` 产物已在真机验证但**未过门禁、无哈希记录**。跑完门禁后必须同步 `docs/TESTING.md`(+zh)、`docs/QUALITY-AUDIT.md`、`README.md`(+zh)、`PROGRESS.md` 的产物数字，并把 `CHANGELOG`(+zh) 的 `[Unreleased]` 归档为 `[0.3.1]`。
+- **feat-031 起密钥输入框在已保存时为只读**：`readOnly={Boolean(cloudProvider?.keyStored)}`，占位文案「••••••••（已保存，先清除密钥再更换）」。不用 `disabled` 是为了保留可聚焦与屏幕阅读器可达；「清除密钥」语义未变（删除密钥库条目 + `keyStored:false` ⇒ 输入框恢复可编辑，再点「保存」才能写入新密钥）。不要把密钥读回页面。
+- **批次数由「≤20 块」而非字符数主导**：长文段落多时批次数偏多、`pi` 的固定启动开销被重复支付（实测 8,000 字符批次 7s，含启动）。修复后已能跑完，因此**未**改动 `TRANSLATE_BATCH_MAX_BLOCKS`；若将来同类文章仍然慢，把这个上限提高是第一个候选优化（代价：单批输出更长，解析与质量风险上升，需另开测试）。
 - The app is not Developer ID signed or notarized. Gatekeeper may require an explicit Open action or removal of the quarantine attribute after the checksum is verified.
+- **Provider 密钥只有一个来源（feat-026 起）**：系统密钥库加密项（`safeStorage` → `secrets.json`）经主进程注入运行时表；`apiKeyEnv` 与 `<userData>/.env` 的环境变量来源已退役（旧键在读取时被容忍、写出时丢弃，未升 `SETTINGS_VERSION`）。因此手工改 `settings.json` 已无法配置密钥，必须通过设置页保存。
+- **QA-013（accepted，feat-027 引入）**：单次调用上限 60s → 180s 后，一个不再响应的 Provider 会把任务占住到 `批次数 × 180s + 30s` 才报超时（任务总预算与「取消」仍是兜底）。实测依据：单批推理耗时 38–60s，60s 上限必然在读体途中切断。若将来觉得太慢，候选方案是调小云端批次大小或把上限做成设置项（都属产品决策）。
+- **QA-012（已关闭，2026-09-20）**：`next` 升到 16.3.5、`sharp` 升到 0.35.4（连带 `@img/sharp-*` 0.35.4 / `@img/sharp-libvips-*` 1.3.3）后，`npm audit --omit=dev` 为 **0 漏洞**；原先的 1 critical（`next` 16.0.0–16.3.2 未认证 RCE）、1 high（`sharp` < 0.35.4 libheif）与 1 moderate（`baseline-browser-mapping`）都不再出现。剩余 28 条仅在 electron-forge 构建链的开发依赖里。详见 `docs/QUALITY-AUDIT.md`。
+- **发布门禁已按用户授权的方案 A 改造（2026-09-18）**：`~/Downloads/MD-Convertor-0.1.3-release/` 与 0.1.0–0.2.0 的 ZIP 在本机已丢失且无法恢复，因此缺失项不再阻断发布：`assertProtectedArchive` 缺文件返回 `{status:"retired"}`，`captureHistoricalZipSnapshot` 只校验仍然存在的条目，`listRetiredHistoricalZips()` + `HISTORICAL_ARCHIVE_RETIRED_NOTICE` 在发布结尾列出退役项。**仍然保留的硬校验**：已存在的归档被改动或可写 → `PROTECTED_ARCHIVE_ERROR`/`HISTORICAL_ZIP_ERROR`；目录中出现未登记的发布 ZIP → 拒绝；`assertProtectedBaseline`（`v0.1.3` 标签 → `ce041c9`）不变。因此门禁不再能举证「发布之后归档被删」——该风险已因归档永久丢失而失效。
+- **归档不可恢复证据（已穷尽本机路径，2026-09-18）**：废纸篓为空（Finder 查询无条目）；iCloud Drive（`~/Library/Mobile Documents/com~apple~CloudDocs`）内无 MD-Convertor；`/Volumes` 只有 `Macintosh HD`（无外接盘）；未安装任何备份工具（Arq/Backblaze/Dropbox/Resilio 等均无）；`tmutil` 无本地快照且未配置 Time Machine 目的地；仓库脚本不删除归档（`scripts/` 中只有哈希校验引用）；`~/Downloads` 目录 mtime 为 `9月16 13:28`。GitHub releases：`v0.2.1` 带资产且大小 `354635067` 与本记录完全一致（已重下并验证哈希一致，见下条），`v0.2.0` 无资产，`v0.1.0`–`v0.1.3` 无 release ⇒ 0.1.x 永远取不回。用户确认未移动过这些文件。
+- **0.2.1 锚点状态**：`~/Downloads/MD-Convertor-archive/releases/MD-Convertor-darwin-arm64-0.2.1.zip`，354,635,067 bytes，SHA-256 `32c1d96af58a7701e6d2fe0bf619be0f8f224803355c6ef63aad43c85569463e`（与 0.2.1 记录逐字节一致，`unzip -t` 无错），已列入 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 并在每次发布时被强制校验。若将来 0.1.x/0.2.0 归档重新出现，守卫会自动恢复严格校验，**不要从清单中删除已退役条目**。
+- 本机网络现状（2026-09-18 实测）：`github.com` 返回 200、`api.github.com` 可用（与 2026-09-17 记录的不可达不同）；`release-assets.githubusercontent.com` 未重测。若 Electron 二进制再次需要下载，仍可用 `ELECTRON_MIRROR=https://registry.npmmirror.com/-/binary/electron/ npx install-electron`。Playwright 浏览器已按 `npx playwright install chromium firefox webkit` 安装（revision 1228/1532/2311），`node_modules/electron/dist` 存在。
+- `electron/preload-contract.cjs` 与 `electron/preload.cjs` 中通道名/长度上限是重复的常量：沙箱 preload 不能 require 相对路径，故 `electron/preload.test.cjs` 断言两者一致，改通道名时必须同时改这两处。
+- 0.3.0 起内容隐私边界变化：勾选翻译后正文会发送到用户自行配置的端点（本机 CLI 或云端 Provider）。MD-Convertor 自身仍不上传内容、不建历史；`docs/PRODUCT.md`/`PRODUCT.zh.md` 的隐私段与两份 README 已在 S6 T6.3 按 PRD §5 改写。
+- 端点策略现状（S2）：`/api/provider/models` 与 `/api/local-clis/models` 会真实访问用户配置的地址（默认仅本机/私网与公网单播地址，除三个云元数据地址外）；`/api/runtime/secrets` 只接受本进程内的密钥推送，不落盘、不记日志，也不会与 settings 里的 Provider 列表交叉校验（因此可在 Provider 保存前先推送密钥）。
+- **首页布局有像素级断言**：`e2e/home.spec.ts` 的「富文本转换表单」用例断言转换按钮右边缘与粘贴框右边缘差值 `< 4px`（默认视口），并断言按钮与「来源 URL」输入框同行。改动 `.sourceInput` 的 `flex`、加宽按钮或调整 `.sourceRow` 的 gap 都可能让它转红 —— 这是刻意的（该对齐是用户明确要求的效果）。
+- Chromium/Electron 冒烟只覆盖单一平台；`npm run test:live` 仍是联网发布前门禁，不进入日常单元测试。
+- 测试规模增大后观察到的偶发（本机负载相关，均为一次性，未复现）：`./init.sh` 有一次 `src/lib/images.test.ts` 单点失败（该文件单跑与随后两次全量/带覆盖率全量均 605/605 通过）；`npm run test:e2e` 有一次 5 个 firefox settings 用例失败（随后两次全量 103 passed / 2 skipped 通过，firefox `--repeat-each=3` 42 passed / 3 skipped 通过）。推测与并行负载下的默认超时有关（未验证）；下次复现时先保留 `playwright-report/` 与失败用例名，再决定是否单独放宽超时。
 - `npm run test:live:wechat` remains diagnostic rather than release-blocking because WeChat verification and timeout behavior varies.
+- 翻译引擎（S3）只在进程内单任务锁下工作：analyze 与 run 共用一个槽位，同一时刻只允许一个翻译任务；这是「本机单人应用」的刻意选择，不做队列与并发控制。该锁是**进程级**的，因此 e2e 用 `workers: 1` 串行跑（否则同一批用例会互相撞出 429 `TRANSLATE_BUSY`）；若将来恢复并行，需要先让 e2e 服务器与用例隔离翻译锁。
+- e2e 的真实设置存储是三个 project 共享的同一个临时目录；任何写真实设置的用例必须还原默认值，否则后续用例会带着 `translation.defaultEnabled: true` 自动翻译（S4 起主页面会读该设置）。
+- 页面路径上不会出现 409 `TRANSLATE_ANALYSIS_STALE`（analyze/run 共用同一 markdown 字符串）；当前翻译不带人工编辑，因此仍无该分支与「重新判定」流程。
+- 阈值决策的唯一入口是 `decideTranslation()`（`src/lib/translate/decision.ts`，常量 `SKIP_RATIO` / `CONFIRM_RATIO` 同文件）；页面侧不再有占位 seam，选择结果由 `translationScopeRef`（`src/app/page.tsx`）承载，每次新转换重置为 `"all"`。阈值本身没有设置项（S5 范围不含阈值开关）。
+- `totalChars === 0` 是防御分支：引擎在 analyze 阶段就会用 400 `TRANSLATE_EMPTY_INPUT` 拒绝没有散文的文档，因此页面只在「analyze 响应自报零散文」时才走到该提示；e2e 用改写 analyze 响应覆盖它。
+- 语言判定是**块级**的：一个段落只要含中文就整体判为目标语言，因此「中英混排段落」不会被局部翻译（PRD Q5.5 已确认的上限）。
+- e2e 要构造特定占比时必须只改写 `/api/translate/analyze` 的响应（`route.fetch()` + 改 `ratio`/`totalChars`/`targetChars`/`blocks[].language`）；若改为手写整个 analyze 响应，`run` 会因块数不一致返回 409 `TRANSLATE_ANALYSIS_STALE`。fixture 段落等长才能得到精确占比（当前为 10 段，粒度 0.1）。
+- 本机 `claude` CLI 账号当前无可用模型（默认 `claude-opus-4-8[1m]` 与 `sonnet`/`opus`/`claude-sonnet-4-5`/`claude-3-5-haiku-latest` 全部拒绝），因此 claude 路径只有注入 mock spawn 的单元测试证据，没有本机端到端证据；选 claude 的用户会看到 502 `TRANSLATE_PROVIDER_ERROR`（消息含退出码，不含 CLI 输出）。
+- 语言判定按 BCP-47 主标签比较：`zh-Hant` 与 `zh-Hans` 视为同一目标语言，因此繁体正文在目标语言为 `zh-Hans` 时不会被列入待翻译块（已知上限，S5 的占比阈值 UX 不受影响）。
 - No Windows, Intel Mac, hosted service, account, history, or cross-device synchronization is planned.
 
 ## Next Step
 
-No active product work. Start a new feature only after adding one scoped `in-progress` item to `feature_list.json` and, when needed, a matching task document.
+`feat-031`（版本 `0.3.1`、依赖升级、界面三项与密钥框限制）已实现，`./init.sh` / 三浏览器 e2e / live / 打包与真机都通过，**代码已提交并推送到 GitHub**（`main`）。剩余顺序：
+
+1. **提交门 + 提交（已完成）**：ponytail（反过度工程）→ code-review（Standards/Spec）→ neat-freak（文档对齐）已按各自 SKILL.md 跑完并报告（自审，`subagent` 在本机不可用），用户确认后提交并推送到 `origin main`。
+2. **跑 `npm run desktop:release`**（目标版本 `0.3.1`）→ 记录新 ZIP 大小/SHA-256，更新 `docs/TESTING.md`(+zh)、`docs/QUALITY-AUDIT.md`、`README.md`(+zh)、`PROGRESS.md`，并把 `CHANGELOG`(+zh) 的 `[Unreleased]` 归档为 `[0.3.1] - <日期>`。
+3. **决定是否发布到 GitHub Releases**（用户此前选「稍后」；`0.2.1` 是最近一次正式发布）。
+4. **真机小点**：用户提到「稍后把真机测试的一些小点完善了再说」，等清单给出后再评估是否单独一轮。
+5. **签名/notarization：用户 2026-09-20 决定不做**（`docs/QUALITY-AUDIT.md` 的 QA-008 已改为 accepted / not planned，判词与 Release Decision 同步）。要恢复需 Apple Developer 付费会员 + **Developer ID Application** 证书 + notarytool 凭据，再在 `forge.config.cjs` 加 `osxSign`/`osxNotarize`（凭据走环境变量）；签名后产物哈希会变，必须重跑门禁并更新记录。在那之前所有产物都只适合个人测试。
+6. **下一轮：UI 优化（用户已定，2026-09-20，单开新会话）**。按 Startup Workflow 先读 `PROGRESS.md` → `session-handoff.md` → `feature_list.json` → `docs/PRODUCT.md`，再跑 `./init.sh` 建立基线；需求分析（grill/think）先于实现。注意 `e2e/home.spec.ts` 有像素级断言（转换按钮右边缘与粘贴框右边缘差值 < 4px，且与「来源 URL」输入框同行），改 `.sourceInput` 的 `flex`、按钮宽度或 `.sourceRow` 的 gap 会撞上它——这是刻意锁定的效果，要改先改断言。
+
+不要重做 S1–S6 与 `feat-024` – `feat-030` 已完成的部分；不要放宽端点、密钥或归档守卫；不要把已退役的历史 ZIP 条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删除。

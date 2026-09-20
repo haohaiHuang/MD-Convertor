@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -19,7 +20,13 @@ import {
   type PastedPayload,
 } from "@/lib/paste-client";
 import styles from "./page.module.css";
+import { fetchSettings } from "./settings/client";
+import { languageLabel } from "@/lib/settings/languages";
+import { TranslationError, analyzeDocument, isCancelled, translateDocument } from "@/lib/translate/client";
+import { decideTranslation } from "@/lib/translate/decision";
+import { translatedFilename } from "@/lib/translate/filename";
 import type { ConvertResponse } from "@/types/conversion";
+import type { TranslationAnalysis, TranslationScope } from "@/types/translation";
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -70,12 +77,71 @@ function clearTransientOutput<Result>(state: PasteClientState<Result>): PasteCli
   };
 }
 
+type ResultTab = "original" | "translated";
+
+type SkippedReason = "target-language" | "empty" | "declined";
+
+type TranslationState =
+  | { status: "idle" }
+  | { status: "unconfigured" }
+  | { status: "analyzing" }
+  | { status: "translating" }
+  | { status: "confirming"; analysis: TranslationAnalysis; percent: number }
+  | { status: "skipped"; reason: SkippedReason }
+  | { status: "done"; markdown: string; warnings: string[] }
+  | { status: "cancelled" }
+  | { status: "failed"; message: string };
+
+const TRANSLATION_FAILED_MESSAGE = "翻译失败，请稍后重试。";
+
+const SKIPPED_NOTICE = {
+  "target-language": "",
+  empty: "正文没有可翻译的段落，无需翻译。",
+  declined: "已选择不翻译，结果保留原文。",
+} as const;
+
+function skippedNotice(reason: SkippedReason, targetLanguage: string | null): string {
+  if (reason === "target-language") {
+    return `正文已是${languageLabel(targetLanguage ?? "") || "目标语言"}，无需翻译`;
+  }
+  return SKIPPED_NOTICE[reason];
+}
+
+function MarkdownPreview({ markdown, label }: { markdown: string; label: string }) {
+  return (
+    <article className={styles.preview} aria-label={label}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        urlTransform={(value, key) => {
+          if (key === "src" && /^data:image\/(?:png|jpeg|webp|gif|avif);base64,/i.test(value)) return value;
+          return defaultUrlTransform(value);
+        }}
+        components={{
+          a: ({ children, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer">{children}</a>,
+          // eslint-disable-next-line @next/next/no-img-element
+          img: (props) => <img {...props} alt={props.alt || "网页图片"} loading="lazy" />,
+        }}
+      >
+        {markdown}
+      </ReactMarkdown>
+    </article>
+  );
+}
+
 export default function Home() {
   const [clientState, setClientState] = useState<PasteClientState<ConvertResponse>>(
     () => createPasteClientState<ConvertResponse>(),
   );
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [translateEnabled, setTranslateEnabled] = useState(false);
+  const [targetLanguage, setTargetLanguage] = useState<string | null>(null);
+  const [translation, setTranslation] = useState<TranslationState>({ status: "idle" });
+  const [resultTab, setResultTab] = useState<ResultTab>("original");
   const controllerRef = useRef<AbortController | null>(null);
+  const translationControllerRef = useRef<AbortController | null>(null);
+  const analysisRef = useRef<TranslationAnalysis | null>(null);
+  const translationScopeRef = useRef<TranslationScope>("all");
+  const confirmDialogRef = useRef<HTMLDialogElement | null>(null);
   const resultRef = useRef<HTMLElement | null>(null);
   const { mode, linkInput, pasteInput, output } = clientState;
   const { requestState, result, error, copied, showCopyFallback } = output;
@@ -97,8 +163,46 @@ export default function Home() {
     hasPasteContent && !pastePayloadWithinLimit ? "paste-size-error" : "",
   ].filter(Boolean).join(" ") || undefined;
   const isLoading = requestState === "loading";
+  const isTranslating = translation.status === "analyzing" || translation.status === "translating";
+  const showResultTabs = translation.status !== "idle"
+    && translation.status !== "unconfigured"
+    && translation.status !== "skipped"
+    && translation.status !== "confirming";
+  const translatedMarkdown = translation.status === "done" ? translation.markdown : "";
+  const isTranslatedTab = resultTab === "translated" && translatedMarkdown.length > 0;
+  const activeMarkdown = isTranslatedTab ? translatedMarkdown : result?.markdown ?? "";
 
-  useEffect(() => () => controllerRef.current?.abort(), []);
+  useEffect(() => () => {
+    controllerRef.current?.abort();
+    translationControllerRef.current?.abort();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const settings = await fetchSettings();
+        if (cancelled) return;
+        setTranslateEnabled(settings.translation.defaultEnabled);
+        setTargetLanguage(settings.languages.target);
+      } catch {
+        // Settings unreadable: keep the toggle hidden instead of offering a translation that cannot run.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const dialog = confirmDialogRef.current;
+    if (!dialog) return;
+    if (translation.status === "confirming") {
+      if (!dialog.open) dialog.showModal();
+    } else if (dialog.open) {
+      dialog.close();
+    }
+  }, [translation.status]);
 
   useEffect(() => {
     const updateBackToTopVisibility = () => {
@@ -136,10 +240,32 @@ export default function Home() {
     document.getElementById(`${nextMode}-tab`)?.focus();
   }
 
+  function handleResultTabKeyDown(event: React.KeyboardEvent<HTMLButtonElement>, current: ResultTab): void {
+    const tabs: ResultTab[] = ["original", "translated"];
+    const currentIndex = tabs.indexOf(current);
+    let nextIndex = currentIndex;
+    if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % tabs.length;
+    else if (event.key === "ArrowLeft") nextIndex = (currentIndex + tabs.length - 1) % tabs.length;
+    else if (event.key === "Home") nextIndex = 0;
+    else if (event.key === "End") nextIndex = tabs.length - 1;
+    else return;
+
+    event.preventDefault();
+    const next = tabs[nextIndex];
+    setResultTab(next);
+    document.getElementById(`${next}-result-tab`)?.focus();
+  }
+
   async function runConversion(conversionMode: PasteMode, body: { url: string } | PastedPayload): Promise<void> {
     controllerRef.current?.abort();
+    translationControllerRef.current?.abort();
+    translationControllerRef.current = null;
+    analysisRef.current = null;
+    translationScopeRef.current = "all";
     const controller = new AbortController();
     controllerRef.current = controller;
+    setTranslation({ status: "idle" });
+    setResultTab("original");
     setClientState((previous) => ({
       ...previous,
       output: {
@@ -162,15 +288,17 @@ export default function Home() {
       const payload = await response.json();
       if (!response.ok) throw new Error(payload?.error?.message || "转换失败，请稍后重试。");
       if (controller.signal.aborted || controllerRef.current !== controller) return;
+      const converted = payload as ConvertResponse;
       setClientState((previous) => ({
         ...previous,
         output: {
           ...previous.output,
           requestState: "success",
-          result: payload as ConvertResponse,
+          result: converted,
           error: "",
         },
       }));
+      if (translateEnabled) void runTranslation(converted.markdown, null);
       requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
     } catch (requestError) {
       if (controller.signal.aborted) return;
@@ -190,6 +318,91 @@ export default function Home() {
     } finally {
       if (controllerRef.current === controller) controllerRef.current = null;
     }
+  }
+
+  /**
+   * One translation task: analyze when no usable analysis is at hand, then run.
+   * `existingAnalysis` is kept on failure so a retry reuses it and never asks twice (PRD §4.7).
+   */
+  async function runTranslation(markdown: string, existingAnalysis: TranslationAnalysis | null): Promise<void> {
+    if (!targetLanguage) return;
+    translationControllerRef.current?.abort();
+    const controller = new AbortController();
+    translationControllerRef.current = controller;
+    const { signal } = controller;
+    // 用户主动要求翻译，所以直接切到译文 Tab，进度与错误都在那里可见。
+    setResultTab("translated");
+
+    try {
+      let analysis = existingAnalysis;
+      if (!analysis) {
+        setTranslation({ status: "analyzing" });
+        const analyzed = await analyzeDocument(markdown, targetLanguage, signal);
+        if (signal.aborted) return;
+        analysis = analyzed.analysis;
+        analysisRef.current = analysis;
+      }
+
+      // PRD §4.2：大部分正文已是目标语言时先问再翻；重试沿用上次选择，不再弹窗。
+      const decision = decideTranslation(analysis);
+      if (decision.action === "skip") {
+        setTranslation({ status: "skipped", reason: decision.reason });
+        return;
+      }
+      if (decision.action === "confirm" && existingAnalysis === null) {
+        setTranslation({ status: "confirming", analysis, percent: decision.percent });
+        return;
+      }
+
+      setTranslation({ status: "translating" });
+      const result = await translateDocument(markdown, targetLanguage, analysis, translationScopeRef.current, signal);
+      if (signal.aborted) return;
+      setTranslation({ status: "done", markdown: result.markdown, warnings: result.warnings });
+    } catch (error) {
+      if (signal.aborted) return;
+      if (isCancelled(error)) {
+        setTranslation({ status: "cancelled" });
+        return;
+      }
+      if (error instanceof TranslationError && error.code === "TRANSLATE_NOT_CONFIGURED") {
+        setTranslation({ status: "unconfigured" });
+        return;
+      }
+      setTranslation({
+        status: "failed",
+        message: error instanceof TranslationError ? error.message : TRANSLATION_FAILED_MESSAGE,
+      });
+    } finally {
+      if (translationControllerRef.current === controller) translationControllerRef.current = null;
+    }
+  }
+
+  function cancelTranslation(): void {
+    const controller = translationControllerRef.current;
+    translationControllerRef.current = null;
+    controller?.abort();
+    setTranslation({ status: "cancelled" });
+  }
+
+  function retryTranslation(): void {
+    const currentResult = clientState.output.result;
+    if (!currentResult) return;
+    void runTranslation(currentResult.markdown, analysisRef.current);
+  }
+
+  /** The user answered the ratio confirmation: continue with the chosen scope. */
+  function confirmTranslationScope(scope: TranslationScope): void {
+    if (translation.status !== "confirming") return;
+    const currentResult = clientState.output.result;
+    if (!currentResult) return;
+    translationScopeRef.current = scope;
+    void runTranslation(currentResult.markdown, translation.analysis);
+  }
+
+  /** The user declined: keep the original, keep the toggle on, never ask again for this document. */
+  function declineTranslation(): void {
+    if (translation.status !== "confirming") return;
+    setTranslation({ status: "skipped", reason: "declined" });
   }
 
   async function convertLink(value = linkInput): Promise<void> {
@@ -284,7 +497,7 @@ export default function Home() {
     const currentResult = clientState.output.result;
     if (!currentResult) return;
     try {
-      await navigator.clipboard.writeText(currentResult.markdown);
+      await navigator.clipboard.writeText(activeMarkdown);
       setClientState((previous) => {
         if (previous.output.result !== currentResult) return previous;
         return {
@@ -311,16 +524,31 @@ export default function Home() {
   function downloadMarkdown(): void {
     const currentResult = clientState.output.result;
     if (!currentResult) return;
-    const blob = new Blob([currentResult.markdown], { type: "text/markdown;charset=utf-8" });
+    const filename = isTranslatedTab && targetLanguage
+      ? translatedFilename(currentResult.filename, targetLanguage)
+      : currentResult.filename;
+    const blob = new Blob([activeMarkdown], { type: "text/markdown;charset=utf-8" });
     const objectUrl = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = objectUrl;
-    anchor.download = currentResult.filename;
+    anchor.download = filename;
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
     window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
   }
+
+  const translateToggle = targetLanguage ? (
+    <label className={styles.translateToggle}>
+      <input
+        type="checkbox"
+        checked={translateEnabled}
+        disabled={isLoading}
+        onChange={(event) => setTranslateEnabled(event.target.checked)}
+      />
+      <span>翻译为{languageLabel(targetLanguage)}</span>
+    </label>
+  ) : null;
 
   return (
     <main className={styles.page}>
@@ -330,10 +558,9 @@ export default function Home() {
             <span className={styles.brandMark} aria-hidden="true">MD</span>
             <span>MD-Convertor</span>
           </div>
-          <div className={styles.privacy}>
-            <span className={styles.privacyDot} aria-hidden="true" />
-            本机处理 · 不保存内容
-          </div>
+          <Link href="/settings" className={styles.settingsLink} aria-label="设置" title="设置">
+            设置
+          </Link>
         </header>
 
         <section className={styles.hero} aria-labelledby="page-title">
@@ -419,13 +646,14 @@ export default function Home() {
                   </button>
                 ) : (
                   <button key="submit" className={styles.submit} type="submit" disabled={!hasValidUrl}>
-                    转换为 MD
+                    转换
                   </button>
                 )}
               </form>
               {hasLinkInput && !hasValidUrl && (
                 <p id="link-url-error" className={styles.validation} role="alert">请输入完整的 HTTP 或 HTTPS 网页链接。</p>
               )}
+              {translateToggle}
             </section>
           ) : (
             <section id="paste-panel" role="tabpanel" aria-labelledby="paste-tab" className={styles.modePanel}>
@@ -466,6 +694,20 @@ export default function Home() {
                     aria-invalid={Boolean(normalizedSourceUrl) && !hasValidSourceUrl}
                     aria-describedby={Boolean(normalizedSourceUrl) && !hasValidSourceUrl ? "source-url-error" : undefined}
                   />
+                  {isLoading ? (
+                    <button key="stop" className={`${styles.submit} ${styles.stop}`} type="button" onClick={stopConversion}>
+                      停止转换
+                    </button>
+                  ) : (
+                    <button
+                      key="submit"
+                      className={styles.submit}
+                      type="submit"
+                      disabled={!hasPasteContent || !hasValidSourceUrl || !pastePayloadWithinLimit}
+                    >
+                      转换
+                    </button>
+                  )}
                 </div>
                 {normalizedSourceUrl && !hasValidSourceUrl && (
                   <p id="source-url-error" className={styles.validation} role="alert">来源 URL 仅支持无凭据的 HTTP 或 HTTPS 地址。</p>
@@ -484,22 +726,9 @@ export default function Home() {
                       清空
                     </button>
                   )}
-                  {isLoading ? (
-                    <button key="stop" className={`${styles.submit} ${styles.stop}`} type="button" onClick={stopConversion}>
-                      停止转换
-                    </button>
-                  ) : (
-                    <button
-                      key="submit"
-                      className={styles.submit}
-                      type="submit"
-                      disabled={!hasPasteContent || !hasValidSourceUrl || !pastePayloadWithinLimit}
-                    >
-                      转换为 MD
-                    </button>
-                  )}
                 </div>
               </form>
+              {translateToggle}
             </section>
           )}
 
@@ -571,29 +800,149 @@ export default function Home() {
               </ul>
             )}
 
-            {showCopyFallback && (
-              <div className={styles.fallbackBox}>
-                <p>浏览器未允许自动复制，请在下方按 Ctrl/Cmd + A 后复制。</p>
-                <textarea readOnly value={result.markdown} onFocus={(event) => event.currentTarget.select()} />
+            {showResultTabs && (
+              <div className={`${styles.modeTabs} ${styles.resultTabs}`} role="tablist" aria-label="转换结果">
+                <button
+                  id="original-result-tab"
+                  className={styles.modeTab}
+                  type="button"
+                  role="tab"
+                  aria-selected={resultTab === "original"}
+                  aria-controls="original-result-panel"
+                  tabIndex={resultTab === "original" ? 0 : -1}
+                  onKeyDown={(event) => handleResultTabKeyDown(event, "original")}
+                  onClick={() => setResultTab("original")}
+                >
+                  原文
+                </button>
+                <button
+                  id="translated-result-tab"
+                  className={styles.modeTab}
+                  type="button"
+                  role="tab"
+                  aria-selected={resultTab === "translated"}
+                  aria-controls="translated-result-panel"
+                  tabIndex={resultTab === "translated" ? 0 : -1}
+                  onKeyDown={(event) => handleResultTabKeyDown(event, "translated")}
+                  onClick={() => setResultTab("translated")}
+                >
+                  译文
+                </button>
               </div>
             )}
 
-            <article className={styles.preview} aria-label="Markdown 预览">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                urlTransform={(value, key) => {
-                  if (key === "src" && /^data:image\/(?:png|jpeg|webp|gif|avif);base64,/i.test(value)) return value;
-                  return defaultUrlTransform(value);
-                }}
-                components={{
-                  a: ({ children, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer">{children}</a>,
-                  // eslint-disable-next-line @next/next/no-img-element
-                  img: (props) => <img {...props} alt={props.alt || "网页图片"} loading="lazy" />,
-                }}
-              >
-                {result.markdown}
-              </ReactMarkdown>
-            </article>
+            {translation.status === "unconfigured" && (
+              <p className={styles.translationNotice} role="status">
+                尚未配置可用的翻译模型，请先到
+                <Link href="/settings">设置</Link>
+                页配置后再翻译。
+              </p>
+            )}
+
+            {translation.status === "skipped" && (
+              <p className={styles.translationNotice} role="status">
+                {skippedNotice(translation.reason, targetLanguage)}
+              </p>
+            )}
+
+            <dialog
+              ref={confirmDialogRef}
+              className={styles.confirmDialog}
+              aria-labelledby="translate-confirm-text"
+              onCancel={declineTranslation}
+            >
+              {translation.status === "confirming" && (
+                <>
+                  <p className={styles.confirmText} id="translate-confirm-text">
+                    检测到正文约 {translation.percent}% 已是{languageLabel(targetLanguage ?? "")}，是否只翻译其余部分？
+                  </p>
+                  <div className={styles.confirmActions}>
+                    <button
+                      className={styles.clearAction}
+                      type="button"
+                      onClick={declineTranslation}
+                    >
+                      不翻译
+                    </button>
+                    <button
+                      className={`${styles.action} ${styles.actionPrimary}`}
+                      type="button"
+                      onClick={() => confirmTranslationScope("non-target")}
+                    >
+                      只翻译非目标语言部分
+                    </button>
+                  </div>
+                </>
+              )}
+            </dialog>
+
+            {showCopyFallback && (
+              <div className={styles.fallbackBox}>
+                <p>浏览器未允许自动复制，请在下方按 Ctrl/Cmd + A 后复制。</p>
+                <textarea readOnly value={activeMarkdown} onFocus={(event) => event.currentTarget.select()} />
+              </div>
+            )}
+
+            {showResultTabs ? (
+              <>
+                <div
+                  id="original-result-panel"
+                  role="tabpanel"
+                  aria-labelledby="original-result-tab"
+                  hidden={resultTab !== "original"}
+                >
+                  <MarkdownPreview markdown={result.markdown} label="Markdown 预览" />
+                </div>
+
+                <div
+                  id="translated-result-panel"
+                  role="tabpanel"
+                  aria-labelledby="translated-result-tab"
+                  hidden={resultTab !== "translated"}
+                >
+                  {isTranslating ? (
+                    <div className={styles.statusCard} role="status" aria-live="polite">
+                      <span className={styles.spinner} aria-hidden="true" />
+                      <span>
+                        {translation.status === "analyzing"
+                          ? "正在判定正文语言…"
+                          : "正在翻译正文，复杂内容可能需要一会儿。"}
+                      </span>
+                      <button className={styles.clearAction} type="button" onClick={cancelTranslation}>
+                        取消
+                      </button>
+                    </div>
+                  ) : translation.status === "failed" ? (
+                    <div className={styles.errorCard} role="alert">
+                      <span>{translation.message}</span>
+                      <button className={styles.clearAction} type="button" onClick={retryTranslation}>
+                        重试
+                      </button>
+                    </div>
+                  ) : translation.status === "cancelled" ? (
+                    <div className={styles.cancelledCard} role="status">
+                      <span>已取消翻译。</span>
+                      <button className={styles.clearAction} type="button" onClick={retryTranslation}>
+                        重试
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      {translatedMarkdown && <MarkdownPreview markdown={translatedMarkdown} label="译文预览" />}
+                      {translation.status === "done" && translation.warnings.length > 0 && (
+                        <ul className={styles.warnings} aria-label="翻译提示">
+                          {translation.warnings.map((warning) => (
+                            <li className={styles.warning} key={warning}>{warning}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </>
+                  )}
+                </div>
+              </>
+            ) : (
+              <MarkdownPreview markdown={result.markdown} label="Markdown 预览" />
+            )}
             <p className={styles.footnote}>图片已写入文件。Base64 图片可能无法在少数 Markdown 阅读器中显示。</p>
           </section>
         )}
