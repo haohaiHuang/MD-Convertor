@@ -39,10 +39,10 @@ xattr -dr com.apple.quarantine "/Applications/MD-Convertor.app"
 ## 当前版本
 
 - 当前版本：`0.3.3`——文档翻译（Apple Silicon Mac，macOS 12.0+）。`0.3.3` 门禁已于 2026-09-20 通过，并已装到本机。
-- 最近一次正式发布：[`v0.3.2`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.2)。
+- 最近一次正式发布：[`v0.3.3`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.3)。
 - 所有产物均未做 Developer ID 签名与 notarization，仅适合个人测试。
 
-当前已通过门禁的产物（`0.3.3`）：
+当前已通过门禁并发布的产物（`0.3.3`）：
 
 - ZIP：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.3.zip`
 - 大小：`232,947,408` bytes

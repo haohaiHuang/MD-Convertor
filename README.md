@@ -39,10 +39,10 @@ Do not run this command for an app whose source or checksum you do not trust.
 ## Current Release
 
 - Current version: `0.3.3` — document translation (Apple Silicon Mac, macOS 12.0+). The `0.3.3` gate passed on 2026-09-20 and the build is installed locally.
-- Latest published release: [`v0.3.2`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.2).
+- Latest published release: [`v0.3.3`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.3).
 - No build is Developer ID signed or notarized, so every artifact is suitable for personal testing only.
 
-Current gated artifact (`0.3.3`):
+Current gated and published artifact (`0.3.3`):
 
 - ZIP: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.3.zip`
 - Size: `232,947,408` bytes

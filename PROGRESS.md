@@ -3,10 +3,10 @@
 ## Current State
 
 - Last updated: 2026-09-20
-- Current version: `0.3.3`（`package.json`、`package-lock.json`、`feature_list.json` 与发布门禁均为 `0.3.3`）。**`0.3.3` 门禁已于 2026-09-20 跑通（exit 0）**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.3.zip`（`232,947,408` bytes，SHA-256 `1bf807df…7a72`），已安装到 `/Applications`（未压缩 539 MB），**尚未提交、尚未发布**。上一版 `0.3.2`（`358,726,788` bytes，`8fb7a93f…f1ba`）已发布为 GitHub Release `v0.3.2`（tag `1c3ed80`）；`0.3.0` 的 ZIP（`358,562,540` bytes，`2a0e236e…1147`）是修复**前**的构建，仅作历史
+- Current version: `0.3.3`（`package.json`、`package-lock.json`、`feature_list.json` 与发布门禁均为 `0.3.3`）。**`0.3.3` 门禁已于 2026-09-20 跑通（exit 0）**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.3.zip`（`232,947,408` bytes，SHA-256 `1bf807df…7a72`），已安装到 `/Applications`（未压缩 539 MB），**已提交（`3897cd1`）并作为 `v0.3.3` 发布**。上一版 `0.3.2`（`358,726,788` bytes，`8fb7a93f…f1ba`）已发布为 GitHub Release `v0.3.2`（tag `1c3ed80`）；`0.3.0` 的 ZIP（`358,562,540` bytes，`2a0e236e…1147`）是修复**前**的构建，仅作历史
 - Active feature: none（`feat-024` – `feat-034` 已 done）
-- Next release step: `0.3.3` 的改动（`feat-034` 裁剪 + 全部文档）**尚未提交** —— 用户授权后先跑提交门（ponytail → code-review → neat-freak），再一次提交 + `git push origin main` + `gh release create v0.3.3 <zip> --target main`
-- Branch: `main`；`feat-031` + `feat-032` 已提交（`af7f6db`）并作为 `v0.3.1` 发布；`feat-033` 已提交（`1c3ed80`）并作为 `v0.3.2` 发布；本轮 `feat-034`（去掉重复的 Electron 运行时 + 版本 `0.3.3`）**未提交**
+- Next release step: none —— `0.3.3` 已提交（`3897cd1`）并发布为 GitHub Release `v0.3.3`（tag `3897cd1`，资产 `232,947,408` bytes / SHA-256 `1bf807df…7a72`）。下一次若再改代码，先 bump 版本号（≥ `0.3.4`）再跑 `npm run desktop:release`（门禁硬校验目标版本），不要移动已发布的 tag 与产物
+- Branch: `main`；`feat-031` + `feat-032` 已提交（`af7f6db`）并作为 `v0.3.1` 发布；`feat-033` 已提交（`1c3ed80`）并作为 `v0.3.2` 发布；本轮 `feat-034`（去掉重复的 Electron 运行时 + 版本 `0.3.3`）已提交（`3897cd1`）并作为 `v0.3.3` 发布
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+
 
 ## 已完成 in 0.3.3（去掉重复的 Electron 运行时，feat-034 done）
@@ -208,10 +208,10 @@
 
 ## 下一轮（建议顺序）
 
-1. **提交与发布 `v0.3.3`**：本轮改动（`feat-034` 裁剪 + 全部文档）已过门禁、已装本机，**尚未提交**。用户授权后先跑提交门（ponytail → code-review → neat-freak），再一次提交 + `git push origin main` + `gh release create v0.3.3 out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.3.zip --target main`。
+1. **提交与发布 `v0.3.3`**：**已完成** —— 一次提交 `3897cd1`「0.3.3：去掉内置服务里重复的 Electron 运行时」（代码 + 全部文档）已推送 `origin/main`，`gh release create v0.3.3 … --target main` 已发布（tag `3897cd1`，资产 `232,947,408` bytes），`git fetch --tags origin` 后本地 tag 同步；提交前按用户要求跑了提交门（ponytail → code-review → neat-freak）。
 2. **跑门禁必须用 Node 24.14.1 或 24.15.0**：本机默认的 **v24.16.0 在解压 electron zip 时静默卡死**（卡在 204727/272259 字节），`electron-forge make` 会空跑并仍返回 exit 0 —— 看起来「跑完了」其实什么都没产出。`nvm use 24.14.1` 后一次通过。
 3. **真机小点**：用户提到「稍后把真机测试的一些小点完善了再说」，等清单给出后再评估是否单独一轮。
-4. 若有任何代码改动，需要新的版本号（≥ `0.3.4`）并重跑一次 `npm run desktop:release`；`0.3.1`、`0.3.2` 的产物与 tag 已发布，`0.3.3` 的产物已过门禁（已装本机、尚待提交与发布），都不要移动或覆盖。
+4. 若有任何代码改动，需要新的版本号（≥ `0.3.4`）并重跑一次 `npm run desktop:release`；`0.3.1`、`0.3.2`、`0.3.3` 的产物与 tag 均已发布（`0.3.3` tag 指向 `3897cd1`），都不要移动或覆盖。
 5. 若将来 0.1.x/0.2.0 归档重新出现，守卫会自动恢复严格校验；不要把已退役的条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删掉。
 
 ## Verification Evidence

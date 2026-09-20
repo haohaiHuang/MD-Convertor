@@ -79,6 +79,7 @@ A later fix for long-article translation timeouts (`feat-024`, 2026-09-18) chang
 - Package: version `0.3.3`, arm64, macOS 12.0+
 - Automated evidence: 62 files / 859 tests, 95.28% statements, three-engine E2E 178 passed / 2 skipped, live 2/2
 - Packaged smoke: preload bridge and runtime secret round trip passed on the installed build (unpacked app 539 MB, down from 843 MB)
+- Published: [GitHub Release `v0.3.3`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.3), tagged at `3897cd1` — the commit whose sources this ZIP was built from (server-side asset size and SHA-256 match the local artifact byte for byte)
 - Signing: not Developer ID signed or notarized, so the artifact is suitable for personal testing only
 
 ## Historical Artifact (0.3.2)
