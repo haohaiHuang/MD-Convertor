@@ -260,7 +260,7 @@
 - 覆盖率未调整（已是逐文件门槛）；0.3.0 S6 时全量为 58 files / 835 tests、statements 95.25%；`feat-024` 之后为 59 files / 839 tests、95.27%。
 - e2e 全量：142 passed / 2 skipped（Chromium/Firefox/WebKit，`workers: 1`）；改动 UI 后必须先 `npm run build` 再跑 e2e。
 - `CHANGELOG.md` / `CHANGELOG.zh.md` 的 `[Unreleased]` 已整段归档为 `[0.3.0] - 2026-09-18`。
-- 0.3.0 全部改动（S1–S6）仍在**未提交**的工作区；下一会话应在其上叠加，不要重置、回滚或顺手整理，也不要自行提交。
+- 0.3.0 全部改动（S1–S6）当时留在未提交的工作区；已在 `v0.3.1` 那轮作为 `0caa564` 提交（此后每轮发布都另有独立的文档提交，S1–S6 的改动均已入库）。
 - 打包环境：`node_modules/electron/dist` 已存在，无需重新下载。
 
 ### S5 已落地要点（详情见 `S5-language-ratio.md` 的 Handoff）
