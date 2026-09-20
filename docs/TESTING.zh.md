@@ -76,6 +76,7 @@ E2E 使用 production standalone 服务，并在测试后检查 tracked 文件�
 - SHA-256：`8fb7a93f33a07bb03b0b8558df4ff0c2abe40a14eee13fd9dc0348fedcc7f1ba`
 - 包：版本 `0.3.2`、arm64、macOS 12.0+
 - 自动证据：62 files / 858 tests、statements 95.28%、三引擎 E2E 178 passed / 2 skipped、live 2/2
+- 已发布：[GitHub Release `v0.3.2`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.2)，标签指向 `1c3ed80` —— 该 ZIP 正是由这个提交的源码构建（资产大小与本地逐字节一致）
 - 签名：未做 Developer ID 签名与 notarization，产物仅适合个人测试
 
 ## 历史产物（0.3.1）

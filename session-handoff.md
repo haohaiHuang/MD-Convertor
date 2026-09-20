@@ -4,8 +4,8 @@
 
 - Current version: `0.3.2`（`package.json`、锁文件、`feature_list.json` 与发布门禁均为 `0.3.2`）。**已跑 `npm run desktop:release`（2026-09-20，exit 0）**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.2.zip`，`358,726,788` bytes，SHA-256 `8fb7a93f33a07bb03b0b8558df4ff0c2abe40a14eee13fd9dc0348fedcc7f1ba`。已安装到 `/Applications/MD-Convertor.app`（替换 `0.3.1`）。未签名，仅适合个人测试
 - Active feature: none（`feat-024` – `feat-033` 均已 done）
-- Pending: ① **提交 + 推送本轮 `feat-033` 改动，并发布 GitHub Release `v0.3.2`**；② **真机小点**（用户提到「稍后把真机测试的一些小点完善了再说」，等清单）；③ 任何代码改动都需新版本号（≥ `0.3.3`）并重跑门禁（门禁硬校验目标版本）；④ **UI 评审已完成（`0.3.1`），用户看过对照板后决定全部不整改** → 记录见 `docs/UI-REVIEW-2026-09-20.md`（对照板是临时文件，已删），不要重提这批发现（除用户指认具体条目）；⑤ 签名/notarization 用户 2026-09-20 决定不做（QA-008 accepted）
-- Branch: `main`；`feat-031` + `feat-032` 已提交（`af7f6db`）并推送，`v0.3.1` tag 指向 `af7f6db`（**不要移动/覆盖已发布的 tag 与产物**）；`feat-033` 尚未提交
+- Pending: ① **真机小点**（用户提到「稍后把真机测试的一些小点完善了再说」，等清单）；② **云端 Provider 端到端实测**（`feat-027` 探针已绿，仍需用户用真实文章在设置页走一遍）；③ 任何代码改动都需新版本号（≥ `0.3.3`）并重跑门禁（门禁硬校验目标版本）；④ **UI 评审已完成（`0.3.1`），用户看过对照板后决定全部不整改** → 记录见 `docs/UI-REVIEW-2026-09-20.md`（对照板是临时文件，已删），不要重提这批发现（除用户指认具体条目）；⑤ 签名/notarization 用户 2026-09-20 决定不做（QA-008 accepted）
+- Branch: `main`；`feat-031` + `feat-032` 已提交（`af7f6db`）并推送，`v0.3.1` tag 指向 `af7f6db`（**不要移动/覆盖已发布的 tag 与产物**）；`feat-033` 已提交（`1c3ed80`）并发布为 `v0.3.2`（tag 指向 `1c3ed80`）
 - Product scope: local Apple Silicon Mac app with Link Conversion, Rich Text Conversion and document translation
 - Planning docs: `docs/PRD-translation.md`, `docs/features/translation/FSD.md` + `S1`–`S6` 阶段执行文档
 - Full historical project records: `~/Downloads/MD-Convertor-archive/docs/pre-v0.2.1/`
@@ -13,7 +13,7 @@
 
 ## Latest Change
 
-**本轮（`feat-033`：程序坞幽灵图标修复 + 版本 `0.3.2`，已过门禁、已装本机，未提交）**：用户发现打包应用运行期间程序坞多出一个黑色通用可执行文件图标且一直跳动，问要不要修，给出方案 A（只改源码，以后再发版）/ B（升 0.3.2 修好就跑完整门禁并发布），用户选 **B**。① 根因：`electron/main.mjs` 用 `spawn(process.execPath, [serverEntry], …)` 启本地服务，而 `process.execPath` 就是应用包自己的主可执行文件，macOS LaunchServices 因此把 Node 子进程当成「第二次启动 MD-Convertor」（`type="Foreground"`、`parentASN="MD-Convertor"`），而该子进程从不连接 WindowServer、图标永远跳不完。② 修复（TDD）：新增纯模块 `electron/server-binary.mjs`（`resolveServerBinary(execPath)` ⇒ `Contents/Frameworks/<基名> Helper.app/Contents/MacOS/<基名> Helper`，缺失时抛 `Desktop helper runtime is missing: <path>`）与 `electron/server-binary.test.mjs`（3 用例）；`electron/main.mjs` 改用该 helper 启动（仍是同一个 Electron 二进制，靠 `ELECTRON_RUN_AS_NODE=1` 以 Node 运行），helper bundle 声明 `LSUIElement` ⇒ 不占程序坞。无需改打包配置、无需新增素材。③ 版本 `0.3.2`：`scripts/release-guards.test.mjs` 先把 8 处 fixture 从 `0.3.1` 改成 `0.3.2`（`release-guards` ⇒ RED **5 failed / 24 passed**），再改 `scripts/release-desktop.mjs`、`package.json`、`package-lock.json`、`feature_list.json` ⇒ **32 passed**。④ 真机证据：修复前 `lsappinfo list` 里子进程挂在应用包上且 `type="Foreground"`，修复后挂在 `Contents/Frameworks/MD-Convertor Helper.app` 且 `type="UIElement"`（打包应用与安装后应用都验过）；程序坞截图 `pair-before.png`（应用图标 + 黑色 exec）与 `pair-after.png` / `pair-installed.png`（只剩应用图标）。⑤ 门禁（Node.js 24.15.0，日志 `/tmp/s17-release.log`）**exit 0**：`./init.sh` 62 files / **858 tests**、statements 95.28%、三浏览器 e2e **178 passed / 2 skipped**、live **2/2**，产物 `MD-Convertor-darwin-arm64-0.3.2.zip`，`358,726,788` bytes，SHA-256 `8fb7a93f…f1ba`；独立复核 `unzip -t`、版本 `0.3.2`、arm64、asar 内含 `server-binary.mjs`。⑥ 安装：`ditto /tmp/s17-app/MD-Convertor.app /Applications/MD-Convertor.app`（旧 `0.3.1` 备份 `/tmp/s17-old-0.3.1.app`），安装后子进程同样为 `UIElement`，`settings.json` SHA-256 未变（`93204f32…30b4`）。⑦ 文档同步中：`CHANGELOG`(+zh) 的 `[Unreleased]` 已归档为 `[0.3.2] - 2026-09-20`，`README`(+zh)、`docs/ARCHITECTURE`(+zh)、`docs/TESTING`(+zh)、`docs/QUALITY-AUDIT`、`PROGRESS`、`feature_list.json`（`feat-033` done、`currentVersion 0.3.2`）已更新。**尚未提交/推送，也尚未发布 Release `v0.3.2`。**
+**本轮（`feat-033`：程序坞幽灵图标修复 + 版本 `0.3.2`，已过门禁、已装本机，未提交）**：用户发现打包应用运行期间程序坞多出一个黑色通用可执行文件图标且一直跳动，问要不要修，给出方案 A（只改源码，以后再发版）/ B（升 0.3.2 修好就跑完整门禁并发布），用户选 **B**。① 根因：`electron/main.mjs` 用 `spawn(process.execPath, [serverEntry], …)` 启本地服务，而 `process.execPath` 就是应用包自己的主可执行文件，macOS LaunchServices 因此把 Node 子进程当成「第二次启动 MD-Convertor」（`type="Foreground"`、`parentASN="MD-Convertor"`），而该子进程从不连接 WindowServer、图标永远跳不完。② 修复（TDD）：新增纯模块 `electron/server-binary.mjs`（`resolveServerBinary(execPath)` ⇒ `Contents/Frameworks/<基名> Helper.app/Contents/MacOS/<基名> Helper`，缺失时抛 `Desktop helper runtime is missing: <path>`）与 `electron/server-binary.test.mjs`（3 用例）；`electron/main.mjs` 改用该 helper 启动（仍是同一个 Electron 二进制，靠 `ELECTRON_RUN_AS_NODE=1` 以 Node 运行），helper bundle 声明 `LSUIElement` ⇒ 不占程序坞。无需改打包配置、无需新增素材。③ 版本 `0.3.2`：`scripts/release-guards.test.mjs` 先把 8 处 fixture 从 `0.3.1` 改成 `0.3.2`（`release-guards` ⇒ RED **5 failed / 24 passed**），再改 `scripts/release-desktop.mjs`、`package.json`、`package-lock.json`、`feature_list.json` ⇒ **32 passed**。④ 真机证据：修复前 `lsappinfo list` 里子进程挂在应用包上且 `type="Foreground"`，修复后挂在 `Contents/Frameworks/MD-Convertor Helper.app` 且 `type="UIElement"`（打包应用与安装后应用都验过）；程序坞截图 `pair-before.png`（应用图标 + 黑色 exec）与 `pair-after.png` / `pair-installed.png`（只剩应用图标）。⑤ 门禁（Node.js 24.15.0，日志 `/tmp/s17-release.log`）**exit 0**：`./init.sh` 62 files / **858 tests**、statements 95.28%、三浏览器 e2e **178 passed / 2 skipped**、live **2/2**，产物 `MD-Convertor-darwin-arm64-0.3.2.zip`，`358,726,788` bytes，SHA-256 `8fb7a93f…f1ba`；独立复核 `unzip -t`、版本 `0.3.2`、arm64、asar 内含 `server-binary.mjs`。⑥ 安装：`ditto /tmp/s17-app/MD-Convertor.app /Applications/MD-Convertor.app`（旧 `0.3.1` 备份 `/tmp/s17-old-0.3.1.app`），安装后子进程同样为 `UIElement`，`settings.json` SHA-256 未变（`93204f32…30b4`）。⑦ 文档同步中：`CHANGELOG`(+zh) 的 `[Unreleased]` 已归档为 `[0.3.2] - 2026-09-20`，`README`(+zh)、`docs/ARCHITECTURE`(+zh)、`docs/TESTING`(+zh)、`docs/QUALITY-AUDIT`、`PROGRESS`、`feature_list.json`（`feat-033` done、`currentVersion 0.3.2`）已更新。⑧ 发布：一次提交 `1c3ed80`「0.3.2：修复运行时的程序坞幽灵图标」（含代码 + 全部文档）已推送，`gh release create v0.3.2 <zip> --target main --title "MD-Convertor v0.3.2"` 成功，`git fetch --tags origin` 后本地 tag `v0.3.2` → `1c3ed80`，资产 `358,726,788` bytes 状态 uploaded。
 **本轮（发布 `v0.3.1` 并安装到本机）**：用户要求「提交Github，然后发布最新的Release到Github，并且安装到本机（替换旧版）」。① 提交门（自审，`subagent` 在本机不可用）：ponytail 无过度工程（无新依赖、CSS 净删除、字体走 `next/font/local`）、code-review 无新增 `src/lib` 模块故无新覆盖率门槛、neat-freak 发现四处文档仍写旧计数 853（已在本轮发布记录里一并改为 855）；顺手还原了 `src/app/page.tsx` 一处属性顺序的无意义改动。② 一次提交 `af7f6db`「`0.3.1`：依赖升级、界面微调与自带 Michroma 品牌字」（`feat-031` + `feat-032` 全部改动、`docs/UI-REVIEW-2026-09-20.md`、`public/fonts/*`、`tests/brand-font.test.ts`），已 `git push origin main`（`0caa564..af7f6db`）。③ 先 `pkill` 关掉运行中的应用再跑 `npm run desktop:release`（Node.js 24.15.0，日志 `/tmp/s16-release.log`）**exit 0**：`./init.sh` 61 files / **855 tests**、三浏览器 e2e **178 passed / 2 skipped**、live **2/2**、`electron-forge make` 与产物校验通过，产物 `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.1.zip`，`358,723,706` bytes，SHA-256 `c7411c58…161b`。④ 独立复核：`unzip -t` 无错、`CFBundleShortVersionString` = `0.3.1`、Mach-O arm64、包内自带字体与仓库文件同哈希（`b12098180dae…56cf`）、CSS `--font-brand:"michroma", "michroma Fallback"`。⑤ `gh release create v0.3.1 <zip> --target main --title "MD-Convertor v0.3.1" --notes-file …`（gh 2.99.0，登录 `haohaiHuang`）；校验 tag `v0.3.1` → `af7f6db`、资产 358,723,706 bytes 状态 uploaded。⑥ 本机旧版 `/Applications/MD-Convertor.app`（`0.2.1`，mtime Aug 22）替换为 `0.3.1`（无其他安装位置，`~/Applications` 不存在）。⑦ 文档同步：`CHANGELOG`(+zh) 的 `[Unreleased]` 归档为 `[0.3.1] - 2026-09-20`，`README`(+zh)、`docs/TESTING`(+zh)、`docs/QUALITY-AUDIT`、`PROGRESS` 的产物数字与测试计数全部对齐；`scripts/release-guards.mjs` 只硬校验 `v0.1.3` tag，新增 `v0.3.1` tag 不影响后续门禁。
 
 **上一轮（页头品牌字：去掉 MD 方块 + Michroma，已随 `0.3.1` 发布）**：用户要求「去掉左上角 MD 图标、只留标题文字」，并把品牌字换成 **Michroma**；随后用户问「字体能否直接嵌入产品代码」，于是从 `next/font/google` 改为**仓库自带**。最终方案：字体放在 `public/fonts/Michroma-Regular.woff2`（11,620 bytes、latin 子集）、许可证放在同目录 `public/fonts/OFL.txt`（OFL 1.1，版权行取自字体 name 表：`Copyright 2011 The Michroma Project Authors (https://github.com/googlefonts/Michroma-font)`），用 `next/font/local` 加载 —— 构建期是**本地文件读取，整个构建不再需要联网**（用 `sandbox-exec -p '(version 1)(allow default)(deny network*)' npm run build` 实测通过，并先用同一沙箱跑 `fetch('https://fonts.gstatic.com/...')` 得 ENOTFOUND 证明沙箱真的断网）。**只 vendored latin**：`next/font/local` 不产出 `unicode-range`，latin + latin-ext 一起传会生成两条同描述符的 `@font-face`，后者对所有字形生效而它没有 ASCII ⇒ 品牌字会回退 Arial。Michroma 只有 400 字重、无中文字形 ⇒ 只用在纯拉丁的品牌字上（hero 大标题是中文，不受影响），`font-weight` 760→400、去掉 `-0.03em` 负字距（Michroma 本身宽）、字号 15px。改动：`src/app/layout.tsx` 用 `localFont({src:"../../public/fonts/Michroma-Regular.woff2", weight:"400", variable:"--font-brand"})` 并挂 `<html className>`；两个页面删掉 `<span className={styles.brandMark}>MD</span>`，两处 `.brand` 用 `var(--font-brand)` 并删除 `.brandMark` 规则；`prepare-desktop.mjs` 已把 `public/` 整拷进包内，故许可证无需改打包脚本。TDD：两个 spec 的用例 RED **2 failed / 35 passed**（实收 `"MDMD-Convertor"`）⇒ chromium **37 passed**；新增 `tests/brand-font.test.ts` 先 RED（ENOENT）再 2 passed。切到 `next/font/local` 后族名由 layout.tsx 的绑定名生成（`"michroma"` / `"michroma Fallback"`），断言由字面 `"Michroma"` 改为 `/michroma/i` 并补上「页面实际加载的 woff2 与仓库文件 SHA-256 相等」（比原来更强）。`./init.sh` exit 0（61 files / **855 tests**、95.28%，`/tmp/s15-init.log`）；三浏览器 `npm run test:e2e` exit 0 ⇒ **178 passed / 2 skipped**（`/tmp/s15-e2e2.log`；首跑 1 个 firefox 用例 `NS_ERROR_PROXY_CONNECTION_REFUSED` 属 e2e server 掉线的已知偶发，单跑 firefox 59/1 skipped 全绿）；`npm run desktop:package` exit 0，包内 `server/.next/static/media/Michroma_Regular-s.p.*.woff2` 与仓库文件同哈希、`server/public/fonts/{Michroma-Regular.woff2,OFL.txt}` 都在；真机 CDP 探针：family `michroma`、品牌框 143×21、唯一字体请求来自应用自身、0 个 Google 请求，`settings.json` SHA-256 未变（`93204f32…30b4`）。CHANGELOG(+zh) 的 `[Unreleased]` 已按新的「仓库自带」说法改写；`feature_list.json` 的 `feat-032` 证据与 notes 已更新。
@@ -47,7 +47,7 @@
 
 ### 本轮新开风险（下一轮决策点）
 
-- **feat-024 – feat-033 的构建已分别进入 `0.3.1`（已发布）与 `0.3.2`（已过门禁、已装本机、未提交未发布）产物**：下次改动前先 bump 版本号（≥ `0.3.3`）。
+- **feat-024 – feat-033 的构建已分别进入 `0.3.1` 与 `0.3.2` 产物，两者均已过门禁、已装本机并已发布（`v0.3.1` / `v0.3.2`）**：下次改动前先 bump 版本号（≥ `0.3.3`）。
 - **QA-012 已关闭（2026-09-20）**：`next@16.3.5`、`sharp@0.35.4` 升级后 `npm audit --omit=dev` 为 **0 漏洞**（剩余 28 条仅在 electron-forge 构建链的开发依赖里）；已在 `0.3.1` 与 `0.3.2` 门禁中复验。
 
 ### S5 实际交付接口（S6 直接使用）
@@ -137,7 +137,7 @@
 
 ## Release Evidence
 
-### 0.3.2（当前产物，已过门禁、已装本机，未发布）
+### 0.3.2（当前产物，已过门禁、已装本机、已发布）
 
 - Node.js 24.15.0 `npm run desktop:release`: passed (exit 0, log `/tmp/s17-release.log`)
 - Baseline `./init.sh`: 62 files / 858 tests, statements 95.28%, lint + `tsc --noEmit` clean, production build OK
@@ -148,6 +148,7 @@
 - Bytes: `358,726,788`
 - SHA-256: `8fb7a93f33a07bb03b0b8558df4ff0c2abe40a14eee13fd9dc0348fedcc7f1ba`
 - Verification: child server registered on `Contents/Frameworks/MD-Convertor Helper.app` with `type="UIElement"`; Dock shows one tile only; installed at `/Applications/MD-Convertor.app`
+- Published: GitHub Release `v0.3.2`, tag `1c3ed80` (the commit this ZIP was built from); asset size `358,726,788` uploaded
 - Not signed or notarized (personal test only)
 
 ### 0.3.1（历史产物，已通过门禁并已发布）
@@ -161,6 +162,7 @@
 - Bytes: `358,723,706`
 - SHA-256: `c7411c587b3842a76f79118ecdc6d061993a0a99c98e4801c14ff947f10e161b`
 - Published: GitHub Release `v0.3.1` (tag `af7f6db` = the commit this ZIP was built from); installed at `/Applications/MD-Convertor.app`
+- Published: GitHub Release `v0.3.2`, tag `1c3ed80` (the commit this ZIP was built from); asset size `358,726,788` uploaded
 - Not signed or notarized (personal test only)
 
 ### feat-027 / feat-028（未跑门禁）
@@ -198,6 +200,7 @@
 - Bytes: `358,562,540`
 - SHA-256: `2a0e236e97e51d97fd24c7002a923ef5703ad8245234531f2eb3aa1350c81147`
 - Not published to GitHub Releases; superseded by the `0.3.1` release
+- Published: GitHub Release `v0.3.2`, tag `1c3ed80` (the commit this ZIP was built from); asset size `358,726,788` uploaded
 - Not signed or notarized (personal test only)
 
 ### 0.2.1（历史锚点，已列入 `PROTECTED_HISTORICAL_ZIP_MANIFEST`）
@@ -231,7 +234,7 @@
 ## Next Stage Entry（已无待开发阶段）
 
 - S1 → S6 全部完成，`feat-024`（长文翻译超时）与 `feat-025`（设置页 UI 反馈）也已 done；`activeFeature` 为 `null`，不要在无新授权下重启任何阶段文档。
-- 若要开新一轮，入口是用户决策而非某个 S 文档：① **真机小点**（用户提过「稍后把真机测试的一些小点完善了再说」，等清单）；② QA-012 已关闭（`next@16.3.5`、`sharp@0.35.4`，`npm audit --omit=dev` 0 漏洞）；③ **云端 Provider 端到端实测**（`feat-027` 已用自撰探针在真机跑通，仍需用户用真实文章在设置页走一遍「拉取模型 → 选模型 → 翻译」）；④ 发布：`v0.3.1` 已发布（2026-09-20），`0.3.2`（`feat-033` 程序坞幽灵图标修复）已过门禁、已装本机但**尚未提交/发布**；下一轮若有改动，先 bump 版本号（≥ `0.3.3`）再跑门禁。
+- 若要开新一轮，入口是用户决策而非某个 S 文档：① **真机小点**（用户提过「稍后把真机测试的一些小点完善了再说」，等清单）；② QA-012 已关闭（`next@16.3.5`、`sharp@0.35.4`，`npm audit --omit=dev` 0 漏洞）；③ **云端 Provider 端到端实测**（`feat-027` 已用自撰探针在真机跑通，仍需用户用真实文章在设置页走一遍「拉取模型 → 选模型 → 翻译」）；④ 发布：`v0.3.1` 已发布（2026-09-20），`0.3.2`（`feat-033` 程序坞幽灵图标修复）已过门禁、已装本机、**已发布为 `v0.3.2`**；下一轮若有改动，先 bump 版本号（≥ `0.3.3`）再跑门禁。
 - 每轮开头固定读：`PROGRESS.md` → `session-handoff.md` → `feature_list.json` → 相关 `docs/`（涉及翻译行为时先读 `docs/PRD-translation.md`），然后跑 `./init.sh` 建立基线。
 - 全部阶段文档（已完成入口）：`docs/features/translation/S1-settings-infra.md` 至 `S6-release-and-docs.md`；各文档的 Handoff 已写入下一阶段所需的真实接口与边界。
 

@@ -2,7 +2,7 @@
 
 ## Current Verdict
 
-Version `0.3.2` passed its own release gate on 2026-09-20 - baseline, three-browser E2E, live, packaging, and artifact verification all passed - producing `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.2.zip`. `0.3.1` passed the same gate earlier the same day and was published as GitHub Release `v0.3.1` (tag `af7f6db`); it stays as history. The `0.3.0` gate ran end to end on 2026-09-18 and that artifact predates `feat-024` onward; it is kept as history. The historical-archive precondition was retired for the 0.1.0–0.2.0 ZIPs and the 0.1.3 read-only copy, which were lost from this Mac and cannot be restored; every archive that still exists is hash-checked exactly as before, and `0.2.1` was re-downloaded from its GitHub release and matched its recorded SHA-256 byte for byte. The `v0.1.3` source tag remains a hard precondition. QA-012 (the advisory set found in `next` and `sharp`) is resolved: as of 2026-09-20 `next` is 16.3.5 and `sharp` is 0.35.4, and `npm audit --omit=dev` reports no production advisories. The remaining release constraint is the absence of Developer ID signing and notarization, which the user decided on 2026-09-20 not to pursue: every artifact stays personal-testing only, and the `v0.3.1` release notes say so plainly.
+Version `0.3.2` passed its own release gate on 2026-09-20 - baseline, three-browser E2E, live, packaging, and artifact verification all passed - producing `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.2.zip`. `0.3.1` passed the same gate earlier the same day and was published as GitHub Release `v0.3.1` (tag `af7f6db`); it stays as history. The `0.3.0` gate ran end to end on 2026-09-18 and that artifact predates `feat-024` onward; it is kept as history. The historical-archive precondition was retired for the 0.1.0–0.2.0 ZIPs and the 0.1.3 read-only copy, which were lost from this Mac and cannot be restored; every archive that still exists is hash-checked exactly as before, and `0.2.1` was re-downloaded from its GitHub release and matched its recorded SHA-256 byte for byte. The `v0.1.3` source tag remains a hard precondition. QA-012 (the advisory set found in `next` and `sharp`) is resolved: as of 2026-09-20 `next` is 16.3.5 and `sharp` is 0.35.4, and `npm audit --omit=dev` reports no production advisories. The remaining release constraint is the absence of Developer ID signing and notarization, which the user decided on 2026-09-20 not to pursue: every artifact stays personal-testing only, and the `v0.3.1` and `v0.3.2` release notes say so plainly.
 
 ## Post-0.3.0 Fix Detail (feat-024, 2026-09-18)
 
@@ -30,7 +30,7 @@ Everything from `feat-024` through `feat-033` shares one build, and all of it sh
 | feat-031 | version 0.3.1, `next` 16.3.5 + `sharp` 0.35.4, header/button layout, read-only key box | release-guard tests 29 passed, `npm audit --omit=dev` clean, home E2E layout assertions |
 | feat-032 | green「MD」square dropped, wordmark set in Michroma, font + OFL licence vendored under `public/fonts/` and loaded with `next/font/local` | `tests/brand-font.test.ts`, E2E brand case comparing the served woff2 with the repository file by SHA-256, build re-run with all network denied |
 | feat-033 | the local server runs from the bundled `MD-Convertor Helper` instead of the app executable, so the Dock no longer shows a second bouncing `exec` tile | `electron/server-binary.test.mjs` (3 cases), `lsappinfo` shows the child as `type="UIElement"` on the Helper bundle, before/after Dock screenshots |
-| Gate | `0.3.1` gated on 2026-09-20 (exit 0) and published as GitHub Release `v0.3.1`; `0.3.2` gated on 2026-09-20 (exit 0) | `npm run desktop:release`, ZIP size and SHA-256 recorded in `docs/TESTING.md` |
+| Gate | `0.3.1` gated on 2026-09-20 (exit 0) and published as GitHub Release `v0.3.1`; `0.3.2` gated on 2026-09-20 (exit 0) and published as GitHub Release `v0.3.2` | `npm run desktop:release`, ZIP size and SHA-256 recorded in `docs/TESTING.md` |
 
 ## Verified Release (0.3.2)
 
@@ -46,6 +46,7 @@ Everything from `feat-024` through `feat-033` shares one build, and all of it sh
 | ZIP bytes | 358,726,788 |
 | ZIP SHA-256 | `8fb7a93f33a07bb03b0b8558df4ff0c2abe40a14eee13fd9dc0348fedcc7f1ba` |
 | Real machine | installed to `/Applications`; `lsappinfo` reports the server child as `type="UIElement"` on the Helper bundle, and the Dock shows no extra tile |
+| Published | GitHub Release [`v0.3.2`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.2), tag `1c3ed80`, asset uploaded and byte-count checked |
 | Signing | not signed, not notarized |
 
 ## Verified Release (0.3.1, historical)
@@ -189,4 +190,4 @@ Everything from `feat-024` through `feat-033` shares one build, and all of it sh
 
 ## Release Decision
 
-Approved for personal testing. Not approved for frictionless public distribution, and QA-008 is accepted rather than being worked: the user decided on 2026-09-20 not to buy a Developer ID / notarize, so signing stays out of scope until that decision changes. QA-012 no longer applies: `next` is 16.3.5 and `sharp` is 0.35.4 as of 2026-09-20 and `npm audit --omit=dev` reports no production advisories. `0.3.2` passed its gate on 2026-09-20; `0.3.1` passed its gate and was published as GitHub Release `v0.3.1` earlier the same day. The release notes state that the build is unsigned and intended for personal testing.
+Approved for personal testing. Not approved for frictionless public distribution, and QA-008 is accepted rather than being worked: the user decided on 2026-09-20 not to buy a Developer ID / notarize, so signing stays out of scope until that decision changes. QA-012 no longer applies: `next` is 16.3.5 and `sharp` is 0.35.4 as of 2026-09-20 and `npm audit --omit=dev` reports no production advisories. `0.3.2` passed its gate on 2026-09-20 and was published as GitHub Release `v0.3.2` (tag `1c3ed80`); `0.3.1` passed its gate and was published as GitHub Release `v0.3.1` earlier the same day. The release notes state that the build is unsigned and intended for personal testing.

@@ -3,10 +3,10 @@
 ## Current State
 
 - Last updated: 2026-09-20
-- Current version: `0.3.2`（`package.json`、`package-lock.json`、`feature_list.json` 与发布门禁均为 `0.3.2`）。**`0.3.2` 门禁已于 2026-09-20 跑通（exit 0）**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.2.zip`（`358,726,788` bytes，SHA-256 `8fb7a93f…f1ba`），已安装到 `/Applications`。上一版 `0.3.1` 已发布为 GitHub Release `v0.3.1`（tag `af7f6db`）；`0.3.0` 的 ZIP（`358,562,540` bytes，`2a0e236e…1147`）是修复**前**的构建，仅作历史
+- Current version: `0.3.2`（`package.json`、`package-lock.json`、`feature_list.json` 与发布门禁均为 `0.3.2`）。**`0.3.2` 门禁已于 2026-09-20 跑通（exit 0）**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.2.zip`（`358,726,788` bytes，SHA-256 `8fb7a93f…f1ba`），已安装到 `/Applications`，**已发布为 GitHub Release `v0.3.2`**（tag `1c3ed80`）。上一版 `0.3.1` 已发布为 GitHub Release `v0.3.1`（tag `af7f6db`）；`0.3.0` 的 ZIP（`358,562,540` bytes，`2a0e236e…1147`）是修复**前**的构建，仅作历史
 - Active feature: none（`feat-024` – `feat-033` 已 done）
-- Next release step: `0.3.2` 产物已过门禁、已装本机，尚待提交/推送与发布 GitHub Release；下一轮若再改代码，需要新的版本号（≥ `0.3.3`）再跑一次 `npm run desktop:release`
-- Branch: `main`；`feat-031` + `feat-032` 已提交（`af7f6db`）并推送，作为 `v0.3.1` 发布；本轮 `feat-033`（程序坞幽灵图标修复 + 版本 `0.3.2`）尚未提交
+- Next release step: 无待办——`0.3.2` 已过门禁、已装本机、已发布（`v0.3.2`，tag `1c3ed80`）；下一轮若再改代码，需要新的版本号（≥ `0.3.3`）再跑一次 `npm run desktop:release`
+- Branch: `main`；`feat-031` + `feat-032` 已提交（`af7f6db`）并推送，作为 `v0.3.1` 发布；本轮 `feat-033`（程序坞幽灵图标修复 + 版本 `0.3.2`）已提交（`1c3ed80`）并推送，**已发布为 GitHub Release `v0.3.2`**（tag 指向 `1c3ed80`）
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+
 
 ## 已完成 in 0.3.2（程序坞幽灵图标，feat-033 done）
@@ -363,7 +363,7 @@
 - **feat-030 起云端只能有一条配置**：设置页只渲染一张 `<article aria-label="云端 Provider">`，读写「当前生效的那条」（`activeProviderId` → 否则 `providers[0]`），保存时把 `cloud.providers` 收敛为单条目。契约（`providers[] + activeProviderId`）与 `SETTINGS_VERSION` 未变，但**手工在 `settings.json` 里追加的多条 Provider 会在下次保存时被丢弃**；要做多条并存必须先恢复列表 UI（`feat-026` 的 `drafts`/`newProvider` 版本可从 git 历史取回）。
 - **feat-026 / feat-029 / feat-030 之后「保存」是 Provider 记录的唯一写入入口**：`拉取模型` 只读端点（结果先放草稿态），模型与密钥都不再随意落盘，因此改完名称 / Base URL / 密钥 / 模型后必须先点「保存」才生效；密钥来源只有系统密钥库一个（`apiKeyEnv` 已退役）。
 - **feat-025 隐藏了自定义语言入口（保留字段与函数）**：`languages.custom` 仍在契约里、`addCustomLanguage()` 与其单测仍在，存量自定义标签仍出现在目标语言下拉里；但新标签暂时只能靠手改 `settings.json` 添加。若将来要恢复入口，只需恢复 `settings/page.tsx` 的那段 JSX 与 `setNote("language", …)` 分支。
-- **`0.3.2` 已过门禁并已装本机（2026-09-20）**：ZIP 为 `358,726,788` bytes / SHA-256 `8fb7a93f…f1ba`，已在 `/Applications/MD-Convertor.app`；**尚未提交、推送与发布 GitHub Release**。`0.3.1` 已发布为 GitHub Release `v0.3.1`（tag `af7f6db`，ZIP `358,723,706` bytes / `c7411c58…161b`）；`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip` 仍留在本机，只作历史，**不要在后续门禁里把它当成当前产物**；下一次发布必须先把版本号升到 `0.3.3` 或更高（门禁硬校验目标版本）。
+- **`0.3.2` 已过门禁并已装本机（2026-09-20）**：ZIP 为 `358,726,788` bytes / SHA-256 `8fb7a93f…f1ba`，已在 `/Applications/MD-Convertor.app`；**已提交（`1c3ed80`）、推送并发布为 GitHub Release `v0.3.2`**（tag `1c3ed80`，资产 `358,726,788` bytes 状态 uploaded）。`0.3.1` 已发布为 GitHub Release `v0.3.1`（tag `af7f6db`，ZIP `358,723,706` bytes / `c7411c58…161b`）；`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip` 仍留在本机，只作历史，**不要在后续门禁里把它当成当前产物**；下一次发布必须先把版本号升到 `0.3.3` 或更高（门禁硬校验目标版本）。
 - **feat-033 起本地服务从包内 Helper 启动**：`electron/main.mjs` 用 `resolveServerBinary(process.execPath)`（`electron/server-binary.mjs`）拿到 `Contents/Frameworks/MD-Convertor Helper.app/Contents/MacOS/MD-Convertor Helper` 再 spawn（仍带 `ELECTRON_RUN_AS_NODE: "1"`）。因该 helper bundle 声明 `LSUIElement`，子进程不再占程序坞。**不要改回 `process.execPath`**（会重新出现跳动的黑色 exec 图标）；helper 缺失时函数会抛 `Desktop helper runtime is missing: <path>`，这是刻意保留的响亮失败。此约束依赖 electron-forge 默认的 helper bundle 布局，若将来换到不带 helper 的打包方式需要同时改这个函数与它的 3 个单测。
 - **feat-031 起密钥输入框在已保存时为只读**：`readOnly={Boolean(cloudProvider?.keyStored)}`，占位文案「••••••••（已保存，先清除密钥再更换）」。不用 `disabled` 是为了保留可聚焦与屏幕阅读器可达；「清除密钥」语义未变（删除密钥库条目 + `keyStored:false` ⇒ 输入框恢复可编辑，再点「保存」才能写入新密钥）。不要把密钥读回页面。
 - **批次数由「≤20 块」而非字符数主导**：长文段落多时批次数偏多、`pi` 的固定启动开销被重复支付（实测 8,000 字符批次 7s，含启动）。修复后已能跑完，因此**未**改动 `TRANSLATE_BATCH_MAX_BLOCKS`；若将来同类文章仍然慢，把这个上限提高是第一个候选优化（代价：单批输出更长，解析与质量风险上升，需另开测试）。

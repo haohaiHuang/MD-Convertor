@@ -42,7 +42,7 @@ Do not run this command for an app whose source or checksum you do not trust.
 - Latest published release: [`v0.3.2`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.2).
 - No build is Developer ID signed or notarized, so every artifact is suitable for personal testing only.
 
-Current gated artifact (`0.3.2`):
+Current gated and published artifact (`0.3.2`):
 
 - ZIP: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.2.zip`
 - Size: `358,726,788` bytes

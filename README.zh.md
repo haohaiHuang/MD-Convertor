@@ -42,7 +42,7 @@ xattr -dr com.apple.quarantine "/Applications/MD-Convertor.app"
 - 最近一次正式发布：[`v0.3.2`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.2)。
 - 所有产物均未做 Developer ID 签名与 notarization，仅适合个人测试。
 
-当前通过门禁的产物（`0.3.2`）：
+当前已通过门禁并发布的产物（`0.3.2`）：
 
 - ZIP：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.2.zip`
 - 大小：`358,726,788` bytes
