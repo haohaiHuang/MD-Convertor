@@ -42,7 +42,7 @@
 - 翻译任务预算：`translateTaskTimeoutMs(batchCount)` 返回 `max(120s, 批次数 × 180s + 30s)`，两个端点都按真实批次数决定 deadline（段数多的长文不再被固定 120s 切断）
 - 翻译勾选框、原文/译文 Tab、按 Tab 分流的复制与下载、进度、取消、重试与占比弹窗
 
-`vitest.config.ts` 把覆盖率限定在 `src/lib/**/*.ts` 与 convert、translate 路由，排除测试文件与 `src/types/**`，并为每个文件设置门槛。`src/lib/translate/**` 的每个模块都有自己的门槛（95/90/100/95，`segment.ts` 为 90/75/100/90）。当前覆盖率为 61 files / 855 tests、statements 95.28%。
+`vitest.config.ts` 把覆盖率限定在 `src/lib/**/*.ts` 与 convert、translate 路由，排除测试文件与 `src/types/**`，并为每个文件设置门槛。`src/lib/translate/**` 的每个模块都有自己的门槛（95/90/100/95，`segment.ts` 为 90/75/100/90）。当前覆盖率为 62 files / 858 tests、statements 95.28%。
 
 E2E 使用 production standalone 服务，并在测试后检查 tracked 文件未变化。`playwright.config.ts` 设 `workers: 1`，因为翻译引擎持有一个进程级任务槽，并行 worker 会互相撞出 429 `TRANSLATE_BUSY`。
 
@@ -50,11 +50,11 @@ E2E 使用 production standalone 服务，并在测试后检查 tracked 文件�
 
 `npm run desktop:release` 要求：
 
-- package 版本严格为 `0.3.1`
+- package 版本严格为 `0.3.2`
 - Node.js 24.x
 - 历史归档集合：清单中仍然存在的 ZIP 必须保持固定 SHA-256，`~/Downloads/MD-Convertor-archive/releases/` 中不得出现未登记的发布 ZIP
 - ZIP 必须由本轮命令新生成
-- 包内版本为 `0.3.1`
+- 包内版本为 `0.3.2`
 - 可执行文件为 arm64，应用结构完整
 
 成功和失败路径都会再次校验历史产物。Forge 未生成新 ZIP 即使退出也必须判为失败。
@@ -65,9 +65,20 @@ E2E 使用 production standalone 服务，并在测试后检查 tracked 文件�
 
 `0.3.1` 门禁已于 2026-09-20 以同样的步骤完整通过。
 
-之后新增的长文翻译超时修复（`feat-024`，2026-09-18）把任务预算改为按批次数动态计算。更后一轮（`feat-029`，2026-09-18）让云端 Provider 保存时四项必填、允许设置页用未保存的草稿拉取模型（拉取不写设置），并把已保存密钥的输入框改为八个黑点占位；覆盖它的单测见 `src/lib/settings/provider-form.test.ts` 与 `src/app/api/provider/models/route.test.ts`，另有 3 个新增设置页 e2e 用例与 3 个改写用例（原先「拉取模型先保存草稿」的断言已不成立）。另一轮把单次调用上限从 60s 调高到 180s（`feat-027`）并修掉了「超时被误报成无法识别的回答」，同时删除了设置页「当前生效」标签（`feat-028`）。这些改动已通过单元测试、`./init.sh` 全量基线、三浏览器 e2e 与真机探针（用户云端 Provider 上一个原本撞 60s 上限失败的 121 块文档现在返回 200）。版本决策已定为 `0.3.1`：`package.json`、锁文件、`feature_list.json` 与发布门禁都已改为 `0.3.1`（门禁测试先改到 RED，再回到 29 passed）。之后一轮（`feat-031`，2026-09-20）把 `next` 升到 16.3.5、`sharp` 升到 0.35.4，使 `npm audit --omit=dev` 不再报生产依赖公告；同时去掉页头齿轮图标、把两个转换按钮改名为「转换」、让富文本面板的转换按钮右边缘与上方粘贴框对齐，并在已保存密钥时把密钥输入框设为只读。最后一轮（`feat-032`，2026-09-20）去掉绿色「MD」方块并把品牌字改为 Michroma，字体与 OFL 许可证随仓库放在 `public/fonts/`，用 `next/font/local` 加载；`tests/brand-font.test.ts` 守住这两个文件，e2e 的品牌用例按 SHA-256 比对页面实际加载的 woff2 与仓库文件，并在拒绝全部网络（`sandbox-exec … (deny network*) npm run build`，exit 0）的条件下重跑构建以证明不再访问 Google。下文记录的产物是修复**前**的 `0.3.0` 构建（保留为历史）；`feat-024` 之后的所有改动都包含在更下方的 `0.3.1` 产物中。
+`0.3.2` 门禁同样于 2026-09-20 通过，新增内容是一处小修：打包后的应用改用包内 `MD-Convertor Helper` 启动本地服务，而不是应用自身的可执行文件（`electron/server-binary.mjs`，3 个单测），从而消除运行期间程序坞上多出的跳动 `exec` 图标。
 
-## 通过门禁的产物（0.3.1）
+之后新增的长文翻译超时修复（`feat-024`，2026-09-18）把任务预算改为按批次数动态计算。更后一轮（`feat-029`，2026-09-18）让云端 Provider 保存时四项必填、允许设置页用未保存的草稿拉取模型（拉取不写设置），并把已保存密钥的输入框改为八个黑点占位；覆盖它的单测见 `src/lib/settings/provider-form.test.ts` 与 `src/app/api/provider/models/route.test.ts`，另有 3 个新增设置页 e2e 用例与 3 个改写用例（原先「拉取模型先保存草稿」的断言已不成立）。另一轮把单次调用上限从 60s 调高到 180s（`feat-027`）并修掉了「超时被误报成无法识别的回答」，同时删除了设置页「当前生效」标签（`feat-028`）。这些改动已通过单元测试、`./init.sh` 全量基线、三浏览器 e2e 与真机探针（用户云端 Provider 上一个原本撞 60s 上限失败的 121 块文档现在返回 200）。版本决策已定为 `0.3.1`：`package.json`、锁文件、`feature_list.json` 与发布门禁都已改为 `0.3.1`（门禁测试先改到 RED，再回到 29 passed）。之后一轮（`feat-031`，2026-09-20）把 `next` 升到 16.3.5、`sharp` 升到 0.35.4，使 `npm audit --omit=dev` 不再报生产依赖公告；同时去掉页头齿轮图标、把两个转换按钮改名为「转换」、让富文本面板的转换按钮右边缘与上方粘贴框对齐，并在已保存密钥时把密钥输入框设为只读。最后一轮（`feat-032`，2026-09-20）去掉绿色「MD」方块并把品牌字改为 Michroma，字体与 OFL 许可证随仓库放在 `public/fonts/`，用 `next/font/local` 加载；`tests/brand-font.test.ts` 守住这两个文件，e2e 的品牌用例按 SHA-256 比对页面实际加载的 woff2 与仓库文件，并在拒绝全部网络（`sandbox-exec … (deny network*) npm run build`，exit 0）的条件下重跑构建以证明不再访问 Google。下文记录的产物是修复**前**的 `0.3.0` 构建（保留为历史）；`feat-024` 之后的所有改动都包含在更下方的 `0.3.1` 与 `0.3.2` 产物中。
+
+## 通过门禁的产物（0.3.2）
+
+- 路径：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.2.zip`
+- 大小：`358,726,788` bytes
+- SHA-256：`8fb7a93f33a07bb03b0b8558df4ff0c2abe40a14eee13fd9dc0348fedcc7f1ba`
+- 包：版本 `0.3.2`、arm64、macOS 12.0+
+- 自动证据：62 files / 858 tests、statements 95.28%、三引擎 E2E 178 passed / 2 skipped、live 2/2
+- 签名：未做 Developer ID 签名与 notarization，产物仅适合个人测试
+
+## 历史产物（0.3.1）
 
 - 路径：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.1.zip`
 - 大小：`358,723,706` bytes
@@ -75,7 +86,6 @@ E2E 使用 production standalone 服务，并在测试后检查 tracked 文件�
 - 包：版本 `0.3.1`、arm64、macOS 12.0+
 - 自动证据：61 files / 855 tests、statements 95.28%、三引擎 E2E 178 passed / 2 skipped、live 2/2
 - 已发布：[GitHub Release `v0.3.1`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.1)，标签指向 `af7f6db` —— 该 ZIP 正是由这个提交的源码构建
-- 签名：未做 Developer ID 签名与 notarization，产物仅适合个人测试
 
 ## 历史产物（0.3.0，保留为历史）
 

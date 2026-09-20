@@ -1,6 +1,6 @@
 {
   "project": "MD-Convertor",
-  "currentVersion": "0.3.1",
+  "currentVersion": "0.3.2",
   "updatedAt": "2026-09-20",
   "activeFeature": null,
   "features": [
@@ -480,38 +480,61 @@
       "notes": "The deferred items are deliberate: the user chose 「稍后」 for the GitHub Releases publish and for the remaining real-machine polish, so the release gate stays un-run to avoid burning a hash that would be invalidated by the follow-ups. The key box uses `readOnly` rather than `disabled` so it stays focusable and reachable for screen readers while still preventing edits; `readOnly={Boolean(cloudProvider?.keyStored)}` alone is enough because clearing the key sets `keyStored: false` and the field becomes editable again before the next save."
     },
     {
-
       "id": "feat-032",
       "name": "Brand Wordmark: Drop The MD Mark And Set It In Michroma",
       "title": "Brand Wordmark: Drop The MD Mark And Set It In Michroma",
       "status": "done",
       "dependencies": [
-            "feat-031"
+        "feat-031"
       ],
       "scope": "The user asked for the top-left green 「MD」 square to be removed (leaving the plain wordmark), for the wordmark to be set in Michroma, and for the font to be embedded in the product instead of fetched. The font file is therefore vendored: `public/fonts/Michroma-Regular.woff2` (11,620 bytes, the latin subset) with the OFL 1.1 licence text next to it in `public/fonts/OFL.txt`, loaded through `next/font/local` - a local file read, so the build needs no network and the packaged app serves the exact bytes it was built with. A CDN `<link>` was rejected (runtime external request with an Arial fallback when offline) and so was the earlier `next/font/google` build-time fetch, which is what this round replaced. Michroma ships a single 400 weight and has no CJK glyphs, so it is applied to the Latin wordmark only, at `font-weight: 400` with the negative tracking removed (Michroma is already wide) and 15px. Both pages share the change: `<html className={michroma.variable}>` exposes `--font-brand`, and the two `.brand` rules consume it while `.brandMark` is deleted.",
       "nonGoals": [
-            "The hero headline, the 「Web to Markdown」 eyebrow and the 设置 entry keep their existing fonts and sizes; Michroma has no CJK glyphs, so it is never applied to the Chinese headline",
-            "Only the latin subset is vendored: latin-ext is deliberately left out because `next/font/local` emits no `unicode-range`, so a second file would silently override the first for every glyph",
-            "No size or tracking tuning beyond what the wordmark needed, no type-scale or token work",
-            "No release gate run, no GitHub Releases publish"
+        "The hero headline, the 「Web to Markdown」 eyebrow and the 设置 entry keep their existing fonts and sizes; Michroma has no CJK glyphs, so it is never applied to the Chinese headline",
+        "Only the latin subset is vendored: latin-ext is deliberately left out because `next/font/local` emits no `unicode-range`, so a second file would silently override the first for every glyph",
+        "No size or tracking tuning beyond what the wordmark needed, no type-scale or token work",
+        "No release gate run, no GitHub Releases publish"
       ],
       "acceptanceCriteria": [
-            "Both headers render the wordmark as plain text with no 「MD」 square, and the element's computed `font-family` resolves to the vendored Michroma face",
-            "The woff2 the page renders with is byte-identical to `public/fonts/Michroma-Regular.woff2` (SHA-256), and no `fonts.googleapis.com` / `fonts.gstatic.com` request is made",
-            "The repository keeps the font and its licence together, and `npm run build` succeeds with all network denied",
-            "`./init.sh` and `npm run test:e2e` are green and the packaged app contains the vendored woff2 and the licence"
+        "Both headers render the wordmark as plain text with no 「MD」 square, and the element's computed `font-family` resolves to the vendored Michroma face",
+        "The woff2 the page renders with is byte-identical to `public/fonts/Michroma-Regular.woff2` (SHA-256), and no `fonts.googleapis.com` / `fonts.gstatic.com` request is made",
+        "The repository keeps the font and its licence together, and `npm run build` succeeds with all network denied",
+        "`./init.sh` and `npm run test:e2e` are green and the packaged app contains the vendored woff2 and the licence"
       ],
       "evidence": [
-            "TDD RED: the two e2e cases failed first - 2 failed / 35 passed on chromium with the brand text read back as \"MDMD-Convertor\" - and passed after the change (37 passed).",
-            "TDD RED (vendoring): `npx vitest run tests/brand-font.test.ts` failed with ENOENT for both assets before they were added, then 2 passed.",
-            "Asset contract: `public/fonts/Michroma-Regular.woff2` is 11,620 bytes starting with the `wOF2` signature and SHA-256 b12098180dae0e6c6fed94c13fcf7a12a9d3c19b499ca3fbed118f19cc7756cf, identical to the build output `.next/static/media/Michroma_Regular-s.p.2qpii4b6jmzj9.woff2`.",
-            "Baseline: `./init.sh` exit 0 (/tmp/s15-init.log) - 61 files / 855 tests (the two new asset checks included), 95.28% statements, lint, `tsc --noEmit` and the production build clean.",
-            "Full E2E: `npm run test:e2e` exit 0 - 178 passed / 2 skipped across chromium, firefox and webkit (/tmp/s15-e2e2.log), tracked-file check passed. The first run had one firefox case fail with NS_ERROR_PROXY_CONNECTION_REFUSED (the e2e server dropping mid-run); firefox alone then passed 59/1 skipped (/tmp/s15-ff.log) and the full rerun was green.",
-            "Offline build: `sandbox-exec -p '(version 1)(allow default)(deny network*)' npm run build` exited 0. The sandbox itself was measured first - the same sandbox ran a `fetch('https://fonts.gstatic.com/...')` and got ENOTFOUND - so the pass is a real no-network build, not the sandbox doing nothing.",
-            "Packaged app (real machine, CDP probe /tmp/brand/probe-app.mjs): computed family `michroma, \"michroma Fallback\", Inter, system-ui, sans-serif`, brand box 143x21 at 15px, exactly one loaded face (`michroma:loaded`), the only font request is http://127.0.0.1:49177/_next/static/media/Michroma_Regular-s.p.2qpii4b6jmzj9.woff2 with SHA-256 b1209818... matching the repository file, and zero requests to Google.",
-            "Packaging: `npm run desktop:package` exit 0; the app bundles both `Contents/Resources/server/.next/static/media/Michroma_Regular-s.p.*.woff2` (byte-identical to the vendored file) and `Contents/Resources/server/public/fonts/{Michroma-Regular.woff2,OFL.txt}`, and `/fonts/OFL.txt` is served by the running app. The settings store SHA-256 stayed 93204f32d85d3b6bd1979b7cacdc7338e326eb4965e9483546e9b10c68b230b4."
+        "TDD RED: the two e2e cases failed first - 2 failed / 35 passed on chromium with the brand text read back as \"MDMD-Convertor\" - and passed after the change (37 passed).",
+        "TDD RED (vendoring): `npx vitest run tests/brand-font.test.ts` failed with ENOENT for both assets before they were added, then 2 passed.",
+        "Asset contract: `public/fonts/Michroma-Regular.woff2` is 11,620 bytes starting with the `wOF2` signature and SHA-256 b12098180dae0e6c6fed94c13fcf7a12a9d3c19b499ca3fbed118f19cc7756cf, identical to the build output `.next/static/media/Michroma_Regular-s.p.2qpii4b6jmzj9.woff2`.",
+        "Baseline: `./init.sh` exit 0 (/tmp/s15-init.log) - 61 files / 855 tests (the two new asset checks included), 95.28% statements, lint, `tsc --noEmit` and the production build clean.",
+        "Full E2E: `npm run test:e2e` exit 0 - 178 passed / 2 skipped across chromium, firefox and webkit (/tmp/s15-e2e2.log), tracked-file check passed. The first run had one firefox case fail with NS_ERROR_PROXY_CONNECTION_REFUSED (the e2e server dropping mid-run); firefox alone then passed 59/1 skipped (/tmp/s15-ff.log) and the full rerun was green.",
+        "Offline build: `sandbox-exec -p '(version 1)(allow default)(deny network*)' npm run build` exited 0. The sandbox itself was measured first - the same sandbox ran a `fetch('https://fonts.gstatic.com/...')` and got ENOTFOUND - so the pass is a real no-network build, not the sandbox doing nothing.",
+        "Packaged app (real machine, CDP probe /tmp/brand/probe-app.mjs): computed family `michroma, \"michroma Fallback\", Inter, system-ui, sans-serif`, brand box 143x21 at 15px, exactly one loaded face (`michroma:loaded`), the only font request is http://127.0.0.1:49177/_next/static/media/Michroma_Regular-s.p.2qpii4b6jmzj9.woff2 with SHA-256 b1209818... matching the repository file, and zero requests to Google.",
+        "Packaging: `npm run desktop:package` exit 0; the app bundles both `Contents/Resources/server/.next/static/media/Michroma_Regular-s.p.*.woff2` (byte-identical to the vendored file) and `Contents/Resources/server/public/fonts/{Michroma-Regular.woff2,OFL.txt}`, and `/fonts/OFL.txt` is served by the running app. The settings store SHA-256 stayed 93204f32d85d3b6bd1979b7cacdc7338e326eb4965e9483546e9b10c68b230b4."
       ],
       "notes": "Passing both `latin` and `latin-ext` to `next/font/local` would produce two `@font-face` rules with identical descriptors and no `unicode-range`, and the last one would win for every glyph - latin-ext carries no ASCII, so the wordmark would fall back to Arial. Only the latin file is vendored for that reason. The licence ships with the app for free because `scripts/prepare-desktop.mjs` already copies `public/` into `Contents/Resources/server/public/`, so publishing the ZIP redistributes the font together with its OFL text. The wordmark at 15px/400 is noticeably lighter than the old 34px green square, which is the intended flat-text look - raise the size if the user wants more presence."
+    },
+    {
+      "id": "feat-033",
+      "name": "Dock Ghost Icon: Run The Local Server From The Helper Bundle",
+      "title": "Dock Ghost Icon: Run The Local Server From The Helper Bundle",
+      "status": "done",
+      "dependencies": [
+        "feat-032"
+      ],
+      "scope": "While the packaged app was running the Dock showed a second tile with a generic black executable icon that bounced and never settled. The cause was in `electron/main.mjs`: the local Next.js server was spawned with `process.execPath`, i.e. the app bundle's own main executable, so LaunchServices read the child as a second launch of MD-Convertor and created a Foreground/APPL tile for it; the child never connects to WindowServer, so the tile bounces forever. The fix extracts `resolveServerBinary(execPath)` (`electron/server-binary.mjs`) and spawns `Contents/Frameworks/MD-Convertor Helper.app/Contents/MacOS/MD-Convertor Helper` instead - the same Electron binary running as Node via `ELECTRON_RUN_AS_NODE=1`, but inside a helper bundle that declares `LSUIElement`, so it takes no Dock tile. The function throws `Desktop helper runtime is missing: <path>` when the helper is absent, which keeps the failure loud in an unsupported layout. No packaging change was needed and no new asset was added. The version moved to 0.3.2 because the release gate hard-checks the target version.",
+      "acceptance": [
+        "The packaged app's server child is registered on the Helper bundle as type=\"UIElement\" rather than on the app bundle as type=\"Foreground\"",
+        "The Dock shows no second tile while the app runs",
+        "A missing helper fails loudly instead of silently falling back to the app executable"
+      ],
+      "verification": [
+        "`npx vitest run electron/server-binary.test.mjs` 3 passed (RED first: helper path not implemented, so the suite failed before the fix)",
+        "`scripts/release-guards.test.mjs` moved to RED by rewriting the 0.3.1 fixtures to 0.3.2, then green at 32 passed once the guard, `package.json`, the lock file and `feature_list.json` all read 0.3.2",
+        "`lsappinfo list` before the fix: `next-server (v16.3.5) ... bundle path=/Applications/MD-Convertor.app ... type=\"Foreground\" fileType=\"APPL\" parentASN=\"MD-Convertor\"`; after the fix: `bundle path=.../Contents/Frameworks/MD-Convertor Helper.app ... type=\"UIElement\" Version=\"0.3.2\"`",
+        "Dock screenshots `/tmp/icontest/pair-before.png` (app tile + black `exec` tile) and `/tmp/icontest/pair-after.png` (app tile only), and again on the installed build `/tmp/icontest/pair-installed.png`",
+        "`npm run desktop:package` exit 0 with `CFBundleShortVersionString` = 0.3.2, then installed to /Applications with `ditto` and relaunched; `settings.json` SHA-256 unchanged at `93204f32d85d3b6bd1979b7cacdc7338e326eb4965e9483546e9b10c68b230b4`",
+        "`npm run desktop:release` exit 0 (Node.js 24.15.0, log /tmp/s17-release.log): ./init.sh 62 files / 858 tests, statements 95.28%, three-engine E2E 178 passed / 2 skipped, live 2/2, artifact `MD-Convertor-darwin-arm64-0.3.2.zip` 358,726,788 bytes SHA-256 8fb7a93f33a07bb03b0b8558df4ff0c2abe40a14eee13fd9dc0348fedcc7f1ba, independently re-verified with `unzip -t`, `plutil` version 0.3.2 and `file` arm64",
+        "Not done: no Developer ID signature or notarization, so the artifact stays personal-testing only"
+      ]
     }
   ],
   "history": {

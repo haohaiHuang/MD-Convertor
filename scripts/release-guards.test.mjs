@@ -331,17 +331,17 @@ describe("fresh desktop ZIP verification", () => {
 <key>CFBundleVersion</key><string>${version}</string>
 </dict></plist>`;
 
-  async function makeFreshArtifactFixture({ zipVersion = "0.3.1", zipExecutable = "/bin/echo" } = {}) {
+  async function makeFreshArtifactFixture({ zipVersion = "0.3.2", zipExecutable = "/bin/echo" } = {}) {
     const root = await mkdtemp(path.join(tmpdir(), "release-artifact-"));
     const sideApp = path.join(root, "out", "MD-Convertor-darwin-arm64", "MD-Convertor.app");
     const sideContents = path.join(sideApp, "Contents");
     const zipRoot = path.join(root, "zip-input");
     const zipApp = path.join(zipRoot, "MD-Convertor.app");
     const zipContents = path.join(zipApp, "Contents");
-    const zipPath = path.join(root, "out", "make", "zip", "darwin", "arm64", "MD-Convertor-darwin-arm64-0.3.1.zip");
+    const zipPath = path.join(root, "out", "make", "zip", "darwin", "arm64", "MD-Convertor-darwin-arm64-0.3.2.zip");
 
     await mkdir(path.join(sideContents, "MacOS"), { recursive: true });
-    await writeFile(path.join(sideContents, "Info.plist"), plist("0.3.1"));
+    await writeFile(path.join(sideContents, "Info.plist"), plist("0.3.2"));
     await copyFile("/bin/echo", path.join(sideContents, "MacOS", "MD-Convertor"));
     await mkdir(path.join(zipContents, "MacOS"), { recursive: true });
     await writeFile(path.join(zipContents, "Info.plist"), plist(zipVersion));
@@ -358,7 +358,7 @@ describe("fresh desktop ZIP verification", () => {
   it("rejects a ZIP whose bundled version differs from the verified side application", async () => {
     const { root } = await makeFreshArtifactFixture({ zipVersion: "0.1.3" });
     try {
-      expect(() => verifyFreshArtifact({ root, version: "0.3.1", startedAtMs: 0 }))
+      expect(() => verifyFreshArtifact({ root, version: "0.3.2", startedAtMs: 0 }))
         .toThrow("ZIP application version mismatch");
     } finally {
       await rm(root, { recursive: true, force: true });
@@ -368,7 +368,7 @@ describe("fresh desktop ZIP verification", () => {
   it("rejects a ZIP whose bundled executable is not arm64", async () => {
     const { root } = await makeFreshArtifactFixture({ zipExecutable: "not a Mach-O executable" });
     try {
-      expect(() => verifyFreshArtifact({ root, version: "0.3.1", startedAtMs: 0 }))
+      expect(() => verifyFreshArtifact({ root, version: "0.3.2", startedAtMs: 0 }))
         .toThrow("ZIP application architecture is not arm64");
     } finally {
       await rm(root, { recursive: true, force: true });
@@ -383,7 +383,7 @@ describe("desktop release protection orchestration", () => {
       events,
       options: {
         root: "/tmp/release-orchestration-root",
-        version: "0.3.1",
+        version: "0.3.2",
         runCommand: (command, args) => {
           events.push(`run:${command} ${args.join(" ")}`.trim());
         },
@@ -494,7 +494,7 @@ describe("desktop release protection orchestration", () => {
     expect(events).toEqual([]);
   });
 
-  it("accepts only the current 0.3.1 release target", async () => {
+  it("accepts only the current 0.3.2 release target", async () => {
     const { options } = makeReleaseFixture();
     await expect(runRelease(options)).resolves.toMatchObject({ digest: "digest" });
 
@@ -502,7 +502,7 @@ describe("desktop release protection orchestration", () => {
     await expect(runRelease(superseded.options)).rejects.toThrow(RELEASE_VERSION_ERROR);
     expect(superseded.events).toEqual([]);
 
-    expect(RELEASE_VERSION_ERROR).toContain("0.3.1");
+    expect(RELEASE_VERSION_ERROR).toContain("0.3.2");
   });
 });
 

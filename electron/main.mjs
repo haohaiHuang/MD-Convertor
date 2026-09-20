@@ -6,6 +6,7 @@ import { app, BrowserWindow, ipcMain, safeStorage, shell } from "electron";
 import preloadContract from "./preload-contract.cjs";
 import { buildServerEnv, readDotEnvFile, readLoginShellPath, resolvePathEnv } from "./env.mjs";
 import { pushRuntimeSecret } from "./runtime-secrets.mjs";
+import { resolveServerBinary } from "./server-binary.mjs";
 import { createSecretsStore } from "./secrets.mjs";
 
 const { CHANNELS, isValidProviderId } = preloadContract;
@@ -148,7 +149,7 @@ async function startProductionServer() {
     dotEnv: await readUserDotEnv(),
   });
 
-  serverProcess = spawn(process.execPath, [serverEntry], {
+  serverProcess = spawn(resolveServerBinary(process.execPath), [serverEntry], {
     cwd: serverRoot,
     env: serverEnv,
     stdio: ["ignore", "pipe", "pipe"],

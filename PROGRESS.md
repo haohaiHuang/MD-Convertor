@@ -3,11 +3,22 @@
 ## Current State
 
 - Last updated: 2026-09-20
-- Current version: `0.3.1`（`package.json`、`package-lock.json`、`feature_list.json` 与发布门禁均为 `0.3.1`）。**`0.3.1` 门禁已于 2026-09-20 跑通（exit 0）并发布为 GitHub Release `v0.3.1`**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.1.zip`（`358,723,706` bytes，SHA-256 `c7411c58…161b`）。`0.3.0` 的 ZIP（`358,562,540` bytes，`2a0e236e…1147`）是修复**前**的构建，仅作历史
-- Active feature: none（`feat-024` – `feat-032` 已 done）
-- Next release step: 无待办——`0.3.1` 已过门禁、已发布（`v0.3.1`，tag 指向 `af7f6db`）、已安装到 `/Applications`（替换 0.2.1）；下一轮若再改代码，需要新的版本号再跑一次 `npm run desktop:release`
-- Branch: `main`；本轮源码改动（`feat-031` + `feat-032`）已提交（`af7f6db`）并推送到 GitHub，作为 `v0.3.1` 发布；提交前已跑完提交门 ponytail → code-review → neat-freak（自审，`subagent` 在本机不可用）
+- Current version: `0.3.2`（`package.json`、`package-lock.json`、`feature_list.json` 与发布门禁均为 `0.3.2`）。**`0.3.2` 门禁已于 2026-09-20 跑通（exit 0）**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.2.zip`（`358,726,788` bytes，SHA-256 `8fb7a93f…f1ba`），已安装到 `/Applications`。上一版 `0.3.1` 已发布为 GitHub Release `v0.3.1`（tag `af7f6db`）；`0.3.0` 的 ZIP（`358,562,540` bytes，`2a0e236e…1147`）是修复**前**的构建，仅作历史
+- Active feature: none（`feat-024` – `feat-033` 已 done）
+- Next release step: `0.3.2` 产物已过门禁、已装本机，尚待提交/推送与发布 GitHub Release；下一轮若再改代码，需要新的版本号（≥ `0.3.3`）再跑一次 `npm run desktop:release`
+- Branch: `main`；`feat-031` + `feat-032` 已提交（`af7f6db`）并推送，作为 `v0.3.1` 发布；本轮 `feat-033`（程序坞幽灵图标修复 + 版本 `0.3.2`）尚未提交
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+
+
+## 已完成 in 0.3.2（程序坞幽灵图标，feat-033 done）
+
+- 现象与根因：打包应用运行期间，程序坞会出现第二个通用黑色可执行文件图标，一直跳动不停。根因在 `electron/main.mjs` 的 `spawn(process.execPath, [serverEntry], …)` —— `process.execPath` 是应用包自己的主可执行文件，LaunchServices 因此把 Node 子进程当成「第二次启动 MD-Convertor」，为它建了一个 Foreground/APPL 的 Dock 项；而该子进程从不连接 WindowServer，于是图标永远跳不完。
+- 修复（TDD，先红后绿）：新增纯模块 `electron/server-binary.mjs`，导出 `resolveServerBinary(execPath)` ⇒ `Contents/Frameworks/<基名> Helper.app/Contents/MacOS/<基名> Helper`；`electron/main.mjs` 改用它启服务（仍是同一个 Electron 二进制，靠 `ELECTRON_RUN_AS_NODE=1` 以 Node 运行）。helper bundle 声明了 `LSUIElement`，因此不再占程序坞；helper 缺失时抛 `Desktop helper runtime is missing: <path>`，不会静默回退。无需改打包配置、无需新增素材。
+- 版本 `0.3.2`（TDD）：`scripts/release-guards.test.mjs` 先把 8 处 fixture 从 `0.3.1` 改到 `0.3.2` ⇒ RED **5 failed / 24 passed**（其中 3 个来自新模块 `server-binary.test.mjs`），再把 `scripts/release-desktop.mjs`、`package.json`、`package-lock.json`、`feature_list.json` 改为 `0.3.2` ⇒ **32 passed**。
+- 真机证据（打包应用与安装后应用均验）：修复前 `lsappinfo` 里子进程 `next-server … bundle path=…/MD-Convertor.app … type="Foreground" parentASN="MD-Convertor"`；修复后为 `bundle path=…/Contents/Frameworks/MD-Convertor Helper.app … type="UIElement" Version="0.3.2"`。程序坞截图 `/tmp/icontest/pair-before.png`（应用图标 + 黑色 exec）与 `pair-after.png` / `pair-installed.png`（只剩应用图标）。
+- 门禁：`npm run desktop:release`（Node.js 24.15.0）在 2026-09-20 **exit 0**（日志 `/tmp/s17-release.log`）—— `./init.sh` 62 files / **858 tests**、statements 95.28%、三浏览器 e2e **178 passed / 2 skipped**、live **2/2**、`electron-forge make` 与产物校验通过；产物 `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.2.zip`，`358,726,788` bytes，SHA-256 `8fb7a93f33a07bb03b0b8558df4ff0c2abe40a14eee13fd9dc0348fedcc7f1ba`。
+- 独立复核：`unzip -t` 无错、`CFBundleShortVersionString` = `0.3.2`、`file` = Mach-O arm64、asar 内含 `/electron/server-binary.mjs`、包内 Michroma woff2 与仓库文件同哈希。
+- 安装与验证：`/Applications/MD-Convertor.app` 由 `0.3.1` 替换为 `0.3.2`（旧版备份 `/tmp/s17-old-0.3.1.app`），启动后子进程 `pid 39494` 挂在 `Contents/Frameworks/MD-Convertor Helper.app` 上、`type="UIElement"`，程序坞无额外图标；`settings.json` SHA-256 未变（`93204f32…30b4`）。
+- 未做：不改打包配置与图标素材，不动依赖、端点策略、翻译引擎；签名/notarization 仍按用户决定不做。
 
 ## Completed in 0.2.1
 
@@ -186,12 +197,21 @@
 ## 下一轮（建议顺序）
 
 1. **真机小点**：用户提到「稍后把真机测试的一些小点完善了再说」，等清单给出后再评估是否单独一轮。
-2. 若有任何代码改动，需要新的版本号（≥ `0.3.2`）并重跑一次 `npm run desktop:release`；`0.3.1` 的产物与 tag 已发布，不要移动或覆盖。
+2. 若有任何代码改动，需要新的版本号（≥ `0.3.3`）并重跑一次 `npm run desktop:release`；`0.3.1` 的产物与 tag 已发布，`0.3.2` 的产物已过门禁（已装本机、尚待提交与发布），都不要移动或覆盖。
 3. 若将来 0.1.x/0.2.0 归档重新出现，守卫会自动恢复严格校验；不要把已退役的条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删掉。
 
 ## Verification Evidence
 
-### 0.3.1 发布与安装（本次）
+### 0.3.2 程序坞幽灵图标修复（本次）
+
+- 门禁：`npm run desktop:release` **exit 0**（Node.js 24.15.0，日志 `/tmp/s17-release.log`）——62 files / **858 tests**、statements 95.28%、`npm run test:e2e` **178 passed / 2 skipped**、`npm run test:live` **2/2**、`electron-forge make` 与产物校验通过；末尾 `Release Artifact Verified: Version 0.3.2, SHA-256 8fb7a93f…f1ba`。
+- RED：`electron/server-binary.test.mjs` 3 个用例（helper bundle / 由可执行文件名推导 helper 名 / helper 缺失时抛错）在实现前全红，加上版本 fixture 改动后 `npm test -- release-guards` ⇒ **5 failed / 24 passed**；实现后同一命令 **32 passed**。
+- 真机证据（修复前→后，`lsappinfo list`）：子进程从 `bundle path=/Applications/MD-Convertor.app … type="Foreground" fileType="APPL" parentASN="MD-Convertor"` 变为 `bundle path=…/Contents/Frameworks/MD-Convertor Helper.app … type="UIElement" Version="0.3.2" fileType="APPL"`；打包应用与安装后应用都如此。
+- 程序坞截图：`/tmp/icontest/pair-before.png`（应用图标 + 黑色 exec 同时存在）、`pair-after.png` 与 `pair-installed.png`（只剩应用图标）。
+- 产物独立复核：`stat` = `358726788`、`shasum -a 256` = `8fb7a93f…f1ba`、`unzip -t` 无错、`plutil -extract CFBundleShortVersionString` = `0.3.2`、`file` = Mach-O arm64；asar 内含 `/electron/server-binary.mjs` 与 `/electron/server-binary.test.mjs`，`strings` 能检出 `resolveServerBinary` 与 `helper runtime is missing`。
+- 安装：`ditto /tmp/s17-app/MD-Convertor.app /Applications/MD-Convertor.app` exit 0（旧 `0.3.1` 备份在 `/tmp/s17-old-0.3.1.app`），安装后 `defaults read … CFBundleShortVersionString` = `0.3.2`；`settings.json` SHA-256 仍为 `93204f32…30b4`。
+
+### 0.3.1 发布与安装（历史）
 
 - 门禁：`npm run desktop:release` **exit 0**（Node.js 24.15.0，15 分钟上限内完成，日志 `/tmp/s16-release.log`）——61 files / **855 tests**、statements 95.28%、`npm run test:e2e` **178 passed / 2 skipped (1.4m)**、`npm run test:live` **2/2**、`electron-forge make` 成功；末尾打印 `Release Artifact Verified` 与 `Historical Archive Notice`（5 个退役 ZIP + 退役的 0.1.3 副本）。
 - 产物独立复核：`stat` = `358723706`、`shasum -a 256` = `c7411c58…161b`（与门禁一致）、`unzip -t` 无错、`plutil -extract CFBundleShortVersionString` = `0.3.1`、`file` = `Mach-O 64-bit executable arm64`；解包后包内 Michroma woff2 SHA-256 = `b12098180dae…56cf`（与仓库文件相同）、CSS `--font-brand:"michroma", "michroma Fallback"`。
@@ -343,7 +363,8 @@
 - **feat-030 起云端只能有一条配置**：设置页只渲染一张 `<article aria-label="云端 Provider">`，读写「当前生效的那条」（`activeProviderId` → 否则 `providers[0]`），保存时把 `cloud.providers` 收敛为单条目。契约（`providers[] + activeProviderId`）与 `SETTINGS_VERSION` 未变，但**手工在 `settings.json` 里追加的多条 Provider 会在下次保存时被丢弃**；要做多条并存必须先恢复列表 UI（`feat-026` 的 `drafts`/`newProvider` 版本可从 git 历史取回）。
 - **feat-026 / feat-029 / feat-030 之后「保存」是 Provider 记录的唯一写入入口**：`拉取模型` 只读端点（结果先放草稿态），模型与密钥都不再随意落盘，因此改完名称 / Base URL / 密钥 / 模型后必须先点「保存」才生效；密钥来源只有系统密钥库一个（`apiKeyEnv` 已退役）。
 - **feat-025 隐藏了自定义语言入口（保留字段与函数）**：`languages.custom` 仍在契约里、`addCustomLanguage()` 与其单测仍在，存量自定义标签仍出现在目标语言下拉里；但新标签暂时只能靠手改 `settings.json` 添加。若将来要恢复入口，只需恢复 `settings/page.tsx` 的那段 JSX 与 `setNote("language", …)` 分支。
-- **`0.3.1` 已发布（2026-09-20）**：门禁通过并已发布为 GitHub Release `v0.3.1`（tag `af7f6db`），ZIP 为 `358,723,706` bytes / SHA-256 `c7411c58…161b`；文档（`docs/TESTING.md`(+zh)、`docs/QUALITY-AUDIT.md`、`README.md`(+zh)、`CHANGELOG.md`(+zh)）均已同步。`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip` 仍留在本机，只作历史，**不要在后续门禁里把它当成当前产物**；下一次发布必须先把版本号升到 `0.3.2` 或更高（门禁硬校验目标版本）。
+- **`0.3.2` 已过门禁并已装本机（2026-09-20）**：ZIP 为 `358,726,788` bytes / SHA-256 `8fb7a93f…f1ba`，已在 `/Applications/MD-Convertor.app`；**尚未提交、推送与发布 GitHub Release**。`0.3.1` 已发布为 GitHub Release `v0.3.1`（tag `af7f6db`，ZIP `358,723,706` bytes / `c7411c58…161b`）；`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip` 仍留在本机，只作历史，**不要在后续门禁里把它当成当前产物**；下一次发布必须先把版本号升到 `0.3.3` 或更高（门禁硬校验目标版本）。
+- **feat-033 起本地服务从包内 Helper 启动**：`electron/main.mjs` 用 `resolveServerBinary(process.execPath)`（`electron/server-binary.mjs`）拿到 `Contents/Frameworks/MD-Convertor Helper.app/Contents/MacOS/MD-Convertor Helper` 再 spawn（仍带 `ELECTRON_RUN_AS_NODE: "1"`）。因该 helper bundle 声明 `LSUIElement`，子进程不再占程序坞。**不要改回 `process.execPath`**（会重新出现跳动的黑色 exec 图标）；helper 缺失时函数会抛 `Desktop helper runtime is missing: <path>`，这是刻意保留的响亮失败。此约束依赖 electron-forge 默认的 helper bundle 布局，若将来换到不带 helper 的打包方式需要同时改这个函数与它的 3 个单测。
 - **feat-031 起密钥输入框在已保存时为只读**：`readOnly={Boolean(cloudProvider?.keyStored)}`，占位文案「••••••••（已保存，先清除密钥再更换）」。不用 `disabled` 是为了保留可聚焦与屏幕阅读器可达；「清除密钥」语义未变（删除密钥库条目 + `keyStored:false` ⇒ 输入框恢复可编辑，再点「保存」才能写入新密钥）。不要把密钥读回页面。
 - **批次数由「≤20 块」而非字符数主导**：长文段落多时批次数偏多、`pi` 的固定启动开销被重复支付（实测 8,000 字符批次 7s，含启动）。修复后已能跑完，因此**未**改动 `TRANSLATE_BATCH_MAX_BLOCKS`；若将来同类文章仍然慢，把这个上限提高是第一个候选优化（代价：单批输出更长，解析与质量风险上升，需另开测试）。
 - The app is not Developer ID signed or notarized. Gatekeeper may require an explicit Open action or removal of the quarantine attribute after the checksum is verified.
@@ -374,8 +395,8 @@
 
 ## Next Step
 
-`feat-031` + `feat-032`（版本 `0.3.1`、依赖升级、界面微调、自带 Michroma 品牌字）已实现、已提交（`af7f6db`，17 个文件）、已推送、**已跑完发布门禁并发布为 GitHub Release `v0.3.1`**，产物（`358,723,706` bytes / SHA-256 `c7411c58…161b`）已安装到 `/Applications/MD-Convertor.app` 替换 0.2.1。文档（`CHANGELOG`, `README`, `docs/TESTING`, `docs/QUALITY-AUDIT`, `PROGRESS`, `session-handoff`, `feature_list.json`）已同步发布结果，`[Unreleased]` 已归档为 `[0.3.1] - 2026-09-20`。剩余待办：
+`feat-033`（程序坞幽灵图标修复 + 版本 `0.3.2`）已实现、已跑完发布门禁（exit 0，产物 `358,726,788` bytes / SHA-256 `8fb7a93f…f1ba`）、已安装到 `/Applications` 替换 `0.3.1`，文档（`CHANGELOG`, `README`, `docs/ARCHITECTURE`, `docs/TESTING`, `docs/QUALITY-AUDIT`, `PROGRESS`, `session-handoff`, `feature_list.json`）已同步。**尚待：提交 + 推送 + 发布 GitHub Release `v0.3.2`（`gh release create v0.3.2 <zip> --target main`，随后 `git fetch --tags origin`）。** 上一版 `feat-031` + `feat-032`（版本 `0.3.1`）已提交（`af7f6db`）、已推送、已发布为 GitHub Release `v0.3.1`，产物已安装。剩余待办：
 5. **签名/notarization：用户 2026-09-20 决定不做**（`docs/QUALITY-AUDIT.md` 的 QA-008 已改为 accepted / not planned，判词与 Release Decision 同步）。要恢复需 Apple Developer 付费会员 + **Developer ID Application** 证书 + notarytool 凭据，再在 `forge.config.cjs` 加 `osxSign`/`osxNotarize`（凭据走环境变量）；签名后产物哈希会变，必须重跑门禁并更新记录。在那之前所有产物都只适合个人测试。
 6. **UI 评审已完成，用户决定不整改（2026-09-20）**：用 design-references 环节 4 快速通道评审了 `0.3.1` 的网页与桌面 UI（真实截图 + `getBoundingClientRect` 实测 + WCAG 对比度计算 + 键盘 Tab 焦点扫描 + `design_audit`/`design_contrast`），产出 `docs/UI-REVIEW-2026-09-20.md`（P0×6 + P1×10，均附实测数字；配套的现状/改后对照板是临时 HTML，用户看过即删）。用户看过对照板后决定**全部不改**。因此 `e2e/home.spec.ts` 的像素级对齐断言（转换按钮右边缘与粘贴框右边缘差值 < 4px、与「来源 URL」输入框同行）继续是刻意锁定的效果 —— 若将来真要改 `.sourceInput` 的 `flex`、按钮宽度或 `.sourceRow` 的 gap，先改断言。**不要在没有新证据、也没有用户指认具体条目的情况下重提这批发现。** 本轮代码零改动，`settings.json` 在校验探针前后 SHA-256 一致。
 
-不要重做 S1–S6 与 `feat-024` – `feat-030` 已完成的部分；不要放宽端点、密钥或归档守卫；不要把已退役的历史 ZIP 条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删除。
+不要重做 S1–S6 与 `feat-024` – `feat-033` 已完成的部分；不要放宽端点、密钥或归档守卫；不要把已退役的历史 ZIP 条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删除。

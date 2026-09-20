@@ -4,6 +4,12 @@
 
 This project follows the principles of [Keep a Changelog](https://keepachangelog.com/). User-facing changes that have not yet been released belong under `Unreleased`.
 
+## [0.3.2] - 2026-09-20
+
+### Fixed
+
+- The Dock no longer shows a second, endlessly bouncing tile with the generic black `exec` icon while the app runs. The local server process was spawned from the application's own executable, which macOS reads as a second launch of MD-Convertor and which can never finish checking in as an app. It now runs from the bundled `MD-Convertor Helper` bundle (declared `LSUIElement`), so it keeps out of the Dock while still running the same Node runtime.
+
 ## [0.3.1] - 2026-09-20
 
 ### Changed
