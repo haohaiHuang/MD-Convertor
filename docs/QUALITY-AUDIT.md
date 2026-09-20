@@ -2,7 +2,7 @@
 
 ## Current Verdict
 
-Version `0.3.2` passed its own release gate on 2026-09-20 - baseline, three-browser E2E, live, packaging, and artifact verification all passed - producing `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.2.zip`. `0.3.1` passed the same gate earlier the same day and was published as GitHub Release `v0.3.1` (tag `af7f6db`); it stays as history. The `0.3.0` gate ran end to end on 2026-09-18 and that artifact predates `feat-024` onward; it is kept as history. The historical-archive precondition was retired for the 0.1.0–0.2.0 ZIPs and the 0.1.3 read-only copy, which were lost from this Mac and cannot be restored; every archive that still exists is hash-checked exactly as before, and `0.2.1` was re-downloaded from its GitHub release and matched its recorded SHA-256 byte for byte. The `v0.1.3` source tag remains a hard precondition. QA-012 (the advisory set found in `next` and `sharp`) is resolved: as of 2026-09-20 `next` is 16.3.5 and `sharp` is 0.35.4, and `npm audit --omit=dev` reports no production advisories. The remaining release constraint is the absence of Developer ID signing and notarization, which the user decided on 2026-09-20 not to pursue: every artifact stays personal-testing only, and the `v0.3.1` and `v0.3.2` release notes say so plainly.
+Version `0.3.3` passed its own release gate on 2026-09-20 - baseline, three-browser E2E, live, packaging, and artifact verification all passed - producing `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.3.zip`. `0.3.2` and `0.3.1` passed the same gate earlier the same day and were published as GitHub Releases `v0.3.2` (tag `1c3ed80`) and `v0.3.1` (tag `af7f6db`); they stay as history. The `0.3.0` gate ran end to end on 2026-09-18 and that artifact predates `feat-024` onward; it is kept as history. The historical-archive precondition was retired for the 0.1.0–0.2.0 ZIPs and the 0.1.3 read-only copy, which were lost from this Mac and cannot be restored; every archive that still exists is hash-checked exactly as before, and `0.2.1` was re-downloaded from its GitHub release and matched its recorded SHA-256 byte for byte. The `v0.1.3` source tag remains a hard precondition. QA-012 (the advisory set found in `next` and `sharp`) is resolved: as of 2026-09-20 `next` is 16.3.5 and `sharp` is 0.35.4, and `npm audit --omit=dev` reports no production advisories. The remaining release constraint is the absence of Developer ID signing and notarization, which the user decided on 2026-09-20 not to pursue: every artifact stays personal-testing only, and the `v0.3.1` and `v0.3.2` release notes say so plainly.
 
 ## Post-0.3.0 Fix Detail (feat-024, 2026-09-18)
 
@@ -17,9 +17,9 @@ A real-machine report ("翻译任务超时" on a 9,100-character article) expose
 | Release gate | **not re-run in that round**: the recorded 0.3.0 ZIP predates the fix. The gate ran later, as part of `0.3.1`, and passed on 2026-09-20 |
 | Residual risk | more batches still means more repeated CLI start-up cost; raising `TRANSLATE_BATCH_MAX_BLOCKS` is the first candidate if a future article is still slow |
 
-## Post-0.3.0 Rounds (feat-024 - feat-033, 2026-09-18 to 2026-09-20)
+## Post-0.3.0 Rounds (feat-024 - feat-034, 2026-09-18 to 2026-09-20)
 
-Everything from `feat-024` through `feat-033` shares one build, and all of it shipped in the gated `0.3.1` and `0.3.2` artifacts. It is unit-tested, baseline-verified, three-engine E2E verified, and (for the translation and UI rounds) exercised on the packaged app by the user.
+Everything from `feat-024` through `feat-034` shares one build, and all of it shipped in the gated `0.3.1`, `0.3.2` and `0.3.3` artifacts. It is unit-tested, baseline-verified, three-engine E2E verified, and (for the translation and UI rounds) exercised on the packaged app by the user.
 
 | Round | Change | Evidence |
 |---|---|---|
@@ -30,9 +30,27 @@ Everything from `feat-024` through `feat-033` shares one build, and all of it sh
 | feat-031 | version 0.3.1, `next` 16.3.5 + `sharp` 0.35.4, header/button layout, read-only key box | release-guard tests 29 passed, `npm audit --omit=dev` clean, home E2E layout assertions |
 | feat-032 | green「MD」square dropped, wordmark set in Michroma, font + OFL licence vendored under `public/fonts/` and loaded with `next/font/local` | `tests/brand-font.test.ts`, E2E brand case comparing the served woff2 with the repository file by SHA-256, build re-run with all network denied |
 | feat-033 | the local server runs from the bundled `MD-Convertor Helper` instead of the app executable, so the Dock no longer shows a second bouncing `exec` tile | `electron/server-binary.test.mjs` (3 cases), `lsappinfo` shows the child as `type="UIElement"` on the Helper bundle, before/after Dock screenshots |
-| Gate | `0.3.1` gated on 2026-09-20 (exit 0) and published as GitHub Release `v0.3.1`; `0.3.2` gated on 2026-09-20 (exit 0) and published as GitHub Release `v0.3.2` | `npm run desktop:release`, ZIP size and SHA-256 recorded in `docs/TESTING.md` |
+| feat-034 | the bundled server no longer carries a second Electron runtime, so the distributable ZIP drops from 358,726,788 to 232,947,408 bytes and the unpacked app from 843 MB to 539 MB | `scripts/prepare-desktop.test.mjs` (staged copy removed, source and project copies kept), ZIP audit (0 entries under `server/node_modules/electron`, Playwright / Playwright Core / Sharp / headless shell retained), packaged smoke test |
+| Gate | `0.3.1` gated on 2026-09-20 (exit 0) and published as GitHub Release `v0.3.1`; `0.3.2` gated on 2026-09-20 (exit 0) and published as GitHub Release `v0.3.2`; `0.3.3` gated on 2026-09-20 (exit 0) and published as GitHub Release `v0.3.3` | `npm run desktop:release`, ZIP size and SHA-256 recorded in `docs/TESTING.md` |
 
-## Verified Release (0.3.2)
+## Verified Release (0.3.3)
+
+| Check | Result |
+|---|---|
+| Node.js | 24.14.1 (24.16.0 stalls inside `yauzl` while unpacking the Electron archive, so `electron-forge make` never produces a ZIP; 24.15.0 also passes) |
+| Baseline | lint, typecheck, coverage, production build passed |
+| Tests | 62 files / 859 tests passed, 95.28% statements |
+| Browser E2E | Chromium, Firefox, WebKit — 178 passed / 2 skipped |
+| Stable live gate | WalkingLabs link/paste — 2/2 passed |
+| Production dependency audit | no production advisories (QA-012 closed) |
+| Package | 0.3.3, arm64, macOS 12.0+ |
+| ZIP bytes | 232,947,408 |
+| ZIP SHA-256 | `1bf807dfe294860c24345efe5caf2b0fcbd54f88476df7085c9bd03b47b37a72` |
+| Bundled runtime | 0 entries under `server/node_modules/electron`; playwright 75, playwright-core 129, `@img/sharp-darwin-arm64` 7, `@img/sharp-libvips-darwin-arm64` 10, `server/browser/chrome-headless-shell` (159,293,248 bytes), 24 MD-Convertor Helper entries under `Contents/Frameworks` |
+| Real machine | installed to `/Applications` replacing `0.3.2` (previous build kept at `/tmp/s18-old-0.3.2.app`); packaged smoke test passed |
+| Signing | not signed, not notarized |
+
+## Verified Release (0.3.2, historical)
 
 | Check | Result |
 |---|---|
@@ -174,20 +192,20 @@ Everything from `feat-024` through `feat-033` shares one build, and all of it sh
 ## Repository Hygiene
 
 - Completed plans, task records, prior progress/audit snapshots, WorkBuddy files, and release ZIPs through 0.2.0 are archived under `~/Downloads/MD-Convertor-archive/`. The 0.1.0–0.2.0 ZIPs and the read-only 0.1.3 copy were later lost from this Mac without any recoverable copy; 0.2.1 was re-downloaded from its GitHub release and re-verified against its recorded SHA-256.
-- The current repository tree contains only active source, current documentation, tests, and the ignored `out/` build output (a pre-fix 0.3.0 ZIP plus the unsigned 0.3.1 and 0.3.2 packaged apps).
+- The current repository tree contains only active source, current documentation, tests, and the ignored `out/` build output (a pre-fix 0.3.0 ZIP plus the unsigned 0.3.1, 0.3.2 and 0.3.3 packaged apps).
 - Historical Git commits and tags are intentionally retained; no history was rewritten.
 - Release guards verify fixed historical ZIP hashes from the external archive before and after a release attempt; an absent entry is reported as retired and any present entry is still hash-checked.
 
-## Re-verification Checklist for 0.3.2
+## Re-verification Checklist for 0.3.3
 
-- `./init.sh` green on Node.js 24.x: lint, `tsc --noEmit`, coverage with every per-file threshold, production build. Last green: 62 files / 858 tests, 95.28% statements (2026-09-20).
+- `./init.sh` green on Node.js 24.x: lint, `tsc --noEmit`, coverage with every per-file threshold, production build. Last green: 62 files / 859 tests, 95.28% statements (2026-09-20).
 - `npm run test:e2e` green across Chromium, Firefox, and WebKit. Last green: 178 passed / 2 skipped.
 - `npm run test:live` result recorded, even when it is skipped or fails because the network is unavailable. Last green: 2/2 (after one transient DNS failure).
-- `npm run desktop:release` passed with version `0.3.2` on 2026-09-20 (and with `0.3.1` earlier the same day): historical ZIP snapshot unchanged before and after, fresh ZIP, packaged version, arm64 executable, bundle structure, size, and SHA-256.
+- `npm run desktop:release` passed with version `0.3.3` on 2026-09-20 (and with `0.3.2` and `0.3.1` earlier the same day): historical ZIP snapshot unchanged before and after, fresh ZIP, packaged version, arm64 executable, bundle structure, size, and SHA-256.
 - Packaged smoke test with `ELECTRON_SMOKE_TEST=1` and `ELECTRON_SMOKE_TEST_SECRETS=1` prints the preload bridge and runtime secret results.
 - No key, article body, or CLI output appears in logs, error messages, test output, or the repository.
 - The historical `v0.1.3` tag is intact, no historical ZIP that still exists changed its hash, and every retired entry is reported by the gate.
 
 ## Release Decision
 
-Approved for personal testing. Not approved for frictionless public distribution, and QA-008 is accepted rather than being worked: the user decided on 2026-09-20 not to buy a Developer ID / notarize, so signing stays out of scope until that decision changes. QA-012 no longer applies: `next` is 16.3.5 and `sharp` is 0.35.4 as of 2026-09-20 and `npm audit --omit=dev` reports no production advisories. `0.3.2` passed its gate on 2026-09-20 and was published as GitHub Release `v0.3.2` (tag `1c3ed80`); `0.3.1` passed its gate and was published as GitHub Release `v0.3.1` earlier the same day. The release notes state that the build is unsigned and intended for personal testing.
+Approved for personal testing. Not approved for frictionless public distribution, and QA-008 is accepted rather than being worked: the user decided on 2026-09-20 not to buy a Developer ID / notarize, so signing stays out of scope until that decision changes. QA-012 no longer applies: `next` is 16.3.5 and `sharp` is 0.35.4 as of 2026-09-20 and `npm audit --omit=dev` reports no production advisories. `0.3.3` passed its gate on 2026-09-20 and was published as GitHub Release `v0.3.3`; `0.3.2` passed its gate on 2026-09-20 and was published as GitHub Release `v0.3.2` (tag `1c3ed80`); `0.3.1` passed its gate and was published as GitHub Release `v0.3.1` earlier the same day. The release notes state that the build is unsigned and intended for personal testing.

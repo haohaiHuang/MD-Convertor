@@ -35,6 +35,10 @@ const headlessShellRoot = path.join(
 await rm(targetRoot, { force: true, recursive: true });
 await mkdir(targetRoot, { recursive: true });
 await cp(sourceRoot, targetRoot, { recursive: true, verbatimSymlinks: true });
+// Next.js traces playwright-core's `require("electron")` into the standalone output, which pulls in
+// Electron's own ~295 MB unpacked runtime that the server never loads. The app already ships that runtime in
+// Contents/Frameworks, so a second copy here only inflates the bundle.
+await rm(path.join(targetRoot, "node_modules", "electron"), { force: true, recursive: true });
 for (const nativePackage of ["sharp-darwin-arm64", "sharp-libvips-darwin-arm64"]) {
   const targetPackage = path.join(targetRoot, "node_modules", "@img", nativePackage);
   await rm(targetPackage, { force: true, recursive: true });

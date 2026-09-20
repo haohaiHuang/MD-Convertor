@@ -4,6 +4,12 @@
 
 本文件记录项目中面向用户或协作者的重要变化，格式参考 Keep a Changelog；尚未归入版本的变化记录在 `[Unreleased]`。
 
+## [0.3.3] - 2026-09-20
+
+### 变更
+
+- 应用不再附带第二份未被使用的 Electron 运行时。Next.js 的输出追踪跟随 Playwright 的可选 Electron 启动器，把整个 `electron` 包（解压后 295 MB，占应用 35%）拷进了内置服务目录，而应用自身代码从不加载它。桌面准备脚本现在会在追踪结束后删除 `server/node_modules/electron`，分发 ZIP 因此从 `358,726,788` 降到 `232,947,408` bytes（小 120 MiB），未压缩应用从 843 MB 降到 539 MB。Playwright、Playwright Core、Sharp 的 arm64 包与内置 Chromium Headless Shell 全部保留：应用用自己的无头浏览器（`PLAYWRIGHT_EXECUTABLE_PATH`），不走 Electron。
+
 ## [0.3.2] - 2026-09-20
 
 ### 修复

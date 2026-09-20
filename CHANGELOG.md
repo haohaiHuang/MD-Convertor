@@ -4,6 +4,12 @@
 
 This project follows the principles of [Keep a Changelog](https://keepachangelog.com/). User-facing changes that have not yet been released belong under `Unreleased`.
 
+## [0.3.3] - 2026-09-20
+
+### Changed
+
+- The app no longer ships a second, unused copy of the Electron runtime. Next.js output tracing followed Playwright's optional Electron launcher and copied the whole `electron` package — 295 MB unpacked, 35% of the app — into the bundled server, where no application code ever loads it. Desktop preparation now removes `server/node_modules/electron` after tracing, so the distributable ZIP drops from `358,726,788` to `232,947,408` bytes (120 MiB smaller) and the unpacked app from 843 MB to 539 MB. Playwright, Playwright Core, Sharp's arm64 packages, and the bundled Chromium Headless Shell are all kept: the app drives its own headless browser through `PLAYWRIGHT_EXECUTABLE_PATH`, never through Electron.
+
 ## [0.3.2] - 2026-09-20
 
 ### Fixed

@@ -38,17 +38,17 @@ Do not run this command for an app whose source or checksum you do not trust.
 
 ## Current Release
 
-- Current version: `0.3.2` — document translation (Apple Silicon Mac, macOS 12.0+). The `0.3.2` gate passed on 2026-09-20.
+- Current version: `0.3.3` — document translation (Apple Silicon Mac, macOS 12.0+). The `0.3.3` gate passed on 2026-09-20 and the build is installed locally.
 - Latest published release: [`v0.3.2`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.2).
 - No build is Developer ID signed or notarized, so every artifact is suitable for personal testing only.
 
-Current gated and published artifact (`0.3.2`):
+Current gated artifact (`0.3.3`):
 
-- ZIP: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.2.zip`
-- Size: `358,726,788` bytes
-- SHA-256: `8fb7a93f33a07bb03b0b8558df4ff0c2abe40a14eee13fd9dc0348fedcc7f1ba`
+- ZIP: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.3.zip`
+- Size: `232,947,408` bytes
+- SHA-256: `1bf807dfe294860c24345efe5caf2b0fcbd54f88476df7085c9bd03b47b37a72`
 
-Previous published artifact (`0.3.1`): `358,723,706` bytes, SHA-256 `c7411c587b3842a76f79118ecdc6d061993a0a99c98e4801c14ff947f10e161b`.
+Previous published artifact (`0.3.2`): `358,726,788` bytes, SHA-256 `8fb7a93f33a07bb03b0b8558df4ff0c2abe40a14eee13fd9dc0348fedcc7f1ba`.
 
 Download the ZIP from the [GitHub Releases](https://github.com/haohaiHuang/MD-Convertor/releases) page.
 
@@ -76,6 +76,6 @@ npm run test:live
 npm run desktop:release
 ```
 
-The release workflow requires version `0.3.2`, hash-checks every historical artifact that still exists outside the repository (missing entries are reported as retired instead of blocking), rejects stale output, and validates the packaged version, arm64 architecture, bundle structure, size, and SHA-256.
+The release workflow requires version `0.3.3`, hash-checks every historical artifact that still exists outside the repository (missing entries are reported as retired instead of blocking), rejects stale output, and validates the packaged version, arm64 architecture, bundle structure, size, and SHA-256.
 
 See [Product](docs/PRODUCT.md), [Architecture](docs/ARCHITECTURE.md), [Testing](docs/TESTING.md), [Quality Audit](docs/QUALITY-AUDIT.md), and [Changelog](CHANGELOG.md).

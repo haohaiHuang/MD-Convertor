@@ -18,7 +18,7 @@ import {
   PROTECTED_BASELINE_ERROR,
 } from "./release-guards.mjs";
 
-export const RELEASE_VERSION_ERROR = "Release version must be 0.3.2.";
+export const RELEASE_VERSION_ERROR = "Release version must be 0.3.3.";
 
 function getArtifactPaths(root, version) {
   const zipPath = path.join(
@@ -152,7 +152,7 @@ export async function runRelease({
   startedAtMs: startedAtOverride,
   previousZip: previousZipOverride,
 } = {}) {
-  if (version !== "0.3.2") throw new Error(RELEASE_VERSION_ERROR);
+  if (version !== "0.3.3") throw new Error(RELEASE_VERSION_ERROR);
   const paths = getArtifactPaths(root, version);
   const startedAtMs = startedAtOverride ?? now();
   const previousZip = previousZipOverride === undefined

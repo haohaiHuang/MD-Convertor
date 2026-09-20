@@ -1,6 +1,6 @@
 {
   "project": "MD-Convertor",
-  "currentVersion": "0.3.2",
+  "currentVersion": "0.3.3",
   "updatedAt": "2026-09-20",
   "activeFeature": null,
   "features": [
@@ -533,6 +533,29 @@
         "Dock screenshots `/tmp/icontest/pair-before.png` (app tile + black `exec` tile) and `/tmp/icontest/pair-after.png` (app tile only), and again on the installed build `/tmp/icontest/pair-installed.png`",
         "`npm run desktop:package` exit 0 with `CFBundleShortVersionString` = 0.3.2, then installed to /Applications with `ditto` and relaunched; `settings.json` SHA-256 unchanged at `93204f32d85d3b6bd1979b7cacdc7338e326eb4965e9483546e9b10c68b230b4`",
         "`npm run desktop:release` exit 0 (Node.js 24.15.0, log /tmp/s17-release.log): ./init.sh 62 files / 858 tests, statements 95.28%, three-engine E2E 178 passed / 2 skipped, live 2/2, artifact `MD-Convertor-darwin-arm64-0.3.2.zip` 358,726,788 bytes SHA-256 8fb7a93f33a07bb03b0b8558df4ff0c2abe40a14eee13fd9dc0348fedcc7f1ba, independently re-verified with `unzip -t`, `plutil` version 0.3.2 and `file` arm64",
+        "Not done: no Developer ID signature or notarization, so the artifact stays personal-testing only"
+      ]
+    },
+    {
+      "id": "feat-034",
+      "name": "Drop The Duplicated Electron Runtime From The Bundled Server",
+      "title": "Drop The Duplicated Electron Runtime From The Bundled Server",
+      "status": "done",
+      "dependencies": [
+        "feat-033"
+      ],
+      "scope": "Next.js output tracing followed the optional Electron launcher inside `playwright-core` and copied the entire `electron` npm package - including its ~295 MB unpacked runtime - into `.next/standalone`, which the desktop preparation then mirrored into the app's bundled server. No application code loads it: the server drives its own Chromium Headless Shell through `PLAYWRIGHT_EXECUTABLE_PATH`, and the outer Electron runtime already ships in `Contents/Frameworks`. `scripts/prepare-desktop.mjs` now removes `server/node_modules/electron` right after it copies the standalone output, so the distributable ZIP drops from 358,726,788 to 232,947,408 bytes and the unpacked app from 843 MB to 539 MB. Playwright, Playwright Core, Sharp's arm64 packages and the bundled headless shell are all kept. The version moved to 0.3.3 because the release gate hard-checks the target version. Separately, this machine's default Node v24.16.0 hangs inside yauzl while unpacking the Electron zip, which made `electron-forge make` produce nothing and still exit 0; the gate was run under Node v24.14.1.",
+      "acceptance": [
+        "The prepared server contains no `node_modules/electron` directory",
+        "Playwright, Playwright Core, Sharp's arm64 packages and the bundled Chromium Headless Shell all remain in the prepared server",
+        "The distributable ZIP is about 120 MiB smaller than 0.3.2 and the installed build still passes the packaged smoke test"
+      ],
+      "verification": [
+        "`npx vitest run scripts/prepare-desktop.test.mjs` RED first - the pruning assertion failed before the change - then green",
+        "`scripts/release-guards.test.mjs` moved to RED by rewriting the 0.3.2 fixtures to 0.3.3 (5 failed / 24 passed, `Release version must be 0.3.2.`), then green once the guard, `package.json`, the lock file and `feature_list.json` all read 0.3.3",
+        "`npm run desktop:release` exit 0 (Node.js 24.14.1, log /tmp/s18b-release.log): ./init.sh 62 files / 859 tests, statements 95.28%, three-engine E2E 178 passed / 2 skipped, live 2/2, artifact MD-Convertor-darwin-arm64-0.3.3.zip 232,947,408 bytes SHA-256 1bf807dfe294860c24345efe5caf2b0fcbd54f88476df7085c9bd03b47b37a72",
+        "The ZIP has 0 entries under server/node_modules/electron while playwright (75 entries), playwright-core (129), next (1,170), browser/chrome-headless-shell (one 159,293,248-byte binary) and the Sharp arm64 packages (@img/sharp-darwin-arm64 7, @img/sharp-libvips-darwin-arm64 10) are retained, with 24 MD-Convertor Helper entries kept under Contents/Frameworks",
+        "The installed build at /Applications/MD-Convertor.app (539 MB, replacing 0.3.2) passed `ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1` with exit 0 (log /tmp/s18-smoke.log)",
         "Not done: no Developer ID signature or notarization, so the artifact stays personal-testing only"
       ]
     }

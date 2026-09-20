@@ -3,11 +3,23 @@
 ## Current State
 
 - Last updated: 2026-09-20
-- Current version: `0.3.2`（`package.json`、`package-lock.json`、`feature_list.json` 与发布门禁均为 `0.3.2`）。**`0.3.2` 门禁已于 2026-09-20 跑通（exit 0）**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.2.zip`（`358,726,788` bytes，SHA-256 `8fb7a93f…f1ba`），已安装到 `/Applications`，**已发布为 GitHub Release `v0.3.2`**（tag `1c3ed80`）。上一版 `0.3.1` 已发布为 GitHub Release `v0.3.1`（tag `af7f6db`）；`0.3.0` 的 ZIP（`358,562,540` bytes，`2a0e236e…1147`）是修复**前**的构建，仅作历史
-- Active feature: none（`feat-024` – `feat-033` 已 done）
-- Next release step: 无待办——`0.3.2` 已过门禁、已装本机、已发布（`v0.3.2`，tag `1c3ed80`）；下一轮若再改代码，需要新的版本号（≥ `0.3.3`）再跑一次 `npm run desktop:release`
-- Branch: `main`；`feat-031` + `feat-032` 已提交（`af7f6db`）并推送，作为 `v0.3.1` 发布；本轮 `feat-033`（程序坞幽灵图标修复 + 版本 `0.3.2`）已提交（`1c3ed80`）并推送，**已发布为 GitHub Release `v0.3.2`**（tag 指向 `1c3ed80`）
+- Current version: `0.3.3`（`package.json`、`package-lock.json`、`feature_list.json` 与发布门禁均为 `0.3.3`）。**`0.3.3` 门禁已于 2026-09-20 跑通（exit 0）**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.3.zip`（`232,947,408` bytes，SHA-256 `1bf807df…7a72`），已安装到 `/Applications`（未压缩 539 MB），**尚未提交、尚未发布**。上一版 `0.3.2`（`358,726,788` bytes，`8fb7a93f…f1ba`）已发布为 GitHub Release `v0.3.2`（tag `1c3ed80`）；`0.3.0` 的 ZIP（`358,562,540` bytes，`2a0e236e…1147`）是修复**前**的构建，仅作历史
+- Active feature: none（`feat-024` – `feat-034` 已 done）
+- Next release step: `0.3.3` 的改动（`feat-034` 裁剪 + 全部文档）**尚未提交** —— 用户授权后先跑提交门（ponytail → code-review → neat-freak），再一次提交 + `git push origin main` + `gh release create v0.3.3 <zip> --target main`
+- Branch: `main`；`feat-031` + `feat-032` 已提交（`af7f6db`）并作为 `v0.3.1` 发布；`feat-033` 已提交（`1c3ed80`）并作为 `v0.3.2` 发布；本轮 `feat-034`（去掉重复的 Electron 运行时 + 版本 `0.3.3`）**未提交**
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+
+
+## 已完成 in 0.3.3（去掉重复的 Electron 运行时，feat-034 done）
+
+- 现象与根因：用户报告「跑得好慢」，实测发现 `electron-forge make` 在本机**经常空跑**：直接运行它既不产出 ZIP 也不报错（退出码 0），而发布脚本本身有产物校验（缺 ZIP 会抛 `Expected ZIP was not generated`），所以空跑/卡住的是 Forge 这一层。根因分两层：① 应用被装了**两份** Electron —— `next build` 的输出追踪跟着 `playwright-core` 里那句 `require("electron")` 把整个 `electron` npm 包（下载包约 276 MB，解压后目录实测 295 MB）拷进了 `.next/standalone`，而应用自己的服务端代码**零处**引用 electron；② 本机默认 Node **v24.16.0** 在解压 electron zip 时卡死在 204727/272259 字节（yauzl 管道回归），换 nvm 里的 **v24.14.1** 后 forge 一次通过（另一台机器是 24.15.0，因此从未遇到）。
+- 修复（TDD，先红后绿）：`scripts/prepare-desktop.mjs` 在 `cp(sourceRoot, targetRoot, …)` 之后加一句 `rm(targetRoot/node_modules/electron)`（含 4 行注释说明这份是多余的）；`scripts/prepare-desktop.test.mjs` 新增集成回归，要求最终 server 不含 `node_modules/electron`，同时保留 Playwright、Playwright Core、Sharp arm64 包与内置 Chromium Headless Shell —— RED 时该用例失败，GREEN 后通过。
+- 版本 `0.3.3`（TDD）：`scripts/release-guards.test.mjs` 先把 fixture 从 `0.3.2` 改到 `0.3.3` ⇒ RED **5 failed / 24 passed**（报错正是 `Release version must be 0.3.2.`），再改 `scripts/release-desktop.mjs`、`package.json`、`package-lock.json`、`feature_list.json` ⇒ 全部通过。
+- 门禁：`npm run desktop:release`（Node.js **24.14.1**）在 2026-09-20 **exit 0**（日志 `/tmp/s18b-release.log`）—— `./init.sh` 62 files / **859 tests**、statements 95.28%、三浏览器 e2e **178 passed / 2 skipped**、live **2/2**、`electron-forge make` 与产物校验通过。
+- 产物与体积：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.3.zip`，`232,947,408` bytes，SHA-256 `1bf807dfe294860c24345efe5caf2b0fcbd54f88476df7085c9bd03b47b37a72`；对比 `0.3.2` 的 `358,726,788` bytes 少 **125,779,380 bytes ≈ 120 MiB（−35%）**，未压缩应用 843 MB → **539 MB**（与早前记录过的 `538.86 MiB` 一致，说明裁剪结果可复现）。
+- 独立复核：ZIP 内 `server/node_modules/electron` 条目数 = **0**，而 `playwright` / `playwright-core` / `next` / `chrome-headless-shell` 都还在。
+- 安装与冒烟：`/Applications/MD-Convertor.app` 由 `0.3.2` 替换为 `0.3.3`（旧版备份 `/tmp/s18-old-0.3.2.app`），安装后以 `ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1` 跑安装后的应用 **exit 0**（日志 `/tmp/s18-smoke.log`）：`Preload bridge smoke passed: secrets.set function, encryptionAvailable true`、`Runtime secret smoke passed: TRANSLATE_NOT_CONFIGURED → TRANSLATE_PROVIDER_ERROR → TRANSLATE_NOT_CONFIGURED`。
+- 已知误报：pi-lens 对 `scripts/prepare-desktop.mjs` 的 L10 / L22 报「`JSON.parse` 未包 try/catch」。这两行是**改动前就有的**（HEAD 逐字节相同，属顶层读依赖 `package.json` 的既有写法），本轮 diff 只动了第 38 行附近 4 行；且该建议在此场景下是错的——构建准备脚本读不到自己的依赖就该立刻失败，包起来只会把装坏的依赖藏住。未改动。
+- 未做：不改打包配置与图标素材，不动依赖、端点策略、翻译引擎；`0.3.2` 的产物与已发布 tag 一律不动；签名/notarization 仍按用户决定不做。
 
 ## 已完成 in 0.3.2（程序坞幽灵图标，feat-033 done）
 
@@ -196,13 +208,30 @@
 
 ## 下一轮（建议顺序）
 
-1. **真机小点**：用户提到「稍后把真机测试的一些小点完善了再说」，等清单给出后再评估是否单独一轮。
-2. 若有任何代码改动，需要新的版本号（≥ `0.3.3`）并重跑一次 `npm run desktop:release`；`0.3.1` 的产物与 tag 已发布，`0.3.2` 的产物已过门禁（已装本机、尚待提交与发布），都不要移动或覆盖。
-3. 若将来 0.1.x/0.2.0 归档重新出现，守卫会自动恢复严格校验；不要把已退役的条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删掉。
+1. **提交与发布 `v0.3.3`**：本轮改动（`feat-034` 裁剪 + 全部文档）已过门禁、已装本机，**尚未提交**。用户授权后先跑提交门（ponytail → code-review → neat-freak），再一次提交 + `git push origin main` + `gh release create v0.3.3 out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.3.zip --target main`。
+2. **跑门禁必须用 Node 24.14.1 或 24.15.0**：本机默认的 **v24.16.0 在解压 electron zip 时静默卡死**（卡在 204727/272259 字节），`electron-forge make` 会空跑并仍返回 exit 0 —— 看起来「跑完了」其实什么都没产出。`nvm use 24.14.1` 后一次通过。
+3. **真机小点**：用户提到「稍后把真机测试的一些小点完善了再说」，等清单给出后再评估是否单独一轮。
+4. 若有任何代码改动，需要新的版本号（≥ `0.3.4`）并重跑一次 `npm run desktop:release`；`0.3.1`、`0.3.2` 的产物与 tag 已发布，`0.3.3` 的产物已过门禁（已装本机、尚待提交与发布），都不要移动或覆盖。
+5. 若将来 0.1.x/0.2.0 归档重新出现，守卫会自动恢复严格校验；不要把已退役的条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删掉。
 
 ## Verification Evidence
 
-### 0.3.2 程序坞幽灵图标修复（本次）
+### 0.3.3 去掉重复的 Electron 运行时（本次）
+
+- 现象：同一份代码，`electron-forge make` 在本机**经常空跑**——直接运行时没有产物、退出码却是 0（发布脚本 `scripts/release-desktop.mjs` 自身有产物校验，缺 ZIP 会抛 `Expected ZIP was not generated`，所以空跑/卡住的是 Forge 这一层）。用户的原话是「跑得好慢」。
+- 根因①（体积）：应用被装了**两份** Electron。`next build` 的输出追踪跟着 `playwright-core` 里那句 `require("electron")`，把整个 `electron` npm 包拷进了 `.next/standalone`，`prepare-desktop.mjs` 再把它原样搬进应用的 `Contents/Resources/server/node_modules/electron`。而应用的服务端代码**零处**引用 electron：它走 `PLAYWRIGHT_EXECUTABLE_PATH` 驱动自带的 Chromium Headless Shell，外层 Electron 运行时也已经在 `Contents/Frameworks` 里。
+- 根因②（卡死）：本机默认 Node **v24.16.0** 在 yauzl 解压 electron zip 时卡死在 204727/272259 字节（管道回归）；nvm 里的 **v24.14.1** 一次通过。另一台机器是 24.15.0，所以从未遇到。这也是「跑得慢」的直接来源。
+- RED → GREEN（体积）：`scripts/prepare-desktop.test.mjs` 先加集成回归「最终 server 不含 `node_modules/electron`，同时保留 Playwright、Playwright Core、Sharp arm64 包与内置 Chromium Headless Shell」⇒ 在改动前失败；`scripts/prepare-desktop.mjs` 在 `cp(sourceRoot, targetRoot, …)` 之后补 `rm(targetRoot/node_modules/electron)`（4 行注释说明为什么这份多余）⇒ 通过。
+- RED → GREEN（版本）：`scripts/release-guards.test.mjs` fixture `0.3.2`→`0.3.3` ⇒ **5 failed / 24 passed**（`Release version must be 0.3.2.`）；再改 `scripts/release-desktop.mjs`、`package.json`、`package-lock.json`、`feature_list.json` ⇒ **29 passed**（两文件合并 **31 passed**：`prepare-desktop.test.mjs` 2 + `release-guards.test.mjs` 29）。
+- 门禁：`npm run desktop:release` **exit 0**（Node.js **24.14.1**，日志 `/tmp/s18b-release.log`）——62 files / **859 tests**、statements 95.28%、三浏览器 e2e **178 passed / 2 skipped**、live **2/2**、`electron-forge make` 与产物校验通过；末尾 `Release Artifact Verified: Version 0.3.3 …`。
+- 体积对比：`0.3.2` = `358,726,788` bytes → `0.3.3` = `232,947,408` bytes，少 **125,779,380 bytes ≈ 120 MiB（−35%）**；未压缩应用 843 MB → **539 MB**（与早前记录的 `538.86 MiB` 吻合，裁剪结果可复现）。
+- 保留项复核（真跑 `unzip -l`，3501 条）：`server/node_modules/electron/` **0** 条；`playwright/` 75、`playwright-core/` 129、`chrome-headless-shell` 1、`@img/sharp-darwin-arm64` 7、`next/` 1435 —— 都在。
+- 产物独立复核：`stat` = `232947408`、`shasum -a 256` = `1bf807dfe294860c24345efe5caf2b0fcbd54f88476df7085c9bd03b47b37a72`（与门禁一致）、`plutil -extract CFBundleShortVersionString` = `0.3.3`、`file` = Mach-O arm64。
+- 安装与冒烟：`/Applications/MD-Convertor.app` 由 `0.3.2` 替换为 `0.3.3`（旧版备份 `/tmp/s18-old-0.3.2.app`，实测里面那份多余 electron 目录 `du` = 295 MB；新版已不存在该目录）；安装后 `ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1` 跑安装后的应用 **exit 0**（日志 `/tmp/s18-smoke.log`）：`Preload bridge smoke passed: secrets.set function, encryptionAvailable true`、`Runtime secret smoke passed: TRANSLATE_NOT_CONFIGURED → TRANSLATE_PROVIDER_ERROR → TRANSLATE_NOT_CONFIGURED`。
+- 已知误报（未改动）：pi-lens 对 `scripts/prepare-desktop.mjs` L10/L22 报「`JSON.parse` 未包 try/catch」——这两行改动前就存在（HEAD 逐字节相同），且构建准备脚本读不到自己的依赖本就该立刻失败。
+- 未做：不改打包配置与图标素材，不动依赖、端点策略、翻译引擎；`0.3.2` 的产物与已发布 tag 一律不动；**本轮不提交、不发布**（等用户授权）。
+
+### 0.3.2 程序坞幽灵图标修复（历史）
 
 - 门禁：`npm run desktop:release` **exit 0**（Node.js 24.15.0，日志 `/tmp/s17-release.log`）——62 files / **858 tests**、statements 95.28%、`npm run test:e2e` **178 passed / 2 skipped**、`npm run test:live` **2/2**、`electron-forge make` 与产物校验通过；末尾 `Release Artifact Verified: Version 0.3.2, SHA-256 8fb7a93f…f1ba`。
 - RED：`electron/server-binary.test.mjs` 3 个用例（helper bundle / 由可执行文件名推导 helper 名 / helper 缺失时抛错）在实现前全红，加上版本 fixture 改动后 `npm test -- release-guards` ⇒ **5 failed / 24 passed**；实现后同一命令 **32 passed**。
@@ -363,7 +392,7 @@
 - **feat-030 起云端只能有一条配置**：设置页只渲染一张 `<article aria-label="云端 Provider">`，读写「当前生效的那条」（`activeProviderId` → 否则 `providers[0]`），保存时把 `cloud.providers` 收敛为单条目。契约（`providers[] + activeProviderId`）与 `SETTINGS_VERSION` 未变，但**手工在 `settings.json` 里追加的多条 Provider 会在下次保存时被丢弃**；要做多条并存必须先恢复列表 UI（`feat-026` 的 `drafts`/`newProvider` 版本可从 git 历史取回）。
 - **feat-026 / feat-029 / feat-030 之后「保存」是 Provider 记录的唯一写入入口**：`拉取模型` 只读端点（结果先放草稿态），模型与密钥都不再随意落盘，因此改完名称 / Base URL / 密钥 / 模型后必须先点「保存」才生效；密钥来源只有系统密钥库一个（`apiKeyEnv` 已退役）。
 - **feat-025 隐藏了自定义语言入口（保留字段与函数）**：`languages.custom` 仍在契约里、`addCustomLanguage()` 与其单测仍在，存量自定义标签仍出现在目标语言下拉里；但新标签暂时只能靠手改 `settings.json` 添加。若将来要恢复入口，只需恢复 `settings/page.tsx` 的那段 JSX 与 `setNote("language", …)` 分支。
-- **`0.3.2` 已过门禁并已装本机（2026-09-20）**：ZIP 为 `358,726,788` bytes / SHA-256 `8fb7a93f…f1ba`，已在 `/Applications/MD-Convertor.app`；**已提交（`1c3ed80`）、推送并发布为 GitHub Release `v0.3.2`**（tag `1c3ed80`，资产 `358,726,788` bytes 状态 uploaded）。`0.3.1` 已发布为 GitHub Release `v0.3.1`（tag `af7f6db`，ZIP `358,723,706` bytes / `c7411c58…161b`）；`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip` 仍留在本机，只作历史，**不要在后续门禁里把它当成当前产物**；下一次发布必须先把版本号升到 `0.3.3` 或更高（门禁硬校验目标版本）。
+- **`0.3.2` 已过门禁并已装本机（2026-09-20）**：ZIP 为 `358,726,788` bytes / SHA-256 `8fb7a93f…f1ba`，已在 `/Applications/MD-Convertor.app`；**已提交（`1c3ed80`）、推送并发布为 GitHub Release `v0.3.2`**（tag `1c3ed80`，资产 `358,726,788` bytes 状态 uploaded）。`0.3.1` 已发布为 GitHub Release `v0.3.1`（tag `af7f6db`，ZIP `358,723,706` bytes / `c7411c58…161b`）；`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip` 仍留在本机，只作历史，**不要在后续门禁里把它当成当前产物**；**`0.3.3` 已用掉**（已过门禁、已装本机），下一次发布必须先把版本号升到 `0.3.4` 或更高（门禁硬校验目标版本）。
 - **feat-033 起本地服务从包内 Helper 启动**：`electron/main.mjs` 用 `resolveServerBinary(process.execPath)`（`electron/server-binary.mjs`）拿到 `Contents/Frameworks/MD-Convertor Helper.app/Contents/MacOS/MD-Convertor Helper` 再 spawn（仍带 `ELECTRON_RUN_AS_NODE: "1"`）。因该 helper bundle 声明 `LSUIElement`，子进程不再占程序坞。**不要改回 `process.execPath`**（会重新出现跳动的黑色 exec 图标）；helper 缺失时函数会抛 `Desktop helper runtime is missing: <path>`，这是刻意保留的响亮失败。此约束依赖 electron-forge 默认的 helper bundle 布局，若将来换到不带 helper 的打包方式需要同时改这个函数与它的 3 个单测。
 - **feat-031 起密钥输入框在已保存时为只读**：`readOnly={Boolean(cloudProvider?.keyStored)}`，占位文案「••••••••（已保存，先清除密钥再更换）」。不用 `disabled` 是为了保留可聚焦与屏幕阅读器可达；「清除密钥」语义未变（删除密钥库条目 + `keyStored:false` ⇒ 输入框恢复可编辑，再点「保存」才能写入新密钥）。不要把密钥读回页面。
 - **批次数由「≤20 块」而非字符数主导**：长文段落多时批次数偏多、`pi` 的固定启动开销被重复支付（实测 8,000 字符批次 7s，含启动）。修复后已能跑完，因此**未**改动 `TRANSLATE_BATCH_MAX_BLOCKS`；若将来同类文章仍然慢，把这个上限提高是第一个候选优化（代价：单批输出更长，解析与质量风险上升，需另开测试）。

@@ -42,7 +42,7 @@ The baseline covers:
 - the translation task budget: `translateTaskTimeoutMs(batchCount)` returns `max(120s, batches × 180s + 30s)`, and both endpoints size their deadline from the real batch count (a long article of many short paragraphs is not cut off at a fixed 120s)
 - the translation checkbox, 原文 / 译文 tabs, copy and download per tab, progress, cancel, retry, and the ratio dialog
 
-`vitest.config.ts` limits coverage to `src/lib/**/*.ts` plus the convert and translate routes, excludes test files and `src/types/**`, and sets per-file thresholds. Every `src/lib/translate/**` module has its own threshold (95/90/100/95, or 90/75/100/90 for `segment.ts`). Coverage is currently 95.28% statements over 62 files / 858 tests.
+`vitest.config.ts` limits coverage to `src/lib/**/*.ts` plus the convert and translate routes, excludes test files and `src/types/**`, and sets per-file thresholds. Every `src/lib/translate/**` module has its own threshold (95/90/100/95, or 90/75/100/90 for `segment.ts`). Coverage is currently 95.28% statements over 62 files / 859 tests.
 
 E2E runs against the production standalone service and fails if tracked files change. `playwright.config.ts` sets `workers: 1` because the translation engine holds one process-wide task slot; parallel workers would collide with 429 `TRANSLATE_BUSY`.
 
@@ -50,14 +50,16 @@ E2E runs against the production standalone service and fails if tracked files ch
 
 `npm run desktop:release` requires:
 
-- package version exactly `0.3.2`
-- Node.js 24.x
+- package version exactly `0.3.3`
+- Node.js 24.x, but not 24.16.0: that patch stalls inside `yauzl` while unpacking the Electron archive, so `electron-forge make` never produces a ZIP. Node 24.14.1 and 24.15.0 both pass the full gate
 - the historical archive set: every manifest ZIP that still exists must keep its fixed SHA-256, and no unlisted release ZIP may appear in `~/Downloads/MD-Convertor-archive/releases/`
 - a ZIP created during the current run
-- packaged version `0.3.2`
+- packaged version `0.3.3`
 - an arm64 executable and complete application bundle
 
 The guard rechecks historical artifacts on both success and failure. A Forge command that exits without a new ZIP is a failure.
+
+Desktop preparation has an integration regression that requires the prepared server to omit `node_modules/electron` while retaining Playwright, Playwright Core, Sharp's arm64 packages, and the bundled Chromium Headless Shell. A fresh unpacked app should contain only the outer Electron runtime. The `0.3.3` round (`feat-034`, 2026-09-20) introduced that pruning: the distributable ZIP fell from `358,726,788` to `232,947,408` bytes (120 MiB smaller) with no runtime change, verified by the full gate plus a packaged smoke test on the installed build.
 
 The 0.1.3 read-only archive copy and the 0.1.0–0.2.0 ZIPs were lost from this Mac and cannot be restored, so the guard retires an absent entry: it prints a `Historical Archive Notice` for each missing file and continues. Anything that does exist is still hash-checked, a writable or tampered file still aborts the run, and unknown release ZIPs are still rejected. `0.2.1` was re-downloaded from its GitHub release on 2026-09-18 and matched its recorded SHA-256 byte for byte, so that entry is enforced again. The `v0.1.3` source tag remains a hard precondition.
 
@@ -69,7 +71,17 @@ The `0.3.2` gate, also on 2026-09-20, added one small fix: the packaged app star
 
 A later fix for long-article translation timeouts (`feat-024`, 2026-09-18) changed the task budget to scale with the batch count. A later round (`feat-029`, 2026-09-18) made a cloud provider's four fields mandatory to save, let the settings page pull models from an unsaved draft without writing anything, and replaced the saved key in its input box with an eight-dot placeholder. It is covered by unit tests for the form rules and the draft model route (`src/lib/settings/provider-form.test.ts`, `src/app/api/provider/models/route.test.ts`) plus three new settings E2E cases and three rewritten ones (the old「拉取模型先保存草稿」expectations no longer hold). Another round raised the per-call ceiling from 60s to 180s (`feat-027`) and fixed a timeout that was reported as an unreadable answer, and it removed the「当前生效」mode badge (`feat-028`). All of it was verified by unit tests, a full `./init.sh` baseline, a three-engine E2E run, and a real-machine probe against the user's cloud provider (a 121-block document that used to fail at the 60s ceiling now returns 200). The version decision landed on `0.3.1`: `package.json`, the lock file, `feature_list.json` and the release guard all read `0.3.1` (the guard test moved to RED first, then to 29 passing). A further round (`feat-031`, 2026-09-20) raised `next` to 16.3.5 and `sharp` to 0.35.4 so `npm audit --omit=dev` reports no production advisories, dropped the gear glyph from the header, renamed both convert buttons to 「转换」, aligned the rich-text convert button's right edge with the paste box above it, and made the key box read-only while a key is stored. The last round (`feat-032`, 2026-09-20) dropped the green「MD」square and set the wordmark in Michroma, vendoring the font and its OFL licence under `public/fonts/` and loading it with `next/font/local`; `tests/brand-font.test.ts` guards the two files, the E2E brand case compares the served woff2 with the repository file by SHA-256, and the build was re-run with all network access denied (`sandbox-exec … (deny network*) npm run build`, exit 0) to prove it no longer reaches Google. The artifact recorded below is the pre-fix `0.3.0` build, kept as history; everything from `feat-024` onwards shipped in the `0.3.1` and `0.3.2` artifacts.
 
-## Gated Artifact (0.3.2)
+## Gated Artifact (0.3.3)
+
+- Path: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.3.zip`
+- Size: `232,947,408` bytes
+- SHA-256: `1bf807dfe294860c24345efe5caf2b0fcbd54f88476df7085c9bd03b47b37a72`
+- Package: version `0.3.3`, arm64, macOS 12.0+
+- Automated evidence: 62 files / 859 tests, 95.28% statements, three-engine E2E 178 passed / 2 skipped, live 2/2
+- Packaged smoke: preload bridge and runtime secret round trip passed on the installed build (unpacked app 539 MB, down from 843 MB)
+- Signing: not Developer ID signed or notarized, so the artifact is suitable for personal testing only
+
+## Historical Artifact (0.3.2)
 
 - Path: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.2.zip`
 - Size: `358,726,788` bytes

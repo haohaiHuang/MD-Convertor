@@ -38,17 +38,17 @@ xattr -dr com.apple.quarantine "/Applications/MD-Convertor.app"
 
 ## 当前版本
 
-- 当前版本：`0.3.2`——文档翻译（Apple Silicon Mac，macOS 12.0+）。`0.3.2` 门禁已于 2026-09-20 通过。
+- 当前版本：`0.3.3`——文档翻译（Apple Silicon Mac，macOS 12.0+）。`0.3.3` 门禁已于 2026-09-20 通过，并已装到本机。
 - 最近一次正式发布：[`v0.3.2`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.2)。
 - 所有产物均未做 Developer ID 签名与 notarization，仅适合个人测试。
 
-当前已通过门禁并发布的产物（`0.3.2`）：
+当前已通过门禁的产物（`0.3.3`）：
 
-- ZIP：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.2.zip`
-- 大小：`358,726,788` bytes
-- SHA-256：`8fb7a93f33a07bb03b0b8558df4ff0c2abe40a14eee13fd9dc0348fedcc7f1ba`
+- ZIP：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.3.zip`
+- 大小：`232,947,408` bytes
+- SHA-256：`1bf807dfe294860c24345efe5caf2b0fcbd54f88476df7085c9bd03b47b37a72`
 
-已发布的上一版产物（`0.3.1`）：`358,723,706` bytes，SHA-256 `c7411c587b3842a76f79118ecdc6d061993a0a99c98e4801c14ff947f10e161b`。
+已发布的上一版产物（`0.3.2`）：`358,726,788` bytes，SHA-256 `8fb7a93f33a07bb03b0b8558df4ff0c2abe40a14eee13fd9dc0348fedcc7f1ba`。
 
 请从 [GitHub Releases](https://github.com/haohaiHuang/MD-Convertor/releases) 下载。
 
@@ -76,6 +76,6 @@ npm run test:live
 npm run desktop:release
 ```
 
-发布流程只接受 `0.3.2`，对仓库外仍然存在的历史产物逐个校验哈希（缺失项报为退役而不阻断发布），拒绝旧产物，并校验包内版本、arm64 架构、应用结构、大小和 SHA-256。
+发布流程只接受 `0.3.3`，对仓库外仍然存在的历史产物逐个校验哈希（缺失项报为退役而不阻断发布），拒绝旧产物，并校验包内版本、arm64 架构、应用结构、大小和 SHA-256。
 
 更多信息见[产品说明](docs/PRODUCT.zh.md)、[架构说明](docs/ARCHITECTURE.zh.md)、[测试手册](docs/TESTING.zh.md)、[质量报告](docs/QUALITY-AUDIT.md)和[版本记录](CHANGELOG.zh.md)。
