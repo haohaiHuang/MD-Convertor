@@ -250,6 +250,7 @@
 - 手工探针（`node scripts/start-e2e-server.mjs` + playwright-core + 路由 mock 的 `/api/settings`，1180×900 / 2x）：`清除` `{x:852, y:471, w:57, h:39}`、`保存` `{x:919, y:471, w:57, h:39}`（同一行、都在字段上方）、密钥行按钮 0；点击后 `badge 未配置`、四个字段 `""`、密钥框 `editable true`、PUT `{providers: [], activeProviderId: null}`、`secretCalls [["clear", "ollama"]]`；截图 `/tmp/clear-card-before.png`、`/tmp/clear-card-after.png`。
 - 探针踩到的坑（不属于实现问题）：第一版 mock 的 PUT 分支只记录 body 却总是回传原始 settings，于是乐观更新被回包覆盖，徽标读回「已配置」；把 mock 改成合并 body 后行为才正确。e2e 用例里原本就用的 `mockSettingsApi` 是会合并的。
 - 未做：不改设置契约（`providers: []` 本来就是默认值）、不改密钥存储与 IPC 通道、不改端点策略、不动翻译引擎与本地 CLI 分区；`electron/preload*.cjs` 未动；未跑 `npm run desktop:release`。
+- 真机测试副作用（用户 2026-09-21 确认是刻意的）：本机 `~/Library/Application Support/MD-Convertor/settings.json` 的云端 Provider 已被那次「清除」清空（现在为 `"providers": [], "activeProviderId": null`），`mode` 仍为 `local` 所以翻译走本地 CLI 不受影响；**不需要还原**（备份 `/tmp/feat037-backup/settings.json`，SHA-256 `dd55d7f2…`，仅作临时快照，可删）。
 
 ### feat-036 抓取失败时提示改用粘贴（2026-09-21，已提交 `c568513`，未跑发布门禁）
 
