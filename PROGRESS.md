@@ -242,7 +242,7 @@
 
 ## Verification Evidence
 
-### feat-037 云端卡片「清除」改为整卡重置（2026-09-21，未跑发布门禁）
+### feat-037 云端卡片「清除」改为整卡重置（2026-09-21，已提交 `c568513`，未跑发布门禁）
 
 - RED：`npx playwright test e2e/settings.spec.ts --project=chromium` → **2 failed / 22 passed**——`清除会删掉密钥与整条云端配置，回到未配置状态` 停在 `card.getByRole("button", {name: "清除", exact: true}).click()`（按钮当时不存在，30s 超时）；`清除与保存并列在卡片头部`（原「保存按钮位于卡片头部」）在 `clearBox` 的 `boundingBox()` 抛 `missing layout box`。
 - GREEN：同命令 **24 passed（5.7s）**；`./init.sh` **exit 0**（`/tmp/clear-init.log`）—— 62 files / **859 tests**、statements **95.28%**、lint、`tsc --noEmit`、生产构建全绿；`npm run test:e2e` **exit 0 → 187 passed / 2 skipped**（`/tmp/clear-e2e.log`，tracked-file 检查通过）。
@@ -251,7 +251,7 @@
 - 探针踩到的坑（不属于实现问题）：第一版 mock 的 PUT 分支只记录 body 却总是回传原始 settings，于是乐观更新被回包覆盖，徽标读回「已配置」；把 mock 改成合并 body 后行为才正确。e2e 用例里原本就用的 `mockSettingsApi` 是会合并的。
 - 未做：不改设置契约（`providers: []` 本来就是默认值）、不改密钥存储与 IPC 通道、不改端点策略、不动翻译引擎与本地 CLI 分区；`electron/preload*.cjs` 未动；未跑 `npm run desktop:release`。
 
-### feat-036 抓取失败时提示改用粘贴（2026-09-21，未跑发布门禁）
+### feat-036 抓取失败时提示改用粘贴（2026-09-21，已提交 `c568513`，未跑发布门禁）
 
 - RED：`npx playwright test e2e/home.spec.ts --project=chromium` → 新用例 `suggests the paste mode when a link cannot be fetched` 在 `getByRole("button", { name: "改用富文本粘贴" }).click()` 处 30s 超时（`1 failed / 13 passed`）。
 - GREEN：同命令 **14 passed**；`npm run test:e2e` **exit 0 → 187 passed / 2 skipped**（`/tmp/hint-e2e.log`，tracked-file 检查通过）。
@@ -469,7 +469,7 @@
 
 ## Next Step
 
-`feat-037`（云端卡片「清除」改为整卡重置）与 `feat-036`（抓取失败时提示改用粘贴）已实现并验证（`./init.sh` exit 0、三浏览器 e2e 187 passed / 2 skipped），**尚未提交、未跑发布门禁**；若要发布，先把版本号升到 ≥ `0.3.4`。`feat-033`（程序坞幽灵图标修复 + 版本 `0.3.2`）与 `feat-034`（`0.3.3`）均已完成、已过门禁、已装本机、已发布为 GitHub Release（`v0.3.2` / `v0.3.3`）。剩余待办：
+`feat-037`（云端卡片「清除」改为整卡重置）与 `feat-036`（抓取失败时提示改用粘贴）已实现并验证（`./init.sh` exit 0、三浏览器 e2e 187 passed / 2 skipped），**已提交并推送（`c568513`）、未跑发布门禁**；若要发布，先把版本号升到 ≥ `0.3.4`。`feat-033`（程序坞幽灵图标修复 + 版本 `0.3.2`）与 `feat-034`（`0.3.3`）均已完成、已过门禁、已装本机、已发布为 GitHub Release（`v0.3.2` / `v0.3.3`）。剩余待办：
 5. **签名/notarization：用户 2026-09-20 决定不做**（`docs/QUALITY-AUDIT.md` 的 QA-008 已改为 accepted / not planned，判词与 Release Decision 同步）。要恢复需 Apple Developer 付费会员 + **Developer ID Application** 证书 + notarytool 凭据，再在 `forge.config.cjs` 加 `osxSign`/`osxNotarize`（凭据走环境变量）；签名后产物哈希会变，必须重跑门禁并更新记录。在那之前所有产物都只适合个人测试。
 6. **UI 评审已完成，用户决定不整改（2026-09-20）**：用 design-references 环节 4 快速通道评审了 `0.3.1` 的网页与桌面 UI（真实截图 + `getBoundingClientRect` 实测 + WCAG 对比度计算 + 键盘 Tab 焦点扫描 + `design_audit`/`design_contrast`），产出 `docs/UI-REVIEW-2026-09-20.md`（P0×6 + P1×10，均附实测数字；配套的现状/改后对照板是临时 HTML，用户看过即删）。用户看过对照板后决定**全部不改**。因此 `e2e/home.spec.ts` 的像素级对齐断言（转换按钮右边缘与粘贴框右边缘差值 < 4px、与「来源 URL」输入框同行）继续是刻意锁定的效果 —— 若将来真要改 `.sourceInput` 的 `flex`、按钮宽度或 `.sourceRow` 的 gap，先改断言。**不要在没有新证据、也没有用户指认具体条目的情况下重提这批发现。** 本轮代码零改动，`settings.json` 在校验探针前后 SHA-256 一致。
 
