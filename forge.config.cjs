@@ -9,6 +9,7 @@ module.exports = {
     appCategoryType: "public.app-category.productivity",
     arch: "arm64",
     asar: true,
+    icon: path.resolve(__dirname, "assets/icon.icns"),
     electronZipDir: path.resolve(__dirname, ".desktop/electron"),
     extraResource: [path.resolve(__dirname, ".desktop/server")],
     ignore: [
@@ -22,6 +23,7 @@ module.exports = {
       /^\/.playwright-cli($|\/)/,
       /^\/playwright-report($|\/)/,
       /^\/test-results($|\/)/,
+      /^\/assets($|\/)/,
     ],
   },
   rebuildConfig: {},

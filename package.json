@@ -1,7 +1,7 @@
 {
   "name": "md-convertor",
   "productName": "MD-Convertor",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "private": true,
   "main": "electron/main.mjs",
   "engines": {

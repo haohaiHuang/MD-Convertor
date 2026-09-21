@@ -4,7 +4,7 @@
 
 This project follows the principles of [Keep a Changelog](https://keepachangelog.com/). User-facing changes that have not yet been released belong under `Unreleased`.
 
-## [Unreleased]
+## [0.3.4] - 2026-09-21
 
 ### Added
 
@@ -12,6 +12,7 @@ This project follows the principles of [Keep a Changelog](https://keepachangelog
 
 ### Changed
 
+- The packaged app now carries its own icon instead of Electron's default. The packager is pointed at `assets/icon.icns` (kept in the repository next to its 1024px master), so the app bundle, the Dock tile and the Finder entry show the MD mark; until now the bundle shipped `electron.icns` unchanged.
 - The cloud card's single action now resets the whole cloud configuration, not just the key: 「清除」 sits next to「保存」in the card header and, in one step, removes the stored key, empties every field, and clears the saved provider — the card returns to「未配置」. Replacing a key therefore means clearing and filling the card again; the key box no longer carries a button of its own.
 
 ## [0.3.3] - 2026-09-20
