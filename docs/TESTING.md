@@ -85,7 +85,7 @@ A later fix for long-article translation timeouts (`feat-024`, 2026-09-18) chang
 - Icon: `assets/icon.icns` (`972,218` bytes, `e8cbc7e7…48bf`) and `assets/icon-1024.png`; the bundle copy `Contents/Resources/electron.icns` hashes identically to the repository file
 - Bundled runtime: still 0 entries under `server/node_modules/electron`; the asar holds 230 entries and none under `/assets`
 - Packaged smoke: preload bridge and runtime secret round trip passed on the installed build
-- Published: [GitHub Release `v0.3.4`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.4) — server-side asset size matches the local artifact byte for byte
+- Published: [GitHub Release `v0.3.4`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.4) (tag `e251267`, marked Latest) — server-side asset size matches the local artifact byte for byte
 - Signing: not Developer ID signed or notarized, so the artifact is suitable for personal testing only
 
 The size grew by about 4.3 MB over `0.3.3` for reasons unrelated to the icon change: this build's Next.js output tracing picked up the optional `@img/sharp-wasm32` and `@emnapi/runtime` fallback packages plus three build-hash static files. The icon itself did not grow the app: `electron.icns` went from Electron's 272 KB default to a 972 KB custom one, and `assets/` no longer ships inside the asar.

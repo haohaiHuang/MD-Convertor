@@ -3,10 +3,10 @@
 ## Current State
 
 - Last updated: 2026-09-21
-- Current version: `0.3.4`（`package.json`、`package-lock.json`、`feature_list.json` 与发布门禁均为 `0.3.4`）。**`0.3.4` 门禁已于 2026-09-21 跑通（exit 0）**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.4.zip`（`237,272,966` bytes，SHA-256 `6910120e…2704`），已安装到 `/Applications`，**已提交（`a27224e`；图标 v2 为其后的提交）并作为 `v0.3.4` 发布**；该版本包含 `feat-036`、`feat-037` 与应用图标（已发布的 ZIP 里就是用户最终选定的 v2 图标）。上一版 `0.3.3`（`232,947,408` bytes，`1bf807df…7a72`）已发布为 GitHub Release `v0.3.3`（tag `3897cd1`），其 `out/` 内的 ZIP 已不在本机（留档于 release 资产与 `/tmp/s19/`）；`0.3.2`（`358,726,788` bytes，`8fb7a93f…f1ba`）与 `0.3.1`（`358,723,706` bytes，`c7411c58…161b`）同为历史发布；`0.3.0` 的 ZIP（`358,562,540` bytes，`2a0e236e…1147`）是修复**前**的构建，仅作历史
+- Current version: `0.3.4`（`package.json`、`package-lock.json`、`feature_list.json` 与发布门禁均为 `0.3.4`）。**`0.3.4` 门禁已于 2026-09-21 跑通（exit 0）**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.4.zip`（`237,272,966` bytes，SHA-256 `6910120e…2704`），已安装到 `/Applications`，**已提交（`e251267`；图标 v2 也在这个提交里）并作为 `v0.3.4` 发布**（tag `e251267`，标记 Latest）；该版本包含 `feat-036`、`feat-037` 与应用图标（已发布的 ZIP 里就是用户最终选定的 v2 图标）。上一版 `0.3.3`（`232,947,408` bytes，`1bf807df…7a72`）已发布为 GitHub Release `v0.3.3`（tag `3897cd1`），其 `out/` 内的 ZIP 已不在本机（留档于 release 资产与 `/tmp/s19/`）；`0.3.2`（`358,726,788` bytes，`8fb7a93f…f1ba`）与 `0.3.1`（`358,723,706` bytes，`c7411c58…161b`）同为历史发布；`0.3.0` 的 ZIP（`358,562,540` bytes，`2a0e236e…1147`）是修复**前**的构建，仅作历史
 - Active feature: none（`feat-024` – `feat-038` 已 done）
-- Next release step: `0.3.4` 已提交（`a27224e`，随后又补上用户提供的 v2 图标提交）、发布为 GitHub Release `v0.3.4` 并装到本机。图标换 v2 **没有**升版本（用户 2026-09-21 决定：此前那次发布只是几分钟大的空草稿），而是在**同一个版本号下重跑了完整门禁**，所以已发布的 ZIP 里就是 v2 图标；tag `v0.3.4` 随后被移到 v2 图标提交，使 tag、ZIP 与 `checkout` 的源码三者一致。再要改代码必须先升到 `≥ 0.3.5` 并重跑 `npm run desktop:release`
-- Branch: `main`；`feat-031` + `feat-032` 已提交（`af7f6db`）并作为 `v0.3.1` 发布；`feat-033` 已提交（`1c3ed80`）并作为 `v0.3.2` 发布；`feat-034` 已提交（`3897cd1`）并作为 `v0.3.3` 发布；`feat-035`–`feat-037` + 图标 v1 已提交（`a27224e`）并作为 `v0.3.4` 发布；图标 v2 为 `v0.3.4` 之上的后续提交- Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+
+- Next release step: `0.3.4` 已提交（`a27224e`，随后又补上用户提供的 v2 图标提交）、发布为 GitHub Release `v0.3.4` 并装到本机。图标换 v2 **没有**升版本（用户 2026-09-21 决定：此前那次发布只是几分钟大的空草稿），而是在**同一个版本号下重跑了完整门禁**，所以已发布的 ZIP 里就是 v2 图标；tag `v0.3.4` 随后被移到该提交，使 tag、ZIP 与 `checkout` 的源码三者一致。再要改代码必须先升到 `≥ 0.3.5` 并重跑 `npm run desktop:release`
+- Branch: `main`；`feat-031` + `feat-032` 已提交（`af7f6db`）并作为 `v0.3.1` 发布；`feat-033` 已提交（`1c3ed80`）并作为 `v0.3.2` 发布；`feat-034` 已提交（`3897cd1`）并作为 `v0.3.3` 发布；`feat-035`–`feat-037` + 图标 v1 已提交（`a27224e`）；图标换成用户最终选定的 v2 并在同版本号下重跑门禁后提交为 `e251267`，`v0.3.4` 的 tag 指向该提交- Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+
 
 ## 已完成 in 0.3.4（应用图标 + 发布，feat-038 done，2026-09-21）
 
@@ -20,7 +20,7 @@
 - 产物与独立复核：`237,272,966` bytes / SHA-256 `6910120e…2704`；`unzip -t` 无错、`CFBundleShortVersionString = 0.3.4`、`file` = Mach-O arm64、包内 `electron.icns` 与仓库 `assets/icon.icns` 哈希相同、asar 里 `/assets` 条目数 **0**、`server/node_modules/electron` 仍为 0 条（asar 共 230 条，比 `0.3.3` 少 11 条：`brand/` 已删、`assets/` 被排除）。
 - 体积说明：比 `0.3.3` 大 **约 4.3 MB**，与图标无关 —— 是本次构建的 Next.js 输出追踪多带了 `@img/sharp-wasm32`、`@emnapi/runtime` 两个可选回退包与 3 个 build-hash 静态文件；图标本身让包变小（`electron.icns` 从默认 272 KB 换成 972 KB，而 `assets/` 不再进 asar）。
 - 安装与冒烟：退出运行中的旧应用 → 旧版本备份到 `/tmp/icon-v1-app` → `ditto` 安装并清除隔离属性 → 校验版本 `0.3.4` 与图标哈希；`ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1` **exit 0**（preload 桥 + 运行时密钥往返），Helper 仍为 `UIElement`（无幽灵图标）。
-- 发布：`gh release edit v0.3.4 --draft=false`（`published=2026-09-21T03:34:17Z`，资产 `237,272,966` bytes / `uploaded`）。**发布物里的图标就是 v2**：换上 v2 之后重跑了完整门禁，重新产出的 ZIP 与本轮提交的 `assets/icon.icns`（`e8cbc7e7…48bf`）一致；tag `v0.3.4` 随后移到 v2 图标提交，使 tag、ZIP 与源码三者一致（GitHub 服务端的 release 与资产未受影响）。
+- 发布：GitHub Release `v0.3.4`（`published=2026-09-21T03:41:41Z`，资产 `237,272,966` bytes / `uploaded`，标记 Latest，tag `e251267`）。**发布物里的图标就是 v2**：换上 v2 之后重跑了完整门禁，重新产出的 ZIP 与本轮提交的 `assets/icon.icns`（`e8cbc7e7…48bf`）一致；tag `v0.3.4` 随后移到 v2 图标提交，使 tag、ZIP 与源码三者一致（GitHub 服务端的 release 与资产未受影响）。
 - 未做：不改网页 favicon（`src/app/icon.svg`，不在「应用 logo」范围内）；不改打包配置的其他部分、不动依赖与端点策略；不重打 `0.3.3` 及更早的历史产物。
 ## 已完成 in 0.3.3 之后（standalone 可加载 + 真实转换处理器回归，feat-035 done，2026-09-21）
 
@@ -254,7 +254,7 @@
 5. 若将来 0.1.x/0.2.0 归档重新出现，守卫会自动恢复严格校验；不要把已退役的条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删掉。
 
 ## Verification Evidence
-### 0.3.4 应用图标与发布（2026-09-21，已提交 `a27224e`，v2 图标为后续提交）
+### 0.3.4 应用图标与发布（2026-09-21，已提交 `e251267`，tag `v0.3.4` 指向该提交）
 
 - RED（图标测试）：`tests/app-icon.test.ts` 重写前，母版/icns 类型/forge 接线/排除规则四项中，`forge.config.cjs` 的 `ignore` 与 `icon` 两项在改动前不存在；排除用例另用 node 单行对 `git show HEAD:forge.config.cjs` 复核会失败。
 - RED（版本守卫）：`scripts/release-guards.test.mjs` fixture 改到 `0.3.4` 后 ⇒ **5 failed**（`Release version must be 0.3.3.`）；GREEN：`scripts/release-desktop.mjs` + `package.json` + `package-lock.json` 改为 `0.3.4` ⇒ **31 passed**。
@@ -265,7 +265,8 @@
 - 图标素材：`assets/icon.icns` `972,218` bytes（类型含 icp4/icp5/icp6/ic07/ic08/ic09/ic10/ic11/ic12/ic13/ic14），`assets/icon-1024.png` 1024×1024 且带 alpha（`hasAlpha=yes`）。
 - 体积对比：`0.3.3` = `232,947,408` bytes → `0.3.4` = `237,272,966` bytes（+`4,325,558` bytes ≈ +4.3 MB），差额来自 Next.js 输出追踪带上 `@img/sharp-wasm32` / `@emnapi/runtime` 与 3 个 build-hash 静态文件，与图标无关。
 - 安装：旧应用退出后备份到 `/tmp/icon-v1-app`，`ditto` 装到 `/Applications` 并清除隔离属性；安装后 `CFBundleShortVersionString = 0.3.4`、图标哈希与仓库一致；`ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1` **exit 0**。
-- 发布：`gh release edit v0.3.4 --draft=false` → `draft=false published=2026-09-21T03:34:17Z asset=MD-Convertor-darwin-arm64-0.3.4.zip (237272966) state=uploaded`。
+- 发布：GitHub Release `v0.3.4` 已发布且标记 Latest → `draft=false published=2026-09-21T03:41:41Z asset=MD-Convertor-darwin-arm64-0.3.4.zip (237272966) state=uploaded`；`git ls-remote --tags origin v0.3.4` = `e251267`。
+- 踩到的坑（值得记下）：把已经发布过的 release 对应的 tag 删掉再重推时，GitHub 会把 release 打回草稿并把 tag 名换成占位符 `untagged-…`（release 与 tag 脱钩）。修法是删掉那条草稿 release，再在 tag 已就位的情况下 `gh release create v0.3.4 <zip> --title … --notes-file … --latest`。
 - 未做：不改网页 favicon；不重打 `0.3.3` 及更早产物；不动依赖、端点策略、翻译引擎。
 
 ### feat-037 云端卡片「清除」改为整卡重置（2026-09-21，已提交 `c568513`，未跑发布门禁）

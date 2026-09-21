@@ -52,7 +52,7 @@ Everything from `feat-024` through `feat-034` shipped in the gated `0.3.1`, `0.3
 | Icon | `assets/icon.icns` 972,218 bytes `e8cbc7e7…48bf`; bundle `electron.icns` hashes identically; 0 `/assets` entries in the 230-entry asar |
 | Bundled runtime | 0 entries under `server/node_modules/electron` |
 | Real machine | installed to `/Applications` (previous 0.3.4-with-v1-icon build kept at `/tmp/icon-v1-app`); packaged smoke test passed; Helper runs as `UIElement` so no ghost Dock icon |
-| Published | GitHub Release [`v0.3.4`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.4), asset uploaded and byte-count checked; the tag now sits on the second-icon commit, which is the tree this ZIP was built from |
+| Published | GitHub Release [`v0.3.4`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.4), tag `e251267` (the tree this ZIP was built from), marked Latest; asset uploaded and byte-count checked |
 | Signing | not signed, not notarized |
 
 The package is about 4.3 MB larger than `0.3.3`; the delta comes from this build's Next.js output tracing picking up the optional `@img/sharp-wasm32` and `@emnapi/runtime` fallback packages plus three build-hash static files, not from the icon (`electron.icns` went from a 272 KB default to a 972 KB custom icon while `assets/` stopped shipping inside the asar).

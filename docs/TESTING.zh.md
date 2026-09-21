@@ -85,7 +85,7 @@ E2E 使用 production standalone 服务，并在测试后检查 tracked 文件�
 - 图标：`assets/icon.icns`（`972,218` bytes，`e8cbc7e7…48bf`）与 `assets/icon-1024.png`；包内 `Contents/Resources/electron.icns` 与仓库文件哈希相同
 - 包内运行时：`server/node_modules/electron` 仍为 0 条；asar 共 230 条，`/assets` 下 0 条
 - 打包冒烟：在安装后的构建上通过 preload 桥与运行时密钥往返
-- 已发布：[GitHub Release `v0.3.4`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.4)，服务端资产大小与本地产物一致
+- 已发布：[GitHub Release `v0.3.4`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.4)，标签指向 `e251267`（该 ZIP 正是由这个提交的源码构建，也是标记为 Latest 的版本），服务端资产大小与本地产物一致
 - 签名：未做 Developer ID 签名与 notarization，产物仅适合个人测试
 
 体积比 `0.3.3` 大出约 4.3 MB，与图标改动无关：本次构建的 Next.js 输出追踪多带上了可选的 `@img/sharp-wasm32`、`@emnapi/runtime` 回退包与 3 个 build-hash 静态文件。图标本身没有让应用变大：`electron.icns` 由 Electron 默认的 272 KB 换成 972 KB 的自定义图标，而 `assets/` 不再随 asar 分发。
