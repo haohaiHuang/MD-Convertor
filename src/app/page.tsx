@@ -20,12 +20,13 @@ import {
   type PastedPayload,
 } from "@/lib/paste-client";
 import styles from "./page.module.css";
-import { fetchSettings } from "./settings/client";
+import { fetchSettings, outputBridge, outputCodeMessage } from "./settings/client";
 import { languageLabel } from "@/lib/settings/languages";
 import { TranslationError, analyzeDocument, isCancelled, translateDocument } from "@/lib/translate/client";
 import { decideTranslation } from "@/lib/translate/decision";
 import { translatedFilename } from "@/lib/translate/filename";
 import type { ConvertResponse } from "@/types/conversion";
+import type { Settings } from "@/types/settings";
 import type { TranslationAnalysis, TranslationScope } from "@/types/translation";
 
 function formatBytes(bytes: number): string {
@@ -138,6 +139,10 @@ export default function Home() {
   const [translation, setTranslation] = useState<TranslationState>({ status: "idle" });
   /** True when the last link attempt failed on the server, so pasting the body may still work. */
   const [linkFetchFailed, setLinkFetchFailed] = useState(false);
+  /** The settings snapshot of this session; the download branch reads `output` from it. */
+  const [settingsState, setSettingsState] = useState<Settings | null>(null);
+  /** Outcome of the last download; cleared when a new conversion starts. */
+  const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const [resultTab, setResultTab] = useState<ResultTab>("original");
   const controllerRef = useRef<AbortController | null>(null);
   const translationControllerRef = useRef<AbortController | null>(null);
@@ -185,6 +190,7 @@ export default function Home() {
       try {
         const settings = await fetchSettings();
         if (cancelled) return;
+        setSettingsState(settings);
         setTranslateEnabled(settings.translation.defaultEnabled);
         setTargetLanguage(settings.languages.target);
       } catch {
@@ -269,6 +275,8 @@ export default function Home() {
     setTranslation({ status: "idle" });
     setResultTab("original");
     setLinkFetchFailed(false);
+    // The notice belongs to the previous result's download; a new conversion invalidates it.
+    setSaveNotice(null);
     setClientState((previous) => ({
       ...previous,
       output: {
@@ -531,12 +539,31 @@ export default function Home() {
     }
   }
 
-  function downloadMarkdown(): void {
+  /**
+   * Downloads the current result. With the desktop bridge, the toggle on and a directory
+   * configured the file is written straight into that directory; anything else - including
+   * a failed write - falls through to the browser download below.
+   */
+  async function downloadMarkdown(): Promise<void> {
     const currentResult = clientState.output.result;
     if (!currentResult) return;
     const filename = isTranslatedTab && targetLanguage
       ? translatedFilename(currentResult.filename, targetLanguage)
       : currentResult.filename;
+    // All three conditions are required: toggle on, directory configured, bridge present.
+    // Browsers (and e2e) have no preload, so they always keep the 0.3.5 behaviour.
+    const configured = settingsState?.output;
+    const bridge = outputBridge();
+    if (configured?.useDefaultPath && configured.defaultPath && bridge) {
+      const result = await bridge.saveFile(configured.defaultPath, filename, activeMarkdown);
+      if (result.ok) {
+        setSaveNotice(`已保存到 ${result.path ?? `${configured.defaultPath}/${filename}`}`);
+        return;
+      }
+      // Never swallow the failure: name the reason, then still hand the user a file.
+      const reason = outputCodeMessage(result.code, "文件写入失败。");
+      setSaveNotice(`直接保存失败：${reason}已改为浏览器下载。`);
+    }
     const blob = new Blob([activeMarkdown], { type: "text/markdown;charset=utf-8" });
     const objectUrl = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
@@ -782,11 +809,15 @@ export default function Home() {
                 <button className={styles.action} type="button" onClick={() => void copyMarkdown()}>
                   {copied ? "已复制" : "复制"}
                 </button>
-                <button className={`${styles.action} ${styles.actionPrimary}`} type="button" onClick={downloadMarkdown}>
+                <button className={`${styles.action} ${styles.actionPrimary}`} type="button" onClick={() => void downloadMarkdown()}>
                   下载
                 </button>
               </div>
             </div>
+
+            {saveNotice && (
+              <p className={styles.saveNotice} role="status">{saveNotice}</p>
+            )}
 
             <dl className={styles.stats} aria-label="转换结果统计">
               <div>

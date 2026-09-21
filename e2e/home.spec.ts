@@ -2,7 +2,9 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+const OUTPUT_DIRECTORY = "/tmp/md-convertor-e2e-output";
 
 const response = {
   title: "跨浏览器测试文章",
@@ -311,5 +313,158 @@ test.describe("富文本转换表单", () => {
     // Same row as 转换, and to its left (same relationship as 清空链接 in the link form).
     expect(Math.abs(clear!.y - submit!.y)).toBeLessThan(clear!.height);
     expect(clear!.x + clear!.width).toBeLessThanOrEqual(submit!.x);
+  });
+});
+
+type StubSaveResult = { ok: true } | { ok: false; code: string };
+
+/**
+ * Installs a stand-in for the desktop preload bridge. The real bridge only exists
+ * inside the packaged app, so the browser tests have to fake it — and the app must
+ * behave exactly as before when there is none at all (`bridge: null`).
+ *
+ * `addInitScript` only applies to documents created after it, so callers must
+ * navigate (again) afterwards.
+ */
+async function installOutputBridge(page: Page, result: StubSaveResult | null): Promise<void> {
+  if (result === null) return;
+  await page.addInitScript((saveResult) => {
+    const target = window as typeof window & {
+      mdConvertor?: Record<string, unknown>;
+      outputCalls?: { dirPath: string; filename: string; content: string }[];
+    };
+    target.outputCalls = [];
+    target.mdConvertor = {
+      ...(target.mdConvertor ?? {}),
+      output: {
+        selectDirectory: async () => ({ ok: false, code: "CANCELLED" }),
+        saveFile: async (dirPath: string, filename: string, content: string) => {
+          target.outputCalls!.push({ dirPath, filename, content });
+          return saveResult.ok ? { ok: true, path: `${dirPath}/${filename}` } : saveResult;
+        },
+      },
+    };
+  }, result);
+}
+
+/** Counts the browser-download path's only hard requirement: an object URL for the Blob. */
+async function countObjectUrls(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const target = window as typeof window & { objectUrlCount?: number };
+    target.objectUrlCount = 0;
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    URL.createObjectURL = (blob: Blob) => {
+      target.objectUrlCount = (target.objectUrlCount ?? 0) + 1;
+      return createObjectURL(blob);
+    };
+  });
+}
+
+/**
+ * Rewrites only the `output` field of the real settings response. The e2e server
+ * shares one settings store across the whole run, so writing through PUT would leak
+ * into the other engines (and other specs); patching the response cannot leak.
+ */
+async function routeSettingsOutput(
+  page: Page,
+  output: { defaultPath: string | null; useDefaultPath: boolean },
+): Promise<void> {
+  await page.route("**/api/settings", async (route) => {
+    const fetched = await route.fetch();
+    const body = (await fetched.json()) as Record<string, unknown>;
+    await route.fulfill({ response: fetched, json: { ...body, output } });
+  });
+}
+
+/** Navigates and waits for the settings fetch the download branch depends on. */
+async function gotoWithSettings(page: Page): Promise<void> {
+  const loaded = page.waitForResponse((response) => (
+    response.url().includes("/api/settings") && response.request().method() === "GET"
+  ));
+  await page.goto("/");
+  await loaded;
+}
+
+test.describe("下载分叉（默认保存目录）", () => {
+  test("开启默认目录且有桥接时直接写入目录，不触发浏览器下载", async ({ page }) => {
+    await installOutputBridge(page, { ok: true });
+    await countObjectUrls(page);
+    await routeSettingsOutput(page, { defaultPath: OUTPUT_DIRECTORY, useDefaultPath: true });
+    let downloads = 0;
+    page.on("download", () => { downloads += 1; });
+    await gotoWithSettings(page);
+
+    await page.getByLabel("网页链接").fill("https://example.com/article");
+    await page.getByRole("button", { name: "转换", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toBeVisible();
+
+    await page.getByRole("button", { name: "下载", exact: true }).click();
+
+    await expect(page.getByRole("status").filter({ hasText: "已保存到" }))
+      .toContainText(`已保存到 ${OUTPUT_DIRECTORY}/跨浏览器测试文章.md`);
+    // The browser download path never runs: no Blob URL, no download event.
+    expect(await page.evaluate(() => (window as typeof window & { objectUrlCount?: number }).objectUrlCount)).toBe(0);
+    expect(downloads).toBe(0);
+
+    expect(await page.evaluate(() => (window as typeof window & { outputCalls?: unknown }).outputCalls)).toEqual([
+      { dirPath: OUTPUT_DIRECTORY, filename: "跨浏览器测试文章.md", content: response.markdown },
+    ]);
+  });
+
+  test("直接写入失败时说明原因并降级为浏览器下载", async ({ page }) => {
+    await installOutputBridge(page, { ok: false, code: "EACCES" });
+    await countObjectUrls(page);
+    await routeSettingsOutput(page, { defaultPath: OUTPUT_DIRECTORY, useDefaultPath: true });
+    await gotoWithSettings(page);
+
+    await page.getByLabel("网页链接").fill("https://example.com/article");
+    await page.getByRole("button", { name: "转换", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toBeVisible();
+
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: "下载", exact: true }).click();
+    const download = await downloadPromise;
+
+    expect(download.suggestedFilename()).toBe("跨浏览器测试文章.md");
+    const notice = page.getByRole("status").filter({ hasText: "已改为浏览器下载" });
+    await expect(notice).toContainText("没有写入权限");
+    expect(await page.evaluate(() => (window as typeof window & { objectUrlCount?: number }).objectUrlCount)).toBe(1);
+  });
+
+  test("没有桥接时忽略默认目录设置，仍走浏览器下载", async ({ page }) => {
+    await countObjectUrls(page);
+    await routeSettingsOutput(page, { defaultPath: OUTPUT_DIRECTORY, useDefaultPath: true });
+    await gotoWithSettings(page);
+
+    await page.getByLabel("网页链接").fill("https://example.com/article");
+    await page.getByRole("button", { name: "转换", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toBeVisible();
+
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: "下载", exact: true }).click();
+    const download = await downloadPromise;
+
+    expect(download.suggestedFilename()).toBe("跨浏览器测试文章.md");
+    await expect(page.getByText("已保存到")).toHaveCount(0);
+    expect(await page.evaluate(() => (window as typeof window & { objectUrlCount?: number }).objectUrlCount)).toBe(1);
+  });
+
+  test("保存反馈在下次转换开始时清除", async ({ page }) => {
+    await installOutputBridge(page, { ok: true });
+    await routeSettingsOutput(page, { defaultPath: OUTPUT_DIRECTORY, useDefaultPath: true });
+    await gotoWithSettings(page);
+
+    await page.getByLabel("网页链接").fill("https://example.com/article");
+    await page.getByRole("button", { name: "转换", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toBeVisible();
+    await page.getByRole("button", { name: "下载", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "已保存到" })).toBeVisible();
+
+    // A new conversion describes a new file, so the previous download's notice is stale.
+    await page.getByLabel("网页链接").fill("https://example.com/second");
+    await page.getByRole("button", { name: "转换", exact: true }).click();
+    await expect(page.getByText("已保存到")).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toBeVisible();
+    await expect(page.getByText("已保存到")).toHaveCount(0);
   });
 });

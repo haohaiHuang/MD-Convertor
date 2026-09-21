@@ -2,39 +2,59 @@
 
 ## Resume Here
 
-- Current version: `0.3.6`（源码与门禁均为 0.3.6，**尚未发布**；`v0.3.5` 仍是最新已发布版本，tag `5f98307`）。S1 的逐任务 RED/GREEN 证据在 `feature_list.json` 的 `feat-041.verification`
-- Active feature: **`feat-041` 默认 MD 保存路径——S1 已完成并单独提交，S2 待开工**。文档链：`docs/features/default-save-path/FSD.md` + `S1-settings-and-ipc.md`（已完成）+ `S2-download-flow.md`（下一步）+ `S3-release.md`。**唯一推荐下一步：按 S2 文档开工，从 T2.1 开始**
-- Pending: ① S2 完成后跑全量三引擎 e2e 与 `npm run desktop:release`（Node **24.14.1 / 24.15.0**，v24.16.0 静默卡死）；② `0.3.1`–`0.3.5` 的产物与 tag 一律不动；③ 真机小点（等用户清单）；④ 云端 Provider 端到端实测（用户真实文章走一遍）；⑤ UI 评审结论勿重提（全部不整改）；⑥ 签名/notarization 不做（QA-008 accepted）；⑦ stash@{0} 是 2026-09-21 拉取前的文档备份、与 feat-041 无关
+- Current version: `0.3.6`（源码与门禁均为 0.3.6，**尚未发布**；`v0.3.5` 仍是最新已发布版本，tag `5f98307`）。S1 与 S2 的逐任务 RED/GREEN 证据在 `feature_list.json` 的 `feat-041.verification`
+- Active feature: **`feat-041` 默认 MD 保存路径——S1、S2 已完成（S2 待提交），S3 待开工**。文档链：`docs/features/default-save-path/FSD.md` + `S1-settings-and-ipc.md`（已完成）+ `S2-download-flow.md`（已完成，含决策记录）+ `S3-release.md`（下一步）
+- **唯一推荐下一步**：① 用户在普通终端跑 `npm run test:e2e` 补 **firefox** 引擎（本环境跑不了，见 Environment Notes）；② 用户亲手过一遍真机两态（开开关 → 下载不弹框且落盘；关开关 → 弹框）；两项都过再开 S3 发布收口
+- Pending: ① 上条两项（firefox e2e + 用户真机确认）；② `npm run desktop:release`（Node **24.14.1 / 24.15.0**，v24.16.0 静默卡死）；③ `0.3.1`–`0.3.5` 的产物与 tag 一律不动；④ 真机小点（等用户清单）；⑤ 云端 Provider 端到端实测（用户真实文章走一遍）；⑥ UI 评审结论勿重提（全部不整改）；⑦ 签名/notarization 不做（QA-008 accepted）；⑧ stash@{0} 是 2026-09-21 拉取前的文档备份、与 feat-041 无关
 - Branch: `main`；发布历史：`v0.3.5` = `5f98307`（feat-039 + 清空按钮归位）、`v0.3.4` = `e251267`（图标 v2）、`v0.3.3` = `3897cd1`（feat-034）、`v0.3.2` = `1c3ed80`（feat-033）、`v0.3.1` = `af7f6db`（feat-031/032）
 
 ## 新会话开工提示词（复制即用）
 
 ```
-继续 MD-Convertor 的 feat-041「默认 MD 保存路径」S2（下载分叉）。
+继续 MD-Convertor 的 feat-041「默认 MD 保存路径」S3（发布收口）。
 
-先读 PROGRESS.md、feature_list.json（feat-041.verification 有 S1 全部证据）、session-handoff.md，
-然后读 docs/features/default-save-path/FSD.md 与 docs/features/default-save-path/S2-download-flow.md
-（S1 已完成提交，S3 不要碰）。
+先按 Startup Workflow 读 AGENTS.md、PROGRESS.md、feature_list.json（feat-041.verification 有
+S1+S2 全部证据）、session-handoff.md，然后读 docs/features/default-save-path/FSD.md 与
+docs/features/default-save-path/S3-release.md。S1 已提交（ac8f91a），S2 已提交，**不要回头改 S1/S2**。
 
-S1 交付的真实接口（S2 直接用）：
-- settings.output = { defaultPath: string | null, useDefaultPath: boolean }；SETTINGS_VERSION 仍为 1，
-  output 缺失宽容读入是唯一放宽点；useDefaultPath:true + defaultPath:null 读入规范化为全默认。
-- 桥接：window.mdConvertor.output.selectDirectory() / saveFile(dirPath, filename, content)，
-  无桥接（Web/e2e）时为 undefined——分叉必须容忍。设置页状态里已有 output，主页面的
-  fetchSettings() 现在也会带回 output（mock 类 spec 的 settings fixture 必须带 output 字段，
-  否则输出卡片崩溃）。
-- IPC 双通道 md-convertor:output:select-directory / :save-file 已注册；filename/dirPath 校验
-  preload 与 main 双层都有，不能删任何一层。
+S2 交付的真实行为（S3 只需发不重做）：
+- 主页面下载按三重条件分叉：settings.output.useDefaultPath && settings.output.defaultPath &&
+  outputBridge() 三者全真 → bridge.saveFile 直写；成功反馈 role=status「已保存到 <完整路径>」并 return；
+  失败反馈「直接保存失败：<用户可读原因>已改为浏览器下载。」**并继续落到原有 Blob/anchor 下载**（不吞错）。
+- 其余情况（含无桥接的 Web/浏览器）→ 现有浏览器下载一字未动。反馈在 runConversion() 开头清除。
+- OUTPUT_CODE_MESSAGES 现已含 EACCES / EPERM / ENOENT / ENOTDIR / ENOSPC / EROFS 六个真实 fs 码。
+- 页面用 settingsState 留住整份 Settings；按钮是 onClick={() => void downloadMarkdown()}。
 
-S2 注意：
-1. 主页面 downloadMarkdown() 三态分叉：useDefaultPath && defaultPath && 桥接 → saveFile 直写 +
-   反馈条（成功含落盘路径）；saveFile 失败 → 降级浏览器下载 + 说明原因；其余 → 现有浏览器下载一字不动。
-2. 严格 TDD：每个任务先写失败测试再实现，RED/GREEN 证据记入 feature_list.json 的 feat-041。
-3. 全量三引擎 e2e 在 S2 跑（S1 只跑了 chromium）；./init.sh 全绿后收尾状态文件；S2 单独提交。
-4. 门禁/打包如需 Node 版本切换：只能用 24.14.1 或 24.15.0（v24.16.0 会静默卡死）。
+S2 结束时**仍未完成的两件事**（S3 开工前必须先要用户做掉）：
+- firefox 引擎 e2e 从未跑过：Playwright Firefox 在本 agent 环境**完全无法启动**
+  （`Sandbox error: sandbox_init() failed with error "Operation not permitted"`，每个用例 30s 超时）。
+  必须由用户在普通终端跑 `npm run test:e2e` 补齐。
+- 真机两态探针已由我方在打包应用上跑通（开=直写落盘无 download 事件；关=走浏览器下载、目标目录空），
+  但 acceptance 里的「用户确认」还没有签字，需要用户亲手过一遍。
+
+S3 要求：
+1. 用户终端 `npm run test:e2e` 三引擎全绿后，再跑 `npm run desktop:release`
+   （Node 只能用 24.14.1 或 24.15.0；v24.16.0 解压 electron zip 静默卡死）。
+2. `0.3.1`–`0.3.5` 的产物与 tag 一律不动；历史 ZIP 缺失项按退役处理。
+3. 签名/notarization 不做，产物只能标注为个人测试用。
+4. 收尾按 State File Discipline 更新 PROGRESS.md / session-handoff.md / CHANGELOG(+zh)，S3 单独提交。
+
+环境注意（省得重新踩）：
+- 打包应用在本 shell 里启动必须 `unset ELECTRON_RUN_AS_NODE`（它被注入为 1，会让 Electron 当纯 Node 跑，
+  报 `bad option: --remote-debugging-port=9222`）并加 `--no-sandbox`（Chromium 自己的沙箱被宿主
+  seatbelt 拒：`Failed to initialize sandbox ... Operation not permitted`）。
+- Playwright 会继承 `HTTP_PROXY`，跑任何 Playwright/Bash 网络命令前建议
+  `unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy` + `NO_PROXY=127.0.0.1,localhost`。
+- zsh 下 `rm -f dir/*` 在无匹配时会报错并中断整条 `&&` 链，用 `find dir -type f -delete`。
 ```
 
 ## Latest Change
+
+**本轮（feat-041 S2 完成：主页面下载分叉 + 真机两态探针，2026-09-22，S2 单独提交）**：按 `docs/features/default-save-path/S2-download-flow.md` 执行 T2.1–T2.6，全程 TDD。① **T2.1 三态 e2e**：`e2e/home.spec.ts` 新增 describe「下载分叉（默认保存目录）」三例——桥接 + 开关 + 目录 → `saveFile` 直写、`role=status` 反馈「已保存到 …」、**零** download 事件 + **零** `createObjectURL`；`saveFile` 失败（EACCES）→ 反馈含「没有写入权限」并降级浏览器下载（`createObjectURL` 计到 1）；无桥接 → 忽略设置走旧路径。RED 2 failed / 16 passed ⇒ GREEN 18 passed。**e2e 定式**（踩出来的）：桥接用 `addInitScript` 且必须在 `goto` 之前；设置用 `route.fetch()` 拿真实响应后只改写 `output` 再 `fulfill`（**不要 PUT**，e2e 设置是全 project 共享的）；负向断言用 `page.on("download")` 计数器 + 包裹 `URL.createObjectURL` 计数，**不要** `waitForEvent` 超时；断言前先等一次 `/api/settings` 响应避免与首屏 fetch 竞态。② **决策：S2 §4 与实现冲突，取方案 (a)**——文档原称 `EACCES → 没有写入权限`、`ENOENT → 目录不存在`，但 S1 只交付了业务码而 `electron/output.mjs` 原样回传 fs 的 `error.code`，§4 当时不成立。选择补映射并另补 `EPERM`/`ENOTDIR`/`ENOSPC`/`EROFS`（否决「改文档用笼统文案」：直写失败时页面已降级，反馈条里「为什么没直写」是唯一信息量；归一化放主进程会把展示口径下沉进 IPC 契约）。连接词由括号改冒号，因为映射表每条都是带句号的完整句（设置页整句展示），`（没有写入权限。）` 会嵌套标点。③ **T2.2 实现**：`page.tsx` 用 `settingsState` 留住整份 `Settings`（`translateEnabled`/`targetLanguage` 行为不变、同一响应、不额外发请求）；`downloadMarkdown()` 改 `async`，按**三重条件**分叉，成功直接 `return`，失败设反馈后**继续落到原有 Blob/anchor 逻辑**；按钮改 `onClick={() => void downloadMarkdown()}`；`.saveNotice` 落在 stats 之前。新增 `src/app/settings/client.test.ts`（RED 4 failed / 2 passed ⇒ GREEN 6 passed）。④ **T2.3 生命周期**：新用例先跑出**真实 RED**（`Expected: 0, Received: 1`，陈旧提示残留——T2.2 的编辑当时确实没写下清除语句），再补 `runConversion()` 开头的 `setSaveNotice(null)` ⇒ 19 passed。⑤ **T2.4**：`./init.sh` exit 0 —— 67 files / **950 tests**（基线 66 / 944）；双引擎 e2e **156 passed / 2 skipped** 且 tracked-file 守卫干净。⑥ **T2.5 真机两态探针通过**：`npm run desktop:package` exit 0（Node 24.14.1）→ 打包应用 + CDP 驱动真实渲染层。**开开关**：桥接存在、反馈 `已保存到 /tmp/s2-probe-out/# 真机探针.md`、`download events: 0`、文件真实落盘（128 B）；**关开关**：无反馈、`download events: 1`、目标目录保持空。探针脚本已删，用户真实 `settings.json` 已从备份逐字节还原（该文件正好是无 `output` 的旧版本，顺带覆盖了宽容读入的真实场景）。⑦ 文档与状态：`S2-download-flow.md` 标完成并加「决策记录」与 e2e 定式；`FSD.md` 状态更新；`CHANGELOG.md`(+zh) 新增 `[Unreleased]`（覆盖 S1 的输出卡片与 S2 的下载分叉）；`feature_list.json` 写入 9 条 S2 证据。
+**两个未完成项（S3 开工前必须由用户处理）**：① **firefox 引擎 e2e 从未跑过且本环境跑不了**——Playwright Firefox 启动时要再套一层 macOS seatbelt，报 `Sandbox error: sandbox_init() failed with error "Operation not permitted"` 后退出，表现为每个用例 30s 超时；同用例 chromium 与 webkit 均绿，属环境限制而非代码缺陷（另：首轮全量还撞上继承的 `HTTP_PROXY`，Firefox 跟随系统代理、Chromium 不跟随）。**S2 因此不宣称 firefox 覆盖**，需用户在普通终端补 `npm run test:e2e`。② acceptance 里「用户确认」的真机两态签字未完成——探针是我方机器证据，不是用户确认。
+**一个偶发（未修，已记录）**：既有用例 `supports keyboard submission and download` 在 webkit 上偶发 `getByText('转换完成')` 5s 内未出现（疑似 `press("Enter")` 撞上 React 水合未完成），单跑 3/3 绿、随后全量立即复绿；该断言与下载无关，S2 未触碰转换路径，故按 out-of-scope 记录而不修改。
+
+## Archived Change Log
 
 **本轮（feat-041 S1 完成：契约 + IPC + 输出卡片，2026-09-21，S1 单独提交）**：按 `docs/features/default-save-path/S1-settings-and-ipc.md` 执行 T1.0–T1.6，全程 TDD。① **T1.0 版本 0.3.5→0.3.6**：fixture 先 RED（7 failed / 22 passed——比文档预估多 2：`verifyFreshArtifact` 两例也依赖 fixture 版本，且 fresh-artifact fixture 的 ZIP 文件名是版本派生的，改版本时必须跟着改），再改 `release-desktop.mjs` 两处 + `package.json` + `package-lock.json` 两处 + `feature_list.json` ⇒ 29 passed（坑：lock 里 `for-each`/`magicast` 恰好也是 0.3.5，不能误改）。② **T1.1 契约**：`src/types/settings.ts` 增 `OutputSettings`/`OUTPUT_KEYS`/默认值/ROOT_KEYS；`validateSettings` 的 `output` 缺失宽容分支（唯一放宽点）+ 规范化 `useDefaultPath:true && defaultPath:null` → 全默认；`SETTINGS_VERSION` 保持 1 有专项测试锁定；`/api/settings` 的 `sanitizeSettings` 同步转发 output。RED 9 failed ⇒ GREEN 55 passed，全量 vitest 876 passed。③ **T1.2 contract**：`preload-contract.cjs` 增两通道名 + `isValidOutputFilename`（无 `/`、`\`、`..`，1–255 字符）+ `isAbsoluteDirPath`（`/` 开头、拒 `~` 与 `..` 段）；新 `preload-contract.test.cjs` RED 25 failed ⇒ GREEN 26 passed。④ **T1.3 preload**：`preload.cjs` 自包含复制通道名与校验逻辑（沙箱 preload 不能 require 相对文件），暴露 `window.mdConvertor.output`；非法参数同步抛 TypeError；与 contract 一致性有属性测试。RED 20 failed / 16 passed ⇒ GREEN 62 passed（两文件合计）。⑤ **T1.4 main IPC**：新纯模块 `electron/output.mjs`（`createOutputChannels({ipcMain, dialog, warn})`，依赖注入便于测试）；select-directory 带 `openDirectory+createDirectory`、取消 → `CANCELLED`；save-file **主进程独立重新校验**（双层防御）+ `mkdir -p` + 写入；失败映射 `error.code`、warn 日志只记 code；`main.mjs` `app.whenReady()` 注册。测试 RED（模块不存在）⇒ GREEN 23 passed。⑥ **T1.5 输出卡片**：`client.ts` 增 `outputBridge()`/`OUTPUT_CODE_MESSAGES`（CANCELLED 不算错误）；`page.tsx` 在翻译卡片前插输出卡片（路径展示/未设置、选择目录按钮——无桥接禁用并提示、开关——开着无目录时警告「请先选择目录。」且不落盘）。e2e RED 5 failed / 24 passed ⇒ GREEN 29 passed。**重要发现**：settings/theme/translate 三个 spec 的共享 settings mock 必须补 `output` 字段（真实 API 经 `sanitizeSettings` 总是返回它），否则输出卡片读 `settings.output.defaultPath` 崩掉整页——21 个既有用例因此连坐失败，已修。⑦ **T1.6 收尾**：`./init.sh` exit 0——66 files / **944 tests**、statements 95.28%、lint + tsc + build 全绿；全量 chromium e2e **75 passed**（主页面行为不变，下载逻辑零改动）；三引擎 e2e 与打包门禁留给 S2/S3。⑧ 基线注意：本机默认 Node 22.22.2，`./init.sh` 要求 24.x——用 `export PATH="$HOME/.nvm/versions/node/v24.14.1/bin:$PATH"` 前置。
 
@@ -309,8 +329,8 @@ S2 注意：
 
 ## Next Stage Entry
 
-- S1 → S6 全部完成；`feat-024` – `feat-039` 均 done；当前 `activeFeature` = `feat-041`（默认 MD 保存路径，planned，文档已就绪）。
-- 下一轮入口就是 `feat-041`：按 `docs/features/default-save-path/S1-settings-and-ipc.md` 开工，从 T1.0（版本 TDD 升 `0.3.6`）开始。**改动前必须 bump 版本号（≥ `0.3.6`）再跑门禁**。
+- S1 → S6 全部完成；`feat-024` – `feat-039` 均 done；当前 `activeFeature` = `feat-041`（默认 MD 保存路径，**in-progress：S1 已 done 并提交 `ac8f91a`，S2 待开工**）。
+- 下一轮入口就是 `feat-041` 的 S2：按 `docs/features/default-save-path/S2-download-flow.md` 开工，从 T2.1 开始。**版本已是 `0.3.6`（S1 的 T1.0 已完成升级），S2 不需要再 bump**；再改代码前若已发布 0.3.6 才需 bump 到 ≥ `0.3.7`。
 - 每轮开头固定读：`PROGRESS.md` → `session-handoff.md` → `feature_list.json` → 相关 `docs/`（涉及翻译行为时先读 `docs/PRD-translation.md`），然后跑 `./init.sh` 建立基线。
 - 全部阶段文档（已完成入口）：`docs/features/translation/S1-settings-infra.md` 至 `S6-release-and-docs.md`；各文档的 Handoff 已写入下一阶段所需的真实接口与边界。
 
@@ -338,15 +358,19 @@ S2 注意：
 - 代理（2026-09-20 实测）：本机 `ALL_PROXY` / `HTTPS_PROXY` 指向 `127.0.0.1:7897`，当时客户端在监听但转发已坏 —— `gh`、`curl` 报 `EOF` / `SSL_ERROR_SYSCALL`，`git fetch` / `git push` 同样失败，**直连正常**。发布 `v0.3.3` 时用直连绕过：`git -c http.proxy= -c https.proxy= push|fetch origin`，`gh` 则先 `unset ALL_PROXY HTTPS_PROXY HTTP_PROXY`。下次再遇到 `EOF` 先试直连，不要以为是 GitHub 挂了。
 - Playwright 浏览器：`npx playwright install chromium firefox webkit`（当前 revision 1228 / 1532 / 2311），缺浏览器时 `npm run test:e2e` 会直接报缺可执行文件。
 - `MD_CONVERTOR_TEST_PROVIDER=1` 是测试/e2e 专用开关（内置伪模型，不联网）；生产未设置时该分支不可达。生产路径的环境变量仍是 `MD_CONVERTOR_USER_DATA` / `MD_CONVERTOR_SECRETS` / `MD_CONVERTOR_SESSION_TOKEN` / `PATH`。
+- **Firefox e2e 在本 agent 环境无法运行（2026-09-22 实测）**：Playwright Firefox 启动时要再套一层 macOS seatbelt，报 `Sandbox error: sandbox_init() failed with error "Operation not permitted"` 后进程退出，表现为**每个用例 30s 超时**。同一用例 chromium / webkit 均绿（`/tmp/s2-wk-probe.log`：webkit 1 passed in 2.4s），故属环境限制而非代码缺陷。三引擎 e2e 必须由用户在普通终端补跑；在本环境请用 `npx playwright test --project=chromium --project=webkit`。
+- **代理会污染 Playwright（2026-09-22）**：环境注入 `HTTP_PROXY=http://127.0.0.1:50291`，Playwright 会继承它——`connectOverCDP` 报 `Unexpected status 502`。跑任何 Playwright / 网络命令前先 `unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy ALL_PROXY all_proxy` 并设 `NO_PROXY=127.0.0.1,localhost no_proxy=...`；系统代理则是 Clash 的 `127.0.0.1:7897`（Firefox 跟随、Chromium 不跟随）。
+- **打包应用在本 shell 里的启动姿势（2026-09-22）**：环境注入 `ELECTRON_RUN_AS_NODE=1`，会让 Electron 当纯 Node 跑并报 `bad option: --remote-debugging-port=9222`；取消后 Chromium 自己的沙箱又被宿主 seatbelt 拒（`Failed to initialize sandbox ... Operation not permitted` → GPU 进程崩溃）。探针用 `unset ELECTRON_RUN_AS_NODE` + `--no-sandbox --disable-gpu --remote-debugging-port=9222` 跑通；**`--no-sandbox` 仅为探针用，正常双击启动不受影响**。另注意后台 `&` 起的应用进程会在该次 Bash 调用结束时被回收，启动与探针要放进同一条命令；zsh 下 `rm -f dir/*` 遇无匹配会报错并中断整条 `&&` 链，改用 `find dir -type f -delete`。
 
 ## Recommended Next Action
 
-`feat-041`（默认 MD 保存路径）规划已完成：FSD + S1/S2/S3 三份阶段文档就绪，`feature_list.json` 已登记（planned、activeFeature），`PROGRESS.md` 已重写为干净态。**新会话开工提示词见本文件顶部「新会话开工提示词（复制即用）」**。下一步：
-1. **按 `docs/features/default-save-path/S1-settings-and-ipc.md` 开工，从 T1.0 开始**：先 TDD 把版本升到 `0.3.6`（`scripts/release-guards.test.mjs` fixture 先 RED），再做 S1 其余任务。
-2. **跑门禁必须用 Node 24.14.1 或 24.15.0**：本机默认 v24.16.0 在解压 electron zip 时静默卡死，`electron-forge make` 空跑却仍返回 exit 0。
-3. **真机小点**：等用户给清单后再评估是否单开一轮。
-4. **云端 Provider 端到端实测**：`feat-027` 的自撰探针已绿，仍需用户用真实文章在设置页走一遍「拉取模型 → 选模型 → 翻译」。
-5. **签名/notarization 用户 2026-09-20 决定不做**（QA-008 accepted / not planned）；要恢复需 Developer ID Application 证书 + notarytool 凭据，签名后必须重跑门禁更新哈希。
-6. **UI 评审结论勿重提**：`docs/UI-REVIEW-2026-09-20.md` 的 P0×6 + P1×10 用户已决定全部不改；主页像素级断言（转换按钮右边缘与粘贴框右边缘差值 < 4px 且与「来源 URL」输入框同行）继续是刻意锁定的效果，要改先改断言。
+`feat-041`（默认 MD 保存路径）**S1 已提交（`ac8f91a`）、S2 已完成待提交**（S1 契约 + IPC + 设置页输出卡片；S2 主页面三态分叉 + 降级 + 反馈条，并在打包应用上跑通了真机两态探针）；S3 文档就绪。**新会话开工提示词见本文件顶部「新会话开工提示词（复制即用）」**。下一步：
+1. **先补两项 S2 遗留**（S3 开工前置）：① 用户在普通终端跑 `npm run test:e2e` 补 **firefox** 引擎（本 agent 环境跑不了 Firefox，原因见 Environment Notes）；② 用户亲手过一遍真机两态（开开关 → 不弹框且落盘；关开关 → 弹框）——探针是我方机器证据，acceptance 里的「用户确认」仍未签字。
+2. **然后按 `docs/features/default-save-path/S3-release.md` 收口**：`npm run desktop:release`、本机安装、GitHub Release、文档收口。
+3. **跑门禁必须用 Node 24.14.1 或 24.15.0**：本机默认 v24.16.0 在解压 electron zip 时静默卡死，`electron-forge make` 空跑却仍返回 exit 0。
+4. **真机小点**：等用户给清单后再评估是否单开一轮。
+5. **云端 Provider 端到端实测**：`feat-027` 的自撰探针已绿，仍需用户用真实文章在设置页走一遍「拉取模型 → 选模型 → 翻译」。
+6. **签名/notarization 用户 2026-09-20 决定不做**（QA-008 accepted / not planned）；要恢复需 Developer ID Application 证书 + notarytool 凭据，签名后必须重跑门禁更新哈希。
+7. **UI 评审结论勿重提**：`docs/UI-REVIEW-2026-09-20.md` 的 P0×6 + P1×10 用户已决定全部不改；主页像素级断言（转换按钮右边缘与粘贴框右边缘差值 < 4px 且与「来源 URL」输入框同行）继续是刻意锁定的效果，要改先改断言。
 
-不要重做 S1–S6 与 `feat-024` – `feat-039`；不要放宽端点、密钥或归档守卫；不要把已退役的历史 ZIP 条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删除。
+不要重做 S1 与 S2 及之前全部已完成 feature（含 `feat-024` – `feat-040`）；不要把下载分叉扩成「另存为」对话框（FSD 非目标：用户要的是「不再弹」）；不要改成「只报笼统文案」——`OUTPUT_CODE_MESSAGES` 的六个真实 fs 码是 S2 的明确决策（见 S2 文档「决策记录」）；不要放宽端点、密钥或归档守卫；不要把已退役的历史 ZIP 条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删除。

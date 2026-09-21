@@ -39,6 +39,14 @@ const OUTPUT_CODE_MESSAGES: Record<string, string> = {
   INVALID_CONTENT: "文件内容不合法。",
   CANCELLED: "已取消选择。",
   OUTPUT_SAVE_FAILED: "文件写入失败。",
+  // The main process reports the raw `error.code` from Node's fs layer, so the real
+  // filesystem failures arrive as their own codes rather than the generic one above.
+  EACCES: "没有写入权限。",
+  EPERM: "没有写入权限。",
+  ENOENT: "目录不存在。",
+  ENOTDIR: "保存目录不合法。",
+  ENOSPC: "磁盘空间不足。",
+  EROFS: "目标磁盘为只读，无法写入。",
   IPC_FAILED: "与主进程通信失败。",
 };
 

@@ -1,6 +1,6 @@
 # FSD 总纲 — 默认 MD 保存路径（Default Save Path）
 
-- 状态：**规划完成（2026-09-21），未实施**；目标版本 `0.3.6`
+- 状态：**S1 已完成并提交（`ac8f91a`）、S2 已完成（2026-09-21，待提交）**；S3 待开工；目标版本 `0.3.6`
 - 日期：2026-09-21
 - 上游：用户口头需求（无 PRD 文档）；本文件是唯一事实源
 - 阶段执行文档：`docs/features/default-save-path/S1-settings-and-ipc.md`（设置项 + IPC 通道）、`S2-download-flow.md`（下载逻辑改造）、`S3-release.md`（发布收口）

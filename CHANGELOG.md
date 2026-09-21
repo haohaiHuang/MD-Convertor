@@ -4,6 +4,18 @@
 
 This project follows the principles of [Keep a Changelog](https://keepachangelog.com/). User-facing changes that have not yet been released belong under `Unreleased`.
 
+## [Unreleased]
+
+### Added
+
+- A default folder for downloaded Markdown files, so the save dialog stops appearing every time. The settings page gains an Output card where a directory is chosen once (through the real macOS folder picker, which can also create a folder) and a 使用默认目录 switch turns the behaviour on. With the switch on, 下载 writes the file straight into that folder and reports the full path it landed on; with the switch off the app behaves exactly as before.
+
+- The 下载 button no longer fails silently when the direct write is refused. A missing directory, a read-only volume, a full disk or a permission problem is named in the result area and the download then falls back to the browser path, so the file still reaches the user either way. The notice clears as soon as the next conversion starts, and browsers — where there is no desktop bridge — keep the previous behaviour untouched.
+
+### Changed
+
+- The settings file gains an `output` field. A settings file written by an earlier version is still read as-is: the missing field falls back to its default instead of being treated as corruption, so no existing provider, language or translation setting is lost on upgrade. The stored format version is unchanged.
+
 ## [0.3.5] - 2026-09-21
 
 ### Changed
