@@ -42,7 +42,7 @@ The baseline covers:
 - the translation task budget: `translateTaskTimeoutMs(batchCount)` returns `max(120s, batches × 180s + 30s)`, and both endpoints size their deadline from the real batch count (a long article of many short paragraphs is not cut off at a fixed 120s)
 - the translation checkbox, 原文 / 译文 tabs, copy and download per tab, progress, cancel, retry, and the ratio dialog
 
-`vitest.config.ts` limits coverage to `src/lib/**/*.ts` plus the convert and translate routes, excludes test files and `src/types/**`, and sets per-file thresholds. Every `src/lib/translate/**` module has its own threshold (95/90/100/95, or 90/75/100/90 for `segment.ts`). Coverage is currently 95.28% statements over 62 files / 859 tests.
+`vitest.config.ts` limits coverage to `src/lib/**/*.ts` plus the convert and translate routes, excludes test files and `src/types/**`, and sets per-file thresholds. Every `src/lib/translate/**` module has its own threshold (95/90/100/95, or 90/75/100/90 for `segment.ts`). Coverage is currently 95.28% statements over 63 files / 863 tests.
 
 E2E runs against the production standalone service and fails if tracked files change. `playwright.config.ts` sets `workers: 1` because the translation engine holds one process-wide task slot; parallel workers would collide with 429 `TRANSLATE_BUSY`.
 
@@ -52,11 +52,11 @@ The specs that convert fulfil `**/api/convert` or `**/api/convert-paste` inside 
 
 `npm run desktop:release` requires:
 
-- package version exactly `0.3.3`
+- package version exactly `0.3.4`
 - Node.js 24.x, but not 24.16.0: that patch stalls inside `yauzl` while unpacking the Electron archive, so `electron-forge make` never produces a ZIP. Node 24.14.1 and 24.15.0 both pass the full gate
 - the historical archive set: every manifest ZIP that still exists must keep its fixed SHA-256, and no unlisted release ZIP may appear in `~/Downloads/MD-Convertor-archive/releases/`
 - a ZIP created during the current run
-- packaged version `0.3.3`
+- packaged version `0.3.4`
 - an arm64 executable and complete application bundle
 
 The guard rechecks historical artifacts on both success and failure. A Forge command that exits without a new ZIP is a failure.
@@ -71,11 +71,28 @@ The `0.3.1` gate ran on 2026-09-20 and passed the same way.
 
 The `0.3.2` gate, also on 2026-09-20, added one small fix: the packaged app starts its local server from the bundled `MD-Convertor Helper` instead of the app's own executable (`electron/server-binary.mjs`, three unit tests), which removes the extra bouncing `exec` icon the Dock showed while the app was running.
 
-A later fix for long-article translation timeouts (`feat-024`, 2026-09-18) changed the task budget to scale with the batch count. A later round (`feat-029`, 2026-09-18) made a cloud provider's four fields mandatory to save, let the settings page pull models from an unsaved draft without writing anything, and replaced the saved key in its input box with an eight-dot placeholder. It is covered by unit tests for the form rules and the draft model route (`src/lib/settings/provider-form.test.ts`, `src/app/api/provider/models/route.test.ts`) plus three new settings E2E cases and three rewritten ones (the old「拉取模型先保存草稿」expectations no longer hold). Another round raised the per-call ceiling from 60s to 180s (`feat-027`) and fixed a timeout that was reported as an unreadable answer, and it removed the「当前生效」mode badge (`feat-028`). All of it was verified by unit tests, a full `./init.sh` baseline, a three-engine E2E run, and a real-machine probe against the user's cloud provider (a 121-block document that used to fail at the 60s ceiling now returns 200). The version decision landed on `0.3.1`: `package.json`, the lock file, `feature_list.json` and the release guard all read `0.3.1` (the guard test moved to RED first, then to 29 passing). A further round (`feat-031`, 2026-09-20) raised `next` to 16.3.5 and `sharp` to 0.35.4 so `npm audit --omit=dev` reports no production advisories, dropped the gear glyph from the header, renamed both convert buttons to 「转换」, aligned the rich-text convert button's right edge with the paste box above it, and made the key box read-only while a key is stored. The last round (`feat-032`, 2026-09-20) dropped the green「MD」square and set the wordmark in Michroma, vendoring the font and its OFL licence under `public/fonts/` and loading it with `next/font/local`; `tests/brand-font.test.ts` guards the two files, the E2E brand case compares the served woff2 with the repository file by SHA-256, and the build was re-run with all network access denied (`sandbox-exec … (deny network*) npm run build`, exit 0) to prove it no longer reaches Google. The artifact recorded below is the pre-fix `0.3.0` build, kept as history; everything from `feat-024` onwards shipped in the `0.3.1` and `0.3.2` artifacts.
+The `0.3.4` gate ran on 2026-09-21 and passed end to end. It carries `feat-036` (a "use paste instead" hint under a failed link fetch), `feat-037` (the cloud card's「清除」resets the whole card) and the application icon: `assets/icon.icns` now replaces Electron's default icon and `assets/` is excluded from the asar. `tests/app-icon.test.ts` guards the icon (1024px transparent master, required icns types, the `forge.config.cjs` wiring trap, and the exclusion) and `electron.icns` inside the bundle was compared with the repository file by SHA-256.
 
-## Gated Artifact (0.3.3)
+A later fix for long-article translation timeouts (`feat-024`, 2026-09-18) changed the task budget to scale with the batch count. A later round (`feat-029`, 2026-09-18) made a cloud provider's four fields mandatory to save, let the settings page pull models from an unsaved draft without writing anything, and replaced the saved key in its input box with an eight-dot placeholder. It is covered by unit tests for the form rules and the draft model route (`src/lib/settings/provider-form.test.ts`, `src/app/api/provider/models/route.test.ts`) plus three new settings E2E cases and three rewritten ones (the old「拉取模型先保存草稿」expectations no longer hold). Another round raised the per-call ceiling from 60s to 180s (`feat-027`) and fixed a timeout that was reported as an unreadable answer, and it removed the「当前生效」mode badge (`feat-028`). All of it was verified by unit tests, a full `./init.sh` baseline, a three-engine E2E run, and a real-machine probe against the user's cloud provider (a 121-block document that used to fail at the 60s ceiling now returns 200). The version decision landed on `0.3.1`: `package.json`, the lock file, `feature_list.json` and the release guard all read `0.3.1` (the guard test moved to RED first, then to 29 passing). A further round (`feat-031`, 2026-09-20) raised `next` to 16.3.5 and `sharp` to 0.35.4 so `npm audit --omit=dev` reports no production advisories, dropped the gear glyph from the header, renamed both convert buttons to 「转换」, aligned the rich-text convert button's right edge with the paste box above it, and made the key box read-only while a key is stored. The last round (`feat-032`, 2026-09-20) dropped the green「MD」square and set the wordmark in Michroma, vendoring the font and its OFL licence under `public/fonts/` and loading it with `next/font/local`; `tests/brand-font.test.ts` guards the two files, the E2E brand case compares the served woff2 with the repository file by SHA-256, and the build was re-run with all network access denied (`sandbox-exec … (deny network*) npm run build`, exit 0) to prove it no longer reaches Google. The artifact recorded below is the pre-fix `0.3.0` build, kept as history; everything from `feat-024` onwards shipped in the `0.3.1`–`0.3.4` artifacts.
 
-- Path: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.3.zip`
+## Gated Artifact (0.3.4)
+
+- Path: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.4.zip`
+- Size: `237,272,966` bytes
+- SHA-256: `6910120e004170cc1ff91d29315f883226a852cd012c3e9a1e335e6056b42704`
+- Package: version `0.3.4`, arm64, macOS 12.0+
+- Automated evidence: 63 files / 863 tests, 95.28% statements, three-engine E2E 187 passed / 2 skipped, live 2/2
+- Icon: `assets/icon.icns` (`972,218` bytes, `e8cbc7e7…48bf`) and `assets/icon-1024.png`; the bundle copy `Contents/Resources/electron.icns` hashes identically to the repository file
+- Bundled runtime: still 0 entries under `server/node_modules/electron`; the asar holds 230 entries and none under `/assets`
+- Packaged smoke: preload bridge and runtime secret round trip passed on the installed build
+- Published: [GitHub Release `v0.3.4`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.4) — server-side asset size matches the local artifact byte for byte
+- Signing: not Developer ID signed or notarized, so the artifact is suitable for personal testing only
+
+The size grew by about 4.3 MB over `0.3.3` for reasons unrelated to the icon change: this build's Next.js output tracing picked up the optional `@img/sharp-wasm32` and `@emnapi/runtime` fallback packages plus three build-hash static files. The icon itself did not grow the app: `electron.icns` went from Electron's 272 KB default to a 972 KB custom one, and `assets/` no longer ships inside the asar.
+
+## Historical Artifact (0.3.3)
+
+- Path: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.3.zip` (no longer present under `out/`; GitHub release asset and `/tmp/s19/` copy)
 - Size: `232,947,408` bytes
 - SHA-256: `1bf807dfe294860c24345efe5caf2b0fcbd54f88476df7085c9bd03b47b37a72`
 - Package: version `0.3.3`, arm64, macOS 12.0+
@@ -146,7 +163,7 @@ npx asar list "$A" | grep -c '^/\.next'              # 0: the built frontend is 
 LC_ALL=C grep -c "<a string from the change under test>" "$A"
 ```
 
-The archive holds the **source tree** (`/src`, `/docs`, `/AGENTS.md`, `/.pi/todos`, `/brand`, `CHANGELOG*`; 241 entries in 0.3.3, no `node_modules` and no `.next`). The running app does not use that copy: the built frontend and its server `node_modules` live under `Contents/Resources/server/`, loaded through `extraResource`. So a match (or a miss) in the asar proves nothing about the frontend, and a miss there does not mean the change is not packaged. Check each layer for what it actually serves:
+The archive holds the **source tree** (`/src`, `/docs`, `/AGENTS.md`, `/.pi/todos`, `/public`, `CHANGELOG*`; 230 entries in 0.3.4, no `node_modules` and no `.next`). It no longer carries `/brand` (deleted in 0.3.4) and never carries `/assets` — the icon sources are build inputs and are excluded on purpose. The running app does not use that copy: the built frontend and its server `node_modules` live under `Contents/Resources/server/`, loaded through `extraResource`. So a match (or a miss) in the asar proves nothing about the frontend, and a miss there does not mean the change is not packaged. Check each layer for what it actually serves:
 
 ```bash
 npx asar list "$A" | grep settings/page.tsx              # asar: the source copy only

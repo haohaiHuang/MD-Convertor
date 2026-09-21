@@ -96,12 +96,12 @@ Electron 渲染进程启用沙箱与上下文隔离，关闭 Node.js 集成。�
 - 开发入口为 `npm run dev:desktop`。
 - 本地应用目录构建为 `npm run desktop:package`；分发 ZIP 构建为 `npm run desktop:make`。
 - 日常基线包含合成网页与固定 Markdown 的精确金标准测试；`npm run test:live` 以稳定 WalkingLabs 样本验证链接/粘贴 Mermaid，只作为发布前阻断门禁。微信公众号真实对照保留为 `npm run test:live:wechat`，但因上游验证与超时波动不阻断个人测试包发布。
-- `./init.sh` 与发布脚本只接受 Node.js 24.x。发布脚本要求目标版本严格为 `0.3.3`，并在任何 `init.sh`、E2E、live 或 Forge 命令前校验 `~/Downloads/MD-Convertor-archive/releases/` 中不可变历史 ZIP 的固定文件名与 SHA-256；命令成功或后续失败都会再次复核历史清单。`npm run desktop:release` 随后依次执行完整基线、Chromium/Firefox/WebKit E2E、真实网页门禁与 Apple Silicon ZIP 打包，并强制验证 ZIP 是本轮新产物、解压后包内应用版本为当前版本、包内可执行文件为 arm64 且结构完整，最后输出大小与 SHA-256。
+- `./init.sh` 与发布脚本只接受 Node.js 24.x。发布脚本要求目标版本严格为 `0.3.4`，并在任何 `init.sh`、E2E、live 或 Forge 命令前校验 `~/Downloads/MD-Convertor-archive/releases/` 中不可变历史 ZIP 的固定文件名与 SHA-256；命令成功或后续失败都会再次复核历史清单。`npm run desktop:release` 随后依次执行完整基线、Chromium/Firefox/WebKit E2E、真实网页门禁与 Apple Silicon ZIP 打包，并强制验证 ZIP 是本轮新产物、解压后包内应用版本为当前版本、包内可执行文件为 arm64 且结构完整，最后输出大小与 SHA-256。
 - E2E 使用 production standalone 服务；执行器会比较测试前后的 tracked diff，发现测试修改源码或项目文档时直接失败。
 - 完整命令矩阵、环境变量、打包冒烟和人工验收步骤见 `docs/TESTING.md`。
 - 第一阶段产物可不签名，仅用于开发和个人测试；对外分发前必须补充 Apple Developer ID 签名与 notarization。
 - 打包后的应用用小工具 bundle 内的 `MD-Convertor Helper` 启动本地 Next.js 服务，而不是应用自身的可执行文件（`electron/server-binary.mjs`）。该 helper bundle 声明了 `LSUIElement`，因此子进程不会占用程序坞图标；用应用可执行文件启动会让 macOS 把它当成第二次启动 MD-Convertor，并在程序坞留下一个持续跳动的通用可执行文件图标。
-- v0.3.3 是当前版本（`0.3.0`、`0.3.1` 与 `0.3.2` 的记录产物属历史构建），但产物仍只面向 Apple Silicon Mac 个人测试；历史标签和外部 0.1.0–0.2.0 ZIP 归档继续作为不可变回归基准。
+- v0.3.4 是当前版本（`0.3.0`–`0.3.3` 的记录产物属历史构建），且自本版起应用图标是仓库资产（`forge.config.cjs` 指向 `assets/icon.icns`，并把 `/assets` 排除出 asar），但产物仍只面向 Apple Silicon Mac 个人测试；历史标签和外部 0.1.0–0.2.0 ZIP 归档继续作为不可变回归基准。
 - 第二台 Mac 验收确认未签名应用可能被 Gatekeeper 显示为“文件已经损坏”；个人测试时应先核对 ZIP SHA-256，再只移除 `com.apple.quarantine` 属性。该处理不等同于签名或 notarization，不扩大分发范围。
 - 打包准备脚本把当前 Playwright 版本对应的 Apple Silicon Chromium Headless Shell 放入应用资源，并通过明确的可执行路径启动，避免依赖用户电脑上的浏览器缓存。
 - Next.js 的输出追踪可能保留 Playwright 的可选 Electron 启动器；桌面准备会移除这份未使用的 server-side Electron 包，使应用只含外层 Electron Runtime，分发 ZIP 因此小约 120 MiB。

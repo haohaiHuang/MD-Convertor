@@ -3,12 +3,25 @@
 ## Current State
 
 - Last updated: 2026-09-21
-- Current version: `0.3.3`（`package.json`、`package-lock.json`、`feature_list.json` 与发布门禁均为 `0.3.3`）。**`0.3.3` 门禁已于 2026-09-20 跑通（exit 0）**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.3.zip`（`232,947,408` bytes，SHA-256 `1bf807df…7a72`），已安装到 `/Applications`（未压缩 539 MB），**已提交（`3897cd1`）并作为 `v0.3.3` 发布**。上一版 `0.3.2`（`358,726,788` bytes，`8fb7a93f…f1ba`）已发布为 GitHub Release `v0.3.2`（tag `1c3ed80`）；`0.3.0` 的 ZIP（`358,562,540` bytes，`2a0e236e…1147`）是修复**前**的构建，仅作历史
-- Active feature: none（`feat-024` – `feat-037` 已 done）
-- Next release step: `0.3.3` 已提交（`3897cd1`）并发布为 GitHub Release `v0.3.3`（tag `3897cd1`，资产 `232,947,408` bytes / SHA-256 `1bf807df…7a72`）。`feat-035` 改了 `next.config.ts`，因此源码已与已发布的 `0.3.3` 构建不再逐字节对应（打包产物功能等价：那一份 `browsers.json` 原本就被 prepare-desktop 的整包拷贝覆盖进去）。是否 bump `0.3.4` 并重跑 `npm run desktop:release` 待用户决定；无论哪种选择都不要移动已发布的 tag 与产物。**用户已选 B（2026-09-21）：保持 `0.3.3`，只把修复提交在 tag 之上，不重跑门禁、不动发布物**；因此本机 `main` 会领先 `v0.3.3` 一个提交，这是刻意接受的状态
-- Branch: `main`；`feat-031` + `feat-032` 已提交（`af7f6db`）并作为 `v0.3.1` 发布；`feat-033` 已提交（`1c3ed80`）并作为 `v0.3.2` 发布；本轮 `feat-034`（去掉重复的 Electron 运行时 + 版本 `0.3.3`）已提交（`3897cd1`）并作为 `v0.3.3` 发布
-- Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+
+- Current version: `0.3.4`（`package.json`、`package-lock.json`、`feature_list.json` 与发布门禁均为 `0.3.4`）。**`0.3.4` 门禁已于 2026-09-21 跑通（exit 0）**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.4.zip`（`237,272,966` bytes，SHA-256 `6910120e…2704`），已安装到 `/Applications`，**已提交（`a27224e`；图标 v2 为其后的提交）并作为 `v0.3.4` 发布**；该版本包含 `feat-036`、`feat-037` 与应用图标（已发布的 ZIP 里就是用户最终选定的 v2 图标）。上一版 `0.3.3`（`232,947,408` bytes，`1bf807df…7a72`）已发布为 GitHub Release `v0.3.3`（tag `3897cd1`），其 `out/` 内的 ZIP 已不在本机（留档于 release 资产与 `/tmp/s19/`）；`0.3.2`（`358,726,788` bytes，`8fb7a93f…f1ba`）与 `0.3.1`（`358,723,706` bytes，`c7411c58…161b`）同为历史发布；`0.3.0` 的 ZIP（`358,562,540` bytes，`2a0e236e…1147`）是修复**前**的构建，仅作历史
+- Active feature: none（`feat-024` – `feat-038` 已 done）
+- Next release step: `0.3.4` 已提交（`a27224e`，随后又补上用户提供的 v2 图标提交）、发布为 GitHub Release `v0.3.4` 并装到本机。图标换 v2 **没有**升版本（用户 2026-09-21 决定：此前那次发布只是几分钟大的空草稿），而是在**同一个版本号下重跑了完整门禁**，所以已发布的 ZIP 里就是 v2 图标；tag `v0.3.4` 随后被移到 v2 图标提交，使 tag、ZIP 与 `checkout` 的源码三者一致。再要改代码必须先升到 `≥ 0.3.5` 并重跑 `npm run desktop:release`
+- Branch: `main`；`feat-031` + `feat-032` 已提交（`af7f6db`）并作为 `v0.3.1` 发布；`feat-033` 已提交（`1c3ed80`）并作为 `v0.3.2` 发布；`feat-034` 已提交（`3897cd1`）并作为 `v0.3.3` 发布；`feat-035`–`feat-037` + 图标 v1 已提交（`a27224e`）并作为 `v0.3.4` 发布；图标 v2 为 `v0.3.4` 之上的后续提交- Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+
 
+## 已完成 in 0.3.4（应用图标 + 发布，feat-038 done，2026-09-21）
+
+- 来源：用户先后给了一版图标（v1）与替换版（v2），并明确此前用照片抽取的做法是「无用功」，改用他直接提供的图标文件。
+- 改动：`forge.config.cjs` 增加 `icon: path.resolve(__dirname, "assets/icon.icns")`，并沿用 `feat-034` 的先例补 `ignore: [/^\/assets($|\/)/]`，使图标源文件不进 asar；`assets/icon.icns`（`972,218` bytes，`e8cbc7e7…48bf`）与 `assets/icon-1024.png`（1024×1024、带 alpha）入库；把照片抽取那一轮留下的一次性脚本与 `brand/` 目录删掉（grep 确认无代码引用）。
+- 图标脚本 `scripts/` 未新增；照片抽取产物（`.iconrebuild.tmp.mjs` 等）已清除。
+- 测试（先红后绿）：重写 `tests/app-icon.test.ts` 为 4 个用例 —— 1024px 母版透明、`icon.icns` 签名与必需类型（icp4/icp5/icp6/ic07/ic08/ic09/ic10/ic11/ic12/ic13/ic14）、`forge.config.cjs` 的接线、以及 `/^\/assets($|\/)/` 排除规则；对 `git show HEAD:forge.config.cjs` 跑一次 node 单行验证排除用例确实会因缺少该规则而失败。
+- 版本 `0.3.4`（TDD）：`scripts/release-guards.test.mjs` 先用 perl 把 fixture 改到 `0.3.4` ⇒ **5 failed**（报错 `Release version must be 0.3.3.`），再把 `scripts/release-desktop.mjs`（第 21 行 `RELEASE_VERSION_ERROR`、第 155 行目标版本）、`package.json`、`package-lock.json`、`feature_list.json` 改为 `0.3.4` ⇒ **31 passed**。
+- 文档：`CHANGELOG.md` / `CHANGELOG.zh.md` 的 `[Unreleased]` 归档为 `## [0.3.4] - 2026-09-21` 并补 Changed 条目。
+- 门禁：`npm run desktop:release`（Node.js **24.15.0**，日志 `/tmp/icon-release3.log`）**exit 0** —— 63 files / **863 tests**、statements 95.28%、三引擎 e2e **187 passed / 2 skipped**、live **2/2**、`electron-forge make` 与产物校验通过。首次跑 live 时遇到 DNS 瞬时失败，重跑 2/2 通过，判为网络抖动。**这次门禁是在换上 v2 图标之后跑的**，所以 `237,272,966` bytes 那一份 ZIP 里就是 v2 图标（单独 `unzip -o` 取出 `Contents/Resources/electron.icns` 复核，哈希与仓库 `assets/icon.icns` 同为 `e8cbc7e7…48bf`）。
+- 产物与独立复核：`237,272,966` bytes / SHA-256 `6910120e…2704`；`unzip -t` 无错、`CFBundleShortVersionString = 0.3.4`、`file` = Mach-O arm64、包内 `electron.icns` 与仓库 `assets/icon.icns` 哈希相同、asar 里 `/assets` 条目数 **0**、`server/node_modules/electron` 仍为 0 条（asar 共 230 条，比 `0.3.3` 少 11 条：`brand/` 已删、`assets/` 被排除）。
+- 体积说明：比 `0.3.3` 大 **约 4.3 MB**，与图标无关 —— 是本次构建的 Next.js 输出追踪多带了 `@img/sharp-wasm32`、`@emnapi/runtime` 两个可选回退包与 3 个 build-hash 静态文件；图标本身让包变小（`electron.icns` 从默认 272 KB 换成 972 KB，而 `assets/` 不再进 asar）。
+- 安装与冒烟：退出运行中的旧应用 → 旧版本备份到 `/tmp/icon-v1-app` → `ditto` 安装并清除隔离属性 → 校验版本 `0.3.4` 与图标哈希；`ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1` **exit 0**（preload 桥 + 运行时密钥往返），Helper 仍为 `UIElement`（无幽灵图标）。
+- 发布：`gh release edit v0.3.4 --draft=false`（`published=2026-09-21T03:34:17Z`，资产 `237,272,966` bytes / `uploaded`）。**发布物里的图标就是 v2**：换上 v2 之后重跑了完整门禁，重新产出的 ZIP 与本轮提交的 `assets/icon.icns`（`e8cbc7e7…48bf`）一致；tag `v0.3.4` 随后移到 v2 图标提交，使 tag、ZIP 与源码三者一致（GitHub 服务端的 release 与资产未受影响）。
+- 未做：不改网页 favicon（`src/app/icon.svg`，不在「应用 logo」范围内）；不改打包配置的其他部分、不动依赖与端点策略；不重打 `0.3.3` 及更早的历史产物。
 ## 已完成 in 0.3.3 之后（standalone 可加载 + 真实转换处理器回归，feat-035 done，2026-09-21）
 
 - 来源：本机同步到 `0.3.3` 时复核 `feat-034` 的裁剪，顺带发现一个**早于 0.3.3** 的缺口：`.next/standalone` 里没有 `node_modules/playwright-core/browsers.json`（Next.js 输出追踪跟到了 `playwright-core` 的静态 require，却漏掉它运行时读的那个数据文件），因此 standalone 服务对任何链接都返回 500（本机实测 `Failed to load external module playwright-…: Cannot find module …/playwright-core/browsers.json`）。`scripts/prepare-desktop.mjs` 的「整包重拷」把这个问题从发布物里盖住了。
@@ -241,6 +254,19 @@
 5. 若将来 0.1.x/0.2.0 归档重新出现，守卫会自动恢复严格校验；不要把已退役的条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删掉。
 
 ## Verification Evidence
+### 0.3.4 应用图标与发布（2026-09-21，已提交 `a27224e`，v2 图标为后续提交）
+
+- RED（图标测试）：`tests/app-icon.test.ts` 重写前，母版/icns 类型/forge 接线/排除规则四项中，`forge.config.cjs` 的 `ignore` 与 `icon` 两项在改动前不存在；排除用例另用 node 单行对 `git show HEAD:forge.config.cjs` 复核会失败。
+- RED（版本守卫）：`scripts/release-guards.test.mjs` fixture 改到 `0.3.4` 后 ⇒ **5 failed**（`Release version must be 0.3.3.`）；GREEN：`scripts/release-desktop.mjs` + `package.json` + `package-lock.json` 改为 `0.3.4` ⇒ **31 passed**。
+- 图标测试：`npx vitest run tests/app-icon.test.ts` → **4 passed**（换成 v2 图标后重跑同样 4 passed）。
+- 门禁：`npm run desktop:release` **exit 0**（Node.js 24.15.0，日志 `/tmp/icon-release3.log`；首跑 live 遇 DNS 抖动，重跑 2/2）—— 63 files / **863 tests**、statements 95.28%、三引擎 e2e **187 passed / 2 skipped**、live **2/2**。
+- 产物：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.4.zip`，`237,272,966` bytes，SHA-256 `6910120e004170cc1ff91d29315f883226a852cd012c3e9a1e335e6056b42704`。
+- 独立复核：`unzip -t` 无错；`CFBundleShortVersionString = 0.3.4`；`file` = Mach-O 64-bit arm64；包内 `Contents/Resources/electron.icns` 与仓库 `assets/icon.icns` 的 SHA-256 都是 `e8cbc7e70f14c186e2b2434d6532faa29ca0c286d5f078b50979a801455748bf`（`shasum` 去重后 uniq -c = 2）；`npx asar list` 里 `^/assets` 命中 **0**，`^/brand` 也命中 **0**，总条目 230；`server/node_modules/electron` 条目 0。
+- 图标素材：`assets/icon.icns` `972,218` bytes（类型含 icp4/icp5/icp6/ic07/ic08/ic09/ic10/ic11/ic12/ic13/ic14），`assets/icon-1024.png` 1024×1024 且带 alpha（`hasAlpha=yes`）。
+- 体积对比：`0.3.3` = `232,947,408` bytes → `0.3.4` = `237,272,966` bytes（+`4,325,558` bytes ≈ +4.3 MB），差额来自 Next.js 输出追踪带上 `@img/sharp-wasm32` / `@emnapi/runtime` 与 3 个 build-hash 静态文件，与图标无关。
+- 安装：旧应用退出后备份到 `/tmp/icon-v1-app`，`ditto` 装到 `/Applications` 并清除隔离属性；安装后 `CFBundleShortVersionString = 0.3.4`、图标哈希与仓库一致；`ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1` **exit 0**。
+- 发布：`gh release edit v0.3.4 --draft=false` → `draft=false published=2026-09-21T03:34:17Z asset=MD-Convertor-darwin-arm64-0.3.4.zip (237272966) state=uploaded`。
+- 未做：不改网页 favicon；不重打 `0.3.3` 及更早产物；不动依赖、端点策略、翻译引擎。
 
 ### feat-037 云端卡片「清除」改为整卡重置（2026-09-21，已提交 `c568513`，未跑发布门禁）
 
@@ -437,7 +463,9 @@
 - **feat-030 起云端只能有一条配置**：设置页只渲染一张 `<article aria-label="云端 Provider">`，读写「当前生效的那条」（`activeProviderId` → 否则 `providers[0]`），保存时把 `cloud.providers` 收敛为单条目。契约（`providers[] + activeProviderId`）与 `SETTINGS_VERSION` 未变，但**手工在 `settings.json` 里追加的多条 Provider 会在下次保存时被丢弃**；要做多条并存必须先恢复列表 UI（`feat-026` 的 `drafts`/`newProvider` 版本可从 git 历史取回）。
 - **feat-026 / feat-029 / feat-030 之后「保存」是 Provider 记录的唯一写入入口**：`拉取模型` 只读端点（结果先放草稿态），模型与密钥都不再随意落盘，因此改完名称 / Base URL / 密钥 / 模型后必须先点「保存」才生效；密钥来源只有系统密钥库一个（`apiKeyEnv` 已退役）。
 - **feat-025 隐藏了自定义语言入口（保留字段与函数）**：`languages.custom` 仍在契约里、`addCustomLanguage()` 与其单测仍在，存量自定义标签仍出现在目标语言下拉里；但新标签暂时只能靠手改 `settings.json` 添加。若将来要恢复入口，只需恢复 `settings/page.tsx` 的那段 JSX 与 `setNote("language", …)` 分支。
-- **`0.3.2` 已过门禁并已装本机（2026-09-20）**：ZIP 为 `358,726,788` bytes / SHA-256 `8fb7a93f…f1ba`，已在 `/Applications/MD-Convertor.app`；**已提交（`1c3ed80`）、推送并发布为 GitHub Release `v0.3.2`**（tag `1c3ed80`，资产 `358,726,788` bytes 状态 uploaded）。`0.3.1` 已发布为 GitHub Release `v0.3.1`（tag `af7f6db`，ZIP `358,723,706` bytes / `c7411c58…161b`）；`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip` 仍留在本机，只作历史，**不要在后续门禁里把它当成当前产物**；**`0.3.3` 已用掉**（已过门禁、已装本机），下一次发布必须先把版本号升到 `0.3.4` 或更高（门禁硬校验目标版本）。
+- **应用图标自 `0.3.4` 起是仓库资产（`feat-038`）**：`forge.config.cjs` 的 `icon: path.resolve(__dirname, "assets/icon.icns")` 与 `ignore: [/^\/assets($|\/)/]` 是配套的一对 —— 前者决定打包用哪个图标，后者保证图标源文件（96 KB 的 icns 与 1024px 母版）不被打进 asar（实测 `/assets` 条目 0）。`tests/app-icon.test.ts` 的 4 个用例锁住这两点，改任一处都会先红。换图标 = 换 `assets/icon.icns`（必须含 icp4/icp5/icp6/ic07–ic14 类型）+ 重跑门禁 + 升版本，**不要**只替换文件而不走门禁。
+- **`v0.3.4` 的图标换成 v2 时没有升版本（用户 2026-09-21 决定）**：第一版发布只是几分钟大的空草稿（零资产），因此换 v2 图标后仍用 `0.3.4`，并**重跑了完整 `npm run desktop:release`**，重新产出的 ZIP 里就是 v2 图标；tag `v0.3.4` 已被移到 v2 图标提交，所以 tag、已发布 ZIP 与 `checkout v0.3.4` 三者一致。**不要再改 `v0.3.4` 的 tag，也不要重打该版本**；下次改动必须 ≥ `0.3.5`。
+- **`0.3.2` 已过门禁并已装本机（2026-09-20）**：ZIP 为 `358,726,788` bytes / SHA-256 `8fb7a93f…f1ba`，已在 `/Applications/MD-Convertor.app`；**已提交（`1c3ed80`）、推送并发布为 GitHub Release `v0.3.2`**（tag `1c3ed80`，资产 `358,726,788` bytes 状态 uploaded）。`0.3.1` 已发布为 GitHub Release `v0.3.1`（tag `af7f6db`，ZIP `358,723,706` bytes / `c7411c58…161b`）；`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip` 仍留在本机，只作历史，**不要在后续门禁里把它当成当前产物**；**`0.3.3` 与 `0.3.4` 都已用掉**（均过门禁、均已装本机、均已发布），下一次发布必须先把版本号升到 `0.3.5` 或更高（门禁硬校验目标版本）。
 - **feat-033 起本地服务从包内 Helper 启动**：`electron/main.mjs` 用 `resolveServerBinary(process.execPath)`（`electron/server-binary.mjs`）拿到 `Contents/Frameworks/MD-Convertor Helper.app/Contents/MacOS/MD-Convertor Helper` 再 spawn（仍带 `ELECTRON_RUN_AS_NODE: "1"`）。因该 helper bundle 声明 `LSUIElement`，子进程不再占程序坞。**不要改回 `process.execPath`**（会重新出现跳动的黑色 exec 图标）；helper 缺失时函数会抛 `Desktop helper runtime is missing: <path>`，这是刻意保留的响亮失败。此约束依赖 electron-forge 默认的 helper bundle 布局，若将来换到不带 helper 的打包方式需要同时改这个函数与它的 3 个单测。
 - **feat-037 起「清除」是云端卡片的唯一重置入口**：`clearCloudProvider()`（`src/app/settings/page.tsx`）一下删密钥库条目 + 清表单草稿 + 写 `cloud: {providers: [], activeProviderId: null}`，卡片回到「未配置」；密钥行已经没有按钮，**要换密钥只能先「清除」再重填整张卡片**（用户 2026-09-21 选定的语义）。按钮不区分有没有东西可清（未配置时等于重置输入），没有二次确认；无 preload 桥时只能清 settings、删不掉密钥库条目（会留下无人引用的密钥，与保存失败时的孤立密钥同一类）。
 - **feat-031 起密钥输入框在已保存时为只读**：`readOnly={Boolean(cloudProvider?.keyStored)}`，占位文案「••••••••（已保存，清除后可重新填写）」。不用 `disabled` 是为了保留可聚焦与屏幕阅读器可达；「清除」（feat-037）会删密钥库条目并把 `providers` 清空，清完输入框自然恢复可编辑。不要把密钥读回页面。
@@ -470,8 +498,12 @@
 
 ## Next Step
 
-`feat-037`（云端卡片「清除」改为整卡重置）与 `feat-036`（抓取失败时提示改用粘贴）已实现并验证（`./init.sh` exit 0、三浏览器 e2e 187 passed / 2 skipped），**已提交并推送（`c568513`）、未跑发布门禁**；若要发布，先把版本号升到 ≥ `0.3.4`。`feat-033`（程序坞幽灵图标修复 + 版本 `0.3.2`）与 `feat-034`（`0.3.3`）均已完成、已过门禁、已装本机、已发布为 GitHub Release（`v0.3.2` / `v0.3.3`）。剩余待办：
-5. **签名/notarization：用户 2026-09-20 决定不做**（`docs/QUALITY-AUDIT.md` 的 QA-008 已改为 accepted / not planned，判词与 Release Decision 同步）。要恢复需 Apple Developer 付费会员 + **Developer ID Application** 证书 + notarytool 凭据，再在 `forge.config.cjs` 加 `osxSign`/`osxNotarize`（凭据走环境变量）；签名后产物哈希会变，必须重跑门禁并更新记录。在那之前所有产物都只适合个人测试。
-6. **UI 评审已完成，用户决定不整改（2026-09-20）**：用 design-references 环节 4 快速通道评审了 `0.3.1` 的网页与桌面 UI（真实截图 + `getBoundingClientRect` 实测 + WCAG 对比度计算 + 键盘 Tab 焦点扫描 + `design_audit`/`design_contrast`），产出 `docs/UI-REVIEW-2026-09-20.md`（P0×6 + P1×10，均附实测数字；配套的现状/改后对照板是临时 HTML，用户看过即删）。用户看过对照板后决定**全部不改**。因此 `e2e/home.spec.ts` 的像素级对齐断言（转换按钮右边缘与粘贴框右边缘差值 < 4px、与「来源 URL」输入框同行）继续是刻意锁定的效果 —— 若将来真要改 `.sourceInput` 的 `flex`、按钮宽度或 `.sourceRow` 的 gap，先改断言。**不要在没有新证据、也没有用户指认具体条目的情况下重提这批发现。** 本轮代码零改动，`settings.json` 在校验探针前后 SHA-256 一致。
+`0.3.4` 已完成全部门禁步骤：`feat-036`（抓取失败提示改用粘贴）、`feat-037`（云端卡片「清除」整卡重置）与应用图标（`assets/icon.icns` 取代 Electron 默认图标）都已提交（`a27224e`，v2 图标为其后的提交）、通过 `npm run desktop:release`（exit 0）、装到 `/Applications` 并发布为 GitHub Release `v0.3.4`（`237,272,966` bytes / SHA-256 `6910120e…2704`）。tag `v0.3.4` 已移到 v2 图标提交，使 `checkout v0.3.4` 与用户最终看到的图标一致。剩余待办：
+1. **再改任何代码都必须先升版本到 ≥ `0.3.5`** 并重跑 `npm run desktop:release`（门禁硬校验目标版本）；`0.3.1`–`0.3.4` 的产物与 tag 一律不要移动或覆盖。
+2. **跑门禁必须用 Node 24.14.1 或 24.15.0**：本机默认 **v24.16.0 在解压 electron zip 时静默卡死**，`electron-forge make` 会空跑并仍返回 exit 0。
+3. **真机小点**：用户提到「稍后把真机测试的一些小点完善了再说」，等清单给出后再评估是否单独一轮。
+4. **签名/notarization：用户 2026-09-20 决定不做**（`docs/QUALITY-AUDIT.md` 的 QA-008 已改为 accepted / not planned）。恢复需 Apple Developer 付费会员 + Developer ID Application 证书 + notarytool 凭据，再在 `forge.config.cjs` 加 `osxSign`/`osxNotarize`；签名后哈希会变，必须重跑门禁。在那之前所有产物都只适合个人测试。
+5. **UI 评审结论勿重提**：`docs/UI-REVIEW-2026-09-20.md` 的 P0×6 + P1×10 用户已决定全部不改；`e2e/home.spec.ts` 的像素级对齐断言继续是刻意锁定的效果，要改先改断言。
+6. 若将来 0.1.x/0.2.0 归档重新出现，守卫会自动恢复严格校验；不要把已退役条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删除。
 
-不要重做 S1–S6 与 `feat-024` – `feat-037` 已完成的部分；不要放宽端点、密钥或归档守卫；不要把已退役的历史 ZIP 条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删除。
+不要重做 S1–S6 与 `feat-024` – `feat-038` 已完成的部分；不要放宽端点、密钥或归档守卫；不要把已退役的历史 ZIP 条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删除。
