@@ -223,12 +223,6 @@
   box-shadow: 0 0 0 3px rgb(42 57 92 / 12%);
 }
 
-.pasteActions {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-}
-
 .srOnly {
   position: absolute;
   width: 1px;
@@ -687,7 +681,6 @@
   .submit, .clearAction { width: 100%; }
   .sourceRow { align-items: stretch; flex-direction: column; gap: 7px; }
   .sourceInput { width: 100%; min-height: 48px; }
-  .pasteActions { flex-direction: column; }
   .hintRow { flex-wrap: wrap; gap: 8px 14px; }
   .resultHeader { align-items: stretch; flex-direction: column; }
   .actions { width: 100%; }

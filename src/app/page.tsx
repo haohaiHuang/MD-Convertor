@@ -703,6 +703,16 @@ export default function Home() {
                     aria-invalid={Boolean(normalizedSourceUrl) && !hasValidSourceUrl}
                     aria-describedby={Boolean(normalizedSourceUrl) && !hasValidSourceUrl ? "source-url-error" : undefined}
                   />
+                  {hasPasteState && (
+                    <button
+                      className={styles.clearAction}
+                      type="button"
+                      disabled={isLoading}
+                      onClick={() => setClientState((previous) => clearPastedContent(previous))}
+                    >
+                      清空
+                    </button>
+                  )}
                   {isLoading ? (
                     <button key="stop" className={`${styles.submit} ${styles.stop}`} type="button" onClick={stopConversion}>
                       停止转换
@@ -724,18 +734,6 @@ export default function Home() {
                 {hasPasteContent && !pastePayloadWithinLimit && (
                   <p id="paste-size-error" className={styles.validation} role="alert">粘贴内容超过 5 MiB，请减少内容后重试。</p>
                 )}
-                <div className={styles.pasteActions}>
-                  {hasPasteState && (
-                    <button
-                      className={styles.clearAction}
-                      type="button"
-                      disabled={isLoading}
-                      onClick={() => setClientState((previous) => clearPastedContent(previous))}
-                    >
-                      清空
-                    </button>
-                  )}
-                </div>
               </form>
               {translateToggle}
             </section>

@@ -298,4 +298,18 @@ test.describe("富文本转换表单", () => {
     const textareaRight = textarea!.x + textarea!.width;
     expect(Math.abs(buttonRight - textareaRight)).toBeLessThan(4);
   });
+
+  test("清空按钮出现在转换按钮左侧的同一行", async ({ page }) => {
+    await page.getByRole("tab", { name: "富文本转换" }).click();
+    await page.getByLabel("粘贴的正文内容").fill("# 标题\n\n正文。");
+
+    const clear = await page.getByRole("button", { name: "清空", exact: true }).boundingBox();
+    const submit = await page.getByRole("button", { name: "转换", exact: true }).boundingBox();
+    expect(clear).not.toBeNull();
+    expect(submit).not.toBeNull();
+
+    // Same row as 转换, and to its left (same relationship as 清空链接 in the link form).
+    expect(Math.abs(clear!.y - submit!.y)).toBeLessThan(clear!.height);
+    expect(clear!.x + clear!.width).toBeLessThanOrEqual(submit!.x);
+  });
 });
