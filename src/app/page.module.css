@@ -21,7 +21,7 @@
   color: var(--ink);
   font-family: var(--font-brand), "Inter", system-ui, sans-serif;
   font-size: 15px;
-  font-weight: 400;
+  font-weight: var(--weight-ui);
   letter-spacing: 0.01em;
 }
 
@@ -35,7 +35,7 @@
   background: var(--surface);
   color: var(--ink);
   font-size: 14px;
-  font-weight: 560;
+  font-weight: var(--weight-ui);
   line-height: 1;
   text-decoration: none;
 }
@@ -55,7 +55,7 @@
   margin: 0 0 18px;
   color: var(--accent);
   font-size: 13px;
-  font-weight: 750;
+  font-weight: var(--weight-ui);
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
@@ -64,7 +64,7 @@
   max-width: none;
   margin: 0 auto;
   font-size: clamp(42px, 5vw, 64px);
-  font-weight: 780;
+  font-weight: var(--weight-ui);
   line-height: 1.04;
   letter-spacing: -0.055em;
 }
@@ -102,7 +102,7 @@
   cursor: pointer;
   background: transparent;
   font-size: 14px;
-  font-weight: 720;
+  font-weight: var(--weight-ui);
   transition: color 160ms ease, background 160ms ease, box-shadow 160ms ease;
 }
 
@@ -192,12 +192,12 @@
   flex: 0 0 auto;
   color: var(--ink);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: var(--weight-ui);
 }
 
 .sourceRow label span {
   color: var(--muted);
-  font-weight: 500;
+  font-weight: var(--weight-ui);
 }
 
 .sourceInput {
@@ -277,7 +277,7 @@
   color: var(--muted);
   border: 1px solid var(--line);
   background: white;
-  font-weight: 700;
+  font-weight: var(--weight-ui);
 }
 
 .clearAction:hover:not(:disabled) {
@@ -296,7 +296,7 @@
   padding: 0 22px;
   color: white;
   background: var(--accent);
-  font-weight: 700;
+  font-weight: var(--weight-ui);
   box-shadow: 0 8px 18px rgb(42 57 92 / 20%);
 }
 
@@ -335,7 +335,7 @@
   margin-right: 7px;
   color: var(--accent);
   content: "✓";
-  font-weight: 750;
+  font-weight: var(--weight-ui);
 }
 
 .statusCard,
@@ -392,7 +392,7 @@
   background: none;
   color: var(--accent-dark);
   font: inherit;
-  font-weight: 700;
+  font-weight: var(--weight-ui);
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -454,7 +454,7 @@
   margin: 0 0 8px;
   color: var(--accent);
   font-size: 12px;
-  font-weight: 760;
+  font-weight: var(--weight-ui);
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -479,7 +479,7 @@
 
 .translationNotice a {
   color: var(--accent-dark);
-  font-weight: 700;
+  font-weight: var(--weight-ui);
 }
 
 .confirmDialog {
@@ -543,7 +543,7 @@
   margin: 0;
   color: var(--ink);
   font-size: 18px;
-  font-weight: 730;
+  font-weight: var(--weight-ui);
   letter-spacing: -0.02em;
 }
 
@@ -553,7 +553,7 @@
   color: var(--ink);
   border: 1px solid var(--line);
   background: var(--surface);
-  font-weight: 680;
+  font-weight: var(--weight-ui);
 }
 
 .actionPrimary {
@@ -594,6 +594,8 @@
   box-shadow: var(--shadow);
   font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
   font-size: 17px;
+  /* Guard: keeps the reading pane on the UI weight even if --weight-body moves. */
+  font-weight: var(--weight-ui);
   line-height: 1.86;
 }
 
@@ -662,7 +664,7 @@
   box-shadow: 0 10px 24px rgb(42 57 92 / 28%);
   font: inherit;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: var(--weight-ui);
   transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
 }
 
