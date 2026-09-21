@@ -3,10 +3,79 @@
 ## Current State
 
 - Last updated: 2026-09-21
-- Current version: `0.3.4`（`package.json`、`package-lock.json`、`feature_list.json` 与发布门禁均为 `0.3.4`）。**`0.3.4` 门禁已于 2026-09-21 跑通（exit 0）**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.4.zip`（`237,272,966` bytes，SHA-256 `6910120e…2704`），已安装到 `/Applications`，**已提交（`e251267`；图标 v2 也在这个提交里）并作为 `v0.3.4` 发布**（tag `e251267`，标记 Latest）；该版本包含 `feat-036`、`feat-037` 与应用图标（已发布的 ZIP 里就是用户最终选定的 v2 图标）。上一版 `0.3.3`（`232,947,408` bytes，`1bf807df…7a72`）已发布为 GitHub Release `v0.3.3`（tag `3897cd1`），其 `out/` 内的 ZIP 已不在本机（留档于 release 资产与 `/tmp/s19/`）；`0.3.2`（`358,726,788` bytes，`8fb7a93f…f1ba`）与 `0.3.1`（`358,723,706` bytes，`c7411c58…161b`）同为历史发布；`0.3.0` 的 ZIP（`358,562,540` bytes，`2a0e236e…1147`）是修复**前**的构建，仅作历史
-- Active feature: none（`feat-024` – `feat-038` 已 done）
-- Next release step: `0.3.4` 已提交（`a27224e`，随后又补上用户提供的 v2 图标提交）、发布为 GitHub Release `v0.3.4` 并装到本机。图标换 v2 **没有**升版本（用户 2026-09-21 决定：此前那次发布只是几分钟大的空草稿），而是在**同一个版本号下重跑了完整门禁**，所以已发布的 ZIP 里就是 v2 图标；tag `v0.3.4` 随后被移到该提交，使 tag、ZIP 与 `checkout` 的源码三者一致。再要改代码必须先升到 `≥ 0.3.5` 并重跑 `npm run desktop:release`
-- Branch: `main`；`feat-031` + `feat-032` 已提交（`af7f6db`）并作为 `v0.3.1` 发布；`feat-033` 已提交（`1c3ed80`）并作为 `v0.3.2` 发布；`feat-034` 已提交（`3897cd1`）并作为 `v0.3.3` 发布；`feat-035`–`feat-037` + 图标 v1 已提交（`a27224e`）；图标换成用户最终选定的 v2 并在同版本号下重跑门禁后提交为 `e251267`，`v0.3.4` 的 tag 指向该提交- Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+
+- Current version: `0.3.5`（`package.json`、`package-lock.json`、`feature_list.json` 与发布门禁均为 `0.3.5`）。**`0.3.5` 门禁已于 2026-09-21 跑通（exit 0）**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.5.zip`（`237,335,837` bytes，SHA-256 `313bbc34…d45f`），已安装到 `/Applications`，并作为 `v0.3.5` 发布为 GitHub Release；该版本是视觉刷新（`feat-039`）与富文本「清空」按钮归位。上一版 `0.3.4`（`237,272,966` bytes，`6910120e…2704`）已发布为 `v0.3.4`（tag `e251267`），含 `feat-036`、`feat-037` 与用户最终选定的 v2 图标；`0.3.3`（`232,947,408` bytes，`1bf807df…7a72`，tag `3897cd1`）的 `out/` 内 ZIP 已不在本机（留档于 release 资产与 `/tmp/s19/`）；`0.3.2`（`358,726,788` bytes，`8fb7a93f…f1ba`）与 `0.3.1`（`358,723,706` bytes，`c7411c58…161b`）同为历史发布；`0.3.0` 的 ZIP（`358,562,540` bytes，`2a0e236e…1147`）是修复**前**的构建，仅作历史
+- Active feature: 无（`feat-039` 视觉刷新已随 `0.3.5` 完成；`feat-024` – `feat-039` 已 done）
+- Next release step: `0.3.5` 已提交、发布为 GitHub Release `v0.3.5` 并装到本机。再要改代码必须先升到 `≥ 0.3.6` 并重跑 `npm run desktop:release`（门禁硬校验目标版本，`0.3.1`–`0.3.5` 的 tag 与产物都不得移动或覆盖）
+- Branch: `main`；`feat-031` + `feat-032` 已提交（`af7f6db`）并作为 `v0.3.1` 发布；`feat-033`（`1c3ed80`）→ `v0.3.2`；`feat-034`（`3897cd1`）→ `v0.3.3`；`feat-035`–`feat-037` + 图标 v1（`a27224e`）与 v2 图标（`e251267`）→ `v0.3.4`；`feat-039` S1（`972ff4a`）、S2（`fae16bc`）与富文本「清空」归位（`a03b175`）→ `v0.3.5`
+- Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+
+
+## 已完成 in feat-039 S3（发布 0.3.5，2026-09-21）
+
+- 版本升级（TDD）：`scripts/release-guards.test.mjs` fixture 先改到 `0.3.5` ⇒ **5 failed**（`Release version must be 0.3.4.`），再把 `scripts/release-desktop.mjs`（`RELEASE_VERSION_ERROR` + 目标版本判定）、`package.json`、`package-lock.json`、`feature_list.json` 改为 `0.3.5` ⇒ **29 passed**。
+- 门禁：`npm run desktop:release`（Node.js **24.15.0**，日志 `/tmp/s35-release2.log`）**exit 0** —— `./init.sh` 64 files / **866 tests**、statements 95.28%、三引擎 e2e **206 passed / 4 skipped**、live **2/2**、`electron-forge make` 与产物校验通过。**首跑是假失败**（`ERROR: E2E modified tracked files.`）：`run-e2e.mjs` 比对 build+e2e 前后 `git diff HEAD` 的哈希，而当时正在并行编辑 `CHANGELOG*` 与两份 S1/S2 阶段文档（mtime 17:50:44 / 17:50:50）⇒ 误报；冻结 tracked 编辑后重跑即全绿。
+- 产物：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.5.zip`，`237,335,837` bytes，SHA-256 `313bbbc341c94da0a5ca92f668f2df06cea9f734e47d7af65880500aa192d45f`（比 `0.3.4` 大 `62,871` bytes）。
+- 独立复核：`unzip -t` 无错、`CFBundleShortVersionString = 0.3.5`、`file` = Mach-O arm64；包内 CSS 含 `--accent:#2a395c` / `--accent-soft:#eef1f6` / `--muted:#565e6b` / `--paper:#f9fafb` / `--weight-body:400` / `--weight-ui:400` / `font-smoothing:antialiased`，旧调色板（`176b5d`、`0f5147`、`dcece7`、`202a28`）**零命中**；asar `assets=0 brand=0 electron=0`；`electron.icns` 仍为 `e8cbc7e7…48bf`。
+- 安装与冒烟：备份旧 `0.3.4` 到 `/tmp/s35-old-0.3.4.app` → `ditto` 装到 `/Applications` → 清隔离属性；`defaults read` = `0.3.5`；`ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1` **exit 0**。
+- 真机目视（CDP 9222，`/tmp/s35-probe*.mjs` 已删）：首页 `html` 背景 `rgb(249, 250, 251)`、`--accent #2a395c`、`--accent-soft #eef1f6`、`body`/「转换」/「设置」字重均 `400`、`-webkit-font-smoothing: antialiased`；设置页云 Provider 卡片背景 `rgb(249, 250, 251)`、徽标「未配置」背景 `rgb(238, 241, 246)`；截图 `/tmp/s35-home.png`、`/tmp/s35-settings.png`。
+- 文档：`CHANGELOG.md` / `CHANGELOG.zh.md` 的 `[Unreleased]` 归档为 `[0.3.5] - 2026-09-21`；`docs/TESTING.md`(+`.zh.md`) 的测试计数、门禁版本与 Gated Artifact 段（`0.3.4` 移入历史）已同步。
+
+
+## 已完成 in feat-039 S2（字重收敛 + 抗锯齿，2026-09-21，已随 0.3.5 提交）
+
+- 范围严格照 `docs/features/ui-refresh/S2-weight.md`：**只动字重与渲染平滑**。配色、结构、间距、圆角、边框、阴影形状、字体族/字号、文案一个字没动（预览区的字号/字族也冻结，按 Q6 只接受渲染平滑改变）。
+- TDD 先红：`e2e/theme.spec.ts` 从 2 个用例扩到 6 个（界面字重、品牌字重回归锁、正文/预览级联守卫、抗锯齿），在**未改动**的构建上 chromium **3 failed / 3 passed** —— `.submit` 实收 `700` 期望 `400`、`.stats dt` 实收 `400` 期望 `300`、`webkitFontSmoothing` 实收 `auto` 期望 `antialiased`（日志 `/tmp/s2-t21-red.log`）；其中「品牌 = 400 + 族名命中 michroma」是刻意先绿的回归锁，防止把只有 400 面的 Michroma 推向合成粗体/细体。
+- 再变绿：`globals.css` 加 `--weight-body: 300` / `--weight-ui: 400` 两个 token，`body` 加 `font-weight: var(--weight-body)`；`page.module.css` 16 处 + `settings/page.module.css` 3 处手调字重（400/500/560/680/700/720/730/750/760/780）全部换成 `var(--weight-ui)`。此时 chromium **4 passed / 2 failed** —— 失败的两条正是 `.preview` 实收 `300` 期望 `400`，这就是 T2.5 守卫自己的 RED（证明守卫不是多余的）。
+- T2.5 守卫：`.preview` 规则里加 `font-weight: var(--weight-ui)`，把细体正文挡在 Markdown 阅读区之外；**不给 `.preview h1–h4 / strong / th` 补任何规则**，让浏览器默认粗体继续生效（实测 `.preview h2` 仍为 `700`）。
+- T2.6 抗锯齿：`globals.css` 新增 `body, button, input, select, textarea { -webkit-font-smoothing: antialiased; }`（Q6）。这是全局开关，Markdown 预览区的渲染平滑也跟着变 —— Q4 因此在方向确认阶段被显式修订为「冻结预览区的字号/字族/字重，不含渲染平滑」。
+- GREEN 证据：**先 `npm run build`**（e2e server 吃 `.next/standalone`）再 `npx playwright test e2e/theme.spec.ts --project=chromium` ⇒ **6 passed**；`e2e/home.spec.ts` + `e2e/settings.spec.ts` chromium ⇒ **38 passed**（像素级对齐断言与警告色断言都没被字重变化带红）；`npm run test:e2e` **exit 0 ⇒ 203 passed / 4 skipped**（较 S1 的 193/2 多 10 passed、多 2 skipped = 新用例 4 × 3 引擎，抗锯齿用例在 firefox/webkit 上跳过，因为 `webkitFontSmoothing` 只有 Chromium 有）；`./init.sh` **exit 0**（`/tmp/s2-init-green.log`）—— 64 files / **866 tests**、statements 95.28%、lint/`tsc --noEmit`/生产构建全绿。
+- 真机目视：`npm run desktop:package` exit 0（Node.js 24.15.0，日志 `/tmp/s2-package.log`）→ 打开 `out/MD-Convertor-darwin-arm64/MD-Convertor.app`（`--remote-debugging-port=9222`）+ CDP 读 computed：`body` 字重 `300` / `-webkit-font-smoothing: antialiased`、`--weight-body` = `300`、`--weight-ui` = `400`、「转换」按钮 `400`、统计 `dt` `300`、粘贴 `textarea` `300`、品牌 `400` + `michroma`、**`.preview` 与 `.preview p` 都是 `400`（守卫生效）、`.preview h2` 仍是 `700`**；截图 `/tmp/s2-weight-app.png`。包内 `Contents/Resources/server/.next/static/chunks/*.css` 含 `weight-body:300` / `weight-ui:400` / `font-smoothing:antialiased`，残留的 `font-weight:400` 只有 2 处且都属于 `next/font` 生成的 Michroma `@font-face` 与 `__className`，自写样式里 0 处字面量。注意：`out/` 那份是未提交的工作区构建，`CFBundleShortVersionString` 仍是 `0.3.4`，`/Applications` 里的正式 `0.3.4` 未被覆盖。
+- 文档：`CHANGELOG.md` / `CHANGELOG.zh.md` 的 S2 内容续写在 S1 那一条 bullet 的同段末尾（不新起条目，归档留给 S3）。
+- **真机驱动的回修（2026-09-21，未提交）**：真机复核认定细体（300）小字识别度不足，用户要求「回到 Regular」，因此 `--weight-body` 由 `300` 改回 **`400`**（`--weight-ui` 仍 `400`，`.preview` 守卫原样保留）。TDD 先红：`e2e/theme.spec.ts` 的 `BODY_WEIGHT` 改 `"400"` 并在**未改动**的构建上 chromium **1 failed / 5 passed**（`.stats dt` 实收 `300` 期望 `400`，日志 `/tmp/muted2-t-red.log`）；改 `globals.css` 那一行 + 重写抗锯齿注释后 `npm run build` + 同命令 chromium **6 passed**（`/tmp/muted2-build.log`、`/tmp/muted2-t-green.log`）。后果：**S2 不再改变正文字重**，只剩「界面 10 个手调字重收敛为一档 + 抗锯齿」；`.preview` 守卫因此变成同值保险（body 与 UI 同为 400）。两个 token 与守卫按方案 A 保留 —— 一个只影响正文的旋钮 + 一道锁，回退成本为零。
+- 回退后的收尾（已完成）：`S3-release.md` 的「细字重」验收措辞改为「收敛后的界面字重（`--weight-ui: 400`、`--weight-body: 400`）+ 抗锯齿」（3 处）—— 它是 S3 的施工文档，但如果继续写「细字重」会让 S3 的验收清单指向一个根本不存在的交付物。文档同步完成后重跑了全量门（`./init.sh` exit 0、`npm run test:e2e` 203 passed / 4 skipped、`npm run desktop:package` exit 0）与真机探针（`body` 400、`.preview` 400、阅读区 `h1` 仍 700），证据见 `## Verification Evidence` 的「正文回退 400 后的全量门」条。
+- **后续**：没在 S2 内升版本、没跑 `npm run desktop:release`、没提交（这三件的 S3 版本升级见 S3 节）。一次性探针 `./probe-s2.tmp.mjs` / `./probe-muted.tmp.mjs` / `./probe-body.tmp.mjs` 都已删除。
+
+## 已完成（富文本面板「清空」按钮归位，2026-09-21，已随 0.3.5 提交，不属 feat-039 范围）
+
+- 来源：用户报告富文本面板的「清空」按钮落在「转换」按钮**下方**，应该像链接面板那样排在「转换」**左侧**。根因是 `feat-031` 把「转换/停止」从 `.pasteActions` 移进 `.sourceRow`（跟在 `sourceInput` 之后），却没动只剩「清空」的 `.pasteActions` —— 于是它变成单独一行掉在下面。
+- 修复（TDD 先红后绿）：`page.tsx` 把「清空」按钮移进 `.sourceRow`、置于转换/停止**之前**（保持「转换」是行的最后一个 flex 项，像素级对齐断言才不会失效），并删掉 `.pasteActions` 容器；`page.module.css` 删掉 `.pasteActions` 规则与窄屏下的 `.pasteActions { flex-direction: column; }`（`grep pasteActions` 无残留）。
+- RED：`e2e/home.spec.ts` 的 `富文本转换表单` 新增用例「清空按钮出现在转换按钮左侧的同一行」⇒ 未改动构建上失败（`Expected: < 48, Received: 58` —— y 差 58px 说明「清空」独占一行）；GREEN 同文件 chromium **15 passed**（既有对齐用例仍绿）。
+- 全量门：`./init.sh` **exit 0**（`/tmp/clear-init.log`）—— 64 files / **866 tests**、statements 95.28%、lint/`tsc --noEmit`/生产构建全绿；`npm run test:e2e` **exit 0 → 206 passed / 4 skipped**（`/tmp/clear-e2e.log`，较上轮 203/4 多 3 = 新用例 × 3 引擎）；`npm run desktop:package` **exit 0**（`/tmp/clear-package.log`）。
+- 真机（打包应用 + CDP，`probe-clear.tmp.mjs` 已删除）：「清空」`{x766,y686,88×48}`、「转换」`{x864,y686,126×48}`、间距 10px、同一行；「转换」右边缘与正文框右边缘差 **0**；截图 `/tmp/clear-paste-row.png`。窄屏（≤760px）`.sourceRow` 转列，「清空」在「转换」上方，与链接面板的列布局一致。
+- 文档：`CHANGELOG.md` / `CHANGELOG.zh.md` 的 `[0.3.5] → 变更` 新增独立一条（与视觉刷新那条分开）。**未做**：这一轮本身不升版本、不跑 `npm run desktop:release`（版本升级与门禁由后续的 S3 一次做完，见 S3 节）。提交方案上它属于**独立提交**（与 S1 / S2 的关注点不同），不改任何 token、契约或翻译路径。
+
+## 已完成 in feat-039 S1（色彩系统，2026-09-21，已随 0.3.5 提交）
+
+- 范围严格照 `docs/features/ui-refresh/S1-color-system.md`：**只动色相**。结构、间距、圆角、边框宽度、阴影形状、字体族/字号/字重、文案、语义色全部冻结；字重与抗锯齿是 S2 的事，本轮一个字没动。
+- TDD 先红：`tests/palette.test.ts`（新建，3 用例）在改动前 **3 failed / 0 passed**（列出 **33 个**白名单外字面量，末条 `globals.css still contains #176b5d`，日志 `/tmp/s1-t11-red.log`）；`e2e/theme.spec.ts`（新建，2 用例）在改动前 **2 failed**（`html` 背景实收 `rgb(247, 245, 239)`、期望 `rgb(249, 250, 251)`；云端卡片徽标实收 `rgb(220, 236, 231)`、期望 `rgb(238, 241, 246)`，日志 `/tmp/s1-t12-red.log`）。
+- 再变绿：35 处字面量一次性替换（`git diff --stat` = globals.css 12 行 / page.module.css 20 行 / settings/page.module.css 2 行 / icon.svg 1 行，共 35 插入 35 删除，逐行对过映射表）。终值：`--paper #f9fafb`、`--surface #ffffff`、`--ink #1c2230`、`--muted #565e6b`（真机复核后从 `#6A7280` 加深一档，见对比度条目）、`--line #dbdfe7`、`--accent #2a395c`、`--accent-dark #232f4e`、`--accent-soft #eef1f6`、`--shadow 0 22px 60px rgb(30 35 50 / 10%)`、`::selection var(--accent-soft)`、`body` 径向 `rgb(42 57 92 / 9%)` + 线性起点 `#fbfbfd`；`settings/page.module.css` 里那个从未定义的 `var(--surface-muted, #fbfbfa)` 改成 `var(--paper)`（不新增变量）；深色代码块 `#202a28`/`#edf4f1` → `#1E222B`/`#EDEFF4`（Q2）；favicon `#176b5d` → `#2A395C`（Q5）。语义色 `--warning*` / `--danger*` / `#dfaaa3` / `#edc8c2` / `#eed79c` / `#fbe9e7` / `#8d3b2f` 一字未动。
+- GREEN 证据：`npx vitest run tests/palette.test.ts` **3 passed**；**先 `npm run build`**（e2e server 吃 `.next/standalone`）再 `npx playwright test e2e/theme.spec.ts --project=chromium` **2 passed**；`e2e/home.spec.ts` + `e2e/settings.spec.ts` + `e2e/theme.spec.ts` chromium **40 passed**（像素级对齐断言与 `rgb(138, 90, 18)` 警告色断言都保持绿 = 没误伤语义色）；`npm run test:e2e` **exit 0 → 193 passed / 2 skipped**（较上轮 187/2 多 6 = 2 用例 × 3 引擎，三引擎的渐变序列化差异被 `evaluate` + 容差正则兜住）；`./init.sh` **exit 0**（`/tmp/s1-init-green.log`）—— 64 files / **866 tests**、statements 95.28%、lint/`tsc --noEmit`/生产构建全绿。
+- 对比度复核：`design_contrast` 无低于阈值的配对（只有 gate 40：`globals.css` 的 `::selection` 有 `color` 但无可配对背景）；手算配对 正文/页面 15.21:1、次要灰/页面 **6.26:1**（卡片 6.54:1；2026-09-21 真机复核后从 `#6A7280` 的 4.64:1 加深一档）、白字/主色 11.42:1、代码文字/深底 13.84:1、占位符/白底 2.80:1（旧 2.83:1，仍按既定豁免登记）。
+- 文档：`CHANGELOG.md` / `CHANGELOG.zh.md` 新增 `[Unreleased] → 变更` 一条（S2 会往同一段续写，归档留给 S3）。
+- **后续**：S1 内未升版本、未跑发布门禁（版本与门禁由 S3 一次做完，见 S3 节）。`./shot-compare.tmp.mjs` 本轮已删除。
+
+## 本轮（视觉刷新方向锁定，2026-09-21，纯文档，已随 0.3.5 提交）
+
+- 用户定调：**所有功能结构不变，间距 / 圆角都不调，只调色调与字重**，并要求「做成 HTML 形式的对比」先看效果、**结论落文档后才开工**。
+- 交付的对比不是设计稿、也不是示意图，而是**真实构建的像素对照**：跑 `0.3.4` 的 production standalone（`node scripts/start-e2e-server.mjs`，端口 3000 / token `md-convertor-e2e-token`），在同一页上 `addStyleTag` 注入 5 种状态（① 现状 ② 只换色调 ③ 只换字重 ④ 色调+字重 ⑤ ④+抗锯齿），1180×1000 视口 1× 截 2 页 × 5 态，另加 hero 局部放大三连。产物在 `/tmp`：`ui-refresh-compare.html`（已用 `open` 打开）、`ui-refresh-compare.png`（1.55 MB 整页长图）、`ui-refresh-home-*.png`、`ui-refresh-settings-*.png`、`hero-3up.png`。驱动脚本是一次性的 `./shot-compare.tmp.mjs`（**尚未删除**，提交前要删）。
+- 探针实测（computed，证明注入真的生效）：① title `780` / body `400` / button `700` → ④⑤ title `400` / body `300` / button `400`；字体族首选项均为 `Inter`（CJK 回落 PingFang SC）。
+- **新发现（本轮最有价值的一条）**：应用**没有**设 `-webkit-font-smoothing`（`globals.css` 只有 `text-rendering: optimizeLegibility`）→ macOS 上 Chromium 走次像素抗锯齿，笔画被加粗一档，**780→400 的观感差异比预期小得多**。补上 `body, button, input, textarea, select { -webkit-font-smoothing: antialiased }` 后细体才真的读得出来（hero 三连放大图里第 2 行 vs 第 3 行可辨）。代价：**这是全局开关，Markdown 预览区的渲染也会变** —— 与 Q4「预览区不变」直接冲突。
+- 用户决定：**按「色调 + 字重 + 抗锯齿」执行（新增 Q6 = 是）**，并接受上述代价；Q4 因此被显式修订为「冻结预览区的**字号 / 字族 / 字重**，不含渲染平滑」。hero 标题取 **400**。
+- 文档已同步（本轮全部内容）：`docs/PLAN-next-phase.md`（§2 新增 Q6 行 + Q4 修订口径 + §3 做/不做两处 + §7 取舍）；`docs/features/ui-refresh/FSD.md`（§1 目标与非目标、新增 **§2.4 抗锯齿开关（Q6）**、原 §2.4 验证策略顺延为 §2.5、§3 阶段表 S2 行、§5 新增两条取舍）；`S2-weight.md`（Spec 第 7 条、新增 §6 抗锯齿段、非目标措辞、Tasks 新增 **T2.6** 并把原 T2.6/T2.7 顺延为 T2.7/T2.8、Handoff 回退顺序改为「先拿掉抗锯齿」）；四份 ui-refresh 文档的状态行统一改为 **方向已确认（2026-09-21），待实施**；`feature_list.json` 的 `feat-039`（scope + acceptance 第 5 条 + verification 第 2 条 = 方向确认证据）。
+- 机器门：`feature_list.json` 内联校验（复刻 `init.sh` 的校验器）通过 —— 24 条 feature、依赖无悬空、`in-progress` 为 0、`currentVersion` 仍 `0.3.4`；`git diff --stat feature_list.json` 只有 `feat-039` 新增块（38 行插入），格式未被 `json.dump` 改动。
+- **未做**：没有改任何 CSS / SVG / TSX，没有写 `tests/palette.test.ts` 与 `e2e/theme.spec.ts`，没跑 `./init.sh`、没升版本、没提交。
+- 待办：删掉 `./shot-compare.tmp.mjs`（如果还要出变体就留着，提交前必须删）；S1 开工时按 TDD 先拿 RED。
+
+## 本轮（下一阶段规划：路线图 + 视觉刷新 feature 文档 + 插件方向，2026-09-21，纯文档，已随 0.3.5 提交）
+
+- 用户要求「重写下一阶段规划文档」，并定下：主色与背景遵循 UI 文档（`#2A395C` / `#f9fafb`）、**字体细体但不含 Michroma**、`docs/PRD-upgrade-v2.md` 与 `docs/UI-DESIGN-SPEC.md` **作废**。
+- 需求分析定下 5 个旋钮：**Q1=B**（染色型绿色字面量按色族重算，三个绿灰中性 token 一并冷化）、**Q2=是**（深色代码块背景冷色化）、**Q3=是**（`--surface` → `#ffffff`）、**Q4=否**（Markdown 预览区不变，300 只作用于应用自身文本）、**Q5=是**（一并换 favicon）。
+- 证据：`src/app/` 下 TSX 无颜色/字重字面量（grep 零命中）⇒ 只改 CSS；`.preview` 已是衬线（`Georgia, "Noto Serif SC", …`，17px），且 `h1/h2/h3` 无显式字重（保留 UA bold）；本机 `~/Library/Fonts` 有完整 Inter、系统有 PingFang SC Thin/Light/Medium ⇒ 300 在拉丁与中文两侧都有真实 Light 面；`--surface-muted` 被 `settings/page.module.css:142` 引用但从未定义（靠回退值工作）。
+- 抓了参考站 answerr.ai（hallmark）：强调色 `#1A3A6B`（唯一彩色） + 灰阶 + `#FAFAFA` 背景 + Source Serif 4 / GeistSans 配对 ⇒ 结论写进路线图 §4：克制感来自**单一强调色 + 衬线/无衬线配对**，下一个杠杆是字体配对而非继续压字重。
+- 产物（本轮新建）：`docs/PLAN-next-phase.md`（纯路线图 9 章）、`docs/features/ui-refresh/FSD.md` + `S1-color-system.md` + `S2-weight.md` + `S3-release.md`、`docs/features/ui-refresh/design/ui-refresh.html`（单文件设计稿，921 行 / 42,467 bytes）、`docs/features/browser-extension/FSD.md`（插件方向，三个前置问题未决、**不写阶段文档**）。
+- 机器门：设计稿 `design_audit` 首轮 **BLOCK**（3 个 error，`design_audit` 修完转红：`:focus-visible` 缺失 / `overflow-x: clip` 缺失 / 16 个字体族字面量）→ 修复后 **PASS-WITH-WAIVER（error 0 / warn 62 / info 21）**；`design_contrast` 通过；Playwright chromium 实机渲染无 console/page error，computed 值与规格一致、两套切换器有效、360px 窄屏无水平溢出。
+- 登记：`AGENTS.md` 新增 `docs/PLAN-next-phase.md`（路线图）与作废声明两行；`feature_list.json` 新增 `feat-039`（视觉刷新，`planned`）与 `feat-040`（插件方向，`planned`）—— `planned` 是合法 status，`in-progress` 仍为 0。
+- **未做**：没有改任何 CSS、没写任何应用测试、没跑 `./init.sh`、没升版本、没提交。
+- **两份作废文档已删除**（用户 2026-09-21 确认）：`docs/PRD-upgrade-v2.md`、`docs/UI-DESIGN-SPEC.md` 已从工作区删除（两者均未入库，只能靠 git 历史以外的渠道找回）；存留信息只有路线图 §7 的取舍记录。
 
 ## 已完成 in 0.3.4（应用图标 + 发布，feat-038 done，2026-09-21）
 
@@ -245,15 +314,57 @@
 - 安装：`/Applications/MD-Convertor.app` 由 `0.2.1` 替换为 `0.3.1`（替换前先退出运行中的旧进程）；具体步骤与验证见 `session-handoff.md`。
 - 文档：`CHANGELOG.md`(+zh) 的 `[Unreleased]` 已归档为 `[0.3.1] - 2026-09-20`；`README.md`(+zh)、`docs/TESTING.md`(+zh)、`docs/QUALITY-AUDIT.md` 的产品数字与测试计数（61 files / 855 tests、178 passed）已对齐。
 
+## 下一阶段（方向已锁定 2026-09-21；S1 / S2 / S3 均已完成）
+
+- 唯一入口是 **`docs/PLAN-next-phase.md`**（路线图：方向/顺序/边界/已定决策），施工细节在 `docs/features/ui-refresh/**`；两份旧文档已于 2026-09-21 删除。
+- 阶段顺序：**S1 色彩系统（`972ff4a`）→ S2 字重收敛 + 抗锯齿（`fae16bc`）→ S3 发布 `0.3.5`**，三者都已完成；发布产物 `237,335,837` bytes / SHA-256 `313bbc34…d45f`。
+- 改动面（仅 CSS + 1 个 SVG）：`src/app/globals.css`（S1：13 个 token + 背景渐变 + `::selection`；S2：2 个字重 token + `body` 字重 + 抗锯齿规则）、`src/app/page.module.css`（S1：17 处色字面量；S2：16 处字重 + `.preview` 守卫）、`src/app/settings/page.module.css`（S1：2 处色字面量；S2：3 处字重）、`src/app/icon.svg`（S1：favicon）——**两轮的改动行互不重叠，可以 `git add -p` 干净拆成两次提交**。
+- 依赖动作：插件方向（`feat-040`）在三个问题有结论前不开工；`AGENTS.md` 的平台边界要等其中第一个问题落定后才修订。
+
 ## 下一轮（建议顺序）
 
 1. **提交与发布 `v0.3.3`**：**已完成** —— 一次提交 `3897cd1`「0.3.3：去掉内置服务里重复的 Electron 运行时」（代码 + 全部文档）已推送 `origin/main`，`gh release create v0.3.3 … --target main` 已发布（tag `3897cd1`，资产 `232,947,408` bytes），`git fetch --tags origin` 后本地 tag 同步；提交前按用户要求跑了提交门（ponytail → code-review → neat-freak）。
 2. **跑门禁必须用 Node 24.14.1 或 24.15.0**：本机默认的 **v24.16.0 在解压 electron zip 时静默卡死**（卡在 204727/272259 字节），`electron-forge make` 会空跑并仍返回 exit 0 —— 看起来「跑完了」其实什么都没产出。`nvm use 24.14.1` 后一次通过。
 3. **真机小点**：用户提到「稍后把真机测试的一些小点完善了再说」，等清单给出后再评估是否单独一轮。
-4. 若有任何代码改动，需要新的版本号（≥ `0.3.4`）并重跑一次 `npm run desktop:release`；`0.3.1`、`0.3.2`、`0.3.3` 的产物与 tag 均已发布（`0.3.3` tag 指向 `3897cd1`），都不要移动或覆盖。
+4. 若有任何代码改动，需要新的版本号（≥ `0.3.6`）并重跑一次 `npm run desktop:release`；`0.3.1`–`0.3.5` 的产物与 tag 均已发布，都不要移动或覆盖。
 5. 若将来 0.1.x/0.2.0 归档重新出现，守卫会自动恢复严格校验；不要把已退役的条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删掉。
 
 ## Verification Evidence
+### feat-039 S3 发布 0.3.5（2026-09-21）
+
+- 版本升级（TDD）：RED —— `scripts/release-guards.test.mjs` fixture 先改到 `0.3.5` ⇒ **5 failed**（`Release version must be 0.3.4.`）；GREEN —— `scripts/release-desktop.mjs`（`RELEASE_VERSION_ERROR` + 目标版本判定）、`package.json`、`package-lock.json`、`feature_list.json` 四处同步为 `0.3.5` ⇒ `npm test -- release-guards` **29 passed**。
+- 首跑门禁假失败（弃用日志 `/tmp/s35-release.log`）：`./init.sh` 与 e2e 全绿（`4 skipped` / `206 passed (1.5m)`），随后 `ERROR: E2E modified tracked files. Restore the unintended changes before continuing.` —— `electron-forge make` 从未执行。根因是与门禁启动竞态的并行文档编辑（`CHANGELOG*.md` 17:50:44、`S1-color-system.md` / `S2-weight.md` 17:50:50），非真实缺陷。
+- 重跑门禁：`npm run desktop:release`（Node.js 24.15.0，日志 `/tmp/s35-release2.log`）**exit 0**，尾段 `=== Release Artifact Verified ===` + `=== Historical Archive Notice ===`：Path `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.5.zip`、Version `0.3.5`、arm64、Bytes `237335837`、SHA-256 `313bbbc341c94da0a5ca92f668f2df06cea9f734e47d7af65880500aa192d45f`；同日志：`Test Files 64 passed (64)` / `Tests 866 passed (866)`、`=== Verification Complete ===`、e2e `4 skipped` / `206 passed (1.5m)` / `E2E tracked-file check passed.`、live `Test Files 1 passed (1)` / `Tests 2 passed (2)`、coverage `All files | 95.28 | 86.64 | 98.34 | 95.28`。
+- 产物独立复核：`stat` = `237335837 bytes Sep 21 17:55:33 2026`、`shasum -a 256` 与门禁一致、`unzip -tq` → `No errors detected`；解出到 `/tmp/s35-app` 后 `CFBundleShortVersionString` = `0.3.5`、`file` = `Mach-O 64-bit executable arm64`；包内 CSS 七项各命中一次（`--accent:#2a395c`、`--accent-soft:#eef1f6`、`--muted:#565e6b`、`--paper:#f9fafb`、`--weight-body:400`、`--weight-ui:400`、`font-smoothing:antialiased`），旧调色板（`176b5d|0f5147|dcece7|202a28`）**0 命中**；asar `assets` / `brand` / `server/node_modules/electron` 各 0 条；包内 `electron.icns` 与仓库 `assets/icon.icns` 同为 `e8cbc7e70f14c186e2b2434d6532faa29ca0c286d5f078b50979a801455748bf`（图标与 `0.3.4` 相同，本轮未改）。
+- 安装与冒烟：旧 `0.3.4` 备份到 `/tmp/s35-old-0.3.4.app` → `ditto` 装到 `/Applications` → 清隔离属性 → `defaults read` = `0.3.5`；`ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1` **exit 0**（`Preload bridge smoke passed…` / `Runtime secret smoke passed: TRANSLATE_NOT_CONFIGURED → TRANSLATE_PROVIDER_ERROR → TRANSLATE_NOT_CONFIGURED`）。
+- 真机目视（CDP 9222，一次性探针已删，截图 `/tmp/s35-home.png` / `/tmp/s35-settings.png`）：首页 `html` 背景 `rgb(249, 250, 251)`、`--accent` `#2a395c`、`--accent-soft` `#eef1f6`、`--paper` `#f9fafb`、`--weight-body` / `--weight-ui` / `body` 字重 = `400`、`-webkit-font-smoothing` = `antialiased`，「转换」与「设置」字重 `400`；设置页云端卡片背景 `rgb(249, 250, 251)`、徽标「未配置」背景 `rgb(238, 241, 246)`。
+
+### feat-039 S2 字重收敛 + 抗锯齿（2026-09-21，已随 0.3.5 提交；真机已目视确认）
+
+- RED（T2.1 / T2.2 / T2.6）：`npx playwright test e2e/theme.spec.ts --project=chromium`（新建 4 个用例后的首次运行，日志 `/tmp/s2-t21-red.log`）⇒ **3 failed / 3 passed**：`the interface text uses the single collected UI weight` 停在 `Expected "400" / Received "700"`；`body carries the thin weight and the reading pane guards it out` 停在 `Expected "300" / Received "400"`；`antialiasing is switched on so the thin weight actually reads thin` 停在 `Expected "antialiased" / Received "auto"`。同批的 `the brand keeps its only available weight and font` 是刻意先绿的回归锁（品牌本来就是 400，防的是把只有 400 面的 Michroma 推向合成字重）。
+- RED（T2.5 守卫自己）：T2.3 + T2.4（两个 token + `body` 字重 + 19 处替换）之后重建再跑同一命令（日志 `/tmp/s2-t25-red.log`）⇒ **4 passed / 2 failed**，失败即 `body carries the thin weight…` 里的 `.preview` 与 `.preview p` 实收 **300**、期望 **400** —— 证明不加守卫时细体会真的灌进 Markdown 阅读区。
+- GREEN：加 `.preview { font-weight: var(--weight-ui); }` 与 `body, button, input, select, textarea { -webkit-font-smoothing: antialiased; }` 后重建，同一命令（日志 `/tmp/s2-t25-green.log`）⇒ **6 passed (1.7s)**；断言内容：`.submit` / `label[for="paste-source"]` / 两个 tab / 品牌 = `400`，`.stats dt`（继承 `body`）= `300`，`.preview` 与 `.preview p` = `400`（守卫生效），`.preview h2` = `700`（浏览器默认粗体未被误伤），`document.body` 的 `webkitFontSmoothing` = `antialiased`（该用例 `test.skip(browserName !== "chromium")`，因为只有 Chromium 暴露这个属性）。
+- 回归（T2.7）：`npx playwright test e2e/home.spec.ts e2e/settings.spec.ts --project=chromium`（日志 `/tmp/s2-t27-chromium.log`）⇒ **38 passed (13.9s)** —— 像素级对齐断言（按钮右边缘与粘贴框右边缘差值 < 4px）与 `rgb(138, 90, 18)` 警告色断言全部保持绿，即字重变化既没把布局带偏、也没误伤语义色。
+- 全量 e2e：`npm run test:e2e` **exit 0 ⇒ 203 passed / 4 skipped**（日志 `/tmp/s2-e2e.log`，tracked-file 检查通过）；较 S1 基线的 193 passed / 2 skipped 多 10 passed、多 2 skipped = 新增 4 用例 × 3 引擎，其中抗锯齿用例在 firefox/webkit 各跳过 1 次。
+- 基线：`./init.sh` **exit 0**（Node.js 24.15.0，日志 `/tmp/s2-init-green.log`）—— 64 files / **866 tests** passed、statements **95.28%**、lint、`tsc --noEmit`、生产构建全绿（与改动前的 `/tmp/s2-init-baseline.log` 同为 64 / 866，本轮不改 TS）。
+- 改动量：`git diff --stat`（S1 + S2 合计）= `globals.css` 27 行 / `page.module.css` 72 行 / `settings/page.module.css` 10 行；其中 S2 部分是 19 处字重替换 + 2 个 token + `body` 字重 + `.preview` 守卫 + 抗锯齿规则，S1 部分是 35 处色字面量。两轮的改动行互不重叠。
+- 真机目视（2026-09-21）：`npm run desktop:package` **exit 0**（Node.js 24.15.0，日志 `/tmp/s2-package.log`）→ 打开 `out/MD-Convertor-darwin-arm64/MD-Convertor.app --remote-debugging-port=9222`，用一次性探针（`./probe-s2.tmp.mjs`，**已删除**）经 CDP 读 computed：`body` 字重 **300** / `-webkit-font-smoothing: antialiased`，`--weight-body` = **300**、`--weight-ui` = **400**，「转换」按钮 **400**、统计 `dt` **300**、粘贴 `textarea` **300**、品牌 **400** + `michroma`、`.preview` 与 `.preview p` **400**、`.preview h2` **700**；截图 `/tmp/s2-weight-app.png`。包内 `Contents/Resources/server/.next/static/chunks/*.css` 含 `weight-body:300` / `weight-ui:400` / `font-smoothing:antialiased`；残留的 `font-weight:400` 仅 2 处，均为 `next/font` 生成的 Michroma `@font-face` 与 `__className`，自写样式内字面量 0 处。`/Applications` 里的正式 `0.3.4` 未被覆盖。（**该次探针的 300 已属历史**，见下一条回修。）
+- 正文回退 400 的 RED/GREEN（2026-09-21，已随 0.3.5 提交）：RED —— 把 `e2e/theme.spec.ts` 的 `BODY_WEIGHT` 改为 `"400"` 后，在**未改动**的构建上 `npx playwright test e2e/theme.spec.ts --project=chromium` ⇒ **1 failed / 5 passed**（`Expected "400" / Received "300"`，失败停在 `.stats dt`；日志 `/tmp/muted2-t-red.log`）—— 证明该断言真的在锁正文字重。GREEN —— `globals.css` 的 `--weight-body` 改为 `400`（并重写抗锯齿注释）后 **先 `npm run build`**（`BUILD_EXIT=0`，`/tmp/muted2-build.log`）再跑同命令 ⇒ **6 passed (1.8s)**（`/tmp/muted2-t-green.log`）。
+- 正文回退 400 后的全量门（2026-09-21，已随 0.3.5 提交，**文档同步完成后重跑**）：`./init.sh` **exit 0**（64 files / **866 tests**、statements 95.28%；`/tmp/s2b-init.log`，与本轮改动前基线逐项相同，本轮只动文档与一行 CSS）；`npm run test:e2e` **exit 0 ⇒ 203 passed / 4 skipped**（一次跑全绿，本轮未撞上 firefox 偶发；`/tmp/s2b-e2e.log`）；`npm run desktop:package` **exit 0**（`/tmp/s2b-package.log`）。产物 CSS 独立复核：`out/MD-Convertor-darwin-arm64/MD-Convertor.app/Contents/Resources/server/.next/static/chunks/*.css` 内 `--weight-body:400`、`--weight-ui:400`、`font-smoothing:antialiased`、`--muted:#565e6b` 四项各命中一次（`weight-body:300` 零命中）。真机探针（`probe-body.tmp.mjs`，已删除；CDP 9222，服务端口 58770，并当场用真实粘贴路由渲染出阅读区）：`--weight-body` **400**、`--weight-ui` **400**、`body` **400**、`-webkit-font-smoothing: antialiased`、统计 `dt` **400**、「转换」按钮 **400**、`.preview` **400**、`.preview p` **400**、品牌 **400**；阅读区 `h1` 仍为 **700**（浏览器默认粗体未被误伤）；截图 `/tmp/s2b-body-app.png`。
+- 踩到的坑（值得记下）：探针第一次跑时先 `page.goto("about:blank")` 再把应用窗口当普通浏览器页导航，结果应用主窗口被留在 `about:blank`、后续 `new URL(page.url()).origin` 得到 `null`；正确做法是**重启应用拿它自己加载的 URL 作为基准**，或者用 `chromium.connectOverCDP` 接上现成窗口而不是 `launch`。另外 `e2e/theme.spec.ts` 里读 `webkitFontSmoothing` 需要类型断言（`CSSStyleDeclaration` 的类型定义里没有这个属性）。
+
+### feat-039 S1 色彩系统（2026-09-21，已随 0.3.5 提交；真机已目视确认）
+
+- RED（白名单守卫）：`npx vitest run tests/palette.test.ts`（新建）在改动前 ⇒ **3 failed / 0 passed**，逐条列出 **33 个**白名单外字面量（`globals.css` 12、`page.module.css` 18、`settings/page.module.css` 2、`icon.svg` 1），第三条断言停在 `globals.css still contains #176b5d`；日志 `/tmp/s1-t11-red.log`。
+- RED（计算样式）：`npx playwright test e2e/theme.spec.ts --project=chromium`（新建）在改动前 ⇒ **2 failed**：转换页 `html` 背景 `Expected "rgb(249, 250, 251)" / Received "rgb(247, 245, 239)"`，设置页云端卡片徒标 `Expected "rgb(238, 241, 246)" / Received "rgb(220, 236, 231)"`；日志 `/tmp/s1-t12-red.log`。
+- GREEN：`npx vitest run tests/palette.test.ts` ⇒ **3 passed**；`npx playwright test e2e/theme.spec.ts --project=chromium` ⇒ **2 passed**（须先 `npm run build`，e2e server 吃 `.next/standalone`，否则量的是旧 CSS）。
+- 回归：`npx playwright test e2e/home.spec.ts e2e/settings.spec.ts e2e/theme.spec.ts --project=chromium` ⇒ **40 passed (15.0s)**，其中像素级对齐断言与 `rgb(138, 90, 18)` 警告色断言保持绿。
+- 全量 e2e：`npm run test:e2e` **exit 0 ⇒ 193 passed / 2 skipped**（`/tmp/s1-e2e.log`，tracked-file 检查通过）；上一轮基线为 187 passed / 2 skipped，差额 6 = 新用例 2 × 3 引擎。
+- 基线：`./init.sh` **exit 0**（`/tmp/s1-init-green.log`）—— 64 files / **866 tests** passed、statements **95.28%**、lint、`tsc --noEmit`、生产构建全绿。改动前基线为 63 files / 863 tests（`/tmp/s1-init-baseline.log`）。
+- 改动量：`git diff --stat` = `globals.css` 12 行 / `page.module.css` 20 行 / `settings/page.module.css` 2 行 / `icon.svg` 1 行，共 35 插入 35 删除，逐行对过 `S1-color-system.md` 的映射表。
+- 对比度：`design_contrast src/app` 只报 gate 40（`globals.css` 的 `::selection` 声明了 `color` 却没有可配对的 `background`，机器无法验证）；手算 WCAG 配对 正文/页面 **15.21:1**、次要灰/页面 **6.26:1**（卡片 **6.54:1**；真机复核后从 4.64:1 加深一档）、白字/主色 **11.42:1**、代码文字/深底 **13.84:1**、占位符/白底 **2.80:1**（旧 2.83:1，已知豁免）。
+- 真机目视（2026-09-21）：`npm run desktop:package` **exit 0**（Node.js 24.15.0，日志 `/tmp/s1-package.log`）→ 打开 `out/MD-Convertor-darwin-arm64/MD-Convertor.app`，CDP 读 computed：`html` 背景 `rgb(249, 250, 251)`、body 渐变 `rgba(42, 57, 92, 0.09)` + 线性起点 `#fbfbfd`、「转换」按钮 `rgb(42, 57, 92)` / 白字、正文 `rgb(28, 34, 48)`；设置页云端卡片底 `rgb(249, 250, 251)`、徽标「未配置」底 `rgb(238, 241, 246)`；`--accent #2a395c` / `--accent-soft #eef1f6` / `--paper #f9fafb`，`--weight-body` / `--weight-ui` 为空（S2 才引入；S2 已完成，见上一条证据）。包内 `Contents/Resources/server/.next/static/chunks/*.css` 能搜到 `2a395c`，旧墨绿 `#176b5d` / `#0f5147` / `#dcece7` **零命中**。用户看完确认方向无误，S2 随后在新会话开工并完成（见上一条证据）。注意：`out/` 那份是未提交的工作区构建，`CFBundleShortVersionString` 仍是 `0.3.4`，`/Applications` 里的正式 `0.3.4` 未被覆盖。
+
 ### 0.3.4 应用图标与发布（2026-09-21，已提交 `e251267`，tag `v0.3.4` 指向该提交）
 
 - RED（图标测试）：`tests/app-icon.test.ts` 重写前，母版/icns 类型/forge 接线/排除规则四项中，`forge.config.cjs` 的 `ignore` 与 `icon` 两项在改动前不存在；排除用例另用 node 单行对 `git show HEAD:forge.config.cjs` 复核会失败。
@@ -466,7 +577,7 @@
 - **feat-025 隐藏了自定义语言入口（保留字段与函数）**：`languages.custom` 仍在契约里、`addCustomLanguage()` 与其单测仍在，存量自定义标签仍出现在目标语言下拉里；但新标签暂时只能靠手改 `settings.json` 添加。若将来要恢复入口，只需恢复 `settings/page.tsx` 的那段 JSX 与 `setNote("language", …)` 分支。
 - **应用图标自 `0.3.4` 起是仓库资产（`feat-038`）**：`forge.config.cjs` 的 `icon: path.resolve(__dirname, "assets/icon.icns")` 与 `ignore: [/^\/assets($|\/)/]` 是配套的一对 —— 前者决定打包用哪个图标，后者保证图标源文件（96 KB 的 icns 与 1024px 母版）不被打进 asar（实测 `/assets` 条目 0）。`tests/app-icon.test.ts` 的 4 个用例锁住这两点，改任一处都会先红。换图标 = 换 `assets/icon.icns`（必须含 icp4/icp5/icp6/ic07–ic14 类型）+ 重跑门禁 + 升版本，**不要**只替换文件而不走门禁。
 - **`v0.3.4` 的图标换成 v2 时没有升版本（用户 2026-09-21 决定）**：第一版发布只是几分钟大的空草稿（零资产），因此换 v2 图标后仍用 `0.3.4`，并**重跑了完整 `npm run desktop:release`**，重新产出的 ZIP 里就是 v2 图标；tag `v0.3.4` 已被移到 v2 图标提交，所以 tag、已发布 ZIP 与 `checkout v0.3.4` 三者一致。**不要再改 `v0.3.4` 的 tag，也不要重打该版本**；下次改动必须 ≥ `0.3.5`。
-- **`0.3.2` 已过门禁并已装本机（2026-09-20）**：ZIP 为 `358,726,788` bytes / SHA-256 `8fb7a93f…f1ba`，已在 `/Applications/MD-Convertor.app`；**已提交（`1c3ed80`）、推送并发布为 GitHub Release `v0.3.2`**（tag `1c3ed80`，资产 `358,726,788` bytes 状态 uploaded）。`0.3.1` 已发布为 GitHub Release `v0.3.1`（tag `af7f6db`，ZIP `358,723,706` bytes / `c7411c58…161b`）；`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip` 仍留在本机，只作历史，**不要在后续门禁里把它当成当前产物**；**`0.3.3` 与 `0.3.4` 都已用掉**（均过门禁、均已装本机、均已发布），下一次发布必须先把版本号升到 `0.3.5` 或更高（门禁硬校验目标版本）。
+- **`0.3.2` 已过门禁并已装本机（2026-09-20）**：ZIP 为 `358,726,788` bytes / SHA-256 `8fb7a93f…f1ba`，已在 `/Applications/MD-Convertor.app`；**已提交（`1c3ed80`）、推送并发布为 GitHub Release `v0.3.2`**（tag `1c3ed80`，资产 `358,726,788` bytes 状态 uploaded）。`0.3.1` 已发布为 GitHub Release `v0.3.1`（tag `af7f6db`，ZIP `358,723,706` bytes / `c7411c58…161b`）；`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip` 仍留在本机，只作历史，**不要在后续门禁里把它当成当前产物**；**`0.3.3`、`0.3.4` 与 `0.3.5` 都已用掉**（均过门禁、均已装本机、均已发布），下一次发布必须先把版本号升到 `0.3.6` 或更高（门禁硬校验目标版本）。
 - **feat-033 起本地服务从包内 Helper 启动**：`electron/main.mjs` 用 `resolveServerBinary(process.execPath)`（`electron/server-binary.mjs`）拿到 `Contents/Frameworks/MD-Convertor Helper.app/Contents/MacOS/MD-Convertor Helper` 再 spawn（仍带 `ELECTRON_RUN_AS_NODE: "1"`）。因该 helper bundle 声明 `LSUIElement`，子进程不再占程序坞。**不要改回 `process.execPath`**（会重新出现跳动的黑色 exec 图标）；helper 缺失时函数会抛 `Desktop helper runtime is missing: <path>`，这是刻意保留的响亮失败。此约束依赖 electron-forge 默认的 helper bundle 布局，若将来换到不带 helper 的打包方式需要同时改这个函数与它的 3 个单测。
 - **feat-037 起「清除」是云端卡片的唯一重置入口**：`clearCloudProvider()`（`src/app/settings/page.tsx`）一下删密钥库条目 + 清表单草稿 + 写 `cloud: {providers: [], activeProviderId: null}`，卡片回到「未配置」；密钥行已经没有按钮，**要换密钥只能先「清除」再重填整张卡片**（用户 2026-09-21 选定的语义）。按钮不区分有没有东西可清（未配置时等于重置输入），没有二次确认；无 preload 桥时只能清 settings、删不掉密钥库条目（会留下无人引用的密钥，与保存失败时的孤立密钥同一类）。
 - **feat-031 起密钥输入框在已保存时为只读**：`readOnly={Boolean(cloudProvider?.keyStored)}`，占位文案「••••••••（已保存，清除后可重新填写）」。不用 `disabled` 是为了保留可聚焦与屏幕阅读器可达；「清除」（feat-037）会删密钥库条目并把 `providers` 清空，清完输入框自然恢复可编辑。不要把密钥读回页面。
@@ -499,12 +610,12 @@
 
 ## Next Step
 
-`0.3.4` 已完成全部门禁步骤：`feat-036`（抓取失败提示改用粘贴）、`feat-037`（云端卡片「清除」整卡重置）与应用图标（`assets/icon.icns` 取代 Electron 默认图标）都已提交（`a27224e`，v2 图标为其后的提交）、通过 `npm run desktop:release`（exit 0）、装到 `/Applications` 并发布为 GitHub Release `v0.3.4`（`237,272,966` bytes / SHA-256 `6910120e…2704`）。tag `v0.3.4` 已移到 v2 图标提交，使 `checkout v0.3.4` 与用户最终看到的图标一致。剩余待办：
-1. **再改任何代码都必须先升版本到 ≥ `0.3.5`** 并重跑 `npm run desktop:release`（门禁硬校验目标版本）；`0.3.1`–`0.3.4` 的产物与 tag 一律不要移动或覆盖。
-2. **跑门禁必须用 Node 24.14.1 或 24.15.0**：本机默认 **v24.16.0 在解压 electron zip 时静默卡死**，`electron-forge make` 会空跑并仍返回 exit 0。
-3. **真机小点**：用户提到「稍后把真机测试的一些小点完善了再说」，等清单给出后再评估是否单独一轮。
-4. **签名/notarization：用户 2026-09-20 决定不做**（`docs/QUALITY-AUDIT.md` 的 QA-008 已改为 accepted / not planned）。恢复需 Apple Developer 付费会员 + Developer ID Application 证书 + notarytool 凭据，再在 `forge.config.cjs` 加 `osxSign`/`osxNotarize`；签名后哈希会变，必须重跑门禁。在那之前所有产物都只适合个人测试。
-5. **UI 评审结论勿重提**：`docs/UI-REVIEW-2026-09-20.md` 的 P0×6 + P1×10 用户已决定全部不改；`e2e/home.spec.ts` 的像素级对齐断言继续是刻意锁定的效果，要改先改断言。
-6. 若将来 0.1.x/0.2.0 归档重新出现，守卫会自动恢复严格校验；不要把已退役条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删除。
+`0.3.5`（视觉刷新 `feat-039` + 富文本面板「清空」按钮归位）已完成全部门禁步骤：通过 `npm run desktop:release`（exit 0）、产物 `237,335,837` bytes / SHA-256 `313bbc34…d45f`、装到 `/Applications` 并发布为 GitHub Release `v0.3.5`。剩余待办：
+1. **再改任何代码都必须先升版本到 ≥ `0.3.6`** 并重跑 `npm run desktop:release`（门禁硬校验目标版本）；`0.3.1`–`0.3.5` 的产物与 tag 一律不要移动或覆盖。`--weight-body: 400` / `--weight-ui: 400` 与 `-webkit-font-smoothing: antialiased` 是 S2 引入的接口，已实测存在。
+3. **跑门禁必须用 Node 24.14.1 或 24.15.0**：本机默认 **v24.16.0 在解压 electron zip 时静默卡死**，`electron-forge make` 会空跑并仍返回 exit 0。
+4. **真机小点**：用户提到「稍后把真机测试的一些小点完善了再说」，等清单给出后再评估是否单独一轮。
+5. **签名/notarization：用户 2026-09-20 决定不做**（`docs/QUALITY-AUDIT.md` 的 QA-008 已改为 accepted / not planned）。恢复需 Apple Developer 付费会员 + Developer ID Application 证书 + notarytool 凭据，再在 `forge.config.cjs` 加 `osxSign`/`osxNotarize`；签名后哈希会变，必须重跑门禁。在那之前所有产物都只适合个人测试。
+6. **UI 评审结论勿重提**：`docs/UI-REVIEW-2026-09-20.md` 的 P0×6 + P1×10 用户已决定全部不改；`e2e/home.spec.ts` 的像素级对齐断言继续是刻意锁定的效果，要改先改断言。
+7. 若将来 0.1.x/0.2.0 归档重新出现，守卫会自动恢复严格校验；不要把已退役条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删除。
 
 不要重做 S1–S6 与 `feat-024` – `feat-038` 已完成的部分；不要放宽端点、密钥或归档守卫；不要把已退役的历史 ZIP 条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删除。

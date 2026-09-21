@@ -2,7 +2,7 @@
 
 - 上游：`docs/PLAN-next-phase.md`、`docs/features/ui-refresh/FSD.md`
 - 前置：S1（色彩系统）已完成
-- 状态：**S2 已实施（2026-09-21）**；真机复核后 `--weight-body` 由 300 回退到 400（见 Spec 第 3 条与 Handoff）
+- 状态：**已完成（2026-09-21，提交 `fae16bc`）**；真机复核后 `--weight-body` 由 300 回退到 400（见 Spec 第 3 条与 Handoff）
 - feature_list id：`feat-039`
 
 ## Spec

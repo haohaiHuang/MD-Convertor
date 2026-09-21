@@ -4,6 +4,14 @@
 
 This project follows the principles of [Keep a Changelog](https://keepachangelog.com/). User-facing changes that have not yet been released belong under `Unreleased`.
 
+## [0.3.5] - 2026-09-21
+
+### Changed
+
+- The interface is navy instead of moss green. The three accent tokens (`#176b5d` / `#0f5147` / `#dcece7` → `#2A395C` / `#232F4E` / `#EEF1F6`), the four neutrals that carried a green cast (`--ink`, `--muted`, `--line`, `--paper`), every tinted literal (shadows, focus rings, the dialog scrim, translucent fills), the dark code block (`#202a28` → `#1E222B`) and the browser-tab favicon all move to one hue family; the alpha of every translucent value is unchanged, as are the warning and danger colours. The provider card on the settings page also stops leaning on an undefined `--surface-muted` fallback and uses the page background. Contrast is unchanged or better: ink on the page 15.2:1, muted grey 6.3:1 (4.7:1 before; darkened one step from the planned 4.6:1 after the real-device review found note text hard to read), white on the accent 11.4:1, code text on the dark block 13.8:1. App text also changes: the ten hand-tuned font weights collapse into one regular weight, exposed as `--weight-body` and `--weight-ui` (both `400` — body text was briefly thinned to `300`, but the real-device review found small text hard to read, so it went back to Regular), a `.preview` guard pins the Markdown reading pane to the UI weight so a future body-weight change cannot leak into it (the pane also keeps its bold headings), and `-webkit-font-smoothing: antialiased` gives app text and the reading pane one smoothing mode. Sizes, families, spacing and colours are untouched.
+
+- The clear button in the rich-text panel no longer drops onto a line of its own. It sits in the same row as the source-URL box and the 转换 button, immediately to its left — the position the link panel already gave its clear button. The 转换 button's right edge still lines up with the paste box.
+
 ## [0.3.4] - 2026-09-21
 
 ### Added

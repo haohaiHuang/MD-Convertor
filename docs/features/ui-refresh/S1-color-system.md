@@ -1,7 +1,7 @@
 # S1 — 色彩系统（Spec / Plan / Tasks）
 
 - 上游：`docs/PLAN-next-phase.md`、`docs/features/ui-refresh/FSD.md`
-- 状态：**S1 已实施（2026-09-21）**；S2 / S3 待开工
+- 状态：**已完成（2026-09-21，提交 `972ff4a`）**；S2 与 S3 亦已完成
 - feature_list id：`feat-039`（本阶段为其实施起点）
 
 ## Spec

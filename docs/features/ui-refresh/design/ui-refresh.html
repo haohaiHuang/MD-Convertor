@@ -1,0 +1,966 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MD-Convertor · 视觉刷新设计稿（Phase 1）</title>
+<style>
+/* ================================================================
+   预发射自查（六轴）
+   1 视觉：单一强调色 #2A395C + 冷灰阶；无第二彩色、无渐变文字、无 emoji、无装饰图标。
+   2 结构：只换 token 与字重；结构 / 间距 / 圆角 / 边框宽度 / 阴影形状逐条照抄生产 CSS。
+   3 可访问：正文 #1C2230 on #F9FAFB ≈ 15:1；--muted ≈ 6.3:1（AA 余量充足）；所有交互元素有 :focus-visible。
+   4 响应式：html/body overflow-x: clip；grid 沿用生产的 640px 断点。
+   5 内容：示例文本全部自撰，未复制任何模板/参考站像素，无网络请求。
+   6 动效：无（生产只有 160ms 过渡，本稿不做动画）。
+
+   机器门豁免（仅这三类，其余错误项已清）：
+   - gate 24 间距 / DR-4 圆角档位：数值逐条取自生产 CSS（9/10/11/14/18px 等），
+     改用 4pt 网格会把这稿子变成「另一套设计」，与本稿目的（只验证配色与字重）相悖。
+   - gate 2 渐变：产品的真实背景就是径向光晕 + 线性渐变两层叠加，保留。
+   - gate 37 字体家族数：mockup 必须同时呈现 UI 无衬线 / 等宽 / 衬线预览三套栈
+     （预览衬线是刻意锁定项），已删掉本机不会命中的回退名，无法再降。
+   ================================================================ */
+
+/* ============================================================
+   MD-Convertor 视觉刷新设计稿 —— 自包含，无外部请求
+   组件样式逐条转写自 src/app/page.module.css 与
+   src/app/settings/page.module.css，只替换颜色 token 与字重；
+   结构 / 间距 / 圆角 / 边框宽度 / 阴影形状一律未改。
+   ============================================================ */
+
+/* 字体 token：设计稿自身与产品皮肤共用；家族数已压到最少必需集
+   （生产 CSS 里的 Microsoft YaHei / Noto Serif SC / Consolas 等回退名在本机不会命中，
+     为避免无意义的家族计数差异而未转录） */
+:root {
+  --font-ui: Inter, "PingFang SC", system-ui, sans-serif;
+  --font-mono: ui-monospace, monospace;
+  --font-serif: Georgia, "Songti SC", serif;
+}
+
+html, body { overflow-x: clip; }
+
+@font-face {
+  font-family: "Michroma";
+  src: url("../../../../public/fonts/Michroma-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+/* ---------- 两套皮肤：唯一事实源 ---------- */
+.skin-old {
+  --paper: #f7f5ef;
+  --surface: #fffefa;
+  --ink: #17201f;
+  --muted: #65706d;
+  --line: #d8dcd5;
+  --accent: #176b5d;
+  --accent-dark: #0f5147;
+  --accent-soft: #dcece7;
+  --shadow: 0 22px 60px rgb(34 50 45 / 10%);
+  --tint: 23 107 93;
+  --shadow-tint: 34 50 45;
+  --veil: 22 34 28;
+  --grad-top: #fbfaf6;
+  --placeholder: #929b98;
+  --hover-line: #aab4b0;
+  --hover-bg: #f7f9f8;
+  --field: rgb(247 250 248 / 90%);
+  --status-line: #c8dfd8;
+  --quote-line: #a7c9c0;
+  --code-bg: #202a28;
+  --code-fg: #edf4f1;
+  --sel: #bfe3da;
+}
+
+.skin-new {
+  --paper: #f9fafb;
+  --surface: #ffffff;
+  --ink: #1c2230;
+  --muted: #565e6b;
+  --line: #dbdfe7;
+  --accent: #2a395c;
+  --accent-dark: #232f4e;
+  --accent-soft: #eef1f6;
+  --shadow: 0 22px 60px rgb(30 35 50 / 10%);
+  --tint: 42 57 92;
+  --shadow-tint: 30 35 50;
+  --veil: 20 24 36;
+  --grad-top: #fbfbfd;
+  --placeholder: #939ba9;
+  --hover-line: #a9b1bf;
+  --hover-bg: #f4f6f9;
+  --field: rgb(249 250 251 / 90%);
+  --status-line: #d6dce8;
+  --quote-line: #a9b3c6;
+  --code-bg: #1e222b;
+  --code-fg: #edeff4;
+  --sel: #eef1f6;
+}
+
+.stage {
+  --weight-body: 400;   /* 正文 / 说明 / 次要标签（初版拟 300，真机复核后回退） */
+  --weight-ui: 400;     /* 标题 / 按钮 / 链接 / 标签 */
+  /* 语义色：新旧皮肤都不改，故不进切换 */
+  --warning: #8a5a12;
+  --warning-soft: #fff3d6;
+  --danger: #a33b32;
+  --danger-soft: #fbe9e6;
+}
+.stage[data-uiw="300"] { --weight-ui: 300; }
+
+/* ============================================================
+   A. 设计稿自身版式（与产品皮肤无关，避免干扰判断）
+   ============================================================ */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0 0 80px;
+  color: #1f2430;
+  background: #eceef2;
+  font-family: var(--font-ui);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.sheet { width: min(1240px, 100%); margin: 0 auto; padding: 40px clamp(16px, 3vw, 40px); }
+
+.sheetHead h1 { margin: 0 0 12px; font-size: 30px; font-weight: 400; letter-spacing: -0.02em; }
+.sheetHead p { max-width: 940px; margin: 0 0 8px; color: #5b6270; font-size: 14px; line-height: 1.75; }
+.sheetHead code, .sectionNote code {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: #dfe3ea;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+
+.switchers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 30px;
+  margin: 24px 0 30px;
+  padding: 14px 18px;
+  border: 1px solid #d7dbe3;
+  border-radius: 12px;
+  background: #fff;
+}
+.switchers fieldset { display: flex; align-items: center; gap: 12px; margin: 0; padding: 0; border: 0; }
+.switchers legend { float: none; padding: 0; color: #6b7280; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+.switchers label { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; cursor: pointer; }
+.switchers input { accent-color: #2a395c; }
+
+.sectionTitle { margin: 56px 0 8px; font-size: 13px; font-weight: 400; letter-spacing: 0.16em; color: #6b7280; text-transform: uppercase; }
+.sectionNote { max-width: 940px; margin: 0 0 18px; color: #5b6270; font-size: 13.5px; line-height: 1.7; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0 0 14px; color: #6b7280; font-size: 12.5px; }
+
+/* 产品皮肤的舞台 */
+.stage {
+  overflow: hidden;
+  border: 1px solid #cfd4dd;
+  border-radius: 16px;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 10% 0%, rgb(var(--tint) / 9%), transparent 32rem),
+    linear-gradient(180deg, var(--grad-top) 0%, var(--paper) 32rem);
+  font-family: var(--font-ui);
+  font-weight: var(--weight-body);
+}
+.stage ::selection { color: var(--ink); background: var(--sel); }
+
+/* ============================================================
+   B. 组件样式（转写自真实 CSS，只换 token / 字重）
+   ============================================================ */
+.page { padding: 28px clamp(20px, 4vw, 64px) 52px; }
+.shell { width: min(1180px, 100%); margin: 0 auto; }
+
+.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: clamp(54px, 8vw, 100px); }
+.brand {
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink);
+  font-family: "Michroma", var(--font-ui);
+  font-size: 15px;
+  font-weight: var(--weight-ui);
+  letter-spacing: 0.01em;
+}
+.settingsLink {
+  display: inline-flex;
+  align-items: center;
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: var(--weight-ui);
+  line-height: 1;
+  text-decoration: none;
+}
+
+.hero { max-width: 960px; margin: 0 auto; text-align: center; }
+.eyebrow {
+  margin: 0 0 18px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: var(--weight-ui);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.title {
+  margin: 0 auto;
+  font-size: clamp(42px, 5vw, 64px);
+  font-weight: var(--weight-ui);
+  line-height: 1.04;
+  letter-spacing: -0.055em;
+}
+.accentText { color: var(--accent); }
+.subtitle {
+  max-width: 820px;
+  margin: 24px auto 34px;
+  color: var(--muted);
+  font-size: clamp(16px, 2vw, 19px);
+  line-height: 1.75;
+}
+
+.modeTabs {
+  display: flex;
+  max-width: 820px;
+  gap: 4px;
+  margin: 0 auto 14px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgb(255 255 255 / 58%);
+}
+.modeTab {
+  flex: 1;
+  min-height: 42px;
+  padding: 0 14px;
+  color: var(--muted);
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  background: transparent;
+  font-size: 14px;
+  font-weight: var(--weight-ui);
+}
+.modeTab[aria-selected="true"] { color: var(--ink); background: white; box-shadow: 0 4px 12px rgb(var(--shadow-tint) / 8%); }
+.modePanel { max-width: 820px; margin: 0 auto; text-align: left; }
+
+.form {
+  display: flex;
+  gap: 10px;
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.pasteForm { display: grid; grid-template-columns: minmax(0, 1fr); padding: 16px; }
+.input {
+  min-width: 0;
+  flex: 1;
+  min-height: 48px;
+  padding: 0 16px;
+  color: var(--ink);
+  border: 0;
+  border-radius: 10px;
+  outline: 0;
+  background: transparent;
+  font-size: 16px;
+}
+.input2 {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 14px;
+}
+.input::placeholder, .textarea::placeholder, .sourceInput::placeholder, .input2::placeholder { color: var(--placeholder); }
+.validation { max-width: 820px; margin: 9px auto 0; color: var(--danger); font-size: 13px; }
+
+.submit, .clearAction, .action { min-height: 48px; border: 0; border-radius: 12px; cursor: pointer; }
+.clearAction {
+  min-width: 88px;
+  padding: 0 20px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  background: white;
+  font-size: 15px;
+  font-weight: var(--weight-ui);
+}
+.submit {
+  min-width: 126px;
+  padding: 0 22px;
+  color: white;
+  background: var(--accent);
+  font-size: 15px;
+  font-weight: var(--weight-ui);
+  box-shadow: 0 8px 18px rgb(var(--tint) / 20%);
+}
+.action {
+  min-width: 104px;
+  padding: 0 16px;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 15px;
+  font-weight: var(--weight-ui);
+}
+.actionPrimary { color: white; border-color: var(--accent); background: var(--accent); }
+
+.textarea {
+  width: 100%;
+  min-height: 150px;
+  padding: 16px;
+  color: var(--ink);
+  border: 0;
+  border-radius: 10px;
+  outline: 0;
+  background: var(--field);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.65;
+}
+.contentHint { margin: -1px 3px 0; color: var(--accent-dark); font-size: 13px; line-height: 1.5; }
+.sourceRow { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding-top: 4px; }
+.sourceRow label { flex: 0 0 auto; color: var(--ink); font-size: 13px; font-weight: var(--weight-ui); }
+.sourceRow label span { color: var(--muted); font-weight: var(--weight-ui); }
+.sourceInput {
+  min-width: 0;
+  min-height: 42px;
+  /* 真实 CSS 的注释：撑满整行，使「转换」按钮右边缘与粘贴框右边缘对齐 */
+  flex: 1 1 auto;
+  padding: 0 12px;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  outline: 0;
+  background: white;
+  font-size: 14px;
+}
+
+.statusCard, .errorCard, .cancelledCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: 720px;
+  margin: 30px auto 0;
+  padding: 16px 18px;
+  border-radius: 14px;
+  text-align: left;
+  font-size: 15px;
+}
+.statusCard { color: var(--accent-dark); border: 1px solid var(--status-line); background: var(--accent-soft); }
+.errorCard { color: var(--danger); border: 1px solid #edc8c2; background: var(--danger-soft); }
+.cancelledCard { color: var(--muted); border: 1px solid var(--line); background: var(--surface); }
+.spinner {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 auto;
+  border: 2px solid rgb(var(--tint) / 22%);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+}
+.errorHint { max-width: 720px; margin: 10px auto 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.errorHintAction {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-dark);
+  font: inherit;
+  font-weight: var(--weight-ui);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.result { margin-top: 54px; }
+.resultHeader { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 18px; }
+.resultLabel {
+  margin: 0 0 8px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: var(--weight-ui);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.resultTitle { margin: 0; font-size: clamp(24px, 3vw, 34px); font-weight: var(--weight-ui); letter-spacing: -0.035em; }
+.actions { display: flex; gap: 9px; flex: 0 0 auto; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0 0 16px; }
+.stats > div { padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: rgb(255 255 255 / 62%); }
+.stats dt { margin-bottom: 5px; color: var(--muted); font-size: 12px; }
+.stats dd { margin: 0; color: var(--ink); font-size: 18px; font-weight: var(--weight-ui); letter-spacing: -0.02em; }
+.warnings { display: grid; gap: 8px; margin: 0 0 14px; padding: 0; list-style: none; }
+.warning {
+  padding: 11px 14px;
+  color: var(--warning);
+  border: 1px solid #eed79c;
+  border-radius: 10px;
+  background: var(--warning-soft);
+  font-size: 13px;
+}
+
+/* Markdown 阅读区：family 与字重都不动（Q4） */
+.preview {
+  min-height: 200px;
+  padding: clamp(24px, 5vw, 64px);
+  overflow-wrap: anywhere;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  font-family: var(--font-serif);
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.86;
+}
+.preview h1, .preview h2, .preview h3 { line-height: 1.25; letter-spacing: -0.025em; }
+.preview h1 { margin: 0 0 0.6em; font-size: clamp(30px, 4vw, 46px); }
+.preview h2 { margin-top: 2em; font-size: 27px; }
+.preview h3 { margin-top: 1.8em; font-size: 21px; }
+.preview p { margin: 1em 0; }
+.preview a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.preview blockquote { margin: 1.5em 0; padding-left: 18px; color: var(--muted); border-left: 3px solid var(--quote-line); }
+.preview pre { padding: 18px; overflow: auto; border-radius: 10px; background: var(--code-bg); color: var(--code-fg); }
+.preview code { font-family: var(--font-mono); font-size: 0.9em; }
+.preview table { width: 100%; border-collapse: collapse; }
+.preview th, .preview td { padding: 9px 11px; border: 1px solid var(--line); text-align: left; }
+.preview ul { padding-left: 1.4em; }
+.preview li { margin: 0.4em 0; }
+
+/* 聚焦环：照抄生产 CSS 的两条规则 + 给按钮补一条通用可见焦点 */
+.input:focus-visible, .textarea:focus-visible {
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 2px rgb(var(--tint) / 24%);
+}
+.sourceInput:focus-visible, .input2:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgb(var(--tint) / 12%);
+}
+.button:focus-visible, .submit:focus-visible, .clearAction:focus-visible,
+.action:focus-visible, .modeTab:focus-visible, .backToTop:focus-visible,
+.errorHintAction:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.footnote { margin: 18px 0 0; color: var(--muted); font-size: 12px; text-align: center; }
+.backToTop {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 16px;
+  color: white;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  background: var(--accent);
+  box-shadow: 0 10px 24px rgb(var(--tint) / 28%);
+  font: inherit;
+  font-size: 14px;
+  font-weight: var(--weight-ui);
+}
+.confirmDialog {
+  width: min(480px, 100%);
+  margin: 0 auto;
+  padding: 24px;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: white;
+  box-shadow: 0 24px 60px rgb(var(--veil) / 22%);
+}
+.confirmText { margin: 0; font-size: 15px; line-height: 1.7; }
+.confirmActions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 20px; }
+
+/* 设置页 */
+.settingsPage { padding: 34px clamp(20px, 4vw, 64px) 52px; }
+.settingsHead { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 22px; }
+.settingsHeaderLeft { display: flex; align-items: center; gap: 18px; }
+.settingsTitle { margin: 0; font-size: clamp(26px, 3.4vw, 34px); font-weight: var(--weight-ui); letter-spacing: -0.03em; }
+.backLink { color: var(--accent-dark); font-size: 14px; font-weight: var(--weight-ui); text-decoration: none; }
+.saveStatus { padding: 3px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-dark); font-size: 12px; }
+.card { margin-bottom: 18px; padding: 22px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.card h2 { margin: 0 0 6px; font-size: 17px; font-weight: var(--weight-ui); }
+.cardNote { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.radioRow { display: inline-flex; align-items: center; gap: 8px; margin-right: 20px; font-size: 14px; font-weight: var(--weight-ui); }
+.radioRow input { accent-color: var(--accent); }
+.provider { margin-top: 16px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); }
+.providerHead { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 12px; }
+.badge { padding: 3px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-dark); font-size: 12px; }
+.spacer { flex: 1; }
+.button {
+  padding: 9px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: var(--weight-ui);
+  cursor: pointer;
+}
+.buttonPrimary { color: white; border-color: var(--accent); background: var(--accent); }
+.grid { display: grid; grid-template-columns: minmax(150px, 1fr) minmax(300px, 3fr); gap: 12px; }
+.field { display: grid; gap: 6px; }
+.field > span { color: var(--muted); font-size: 12.5px; }
+.urlRow { display: flex; gap: 8px; }
+.urlRow .input2 { flex: 1; }
+.fallbackBox { margin-top: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: white; }
+
+/* ============================================================
+   C. 对照表 / 清单（设计稿自身的说明区，不随皮肤切换）
+   ============================================================ */
+.cmp { width: 100%; border-collapse: collapse; background: #fff; font-size: 13px; }
+.cmp th, .cmp td { padding: 9px 12px; border: 1px solid #e2e5eb; text-align: left; vertical-align: middle; }
+.cmp th { background: #f5f6f9; font-weight: 400; color: #5b6270; font-size: 12px; letter-spacing: 0.06em; }
+.cmp code { font-family: var(--font-mono); font-size: 12.5px; }
+.chip {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  margin-right: 7px;
+  border: 1px solid rgb(0 0 0 / 12%);
+  border-radius: 4px;
+  vertical-align: -3px;
+}
+.strike { color: #98a0ad; text-decoration: line-through; }
+.nv { color: #1d2b52; }
+.keep { color: #6b7280; }
+.typeSample { font-size: 32px; letter-spacing: -0.04em; line-height: 1.25; }
+.w780 { font-weight: 780; }
+.w400 { font-weight: 400; }
+.w300 { font-weight: 300; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="sheetHead">
+    <h1>MD-Convertor · 视觉刷新设计稿</h1>
+    <p>
+      把现有的「墨绿 + 暖米白」换成「海军蓝 + 冷灰白」，并把界面上散落的 10 个手调字重收敛为一档。本页是动生产 CSS 之前的预演：
+      下面那块的组件样式逐条转写自 <code>src/app/page.module.css</code> 与
+      <code>src/app/settings/page.module.css</code>，只替换了颜色 token 与字重，
+      <strong>结构 / 间距 / 圆角 / 边框宽度 / 阴影形状一律未改</strong>。
+    </p>
+    <p>
+      主色与背景按定稿 <code>#2A395C</code> / <code>#f9fafb</code>；
+      Markdown 阅读区（衬线正文 + 标题粗度）保持原样，字重变量只作用于应用自身的界面文本。
+    </p>
+  </div>
+
+  <div class="switchers">
+    <fieldset>
+      <legend>皮肤</legend>
+      <label><input type="radio" name="skin" value="old"> 旧：墨绿暖米白</label>
+      <label><input type="radio" name="skin" value="new" checked> 新：海军蓝冷灰白</label>
+    </fieldset>
+    <fieldset>
+      <legend>界面字重</legend>
+      <label><input type="radio" name="uiw" value="400" checked> 400（已采用）</label>
+      <label><input type="radio" name="uiw" value="300"> 300（已否决：小字识别度不足）</label>
+    </fieldset>
+  </div>
+
+  <h2 class="sectionTitle">① 组件实况</h2>
+  <p class="sectionNote">
+    主页（链接面板 / 富文本面板 / 转换中 / 失败 / 结果 / 确认弹框）+ 设置页云端卡片。
+    用上面的切换器可直接对比新旧。
+  </p>
+
+  <div class="stage skin-new" data-uiw="400" id="stage">
+    <div class="page">
+      <div class="shell">
+
+        <div class="header">
+          <span class="brand">MD-Convertor</span>
+          <a class="settingsLink" href="#settings">设置</a>
+        </div>
+
+        <div class="hero">
+          <p class="eyebrow">Web to Markdown</p>
+          <h1 class="title">把网页<span class="accentText">变成干净的 Markdown</span></h1>
+          <p class="subtitle">
+            粘贴一个链接或一段富文本，正文、图片与代码块会被抽取成可直接阅读、可长期保存的 Markdown 文档。
+          </p>
+        </div>
+
+        <div class="modeTabs" role="tablist">
+          <button class="modeTab" role="tab" aria-selected="true">链接转换</button>
+          <button class="modeTab" role="tab" aria-selected="false">富文本转换</button>
+        </div>
+
+        <div class="modePanel">
+          <div class="form">
+            <input class="input" placeholder="粘贴文章链接，如 https://example.com/post" value="https://example.com/post">
+            <button class="clearAction">清空</button>
+            <button class="submit">转换</button>
+          </div>
+          <p class="validation">请输入以 http:// 或 https:// 开头的完整链接。</p>
+        </div>
+
+        <div style="margin-top:30px">
+          <div class="statusCard"><span class="spinner"></span><span>正在提取正文…</span></div>
+          <div class="errorCard"><span>抓取失败：目标站点拒绝访问（403）。</span></div>
+          <p class="errorHint">
+            这个页面可能需要登录或被站点拦截，抓不到正文。
+            <button class="errorHintAction">改用富文本粘贴</button>
+          </p>
+        </div>
+
+        <div style="margin-top:34px">
+          <div class="form pasteForm" style="display:grid">
+            <textarea class="textarea" style="min-height:110px">把浏览器里选中的正文直接粘贴到这里，图片会一并内嵌。</textarea>
+            <p class="contentHint">已识别 12 个段落、3 个代码块。</p>
+            <div class="sourceRow">
+              <label for="origin">来源 URL<span>（可选）</span></label>
+              <input class="sourceInput" id="origin" placeholder="https://…" value="https://example.com/post">
+              <button class="clearAction">清空</button>
+              <button class="submit">转换</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="result">
+          <div class="resultHeader">
+            <div>
+              <p class="resultLabel">转换结果</p>
+              <h2 class="resultTitle">示例文章：把阅读变成资产</h2>
+            </div>
+            <div class="actions">
+              <button class="action">复制 Markdown</button>
+              <button class="action actionPrimary">下载 .md</button>
+            </div>
+          </div>
+
+          <div class="modeTabs" role="tablist" style="margin:0 0 18px">
+            <button class="modeTab" role="tab" aria-selected="true">原文</button>
+            <button class="modeTab" role="tab" aria-selected="false">译文</button>
+          </div>
+
+          <dl class="stats">
+            <div><dt>正文字符</dt><dd>3,812</dd></div>
+            <div><dt>内嵌图片</dt><dd>1</dd></div>
+            <div><dt>耗时</dt><dd>3.1s</dd></div>
+          </dl>
+
+          <ul class="warnings"><li class="warning">有 2 张图片下载失败，已保留原始链接。</li></ul>
+
+          <div class="preview">
+            <h1>把阅读变成资产</h1>
+            <p>
+              结构化是长期可用的前提。一段随手收藏的网页会在两年后失效，而一份带标题层级、
+              代码块与引用关系的 Markdown 文件仍然可以检索、可以 diff、可以继续生长。
+            </p>
+            <h2>三个判断</h2>
+            <p>
+              第一，<strong>抽取优于全量保存</strong>：只留下正文与它真正的依赖，
+              比连导航栏一起存下来更有价值，见 <a href="#nowhere">正文提取的边界</a>。
+            </p>
+            <blockquote>保存不是目的，能在需要时被找到才是。</blockquote>
+            <h3>代码块</h3>
+            <pre><code>const md = await convert({ url });
+console.log(md.stats.textChars); // 3812</code></pre>
+            <h3>一段对照</h3>
+            <table>
+              <thead><tr><th>维度</th><th>网页</th><th>Markdown</th></tr></thead>
+              <tbody>
+                <tr><td>长期可读</td><td>依赖站点存活</td><td>与站点无关</td></tr>
+                <tr><td>可 diff</td><td>几乎不可能</td><td>逐行可比</td></tr>
+              </tbody>
+            </table>
+            <p>行内代码写作 <code>npm run convert</code>，引用与表格同样保留原结构。</p>
+          </div>
+
+          <p class="footnote">本机处理 · 不保存内容 · 不上传正文</p>
+          <div style="display:flex;justify-content:flex-end;margin-top:14px">
+            <button class="backToTop">↑ 回到顶部</button>
+          </div>
+        </div>
+
+        <div style="margin-top:44px">
+          <div class="confirmDialog">
+            <p class="confirmText">检测到正文约 80% 已是英语，是否只翻译其余部分？</p>
+            <div class="confirmActions">
+              <button class="action">不翻译</button>
+              <button class="action actionPrimary">只翻译非目标语言部分</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="settingsPage" id="settings" style="border-top:1px dashed var(--line)">
+      <div class="shell" style="width:min(880px,100%)">
+        <div class="settingsHead">
+          <div class="settingsHeaderLeft">
+            <h2 class="settingsTitle">设置</h2>
+            <span class="saveStatus">已保存</span>
+          </div>
+          <button class="button">返回转换</button>
+        </div>
+
+        <section class="card">
+          <h2>翻译服务提供方</h2>
+          <p class="cardNote">选择翻译时使用云端模型还是本机 CLI。</p>
+          <div style="margin-top:14px">
+            <label class="radioRow"><input type="radio" name="mode" checked> 云端 Provider</label>
+            <label class="radioRow"><input type="radio" name="mode"> 本机 CLI</label>
+          </div>
+
+          <article class="provider">
+            <div class="providerHead">
+              <span class="badge">已配置</span>
+              <span class="spacer"></span>
+              <button class="button">清除</button>
+              <button class="button buttonPrimary">保存</button>
+            </div>
+            <div class="grid">
+              <label class="field"><span>名称</span><input class="input2" value="Mimo"></label>
+              <div class="field">
+                <span>Base URL</span>
+                <div class="urlRow">
+                  <input class="input2" value="https://token-plan-cn.xiaomimimo.com/v1">
+                  <button class="button">拉取模型</button>
+                </div>
+              </div>
+              <label class="field"><span>模型</span><input class="input2" value="mimo-v2.5-pro"></label>
+              <label class="field"><span>API 密钥</span><input class="input2" placeholder="••••••••（已保存，清除后可重新填写）"></label>
+            </div>
+          </article>
+        </section>
+
+        <section class="card">
+          <h2>目标语言</h2>
+          <p class="cardNote">只翻译非目标语言的部分。</p>
+          <label class="field" style="margin-top:12px;max-width:320px">
+            <span>目标语言</span><input class="input2" value="简体中文（zh-Hans）">
+          </label>
+        </section>
+
+        <section class="card">
+          <h2>本机 CLI</h2>
+          <p class="cardNote">没有检测到可用的本机 CLI。</p>
+          <div class="fallbackBox">
+            <p class="cardNote" style="margin:0 0 8px">可手动填写 CLI 路径。</p>
+            <textarea style="width:100%;min-height:60px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:14px;background:#fff;color:var(--ink)"></textarea>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="sectionTitle">② 色板对照</h2>
+  <p class="sectionNote">
+    绿色在本项目里不是三个变量，而是「染色式」铺开的：token、rgb 阴影、聚焦环、遮罩、占位灰、代码块底色、favicon。
+    下表是逐项对照，左旧右新。
+  </p>
+
+  <table class="cmp">
+    <thead><tr><th style="width:26%">项</th><th style="width:25%">现在</th><th style="width:25%">改为</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><code>--accent</code></td>
+        <td><span class="chip" style="background:#176b5d"></span><code class="strike">#176b5d</code></td>
+        <td><span class="chip" style="background:#2A395C"></span><code class="nv">#2A395C</code></td>
+        <td>主按钮 / 链接 / 强调文字</td></tr>
+      <tr><td><code>--accent-dark</code></td>
+        <td><span class="chip" style="background:#0f5147"></span><code class="strike">#0f5147</code></td>
+        <td><span class="chip" style="background:#232F4E"></span><code class="nv">#232F4E</code></td>
+        <td>hover / 深色强调文字</td></tr>
+      <tr><td><code>--accent-soft</code></td>
+        <td><span class="chip" style="background:#dcece7"></span><code class="strike">#dcece7</code></td>
+        <td><span class="chip" style="background:#EEF1F6"></span><code class="nv">#EEF1F6</code></td>
+        <td>状态卡底 / 徽标底 / 选中态</td></tr>
+      <tr><td><code>--paper</code></td>
+        <td><span class="chip" style="background:#f7f5ef"></span><code class="strike">#f7f5ef</code></td>
+        <td><span class="chip" style="background:#f9fafb"></span><code class="nv">#f9fafb</code></td>
+        <td>页面背景（定稿值）</td></tr>
+      <tr><td><code>--surface</code></td>
+        <td><span class="chip" style="background:#fffefa"></span><code class="strike">#fffefa</code></td>
+        <td><span class="chip" style="background:#ffffff"></span><code class="nv">#ffffff</code></td>
+        <td>卡片 / 输入框底；暖白放在冷背景上会读作发黄</td></tr>
+      <tr><td><code>--ink</code></td>
+        <td><span class="chip" style="background:#17201f"></span><code class="strike">#17201f</code></td>
+        <td><span class="chip" style="background:#1c2230"></span><code class="nv">#1c2230</code></td>
+        <td>正文色（原带绿调，冷化）</td></tr>
+      <tr><td><code>--muted</code></td>
+        <td><span class="chip" style="background:#65706d"></span><code class="strike">#65706d</code></td>
+        <td><span class="chip" style="background:#565e6b"></span><code class="nv">#565e6b</code></td>
+        <td>次要文字（对比度 6.26:1；真机复核后从 #6A7280 加深一档）</td></tr>
+      <tr><td><code>--line</code></td>
+        <td><span class="chip" style="background:#d8dcd5"></span><code class="strike">#d8dcd5</code></td>
+        <td><span class="chip" style="background:#dbdfe7"></span><code class="nv">#dbdfe7</code></td>
+        <td>分隔线 / 卡片描边</td></tr>
+      <tr><td><code>--shadow</code></td>
+        <td><span class="chip" style="background:rgb(34 50 45 / 35%)"></span><code class="strike">rgb(34 50 45 / 10%)</code></td>
+        <td><span class="chip" style="background:rgb(30 35 50 / 35%)"></span><code class="nv">rgb(30 35 50 / 10%)</code></td>
+        <td>绿黑染色 → 中性黑（共 4 处）</td></tr>
+      <tr><td>主色阴影 / 聚焦环</td>
+        <td><code class="strike">rgb(23 107 93 / 12~28%)</code> <span class="strike">（9 处）</span></td>
+        <td><code class="nv">rgb(42 57 92 / 12~28%)</code></td>
+        <td>按钮投影、输入框聚焦、spinner、回到顶部</td></tr>
+      <tr><td>弹框遮罩</td>
+        <td><code class="strike">rgba(22, 34, 28, .22/.45)</code></td>
+        <td><code class="nv">rgba(20, 24, 36, .22/.45)</code></td>
+        <td>确认弹框的投影与背景幕</td></tr>
+      <tr><td>占位灰（3 处）</td>
+        <td><span class="chip" style="background:#929b98"></span><code class="strike">#929b98</code></td>
+        <td><span class="chip" style="background:#939ba9"></span><code class="nv">#939ba9</code></td>
+        <td>三个输入框的 placeholder</td></tr>
+      <tr><td>页面顶部渐变起点</td>
+        <td><span class="chip" style="background:#fbfaf6"></span><code class="strike">#fbfaf6</code></td>
+        <td><span class="chip" style="background:#fbfbfd"></span><code class="nv">#fbfbfd</code></td>
+        <td>必须跟背景同族，否则冷暖两截相接</td></tr>
+      <tr><td>径向光晕</td>
+        <td><code class="strike">rgb(23 107 93 / 9%)</code></td>
+        <td><code class="nv">rgb(42 57 92 / 9%)</code></td>
+        <td>左上角那层很淡的主色光</td></tr>
+      <tr><td>选中文字底</td>
+        <td><span class="chip" style="background:#bfe3da"></span><code class="strike">#bfe3da</code></td>
+        <td><span class="chip" style="background:#eef1f6"></span><code class="nv">var(--accent-soft)</code></td>
+        <td><code>::selection</code>；顺带把写死的绿换成 token</td></tr>
+      <tr><td>引用块左边线</td>
+        <td><span class="chip" style="background:#a7c9c0"></span><code class="strike">#a7c9c0</code></td>
+        <td><span class="chip" style="background:#a9b3c6"></span><code class="nv">#a9b3c6</code></td>
+        <td>Markdown 引用线（只换色，不动字号字重）</td></tr>
+      <tr><td>深色代码块</td>
+        <td><span class="chip" style="background:#202a28"></span><code class="strike">#202a28</code> / <code class="strike">#edf4f1</code></td>
+        <td><span class="chip" style="background:#1e222b"></span><code class="nv">#1e222b</code> / <code class="nv">#edeff4</code></td>
+        <td>绿黑底 + 绿白字 → 冷黑底 + 冷白字</td></tr>
+      <tr><td>清除按钮 hover</td>
+        <td><code class="strike">#aab4b0</code> / <code class="strike">#f7f9f8</code></td>
+        <td><code class="nv">#a9b1bf</code> / <code class="nv">#f4f6f9</code></td>
+        <td>边框与底色各一处</td></tr>
+      <tr><td>状态卡描边</td>
+        <td><span class="chip" style="background:#c8dfd8"></span><code class="strike">#c8dfd8</code></td>
+        <td><span class="chip" style="background:#d6dce8"></span><code class="nv">#d6dce8</code></td>
+        <td>「正在转换」卡片</td></tr>
+      <tr><td>富文本粘贴框底</td>
+        <td><code class="strike">rgb(247 250 248 / 90%)</code></td>
+        <td><code class="nv">rgb(249 250 251 / 90%)</code></td>
+        <td>绿白半透明 → 冷白半透明</td></tr>
+      <tr><td>孤立变量</td>
+        <td><code class="strike">var(--surface-muted, #fbfbfa)</code></td>
+        <td><code class="nv">var(--paper)</code></td>
+        <td><code>--surface-muted</code> 从未定义过，只在设置页靠兜底值生效；直接用 <code>--paper</code>，不新增变量</td></tr>
+      <tr><td>favicon</td>
+        <td><span class="chip" style="background:#176b5d"></span><code class="strike">#176b5d</code></td>
+        <td><span class="chip" style="background:#2A395C"></span><code class="nv">#2A395C</code></td>
+        <td><code>src/app/icon.svg</code> 里的老绿（浏览器标签页上看得到）；与打包应用图标 <code>assets/icon.icns</code> 无关</td></tr>
+      <tr><td>不动</td>
+        <td colspan="2"><span class="keep"><code>--warning #8a5a12</code> / <code>--warning-soft #fff3d6</code> / <code>--danger #a33b32</code> / <code>--danger-soft #fbe9e6</code> / <code>#edc8c2</code> / <code>#eed79c</code> / <code>#dfaaa3</code> / <code>#fbe9e7</code> / <code>#8d3b2f</code> / <code>white</code></span></td>
+        <td>警告与错误语义色、<code>.stop</code> 边框、设置页密钥警告底</td></tr>
+    </tbody>
+  </table>
+
+  <h2 class="sectionTitle">③ 字重收敛</h2>
+  <p class="sectionNote">
+    现在三份 CSS 里散着 <strong>10 个不同的字重</strong>（400 / 500 / 560 / 680 / 700 / 720 / 730 / 750 / 760 / 780），
+    它们都是「比 normal 粗一点」的手调值，叠起来就是页面偏重的来源。收敛成两个变量：
+    <code>--weight-body: 400</code>（正文）与 <code>--weight-ui: 400</code>（界面）——两个 token 当前同值，拆开是为了留一个只影响正文的旋钮。
+    初版把正文压到 300（本机确实装了 Inter Light / PingFang SC Light，不是合成细体），但真机实测小字识别度不足，已回退到 400。
+  </p>
+
+  <div class="legend">
+    <span>下面是同一句标题在三个字重下的实样（Inter / PingFang SC）：</span>
+  </div>
+  <table class="cmp">
+    <tbody>
+      <tr><td style="width:26%"><code>font-weight: 780</code><br><span class="keep">现在的 .title</span></td>
+          <td><div class="typeSample w780">把网页变成干净的 Markdown</div></td></tr>
+      <tr><td><code>font-weight: 400</code><br><span class="nv">拟定：--weight-ui</span></td>
+          <td><div class="typeSample w400">把网页变成干净的 Markdown</div></td></tr>
+      <tr><td><code>font-weight: 300</code><br><span class="nv">备选：更大的 .title 也可用这档</span></td>
+          <td><div class="typeSample w300">把网页变成干净的 Markdown</div></td></tr>
+    </tbody>
+  </table>
+
+  <table class="cmp" style="margin-top:16px">
+    <thead><tr><th style="width:34%">选择器</th><th style="width:22%">现在</th><th style="width:20%">改为</th><th>用在哪</th></tr></thead>
+    <tbody>
+      <tr><td><code>body</code></td><td><code class="keep">400</code></td><td><code class="nv">--weight-body (400)</code></td><td>整站默认：正文、说明、卡片文字（粗细未变，只是换成了变量）</td></tr>
+      <tr><td><code>.preview</code></td><td><code class="keep">400</code></td><td><code class="nv">--weight-ui (400)</code></td><td><strong>守卫</strong>：把阅读区钉在界面字重上，body 以后再调也漏不进去</td></tr>
+      <tr><td><code>.settingsLink</code></td><td><code class="strike">560</code></td><td><code class="nv">--weight-ui</code></td><td>页头「设置」</td></tr>
+      <tr><td><code>.backLink</code></td><td><code class="strike">560</code></td><td><code class="nv">--weight-ui</code></td><td>设置页「返回转换」</td></tr>
+      <tr><td><code>.radioRow</code></td><td><code class="strike">560</code></td><td><code class="nv">--weight-ui</code></td><td>云端 / 本机 CLI 单选</td></tr>
+      <tr><td><code>.action</code></td><td><code class="strike">680</code></td><td><code class="nv">--weight-ui</code></td><td>复制 / 下载 / 返回顶部</td></tr>
+      <tr><td><code>.sourceRow label span</code></td><td><code class="strike">500</code></td><td><code class="nv">--weight-ui</code></td><td>「（可选）」括注</td></tr>
+      <tr><td><code>.clearAction</code>、<code>.submit</code>、<code>.sourceRow label</code>、<code>.errorHintAction</code>、<code>.translationNotice a</code>、<code>.backToTop</code></td>
+          <td><code class="strike">700</code></td><td><code class="nv">--weight-ui</code></td><td>按钮与链接族（6 处同值）</td></tr>
+      <tr><td><code>.modeTab</code></td><td><code class="strike">720</code></td><td><code class="nv">--weight-ui</code></td><td>链接 / 富文本切换</td></tr>
+      <tr><td><code>.stats dd</code></td><td><code class="strike">730</code></td><td><code class="nv">--weight-ui</code></td><td>统计数字</td></tr>
+      <tr><td><code>.eyebrow</code>、<code>.hintRow span::before</code></td><td><code class="strike">750</code></td><td><code class="nv">--weight-ui</code></td><td>眉题与提示前缀</td></tr>
+      <tr><td><code>.resultLabel</code></td><td><code class="strike">760</code></td><td><code class="nv">--weight-ui</code></td><td>「转换结果」</td></tr>
+      <tr><td><code>.title</code></td><td><code class="strike">780</code></td><td><code class="nv">--weight-ui</code></td><td>主标题（<strong>视觉变化最大的一处</strong>）</td></tr>
+      <tr><td><code>.stats dt</code></td><td><code class="keep">无（继承 body）</code></td><td><code class="nv">继承 --weight-body (400)</code></td><td>继承 body，当前与旧值同粗细</td></tr>
+      <tr><td><code>.brand</code></td><td><code class="keep">400</code></td><td><code class="nv">--weight-ui (400)</code></td><td>Michroma 只有一个字重，写值不变、仅换成变量</td></tr>
+      <tr><td><code>.preview h1/h2/h3/strong/th</code></td><td><code class="keep">浏览器默认 bold</code></td><td><code class="keep">不动</code></td><td>从未被显式改动过，保持原样（Q4）</td></tr>
+    </tbody>
+  </table>
+
+  <h2 class="sectionTitle">④ 落点与验证</h2>
+  <p class="sectionNote">
+    改动只落在三份 CSS 与一个 svg 上；<code>src/app/</code> 下的 TSX 里没有任何颜色字面量（已 grep 复核），
+    所以 <strong>不动 DOM</strong>，e2e 选择器不受影响。
+  </p>
+  <table class="cmp">
+    <thead><tr><th style="width:34%">文件</th><th>改什么</th></tr></thead>
+    <tbody>
+      <tr><td><code>src/app/globals.css</code></td><td>8 个 token + 阴影 + 渐变 + <code>::selection</code>；新增两个字重变量；<code>body</code> 字重接到变量</td></tr>
+      <tr><td><code>src/app/page.module.css</code></td><td>9 处染色 rgb / 6 处硬编码灰 / 深色代码块 / 15 处字重</td></tr>
+      <tr><td><code>src/app/settings/page.module.css</code></td><td>1 处染色 rgb / 1 处孤立变量 / 2 处字重</td></tr>
+      <tr><td><code>src/app/icon.svg</code></td><td>填充色 <code>#176b5d</code> → <code>#2A395C</code></td></tr>
+    </tbody>
+  </table>
+
+  <p class="sectionNote" style="margin-top:16px">
+    验证方式：先写失败用例（对主色 / 背景 / 字重的 computed-style 断言，外加一条「三份 CSS 里出现的每个颜色字面量都必须在新色板白名单里」的静态检查，
+    防绿色残留复发），再改 CSS 让它们变绿；最后重跑 <code>e2e/home.spec.ts</code> 与 <code>e2e/settings.spec.ts</code> 回归
+    —— 里面有几条像素级断言（按钮右边缘对齐、回到顶部位置）与一条 <code>rgb(138, 90, 18)</code> 警告色断言，都不在本次改动范围内，应保持绿。
+  </p>
+
+  <h2 class="sectionTitle">⑤ 已知取舍</h2>
+  <table class="cmp">
+    <tbody>
+      <tr><td style="width:26%">对比度余量</td>
+          <td><code>--muted</code> 在新背景上从 4.74:1 降到 4.64:1，仍在 AA 线以上但余量变小。<strong>真机复核判定不通过</strong>（备注文字在细体 + 抗锯齿下读不清），按预设方案往深调一档到 <code>#565E6B</code> = 6.26:1（卡片 6.54:1）。</td></tr>
+      <tr><td>首页标题变化最大</td>
+          <td><code>.title</code> 从 780 直接到 400，是整页气质最明显的一处改动。如果觉得「不够细」，把 <code>--weight-ui</code> 改成 300 即可（一条变量，回退成本为零）。</td></tr>
+      <tr><td>Inter 不是仓库资产</td>
+          <td>本机装了 Inter 全家族，目标机没装时会回退到系统无衬线；300 在那台机器上由 PingFang SC Light 承接中文。要不要把 Inter 打进包里，是另一件事（单文件约 800KB）。</td></tr>
+      <tr><td>正文细体已回退</td>
+          <td>初版把正文压到 300，真机实测小字识别度不足，<code>--weight-body</code> 已回退到 400；要再试只改这一个变量（抗锯齿那行是第二个旋钮）。</td></tr>
+    </tbody>
+  </table>
+
+</div>
+
+<script>
+(function () {
+  var stage = document.getElementById('stage');
+  function apply() {
+    var skin = document.querySelector('input[name="skin"]:checked').value;
+    stage.classList.toggle('skin-old', skin === 'old');
+    stage.classList.toggle('skin-new', skin === 'new');
+    stage.setAttribute('data-uiw', document.querySelector('input[name="uiw"]:checked').value);
+  }
+  document.querySelectorAll('input[name="skin"], input[name="uiw"]').forEach(function (el) {
+    el.addEventListener('change', apply);
+  });
+  apply();
+})();
+</script>
+</body>
+</html>

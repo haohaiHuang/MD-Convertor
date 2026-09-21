@@ -1,8 +1,8 @@
 {
   "project": "MD-Convertor",
-  "currentVersion": "0.3.4",
+  "currentVersion": "0.3.5",
   "updatedAt": "2026-09-21",
-  "activeFeature": null,
+  "activeFeature": "feat-039",
   "features": [
     {
       "id": "feat-018",
@@ -649,6 +649,45 @@
         "Size delta vs `0.3.3`: +4,325,558 bytes, entirely from this build's Next.js output tracing (optional `@img/sharp-wasm32` / `@emnapi/runtime` fallbacks plus three build-hash static files), not from the icon",
         "Installed to `/Applications/MD-Convertor.app` (previous build backed up at `/tmp/icon-v1-app`); packaged smoke test `ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1` exit 0; the Helper still registers as `UIElement`, so no ghost Dock tile",
         "Published as GitHub Release `v0.3.4` (asset 237,272,966 bytes, `published=2026-09-21T03:41:41Z`, tag `e251267`, marked Latest); the second icon version was put in place without bumping the version (the earlier release had only ever been a minutes-old empty draft with zero assets, so the user chose to stay on 0.3.4) and the full gate was re-run, so this ZIP carries that second icon — extracting `MD-Convertor.app/Contents/Resources/electron.icns` from it yields the same `e8cbc7e7…48bf` as the committed `assets/icon.icns`; the tag was afterwards moved to that icon commit, so the tag, the released ZIP and `checkout v0.3.4` all agree"
+      ]
+    },
+    {
+      "id": "feat-039",
+      "name": "Visual Refresh (0.3.5)",
+      "title": "Visual Refresh (0.3.5)",
+      "status": "in-progress",
+      "dependencies": [
+        "feat-038"
+      ],
+      "scope": "Direction-only roadmap lives in `docs/PLAN-next-phase.md`; construction detail lives in `docs/features/ui-refresh/FSD.md` plus stage documents S1-color-system.md, S2-weight.md and S3-release.md, with the interactive design sheet at `docs/features/ui-refresh/design/ui-refresh.html`. It replaces the now-void `docs/PRD-upgrade-v2.md` and `docs/UI-DESIGN-SPEC.md`. The work is CSS-only (`src/app/` has zero colour or font-weight literals in TSX): the moss-green / warm-cream palette becomes navy-blue / cool-grey-white, the ten hand-tuned font weights collapse into the `--weight-body` / `--weight-ui` variables (both 400 - the body was briefly thinned to 300 and reverted after a real-device review), and `-webkit-font-smoothing: antialiased` is switched on (Q6, decided 2026-09-21 after a real-build five-state comparison). Frozen: HTML structure, copy, spacing, radii, border widths, shadow shapes, font families, the Markdown preview region (Q4), the semantic warning/danger colours, and the packaged app icon.",
+      "acceptance": [
+        "S1: no green residue anywhere - the three accent tokens, the four neutral tokens, the tinted literals (shadows, focus rings, overlays, translucent fills), the dark code block and the web favicon all move to the navy family",
+        "S2: `--weight-body` and `--weight-ui` replace the ten hand-tuned weights; `body` uses the body weight and the 19 restricted selectors use the UI weight; a `.preview { font-weight: var(--weight-ui) }` guard stops the body weight cascading into the Markdown reading region (both variables ended up at `400`: the body was thinned to 300 first and reverted after a real-device review, so S2 no longer changes app body text and the guard stays as same-value insurance)",
+        "S3: version 0.3.5, gate green, artifact installed locally and published, docs and state artifacts synced",
+        "`tests/palette.test.ts` and `e2e/theme.spec.ts` are added RED-first, and the existing pixel-level assertions in `e2e/home.spec.ts` and `e2e/settings.spec.ts` stay green",
+        "S2 (Q6): `body, button, input, textarea, select { -webkit-font-smoothing: antialiased }` is added, and the Q4 amendment is honoured - the Markdown preview keeps its font size, family and weight while its rendering smoothing changes with everything else"
+      ],
+      "verification": [
+        "Design sheet machine gate: `design_audit` PASS-WITH-WAIVER after fixing the three errors (missing `:focus-visible`, missing `overflow-x: clip`, 16 font families); `design_contrast` passed; rendered with Playwright chromium at 1400x1000 @2x with no console or page errors, computed values matching the spec, both switchers working, and `document.documentElement.scrollWidth` still 360 at a 360px viewport",
+        "Direction confirmed by the user on 2026-09-21 before any code moved: Q1=B, Q2/Q3/Q5=yes, Q4=preview font size/family/weight frozen, plus Q6=antialiasing on. Evidence was a five-state comparison generated from the real 0.3.4 production build with CSS injected at runtime (baseline / colours only / weights only / both / both+antialiasing), screenshotted at 1180x1000 and driven by a throwaway `shot-compare.tmp.mjs`; the probe confirmed 780 -> 400 for the hero heading, 700 -> 400 for buttons and 400 -> 300 for body text (body text was later put back to 400 - see the S2 verification entry), and the hero zoom showed the light-weight change is clearly visible once antialiasing is on",
+        "S2 (weights + antialiasing) implemented 2026-09-21 (uncommitted). RED-first: `e2e/theme.spec.ts` grew four cases (interface weight, brand regression lock, body/preview cascade, antialiasing), the last skipping Firefox/WebKit because `webkitFontSmoothing` is Chromium-only; against the pre-S2 build chromium was 3 failed / 3 passed (`.submit` 700 instead of 400, `.stats dt` 400 instead of 300, `webkitFontSmoothing` `auto` instead of `antialiased`), and after the tokens, the `body` weight and the 19 selector replacements it was 4 passed / 2 failed - the two failures being `.preview` computed 300 instead of 400, which is the guard's own RED. GREEN: `npx playwright test e2e/theme.spec.ts --project=chromium` 6 passed; `e2e/home.spec.ts` + `e2e/settings.spec.ts` chromium 38 passed with the locked pixel-alignment assertion intact; `npm run test:e2e` 203 passed / 4 skipped (193/2 at S1; +10 passed and +2 skipped from 4 new cases x 3 engines); `./init.sh` exit 0 - 64 files / 866 tests, statements 95.28%. Final values: `--weight-body: 400` and `--weight-ui: 400` (body text was thinned to 300 first and reverted to Regular after the user's real-device review found the light weight unreadable at small sizes; that revert was TDD too - setting the `BODY_WEIGHT` constant in `e2e/theme.spec.ts` to 400 went 1 failed / 5 passed with `.stats dt` computing 300, then the one-line `globals.css` change rebuilt and ran chromium 6 passed), `body { font-weight: var(--weight-body) }`, the `.preview { font-weight: var(--weight-ui) }` guard, and `body, button, input, select, textarea { -webkit-font-smoothing: antialiased }`. `.preview h2` still computes 700, so the reading pane keeps bold headings; `.brand` stays 400 with its Michroma family (that face ships 400 only, so a thinner brand would be synthetic).",
+        "S1 (colour system) implemented 2026-09-21 and still uncommitted - the FSD requires S1 and S2 to land as two separate commits. Both new guards were written RED-first: `npx vitest run tests/palette.test.ts` was 3 failed / 0 passed (33 literals outside the whitelist, ending with `globals.css still contains #176b5d`) and `npx playwright test e2e/theme.spec.ts --project=chromium` was 2 failed (`html` background `rgb(247, 245, 239)` instead of `rgb(249, 250, 251)`, badge `rgb(220, 236, 231)` instead of `rgb(238, 241, 246)`), before the 35 literals across `globals.css` / `page.module.css` / `settings/page.module.css` / `icon.svg` were rewritten. Final token values: `--paper #f9fafb`, `--surface #ffffff`, `--ink #1c2230`, `--muted #565e6b`, `--line #dbdfe7`, `--accent #2a395c`, `--accent-dark #232f4e`, `--accent-soft #eef1f6`, `--shadow 0 22px 60px rgb(30 35 50 / 10%)`, `::selection var(--accent-soft)`, body radial `rgb(42 57 92 / 9%)` over `linear-gradient(180deg, #fbfbfd, var(--paper))`; the never-defined `--surface-muted` fallback in `settings/page.module.css` became `var(--paper)`. GREEN: palette guard 3 passed; theme spec 2 passed on chromium (after `npm run build`, since the e2e server serves `.next/standalone`); `e2e/home.spec.ts` + `e2e/settings.spec.ts` + `e2e/theme.spec.ts` on chromium 40 passed with the locked pixel-alignment assertion and the `rgb(138, 90, 18)` warning-colour assertion both still green; `npm run test:e2e` 193 passed / 2 skipped (was 187/2, +6 = 2 cases x 3 engines) exit 0; `./init.sh` exit 0 - 64 files / 866 tests, statements 95.28%. `design_contrast` found no pair under threshold (only gate 40: `globals.css` `::selection` declares a `color` with no pairable background); hand-computed pairs: ink/paper 15.2:1, muted/paper 6.26:1 (card 6.54:1; after the real-device review found note text hard to read, the muted token was darkened one step from the planned #6A7280 / 4.64:1 to #565E6B; design sheet, FSD and S1 doc synced), white/accent 11.4:1, code text/dark block 13.8:1, placeholder/surface 2.8:1 (2.83:1 before, recorded exemption). No `--weight-*` variable exists yet - that interface belongs to S2."
+      ]
+    },
+    {
+      "id": "feat-040",
+      "name": "Browser Extension Direction",
+      "title": "Browser Extension Direction",
+      "status": "planned",
+      "dependencies": [],
+      "scope": "Direction only, deliberately without stage documents: `docs/features/browser-extension/FSD.md` records the known scenario (convert the current page from the browser using the session the user already has, preview locally, download `.md`) and the three unresolved questions that each change the whole plan - where the extension lives and how it is built, where the provider key is stored now that `safeStorage` cannot be reused, and whether the Readability/Turndown pipeline is shared or reimplemented. No code, no build config and no manifest exist.",
+      "acceptance": [
+        "The three questions are answered through requirement analysis before any stage document or code is written",
+        "`AGENTS.md` platform boundaries are revised only once the first question is settled",
+        "Independent version line: the void documents' v0.5.0/v0.6.0/v0.7.0 numbering is not adopted"
+      ],
+      "verification": [
+        "Not started: the direction is recorded in the roadmap (section 6.1) and the FSD only"
       ]
     }
   ],

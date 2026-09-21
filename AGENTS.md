@@ -45,6 +45,8 @@
 - `docs/QUALITY-AUDIT.md`：整体质检结论、问题等级、整改顺序与复验清单；安全整改和发布放行前读取。
 - `docs/TASKS-*.md`：进行中 feature 的任务级事实源（与对应 PLAN 文档分离）。每个任务记录状态、边界、完成条件与验证证据；一次只推进一个 `in-progress` 任务；开始实施前读取对应文件。
 - `docs/PRD-*.md`：产品需求事实源（当前 `docs/PRD-translation.md`）。涉及产品范围、非目标或隐私条款变化时，先读 PRD 再读 `docs/PRODUCT.md`；PRD 与 PRODUCT.md 冲突时以 PRD 为准并同步修订 PRODUCT.md。
+- `docs/PLAN-next-phase.md`：下一阶段**路线图**（方向、顺序、边界、已定决策）；施工级细节在对应方向的 feature 文档里。开工前先读本文件。
+- `docs/PRD-upgrade-v2.md` 与 `docs/UI-DESIGN-SPEC.md`：**已于 2026-09-21 删除**（作废原因见路线图 §7）；不要重建，也不要把两者中的范围、色板或改造文件清单搬回来。
 - `docs/features/<feature>/**`：FSD 执行文档（`FSD.md` 总纲 + 每阶段一份 Spec/Plan/Task 一体的执行文档）。实施某阶段时只读 `FSD.md` 与该阶段文档，不必读其它阶段文档。
 
 后续企划新增文档时，应在这里补充其用途和读取时机，而不是把详细方案堆入本文件。
