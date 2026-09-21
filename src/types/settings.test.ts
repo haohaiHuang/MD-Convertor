@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_SETTINGS,
+  SETTINGS_VERSION,
   SettingsValidationError,
   isBcp47,
   validateSettings,
@@ -74,6 +75,7 @@ describe("settings types", () => {
       },
       languages: { target: "zh-Hans", custom: [] },
       translation: { defaultEnabled: false },
+      output: { defaultPath: null, useDefaultPath: false },
     });
   });
 
@@ -251,5 +253,111 @@ describe("isBcp47", () => {
 
   it.each(["", "zh_Hans", "chinese", "zh-Hans-CN-extra-9", "en-", "-en"])("rejects %s", (tag) => {
     expect(isBcp47(tag)).toBe(false);
+  });
+});
+
+describe("output settings", () => {
+  it("includes output defaults in DEFAULT_SETTINGS", () => {
+    expect(DEFAULT_SETTINGS.output).toEqual({ defaultPath: null, useDefaultPath: false });
+  });
+
+  it("accepts a fully populated settings object with output values", () => {
+    const settings = populated();
+    settings.output = { defaultPath: "/Users/someone/Documents/notes", useDefaultPath: true };
+    expect(validateSettings(settings)).toEqual(settings);
+  });
+
+  it("keeps the settings version at 1 while adding output", () => {
+    // The lenient read of a missing `output` must never be coupled to a version bump:
+    // bumping would make every pre-feat-041 settings.json fail validation and wipe user config.
+    expect(SETTINGS_VERSION).toBe(1);
+  });
+
+  it("fills a missing output object with defaults and keeps every existing field (legacy settings.json)", () => {
+    const raw = populated() as Omit<Settings, "output">;
+    const validated = validateSettings(raw);
+
+    expect(validated.output).toEqual({ defaultPath: null, useDefaultPath: false });
+    expect(validated.version).toBe(1);
+    expect(validated.mode).toBe("cloud");
+    expect(validated.cloud).toEqual(raw.cloud);
+    expect(validated.local).toEqual(raw.local);
+    expect(validated.languages).toEqual(raw.languages);
+    expect(validated.translation).toEqual(raw.translation);
+  });
+
+  it("normalizes useDefaultPath=true with a null defaultPath to the all-default output", () => {
+    const settings = populated();
+    settings.output = { defaultPath: null, useDefaultPath: true };
+    expect(validateSettings(settings).output).toEqual({ defaultPath: null, useDefaultPath: false });
+  });
+
+  it("normalizes the impossible combination before writing it back", () => {
+    // The normalization is not read-only: the sanitized copy is what callers persist.
+    const settings = populated();
+    settings.output = { defaultPath: null, useDefaultPath: true };
+    const validated = validateSettings(settings);
+    expect(() => validateSettings(validated)).not.toThrow();
+    expect(validated.output.useDefaultPath).toBe(false);
+  });
+
+  it("still rejects an unknown field inside output (leniency is missing-only, not shape-free)", () => {
+    const raw = {
+      ...populated(),
+      output: { defaultPath: "/tmp/notes", useDefaultPath: true, extra: "x" },
+    };
+    let captured: unknown;
+    try {
+      validateSettings(raw);
+    } catch (error) {
+      captured = error;
+    }
+    expect(captured).toBeInstanceOf(SettingsValidationError);
+    expect((captured as SettingsValidationError).message).toContain("output.extra");
+  });
+
+  it("rejects a non-boolean useDefaultPath", () => {
+    const raw = {
+      ...populated(),
+      output: { defaultPath: "/tmp/notes", useDefaultPath: "yes" },
+    };
+    let captured: unknown;
+    try {
+      validateSettings(raw);
+    } catch (error) {
+      captured = error;
+    }
+    expect(captured).toBeInstanceOf(SettingsValidationError);
+    expect((captured as SettingsValidationError).message).toContain("output.useDefaultPath");
+  });
+
+  it("rejects a non-string non-null defaultPath", () => {
+    const raw = {
+      ...populated(),
+      output: { defaultPath: 7, useDefaultPath: false },
+    };
+    let captured: unknown;
+    try {
+      validateSettings(raw);
+    } catch (error) {
+      captured = error;
+    }
+    expect(captured).toBeInstanceOf(SettingsValidationError);
+    expect((captured as SettingsValidationError).message).toContain("output.defaultPath");
+  });
+
+  it("rejects an empty-string defaultPath", () => {
+    const raw = {
+      ...populated(),
+      output: { defaultPath: "", useDefaultPath: false },
+    };
+    let captured: unknown;
+    try {
+      validateSettings(raw);
+    } catch (error) {
+      captured = error;
+    }
+    expect(captured).toBeInstanceOf(SettingsValidationError);
+    expect((captured as SettingsValidationError).message).toContain("output.defaultPath");
   });
 });

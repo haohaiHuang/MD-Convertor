@@ -44,6 +44,10 @@ function sanitizeSettings(settings: Settings): Settings {
     translation: {
       defaultEnabled: settings.translation.defaultEnabled,
     },
+    output: {
+      defaultPath: settings.output.defaultPath,
+      useDefaultPath: settings.output.useDefaultPath,
+    },
   };
 }
 

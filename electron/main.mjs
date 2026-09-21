@@ -2,9 +2,10 @@ import http from "node:http";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { app, BrowserWindow, ipcMain, safeStorage, shell } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, safeStorage, shell } from "electron";
 import preloadContract from "./preload-contract.cjs";
 import { buildServerEnv, readDotEnvFile, readLoginShellPath, resolvePathEnv } from "./env.mjs";
+import { createOutputChannels } from "./output.mjs";
 import { pushRuntimeSecret } from "./runtime-secrets.mjs";
 import { resolveServerBinary } from "./server-binary.mjs";
 import { createSecretsStore } from "./secrets.mjs";
@@ -322,6 +323,7 @@ async function runBridgeSmokeTest(window) {
 
 app.whenReady().then(async () => {
   registerSecretsIpc();
+  createOutputChannels({ ipcMain, dialog });
   const runtime = process.env.ELECTRON_RENDERER_URL
     ? {
         rendererUrl: process.env.ELECTRON_RENDERER_URL,

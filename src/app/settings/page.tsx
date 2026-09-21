@@ -10,9 +10,12 @@ import {
   fetchCliModels,
   fetchProviderModels,
   fetchSettings,
+  outputBridge,
+  outputCodeMessage,
   putSettings,
   scanLocalClis,
   secretsBridge,
+  type OutputBridge,
   type SecretsBridge,
 } from "./client";
 import styles from "./page.module.css";
@@ -44,6 +47,7 @@ function cloudDraft(provider: CloudProviderSettings | null): CloudDraft {
 }
 
 const CLOUD_NOTE = "cloud";
+const OUTPUT_NOTE = "output";
 
 type Note = { text: string; warn?: boolean };
 
@@ -68,6 +72,7 @@ export default function SettingsPage() {
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [bridge, setBridge] = useState<SecretsBridge | null>(null);
+  const [output, setOutput] = useState<OutputBridge | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [reloadToken, setReloadToken] = useState(0);
   const router = useRouter();
@@ -80,6 +85,7 @@ export default function SettingsPage() {
         const loaded = await fetchSettings();
         if (cancelled) return;
         setBridge(secretsBridge());
+        setOutput(outputBridge());
         setSettings(loaded);
         setCloudForm(cloudDraft(editingProvider(loaded.cloud)));
         setNotes({});
@@ -141,6 +147,40 @@ export default function SettingsPage() {
     const pending = pendingSave.current;
     if (pending && !(await pending)) return;
     router.push("/");
+  }
+
+  /** Picks a directory through the desktop bridge; a dismissal is silence, not an error. */
+  async function chooseOutputDirectory() {
+    if (!settings) return;
+    if (!output) {
+      setNote(OUTPUT_NOTE, "目录选择只能在桌面应用中使用。", true);
+      return;
+    }
+    setNote(OUTPUT_NOTE, "正在选择目录…");
+    const result = await output.selectDirectory();
+    if (!result.ok) {
+      if (result.code !== "CANCELLED") {
+        setNote(OUTPUT_NOTE, outputCodeMessage(result.code, "目录选择失败。"), true);
+      }
+      return;
+    }
+    await save(
+      { ...settings, output: { ...settings.output, defaultPath: result.path ?? null } },
+      { key: OUTPUT_NOTE, text: "已保存。" },
+    );
+  }
+
+  /** The switch never persists an enabled state without a directory behind it. */
+  async function toggleUseDefaultPath(enabled: boolean) {
+    if (!settings) return;
+    if (enabled && !settings.output.defaultPath) {
+      setNote(OUTPUT_NOTE, "请先选择目录。", true);
+      return;
+    }
+    await save(
+      { ...settings, output: { ...settings.output, useDefaultPath: enabled } },
+      { key: OUTPUT_NOTE, text: "已保存。" },
+    );
   }
 
   function patchCli(next: Settings, id: LocalCliId, patch: Partial<LocalCliSettings>): Settings {
@@ -318,6 +358,53 @@ export default function SettingsPage() {
           </div>
         ) : null}
         {loadState === "ready" && message ? <p className={styles.status} role="status">{message}</p> : null}
+
+        {settings ? (
+          <section className={styles.card} aria-labelledby="output-title">
+            <h2 id="output-title" className={styles.cardTitle}>输出</h2>
+            <p className={styles.cardNote}>
+              设置默认保存目录后，转换结果可以直接写入该目录，不再每次弹出保存位置选择。
+            </p>
+
+            <article className={styles.provider} aria-label="输出设置">
+              <div className={styles.providerHead}>
+                <code className={styles.path}>{settings.output.defaultPath ?? "未设置"}</code>
+                <div className={styles.actions}>
+                  <button
+                    className={styles.button}
+                    type="button"
+                    disabled={saving || loadState !== "ready" || !output}
+                    onClick={() => void chooseOutputDirectory()}
+                  >
+                    选择目录
+                  </button>
+                </div>
+              </div>
+
+              <label className={styles.switchRow}>
+                <input
+                  type="checkbox"
+                  className={styles.checkbox}
+                  aria-label="使用默认目录"
+                  checked={settings.output.useDefaultPath}
+                  disabled={saving || loadState !== "ready"}
+                  onChange={(event) => void toggleUseDefaultPath(event.target.checked)}
+                />
+                <span>使用默认目录</span>
+              </label>
+
+              {!output ? (
+                <p className={styles.cardNote}>目录选择只能在桌面应用中使用。</p>
+              ) : null}
+
+              {notes[OUTPUT_NOTE] ? (
+                <p className={noteClass(notes[OUTPUT_NOTE])} role="status">
+                  {notes[OUTPUT_NOTE].text}
+                </p>
+              ) : null}
+            </article>
+          </section>
+        ) : null}
 
         {settings ? (
           <section className={styles.card} aria-labelledby="provider-mode-title">

@@ -20,6 +20,8 @@ async function mockSettings(page: Page) {
         local: { clis: [], activeCliId: null },
         languages: { target: "zh-Hans", custom: [] },
         translation: { defaultEnabled: false },
+        // The real API fills output server-side; the mock matches that contract.
+        output: { defaultPath: null, useDefaultPath: false },
       }),
     }),
   );

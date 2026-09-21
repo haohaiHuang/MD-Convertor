@@ -35,6 +35,8 @@ type StoredSettings = {
   local: { clis: unknown[]; activeCliId: string | null };
   languages: { target: string; custom: string[] };
   translation: { defaultEnabled: boolean };
+  // The real API always returns output (lenient read fills it server-side).
+  output: { defaultPath: string | null; useDefaultPath: boolean };
 };
 
 function settingsWith(defaultEnabled: boolean, target: string): StoredSettings {
@@ -45,6 +47,7 @@ function settingsWith(defaultEnabled: boolean, target: string): StoredSettings {
     local: { clis: [], activeCliId: null },
     languages: { target, custom: [] },
     translation: { defaultEnabled },
+    output: { defaultPath: null, useDefaultPath: false },
   };
 }
 

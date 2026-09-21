@@ -1,8 +1,8 @@
 {
   "project": "MD-Convertor",
-  "currentVersion": "0.3.5",
+  "currentVersion": "0.3.6",
   "updatedAt": "2026-09-21",
-  "activeFeature": "feat-039",
+  "activeFeature": "feat-041",
   "features": [
     {
       "id": "feat-018",
@@ -655,7 +655,7 @@
       "id": "feat-039",
       "name": "Visual Refresh (0.3.5)",
       "title": "Visual Refresh (0.3.5)",
-      "status": "in-progress",
+      "status": "done",
       "dependencies": [
         "feat-038"
       ],
@@ -688,6 +688,39 @@
       ],
       "verification": [
         "Not started: the direction is recorded in the roadmap (section 6.1) and the FSD only"
+      ]
+    },
+    {
+      "id": "feat-041",
+      "name": "Default MD Save Path",
+      "title": "Default MD Save Path (0.3.6)",
+      "status": "in-progress",
+      "dependencies": [
+        "feat-039"
+      ],
+      "scope": "Construction detail lives in `docs/features/default-save-path/FSD.md` plus stage documents S1-settings-and-ipc.md, S2-download-flow.md and S3-release.md. The settings contract gains a root-level `output: { defaultPath: string | null, useDefaultPath: boolean }` (SETTINGS_VERSION stays 1; a missing `output` is read leniently as the default - the only sanctioned relaxation of strict validation, so old settings.json files never trigger the corrupt-backup reset); the Electron main process gains two IPC channels (`md-convertor:output:select-directory`, `md-convertor:output:save-file`) behind `window.mdConvertor.output`, with path-traversal and filename validation enforced in both preload and main; the settings page gains an Output card (read-only path display, choose-directory button, use-default toggle); the home page download branches three ways - bridge + toggle on + path set: write directly and show a saved-path notice, bridge save fails: degrade to the browser download with a notice, anything else: the unchanged 0.3.5 browser download. Non-goals: no per-file prompt mode, no save dialog anywhere in the new path, no file-history or multi-directory rotation, no web-behaviour change.",
+      "nonGoals": [
+        "No conversion-pipeline, translation-engine or scraping-security changes",
+        "No `dialog.showSaveDialog` - the toggle replaces the prompt, it does not re-skin it",
+        "No automatic recovery beyond one `mkdir -p`; an unwritable directory degrades to the browser download with a notice",
+        "No history, recent files, or duplicate-name suffixing (same-name files are overwritten, matching the browser save-as semantics)"
+      ],
+      "acceptance": [
+        "S0: version is bumped 0.3.5 -> 0.3.6 through the release-guard TDD loop before any other code changes",
+        "S1: `validateSettings` reads an old settings.json without `output` without losing any existing field (dedicated test), normalizes `useDefaultPath:true` + `defaultPath:null` to the all-default pair, and always writes `output`; the two IPC channels and the preload bridge exist with RED-first tests; the settings page Output card renders, selects a directory through the mocked bridge and toggles with the empty-path guard",
+        "S2: the home download forks exactly on (useDefaultPath && defaultPath && bridge); success shows a `role=status` saved-path notice and no browser download; failure shows a readable-reason notice and degrades to the browser download; the no-bridge path leaves every existing 0.3.5 e2e assertion untouched and green",
+        "S3: gate green on Node 24.14.1/24.15.0, artifact installed locally, published as v0.3.6, docs and state artifacts synced",
+        "Real-machine probe: toggle on - file lands in the directory with no dialog; toggle off - the dialog appears; both confirmed by the user"
+      ],
+      "verification": [
+        "Planned 2026-09-21: FSD + three stage documents written from code reconnaissance (settings contract and store read path, preload-contract channel pattern, main.mjs IPC registration, page.tsx downloadMarkdown and settings fetch usage); no code changed, no tests written, no gate run yet",
+        "S1 T1.0 (2026-09-21): version 0.3.5 -> 0.3.6 via TDD. RED: scripts/release-guards.test.mjs fixtures moved to 0.3.6 first => 7 failed / 22 passed, all failures `Release version must be 0.3.5.` (log /tmp/s1-t10-red.log). GREEN: scripts/release-desktop.mjs (RELEASE_VERSION_ERROR + target check), package.json, package-lock.json (root + packages[\"\"]), feature_list.json currentVersion updated; the fresh-artifact fixture zip name is version-derived so it moved with the fixtures => 29 passed (log /tmp/s1-t10-green.log)",
+        "S1 T1.1 (2026-09-21): settings contract. RED: src/types/settings.test.ts output describe => 9 failed / 46 passed (log /tmp/s1-t11-red.log). GREEN: OutputSettings type, OUTPUT_KEYS, DEFAULT_SETTINGS.output, ROOT_KEYS, validateSettings lenient-missing-output branch (only field allowed absent; comment states why) + readOutput + useDefaultPath-true-with-null-path normalization => 55 passed (log /tmp/s1-t11-green.log); SETTINGS_VERSION stays 1 locked by a dedicated regression test; src/app/api/settings/route.ts sanitizeSettings now forwards output (full vitest run 876 passed; tsc --noEmit clean)",
+        "S1 T1.2 (2026-09-21): preload contract. RED: new electron/preload-contract.test.cjs => 25 failed / 1 passed (log /tmp/s1-t12-red.log). GREEN: CHANNELS gains select-directory/save-file, isValidOutputFilename (no /, no \\\\, no .., 1-255 chars) and isAbsoluteDirPath (leading /, no ~, no .. segment) => 26 passed (log /tmp/s1-t12-green.log)",
+        "S1 T1.3 (2026-09-21): preload output bridge. RED: electron/preload.test.cjs extended => 20 failed / 16 passed (log /tmp/s1-t13-red.log). GREEN: preload.cjs self-contained copies of the two channel names + local filename/dirPath/content asserts; TypeError before invoke for every bad input; sync-with-contract property test => 36 passed for the file, 62 across preload + contract (log /tmp/s1-t13-green.log)",
+        "S1 T1.4 (2026-09-21): main-process output IPC. RED: new electron/output.test.mjs => module not found (log /tmp/s1-t14-red.log). GREEN: new electron/output.mjs createOutputChannels (dialog selectDirectory with openDirectory+createDirectory, CANCELLED semantics; save-file re-validates dirPath/filename/content independently of preload, mkdir -p, writes, returns path; failures map to error.code with code-only warn log) wired in main.mjs app.whenReady => 23 passed (log /tmp/s1-t14-green.log)",
+        "S1 T1.5 (2026-09-21): settings Output card. RED: e2e/settings.spec.ts output describe => exactly the 5 new cases failed / 24 passed on chromium (log /tmp/s1-t15-red.log). GREEN: client.ts outputBridge + OutputResult/OutputBridge + OUTPUT_CODE_MESSAGES; settings/page.tsx Output card (path display or 未设置, 选择目录 disabled without bridge, toggle with the empty-path guard refusing to persist); shared settings mocks in settings/theme/translate specs gained the output field the real API always returns => 29 passed (log /tmp/s1-t15-green2.log)",
+        "S1 T1.6 (2026-09-21): ./init.sh exit 0 => 66 files / 944 tests, statements 95.28%, lint + tsc --noEmit + production build green (log /tmp/s1-init-green.log); full chromium e2e 75 passed (log /tmp/s1-e2e-all-chromium.log) including home/paste/translate/theme/convert-api, so the home page behaviour is unchanged; three-engine e2e and packaging gate deliberately deferred to S2/S3"
       ]
     }
   ],

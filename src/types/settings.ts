@@ -49,6 +49,14 @@ export type Settings = {
   translation: {
     defaultEnabled: boolean;
   };
+  output: OutputSettings;
+};
+
+export type OutputSettings = {
+  /** Absolute directory path; null = not configured. */
+  defaultPath: string | null;
+  /** true = downloads write straight into defaultPath without a save dialog. */
+  useDefaultPath: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -71,6 +79,10 @@ export const DEFAULT_SETTINGS: Settings = {
   },
   translation: {
     defaultEnabled: false,
+  },
+  output: {
+    defaultPath: null,
+    useDefaultPath: false,
   },
 };
 
@@ -112,7 +124,8 @@ const LOCAL_KEYS = ["clis", "activeCliId"] as const;
 const CLI_KEYS = ["id", "name", "enabled", "detectedPath", "models", "selectedModel"] as const;
 const LANGUAGE_KEYS = ["target", "custom"] as const;
 const TRANSLATION_KEYS = ["defaultEnabled"] as const;
-const ROOT_KEYS = ["version", "mode", "cloud", "local", "languages", "translation"] as const;
+const OUTPUT_KEYS = ["defaultPath", "useDefaultPath"] as const;
+const ROOT_KEYS = ["version", "mode", "cloud", "local", "languages", "translation", "output"] as const;
 
 function fail(path: string, reason: string): never {
   throw new SettingsValidationError(`${path} ${reason}`);
@@ -231,7 +244,16 @@ function assertUniqueIds(entries: { id: string }[], path: string, key: string): 
 /** Strict, non-mutating validation of a settings value read from disk or from a request body. */
 export function validateSettings(value: unknown): Settings {
   const root = readObject(value, "settings");
-  readFields(root, "settings", ROOT_KEYS);
+  // `output` is the only field allowed to be absent on read: pre-0.3.6 settings.json
+  // files legitimately lack it, and rejecting the file would reset every user config.
+  // Everything else stays strict, and written files always contain `output`.
+  for (const key of Object.keys(root)) {
+    if (!ROOT_KEYS.includes(key as (typeof ROOT_KEYS)[number])) fail(`settings.${key}`, "is not a known field");
+  }
+  for (const key of ROOT_KEYS) {
+    if (key === "output") continue;
+    if (!(key in root)) fail(`settings.${key}`, "is missing");
+  }
 
   const version = root.version;
   if (typeof version !== "number") fail("settings.version", "must be a number");
@@ -265,6 +287,17 @@ export function validateSettings(value: unknown): Settings {
   const translation = readObject(root.translation, "translation");
   readFields(translation, "translation", TRANSLATION_KEYS);
 
+  // Lenient read: a missing output object falls back to the defaults (see comment above).
+  const output = "output" in root && root.output !== undefined
+    ? readOutput(root.output)
+    : { defaultPath: null, useDefaultPath: false };
+  // Binding rule: an enabled switch without a directory is normalized away so the
+  // stored file can never describe "direct-write mode with nowhere to write".
+  if (output.useDefaultPath && output.defaultPath === null) {
+    output.defaultPath = null;
+    output.useDefaultPath = false;
+  }
+
   return {
     version: SETTINGS_VERSION,
     mode,
@@ -277,5 +310,15 @@ export function validateSettings(value: unknown): Settings {
     translation: {
       defaultEnabled: readBoolean(translation, "translation", "defaultEnabled"),
     },
+    output,
+  };
+}
+
+function readOutput(value: unknown): OutputSettings {
+  const object = readObject(value, "settings.output");
+  readFields(object, "settings.output", OUTPUT_KEYS);
+  return {
+    defaultPath: readNullableString(object, "settings.output", "defaultPath", NON_EMPTY),
+    useDefaultPath: readBoolean(object, "settings.output", "useDefaultPath"),
   };
 }

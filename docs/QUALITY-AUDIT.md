@@ -243,3 +243,13 @@ The package is about 4.3 MB larger than `0.3.3`; the delta comes from this build
 ## Release Decision
 
 Approved for personal testing. Not approved for frictionless public distribution, and QA-008 is accepted rather than being worked: the user decided on 2026-09-20 not to buy a Developer ID / notarize, so signing stays out of scope until that decision changes. `0.3.4` passed its gate on 2026-09-21 and was published as GitHub Release `v0.3.4` (237,272,966 bytes, SHA-256 `6910120e…2704`); that ZIP was rebuilt after the user's second icon version was put in place and the tag was moved onto that commit, so the tag, the released ZIP and `checkout v0.3.4` agree. QA-012 no longer applies: `next` is 16.3.5 and `sharp` is 0.35.4 as of 2026-09-20 and `npm audit --omit=dev` reports no production advisories. `0.3.3` passed its gate on 2026-09-20 and was published as GitHub Release `v0.3.3`; `0.3.2` passed its gate on 2026-09-20 and was published as GitHub Release `v0.3.2` (tag `1c3ed80`); `0.3.1` passed its gate and was published as GitHub Release `v0.3.1` earlier the same day. The release notes state that the build is unsigned and intended for personal testing.
+
+## Archived Round Log
+
+### 2026-09-21 — feat-039 视觉刷新 + 0.3.5 发布（上一轮收尾归档）
+
+- S1（色彩系统）：`tests/palette.test.ts` 先 3 failed / 33 个白名单外字面量 → 35 处字面量替换 GREEN；`e2e/theme.spec.ts` 先 2 failed → 2 passed。提交 `972ff4a`。
+- S2（字重收敛 + 抗锯齿）：e2e 扩 6 用例先 RED（3 failed / 3 passed）→ token `--weight-body: 400` / `--weight-ui: 400`、19 处替换、`.preview` 守卫、全局 antialiased 后 GREEN；真机复核后 `--weight-body` 300 → 400 回退（细体小字识别度不足），S2 净效果为「界面字重收敛为一档 400 + 抗锯齿」。提交 `fae16bc`。
+- 富文本「清空」按钮归位（不属 feat-039）：`page.tsx` 把按钮移进 `.sourceRow`、删除 `.pasteActions`；e2e 先红（y 差 58px）后绿。提交 `a03b175`。
+- S3（发布）：版本升级 TDD（release-guards fixture 先 5 failed → 29 passed）；`npm run desktop:release` exit 0（Node 24.15.0）—— 64 files / 866 tests、95.28%、三引擎 e2e 206 passed / 4 skipped、live 2/2；产物 `MD-Convertor-darwin-arm64-0.3.5.zip` 237,335,837 bytes、SHA-256 `313bbbc341c94da0a5ca92f668f2df06cea9f734e47d7af65880500aa192d45f`；安装 `/Applications`；GitHub Release `v0.3.5`（tag 指向 `5f98307`）。首跑门禁的 `E2E modified tracked files` 为并行编辑文档导致的误报，冻结编辑后重跑即绿。提交 `5f98307`。
+- 真机目视（CDP）：首页/设置页 computed 全为新色板、字重 400、antialiased；包内旧墨绿零命中。

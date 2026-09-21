@@ -7,6 +7,7 @@ type StoredSettings = {
   local: { clis: Record<string, unknown>[]; activeCliId: string | null };
   languages: { target: string; custom: string[] };
   translation: { defaultEnabled: boolean };
+  output?: { defaultPath: string | null; useDefaultPath: boolean };
 };
 
 const storedSettings: StoredSettings = {
@@ -22,6 +23,9 @@ const storedSettings: StoredSettings = {
   },
   languages: { target: "zh-Hans", custom: [] },
   translation: { defaultEnabled: false },
+  // The real API always returns output (lenient read fills it server-side);
+  // the mock must match that contract or the output card would crash the page.
+  output: { defaultPath: null, useDefaultPath: false },
 };
 
 const providerSettings: StoredSettings = {
@@ -614,5 +618,114 @@ test.describe("密钥", () => {
     await expect(page.getByText("系统密钥库不可用，无法安全保存密钥。")).toBeVisible();
     await expect(page.getByText("未配置")).toBeVisible();
     expect(putBodies).toHaveLength(0);
+  });
+});
+
+test.describe("输出", () => {
+  const outputSettings: StoredSettings = {
+    ...storedSettings,
+    output: { defaultPath: null, useDefaultPath: false },
+  };
+
+  const savedOutputSettings: StoredSettings = {
+    ...storedSettings,
+    output: { defaultPath: "/Users/someone/Documents/notes", useDefaultPath: true },
+  };
+
+  async function installOutputBridge(page: Page) {
+    await page.addInitScript(() => {
+      const calls: unknown[][] = [];
+      (window as unknown as { outputCalls: unknown[][] }).outputCalls = calls;
+      const existing = (window as unknown as { mdConvertor?: Record<string, unknown> }).mdConvertor ?? {};
+      (window as unknown as { mdConvertor: unknown }).mdConvertor = {
+        ...existing,
+        output: {
+          selectDirectory: async () => {
+            calls.push(["selectDirectory"]);
+            return { ok: true, path: "/Users/someone/Documents/notes" };
+          },
+          saveFile: async (dirPath: string, filename: string, content: string) => {
+            calls.push(["saveFile", dirPath, filename, content]);
+            return { ok: true, path: `${dirPath}/${filename}` };
+          },
+        },
+      };
+    });
+  }
+
+  function outputCalls(page: Page) {
+    return page.evaluate(() => (window as unknown as { outputCalls: unknown[][] }).outputCalls ?? []);
+  }
+
+  test("卡片渲染：未设置路径、开关关闭、桥接缺失时按钮禁用", async ({ page }) => {
+    await mockSettingsApi(page, outputSettings);
+    await page.goto("/settings");
+
+    const card = page.locator('section[aria-labelledby="output-title"]');
+    await expect(card.getByRole("heading", { name: "输出" })).toBeVisible();
+    await expect(card.getByText("未设置")).toBeVisible();
+    await expect(card.getByRole("checkbox", { name: "使用默认目录" })).not.toBeChecked();
+    // No preload in the browser: choosing a directory is impossible, so the button is off.
+    await expect(card.getByRole("button", { name: "选择目录" })).toBeDisabled();
+    await expect(card.getByText("目录选择只能在桌面应用中使用")).toBeVisible();
+  });
+
+  test("桥接下选择目录后路径回显并写入 output", async ({ page }) => {
+    const putBodies = await mockSettingsApi(page, outputSettings);
+    await installOutputBridge(page);
+    await page.goto("/settings");
+
+    const card = page.locator('section[aria-labelledby="output-title"]');
+    await card.getByRole("button", { name: "选择目录" }).click();
+
+    await expect(card.getByText("/Users/someone/Documents/notes")).toBeVisible();
+    await expect(page.getByText("已保存", { exact: true })).toBeVisible();
+    const body = putBodies.at(-1) as { output?: { defaultPath?: string; useDefaultPath?: boolean } } | undefined;
+    expect(body?.output).toEqual({ defaultPath: "/Users/someone/Documents/notes", useDefaultPath: false });
+    expect(await outputCalls(page)).toEqual([["selectDirectory"]]);
+  });
+
+  test("开关开启且已有目录时保存 useDefaultPath=true", async ({ page }) => {
+    const putBodies = await mockSettingsApi(page, {
+      ...outputSettings,
+      output: { defaultPath: "/Users/someone/Documents/notes", useDefaultPath: false },
+    });
+    await installOutputBridge(page);
+    await page.goto("/settings");
+
+    const card = page.locator('section[aria-labelledby="output-title"]');
+    await card.getByRole("checkbox", { name: "使用默认目录" }).check();
+
+    await expect(page.getByText("已保存", { exact: true })).toBeVisible();
+    const body = putBodies.at(-1) as { output?: { defaultPath?: string; useDefaultPath?: boolean } } | undefined;
+    expect(body?.output).toEqual({ defaultPath: "/Users/someone/Documents/notes", useDefaultPath: true });
+  });
+
+  test("开关开启但未设置目录时警告且不落盘", async ({ page }) => {
+    const putBodies = await mockSettingsApi(page, outputSettings);
+    await installOutputBridge(page);
+    await page.goto("/settings");
+
+    const card = page.locator('section[aria-labelledby="output-title"]');
+    // click(), not check(): the switch deliberately refuses to change state.
+    await card.getByRole("checkbox", { name: "使用默认目录" }).click();
+
+    await expect(card.getByText("请先选择目录")).toBeVisible();
+    await expect(card.getByRole("checkbox", { name: "使用默认目录" })).not.toBeChecked();
+    expect(putBodies).toHaveLength(0);
+  });
+
+  test("已开启的开关关闭后写回 useDefaultPath=false", async ({ page }) => {
+    const putBodies = await mockSettingsApi(page, savedOutputSettings);
+    await installOutputBridge(page);
+    await page.goto("/settings");
+
+    const card = page.locator('section[aria-labelledby="output-title"]');
+    await expect(card.getByText("/Users/someone/Documents/notes")).toBeVisible();
+    await card.getByRole("checkbox", { name: "使用默认目录" }).uncheck();
+
+    await expect(page.getByText("已保存", { exact: true })).toBeVisible();
+    const body = putBodies.at(-1) as { output?: { defaultPath?: string; useDefaultPath?: boolean } } | undefined;
+    expect(body?.output).toEqual({ defaultPath: "/Users/someone/Documents/notes", useDefaultPath: false });
   });
 });

@@ -8,6 +8,13 @@ export type SecretsBridge = {
   status(): Promise<SecretsResult>;
 };
 
+export type OutputResult = { ok: boolean; code?: string; path?: string };
+
+export type OutputBridge = {
+  selectDirectory(): Promise<OutputResult>;
+  saveFile(dirPath: string, filename: string, content: string): Promise<OutputResult>;
+};
+
 export type ProviderModelQuery = { providerId?: string; baseUrl?: string; apiKey?: string };
 
 export type ScannedCli = {
@@ -26,6 +33,20 @@ const SECRET_CODE_MESSAGES: Record<string, string> = {
   SECRETS_FAILED: "密钥保存失败。",
 };
 
+const OUTPUT_CODE_MESSAGES: Record<string, string> = {
+  INVALID_DIR_PATH: "保存目录不合法。",
+  INVALID_FILENAME: "文件名不合法。",
+  INVALID_CONTENT: "文件内容不合法。",
+  CANCELLED: "已取消选择。",
+  OUTPUT_SAVE_FAILED: "文件写入失败。",
+  IPC_FAILED: "与主进程通信失败。",
+};
+
+/** CANCELLED is a user choice, not an error: callers handle it before reaching here. */
+export function outputCodeMessage(code: string | undefined, fallback: string): string {
+  return (code && OUTPUT_CODE_MESSAGES[code]) || fallback;
+}
+
 export function codeMessage(code: string | undefined, fallback: string): string {
   return (code && SECRET_CODE_MESSAGES[code]) || fallback;
 }
@@ -34,6 +55,13 @@ export function codeMessage(code: string | undefined, fallback: string): string 
 export function secretsBridge(): SecretsBridge | null {
   if (typeof window === "undefined") return null;
   const bridge = (window as unknown as { mdConvertor?: { secrets?: SecretsBridge } }).mdConvertor?.secrets;
+  return bridge ?? null;
+}
+
+/** Present only inside the desktop app; browsers and e2e have no preload. */
+export function outputBridge(): OutputBridge | null {
+  if (typeof window === "undefined") return null;
+  const bridge = (window as unknown as { mdConvertor?: { output?: OutputBridge } }).mdConvertor?.output;
   return bridge ?? null;
 }
 
