@@ -266,18 +266,23 @@ test.describe("云端 Provider", () => {
     await expect(page.locator('article[aria-label^="Provider "]')).toHaveCount(0);
   });
 
-  test("保存按钮位于卡片头部", async ({ page }) => {
+  test("清除与保存并列在卡片头部", async ({ page }) => {
     await mockSettingsApi(page, providerSettings);
     await installBridge(page);
     await page.goto("/settings");
 
     const card = page.locator(CLOUD_CARD);
     const saveBox = await card.getByRole("button", { name: "保存", exact: true }).boundingBox();
+    const clearBox = await card.getByRole("button", { name: "清除", exact: true }).boundingBox();
     const nameBox = await card.getByLabel("Provider 名称").boundingBox();
     const cardBox = await card.boundingBox();
-    if (!saveBox || !nameBox || !cardBox) throw new Error("missing layout box");
+    if (!saveBox || !clearBox || !nameBox || !cardBox) throw new Error("missing layout box");
     expect(saveBox.y).toBeLessThan(nameBox.y);
     expect(saveBox.x).toBeGreaterThan(cardBox.x + cardBox.width / 2);
+    // 清除与保存并列在卡片头部。
+    expect(clearBox.y).toBeLessThan(nameBox.y);
+    expect(clearBox.x).toBeGreaterThan(cardBox.x + cardBox.width / 2);
+    expect(clearBox.x).toBeLessThan(saveBox.x);
   });
 
   test("保存要求四项齐全，缺一项就提示且不写盘", async ({ page }) => {
@@ -352,24 +357,28 @@ test.describe("云端 Provider", () => {
     await expect(input).not.toBeEditable();
   });
 
-  test("清除密钥只把已配置置回未配置，不删除这条配置", async ({ page }) => {
+  test("清除会删掉密钥与整条云端配置，回到未配置状态", async ({ page }) => {
     const putBodies = await mockSettingsApi(page, readyProviderSettings);
     await installBridge(page);
     await page.goto("/settings");
 
     const card = page.locator(CLOUD_CARD);
     await expect(card.getByText("已配置")).toBeVisible();
-    await card.getByRole("button", { name: "清除密钥" }).click();
-    await expect(page.getByText("已保存", { exact: true })).toBeVisible();
+    await card.getByRole("button", { name: "清除", exact: true }).click();
+    await expect(card.getByText("已清除云端配置。", { exact: true })).toBeVisible();
 
+    // 密钥行里的「清除密钥」已经被头部这一个动作取代。
+    await expect(card.getByRole("button", { name: "清除密钥", exact: true })).toHaveCount(0);
     await expect(card.getByText("未配置")).toBeVisible();
-    // 清除后开放重新录入。
+    // 清除后开放重新录入，四个字段都回到空。
     await expect(card.getByLabel("Provider 密钥")).toBeEditable();
+    for (const label of ["Provider 名称", "Provider Base URL", "Provider 模型", "Provider 密钥"]) {
+      await expect(card.getByLabel(label)).toHaveValue("");
+    }
     expect(await secretCalls(page)).toContainEqual(["clear", "ollama"]);
     const cloud = putBodies.at(-1)?.cloud as { providers: Record<string, unknown>[]; activeProviderId: string | null };
-    expect(cloud.providers).toHaveLength(1);
-    expect(cloud.providers[0]).toMatchObject({ id: "ollama", name: "Ollama", keyStored: false });
-    expect(cloud.activeProviderId).toBe("ollama");
+    expect(cloud.providers).toEqual([]);
+    expect(cloud.activeProviderId).toBeNull();
   });
 
   test("拉取模型只读取端点，按钮位于 Base URL 右侧", async ({ page }) => {

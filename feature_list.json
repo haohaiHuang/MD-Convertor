@@ -582,6 +582,49 @@
         "The 0.3.3 claim was re-verified on the installed artifact: `/Applications/MD-Convertor.app` 0.3.3 (539 MB) has no `server/node_modules/electron`, still ships `playwright-core/browsers.json`, and its packaged Playwright launches Chromium",
         "Full tree at the time of commit (Node.js 24.15.0): `./init.sh` exit 0 with 62 files / 859 tests and 95.28% statements, `npm run test:e2e` exit 0 with 184 passed / 2 skipped across the three engines, and `npm run desktop:package` exit 0 producing a 0.3.3 app with no `server/node_modules/electron`"
       ]
+    },
+    {
+      "id": "feat-036",
+      "name": "Offer The Paste Mode When A Link Cannot Be Fetched",
+      "title": "Offer The Paste Mode When A Link Cannot Be Fetched",
+      "status": "done",
+      "dependencies": [
+        "feat-035"
+      ],
+      "scope": "A failed link conversion only reported the server's error, even when the page was plainly readable in the browser that produced the error (login wall, anti-bot block, refusal, timeout). `src/app/page.tsx` now remembers whether the last link attempt failed on the server (`linkFetchFailed`, set in the `runConversion` catch and reset on every new attempt) and, only for `mode === \"link\"` with a server error, renders a hint under the error card whose button (`switchToPasteMode`) switches to the rich-text panel through the existing `switchPasteMode` and moves focus to the `paste-tab`, following the house convention used by the mode tabs. Validation errors and cancelled conversions show nothing, and the hint is styled by the new `.errorHint` / `.errorHintAction` rules in `src/app/page.module.css`; no contract, engine, endpoint or settings file changed.",
+      "acceptance": [
+        "A server-side link failure shows the paste suggestion next to the error message",
+        "Activating it lands in the rich-text panel with the tab selected and focus moved there",
+        "A malformed URL (client-side validation) and everything non-link shows no suggestion"
+      ],
+      "verification": [
+        "RED: the new `e2e/home.spec.ts` case (502 `UPSTREAM_ERROR` from a routed `/api/convert`) timed out on `getByRole(\"button\", { name: \"改用富文本粘贴\" })` before the change, with 13 passed",
+        "GREEN: `npx playwright test e2e/home.spec.ts --project=chromium` 14 passed, and the full `npm run test:e2e` 187 passed / 2 skipped across Chromium, Firefox and WebKit (+3 = the new case on three engines)",
+        "`./init.sh` exit 0: 62 files / 859 tests, statements 95.28%, lint + `tsc --noEmit` + production build clean",
+        "Manual probe against the production standalone build (1180x900, 2x): the hint button sits at x=636,y=613 with `color: rgb(15, 81, 71)`, clicking it sets the 「富文本转换」 tab to `aria-selected=true` and leaves `document.activeElement.id === \"paste-tab\"`; screenshot `/tmp/hint-error.png`",
+        "Not verified: the exact error-code split (the hint appears for any server-side link error, including ones pasting cannot fix such as a 413 oversized source)"
+      ]
+    },
+    {
+      "id": "feat-037",
+      "name": "Clear The Whole Cloud Provider Configuration",
+      "title": "Clear The Whole Cloud Provider Configuration",
+      "status": "done",
+      "dependencies": [
+        "feat-030"
+      ],
+      "scope": "The cloud card used to carry a「清除密钥」button inside the API key row that only removed the key and kept the provider record, and the key box was read-only while a key was stored, so that button was also the only way to change a key. The user asked for one card-level action instead: `src/app/settings/page.tsx` now renders「清除」next to「保存」in the card header and `clearCloudProvider()` (the old `clearCloudKey`) clears the keychain entry through `bridge.clear`, resets the whole draft (`EMPTY_CLOUD_DRAFT`, so no typed text survives) and saves `cloud: { providers: [], activeProviderId: null }` — the contract's own default, so no version bump, no migration and no new key. The button stays visible whenever the card is (a reset is meaningful with nothing stored), is disabled while saving, and reports「已清除云端配置。」; the key row's button is gone and its placeholder now reads「••••••••（已保存，清除后可重新填写）」. Replacing a key therefore means clearing the card and filling it again, which the user accepted when choosing this option.",
+      "acceptance": [
+        "「清除」sits in the cloud card header next to「保存」, to its left, above the fields",
+        "One click removes the stored key, empties all four fields and clears the saved provider, leaving the card at「未配置」with the key box editable again",
+        "No per-field button remains in the API key row, and the placeholder no longer promises「先清除密钥再更换」"
+      ],
+      "verification": [
+        "RED: the rewritten e2e case and the extended header-layout case failed on the unchanged build (`2 failed / 22 passed`), the new one timing out on `getByRole(\"button\", { name: \"清除\", exact: true }).click()`",
+        "GREEN: `npx playwright test e2e/settings.spec.ts --project=chromium` 24 passed; `./init.sh` exit 0 (62 files / 859 tests, statements 95.28%, lint + `tsc --noEmit` + build clean); `npm run test:e2e` exit 0 with 187 passed / 2 skipped across Chromium, Firefox and WebKit",
+        "Manual probe against the production standalone build with a mocked settings API (1180x900 / 2x): header boxes 清除 x=852,y=471 and 保存 x=919,y=471 (both above the 名称 field), the key row holds no button, the placeholder is「••••••••（已保存，清除后可重新填写）」, and one click sends `{\"providers\":[],\"activeProviderId\":null}` plus `secretCalls [\"clear\",\"ollama\"]`, leaves the badge at「未配置」, all four fields empty and the key box editable; screenshots `/tmp/clear-card-before.png` and `/tmp/clear-card-after.png`",
+        "Not verified: with no desktop bridge the keychain entry cannot be cleared, so a provider saved by the desktop app and cleared from a bridgeless page would leave the key behind with nothing pointing at it (the same pre-existing orphan case as a failed save)"
+      ]
     }
   ],
   "history": {

@@ -200,8 +200,9 @@ Everything from `feat-024` through `feat-034` shares one build, and all of it sh
 ## Re-verification Checklist for 0.3.3
 
 - `./init.sh` green on Node.js 24.x: lint, `tsc --noEmit`, coverage with every per-file threshold, production build. Last green: 62 files / 859 tests, 95.28% statements (2026-09-20, unchanged on 2026-09-21).
-- `npm run test:e2e` green across Chromium, Firefox, and WebKit. Last green: 184 passed / 2 skipped (2026-09-21, the 0.3.3 gate itself ran 178).
+- `npm run test:e2e` green across Chromium, Firefox, and WebKit. Last green: 187 passed / 2 skipped (2026-09-21, after the feat-036 link-failure paste hint and the feat-037 cloud-card reset; the 0.3.3 gate itself ran 178).
 - After the 0.3.3 release, `next.config.ts` gained `outputFileTracingIncludes` for `node_modules/playwright-core/browsers.json` and `e2e/convert-api.spec.ts` was added (feat-035, committed on top of the 0.3.3 tag). Source and the published 0.3.3 ZIP are therefore no longer byte-identical, while the packaged app stays file-equivalent because desktop preparation re-copies the full Playwright packages.
+- Two further UI-only rounds sit on top of the tag: feat-036 adds a「改用富文本粘贴」hint under a failed link fetch (page-local state, no interface change) and feat-037 turns the cloud card's「清除」into a full reset (keychain entry plus the provider record). Neither touches the fetch SSRF policy, the provider endpoint policy, the settings contract, or any limit, so no re-audit of QA-001 through QA-013 is required.
 - `npm run test:live` result recorded, even when it is skipped or fails because the network is unavailable. Last green: 2/2 (after one transient DNS failure).
 - `npm run desktop:release` passed with version `0.3.3` on 2026-09-20 (and with `0.3.2` and `0.3.1` earlier the same day): historical ZIP snapshot unchanged before and after, fresh ZIP, packaged version, arm64 executable, bundle structure, size, and SHA-256.
 - Packaged smoke test with `ELECTRON_SMOKE_TEST=1` and `ELECTRON_SMOKE_TEST_SECRETS=1` prints the preload bridge and runtime secret results.

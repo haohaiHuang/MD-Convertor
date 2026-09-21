@@ -101,6 +101,30 @@ test("stops an in-progress conversion and preserves the URL", async ({ page }) =
   await expect(input).not.toHaveAttribute("readonly", "");
 });
 
+test("suggests the paste mode when a link cannot be fetched", async ({ page }) => {
+  await page.unroute("**/api/convert");
+  await page.route("**/api/convert", async (route) => {
+    await route.fulfill({
+      status: 502,
+      contentType: "application/json",
+      body: JSON.stringify({
+        error: { code: "UPSTREAM_ERROR", message: "无法读取该网页，请确认网页可以公开访问。" },
+        requestId: "test",
+      }),
+    });
+  });
+
+  await page.getByLabel("网页链接").fill("https://example.com/article");
+  await page.getByRole("button", { name: "转换", exact: true }).click();
+
+  await expect(page.getByText("无法读取该网页，请确认网页可以公开访问。")).toBeVisible();
+  await page.getByRole("button", { name: "改用富文本粘贴" }).click();
+
+  await expect(page.getByRole("tab", { name: "富文本转换" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByLabel("粘贴的正文内容")).toBeVisible();
+  await expect(page.getByRole("button", { name: "改用富文本粘贴" })).toHaveCount(0);
+});
+
 test("rejects invalid pasted content without converting", async ({ page }) => {
   let requestCount = 0;
   page.on("request", (request) => {
@@ -110,6 +134,7 @@ test("rejects invalid pasted content without converting", async ({ page }) => {
   await pasteIntoUrlInput(page, "这不是一个网页链接");
   await expect(page.getByText("请输入完整的 HTTP 或 HTTPS 网页链接。")).toBeVisible();
   await expect(page.getByRole("button", { name: "转换", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "改用富文本粘贴" })).toHaveCount(0);
   expect(requestCount).toBe(0);
 });
 

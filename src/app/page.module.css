@@ -377,6 +377,27 @@
   font-size: 13px;
 }
 
+.errorHint {
+  max-width: 720px;
+  margin: 10px auto 0;
+  color: var(--muted);
+  text-align: left;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.errorHintAction {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-dark);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .translateToggle {
   display: flex;
   width: min(820px, 100%);

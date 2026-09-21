@@ -4,6 +4,16 @@
 
 This project follows the principles of [Keep a Changelog](https://keepachangelog.com/). User-facing changes that have not yet been released belong under `Unreleased`.
 
+## [Unreleased]
+
+### Added
+
+- A link that cannot be fetched now names the way out. When the link attempt fails on the server — a login wall, an anti-bot block, a refusal or a timeout — a line under the error message turns the same page into a paste conversion: it switches to the rich-text panel and points the focus at it, where the text the browser already shows converts the same way. Only fetch failures show it, so a page that was read fine (or a URL that is simply malformed) offers no such suggestion.
+
+### Changed
+
+- The cloud card's single action now resets the whole cloud configuration, not just the key: 「清除」 sits next to「保存」in the card header and, in one step, removes the stored key, empties every field, and clears the saved provider — the card returns to「未配置」. Replacing a key therefore means clearing and filling the card again; the key box no longer carries a button of its own.
+
 ## [0.3.3] - 2026-09-20
 
 ### Changed

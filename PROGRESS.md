@@ -4,7 +4,7 @@
 
 - Last updated: 2026-09-21
 - Current version: `0.3.3`（`package.json`、`package-lock.json`、`feature_list.json` 与发布门禁均为 `0.3.3`）。**`0.3.3` 门禁已于 2026-09-20 跑通（exit 0）**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.3.zip`（`232,947,408` bytes，SHA-256 `1bf807df…7a72`），已安装到 `/Applications`（未压缩 539 MB），**已提交（`3897cd1`）并作为 `v0.3.3` 发布**。上一版 `0.3.2`（`358,726,788` bytes，`8fb7a93f…f1ba`）已发布为 GitHub Release `v0.3.2`（tag `1c3ed80`）；`0.3.0` 的 ZIP（`358,562,540` bytes，`2a0e236e…1147`）是修复**前**的构建，仅作历史
-- Active feature: none（`feat-024` – `feat-035` 已 done）
+- Active feature: none（`feat-024` – `feat-037` 已 done）
 - Next release step: `0.3.3` 已提交（`3897cd1`）并发布为 GitHub Release `v0.3.3`（tag `3897cd1`，资产 `232,947,408` bytes / SHA-256 `1bf807df…7a72`）。`feat-035` 改了 `next.config.ts`，因此源码已与已发布的 `0.3.3` 构建不再逐字节对应（打包产物功能等价：那一份 `browsers.json` 原本就被 prepare-desktop 的整包拷贝覆盖进去）。是否 bump `0.3.4` 并重跑 `npm run desktop:release` 待用户决定；无论哪种选择都不要移动已发布的 tag 与产物。**用户已选 B（2026-09-21）：保持 `0.3.3`，只把修复提交在 tag 之上，不重跑门禁、不动发布物**；因此本机 `main` 会领先 `v0.3.3` 一个提交，这是刻意接受的状态
 - Branch: `main`；`feat-031` + `feat-032` 已提交（`af7f6db`）并作为 `v0.3.1` 发布；`feat-033` 已提交（`1c3ed80`）并作为 `v0.3.2` 发布；本轮 `feat-034`（去掉重复的 Electron 运行时 + 版本 `0.3.3`）已提交（`3897cd1`）并作为 `v0.3.3` 发布
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+
@@ -18,6 +18,22 @@
 - 决定（用户 2026-09-21 选 B）：保持 `0.3.3`，不改版本号、不重跑 `npm run desktop:release`，只把修复提交在 `v0.3.3` 之上；源码与已发布的 `0.3.3` ZIP 不再逐字节对应（打包产物文件级等价：`prepare-desktop` 的整包拷贝本来就提供 `browsers.json`；实测本机新包 2725 文件 vs 已装 0.3.3 的 2716，差异只有 3 个 build-hash 静态文件与 `@emnapi/runtime` / `@img/sharp-wasm32` 这两个可选 wasm 回退包）。
 - 全量验证（Node.js 24.15.0）：`./init.sh` **exit 0**（62 files / **859 tests**，statements 95.28%）；`npm run test:e2e` **exit 0，184 passed / 2 skipped**（较 178 增 6 = 新增 2 用例 × 3 引擎）；`npm run desktop:package` **exit 0**，产物版本 `0.3.3`、`server/node_modules/electron` 不存在、`playwright-core/browsers.json` 在（1,939 bytes）。
 - 已知残余：真实公网 URL 的抓取 + 浏览器渲染无法做离线 e2e（SSRF 策略按设计拒绝回环地址），只能由 `tests/live` 与上面那次手工 200 验证覆盖。
+
+## 已完成 in 0.3.3 之后（云端卡片的清除变为整卡重置，feat-037 done，2026-09-21）
+
+- 来源：用户提出「云端 Provider 设置里的『清除』只是清除 API Key，应该上移到卡片右上角（和保存并列），并且变成清除所有已填入/选择的信息」。按 AGENTS.md 先做需求分析（读码取证 + 两问）；用户选 **Q1①**（连密钥库与 `settings.json` 里的这条 Provider 一起清掉，回到全新未配置状态）与 **Q2②**（头部只留一个「清除」，要换密钥就清掉后重填整张卡片）。
+- 实现（TDD，先红后绿）：`src/app/settings/page.tsx` 的 `clearCloudKey()` 改为 `clearCloudProvider()` —— `bridge.clear(provider.id)` 删密钥库 → `setCloudForm(EMPTY_CLOUD_DRAFT)` 把整张表单（含未保存的输入）清空 → `save({cloud: {providers: [], activeProviderId: null}})`，提示「已清除云端配置。」；`providers: []` + `activeProviderId: null` 就是契约的默认值（**未升 `SETTINGS_VERSION`、无迁移、不新增键**），引擎遇到空列表走已有 409 `TRANSLATE_NOT_CONFIGURED`「尚未选择云端 Provider。」。按钮移入卡片头部 `[清除][保存]`（清除在左），密钥行里的按钮删除，占位文案改为「••••••••（已保存，清除后可重新填写）」。按钮只要卡片渲染就显示（未配置时它同时充当「重置输入」），`saving` 时禁用。
+- RED：重写「清除」用例 + 扩展头部布局用例 ⇒ 未改动构建上 **2 failed / 22 passed**（新用例停在 `getByRole("button", {name: "清除", exact: true}).click()`）；GREEN 同文件 chromium **24 passed**；`./init.sh` exit 0（62 files / **859 tests**、statements 95.28%）；三浏览器 `npm run test:e2e` exit 0 ⇒ **187 passed / 2 skipped**。
+- 手工探针（production standalone + 路由 mock 的 settings API，1180×900 / 2x）：头部按钮 `清除 x=852 y=471` / `保存 x=919 y=471`（都在「名称」上方）、密钥行按钮 0 个；点击后 PUT body `{providers: [], activeProviderId: null}`、`secretCalls ["clear", "ollama"]`、徽标「未配置」、四个字段全空、密钥框恢复可编辑；截图 `/tmp/clear-card-before.png` / `/tmp/clear-card-after.png`。
+- 已知上限：没有 preload 桥时无法删密钥库条目，因此「桌面应用保存过密钥 + 用无桥页面清除」会留下一个没人引用的密钥（与保存失败时的孤立密钥同一类，本轮不变差）；「清除」不区分有没有东西可清，未配置时也照样写一次空设置。
+
+## 已完成 in 0.3.3 之后（抓取失败时提示改用粘贴，feat-036 done，2026-09-21）
+
+- 来源：用户反馈「一旦 URL 抓取不到就直接报错，是不是应该提醒可以改用粘贴富文本」。范围按原话收窄到**服务端抓取失败**（需要登录、被反爬拦截、拒绝访问、超时等），不触碰接口、契约、引擎与设置。
+- 实现（TDD，先红后绿）：`src/app/page.tsx` 新增 `linkFetchFailed` 状态（在 `runConversion` 的 `catch` 里按 `conversionMode === "link"` 置位，每次新尝试与取消路径都不保留），仅在 `mode === "link" && requestState === "error" && linkFetchFailed` 时于错误卡片下方渲染一行提示与「改用富文本粘贴」按钮；处理器 `switchToPasteMode()` 复用已有 `switchPasteMode`，并按页面既有惯例把焦点移到 `paste-tab`（不新增 IPC、不加新请求）。样式新增 `.errorHint` / `.errorHintAction`（`text-decoration: underline` 的纯文字按钮，`--accent-dark`），未改动 `.errorCard`（翻译失败卡片仍共用它）。
+- RED：新增用例在改动前超时等待 `getByRole("button", { name: "改用富文本粘贴" })`，同文件 13 passed；GREEN：同文件 chromium 14 passed，全量 `npm run test:e2e` **187 passed / 2 skipped**（较 feat-035 的 184 多 3 = 新用例 × 3 引擎）。`./init.sh` exit 0（62 files / **859 tests**、statements 95.28%）。
+- 真机探针（production standalone，1180×900 / 2x）：提示按钮 `x=636 y=613`、`color rgb(15, 81, 71)`；点击后 `富文本转换` tab `aria-selected=true`、`document.activeElement.id === "paste-tab"`；截图 `/tmp/hint-error.png`。重跑 `npm run desktop:package` 与 `npm run desktop:release` **未做**（本轮不发布）。
+- 已知上限：提示按「服务端失败」判定，不区分错误码，因此对粘贴也救不回来的失败（如 413 源过大）同样会显示；页面本来就不可达的 `convertLink` 客户端校验分支不会显示（`convert` 按钮在 URL 非法时禁用）。
 
 ## 已完成 in 0.3.3（去掉重复的 Electron 运行时，feat-034 done）
 
@@ -226,6 +242,24 @@
 
 ## Verification Evidence
 
+### feat-037 云端卡片「清除」改为整卡重置（2026-09-21，未跑发布门禁）
+
+- RED：`npx playwright test e2e/settings.spec.ts --project=chromium` → **2 failed / 22 passed**——`清除会删掉密钥与整条云端配置，回到未配置状态` 停在 `card.getByRole("button", {name: "清除", exact: true}).click()`（按钮当时不存在，30s 超时）；`清除与保存并列在卡片头部`（原「保存按钮位于卡片头部」）在 `clearBox` 的 `boundingBox()` 抛 `missing layout box`。
+- GREEN：同命令 **24 passed（5.7s）**；`./init.sh` **exit 0**（`/tmp/clear-init.log`）—— 62 files / **859 tests**、statements **95.28%**、lint、`tsc --noEmit`、生产构建全绿；`npm run test:e2e` **exit 0 → 187 passed / 2 skipped**（`/tmp/clear-e2e.log`，tracked-file 检查通过）。
+- 断言内容：清除用例断言头部按钮存在、密钥行「清除密钥」计数为 0、提示「已清除云端配置。」、徽标回「未配置」、四个字段值为空且密钥框 `toBeEditable()`、`secretCalls` 含 `[clear, ollama]`、最后一条 PUT 的 `cloud` 为 `{providers: [], activeProviderId: null}`；布局用例用 `boundingBox()` 断言 `清除` 与 `保存` 都在「名称」字段上方、都在卡片右半侧，且 `清除.x < 保存.x`。
+- 手工探针（`node scripts/start-e2e-server.mjs` + playwright-core + 路由 mock 的 `/api/settings`，1180×900 / 2x）：`清除` `{x:852, y:471, w:57, h:39}`、`保存` `{x:919, y:471, w:57, h:39}`（同一行、都在字段上方）、密钥行按钮 0；点击后 `badge 未配置`、四个字段 `""`、密钥框 `editable true`、PUT `{providers: [], activeProviderId: null}`、`secretCalls [["clear", "ollama"]]`；截图 `/tmp/clear-card-before.png`、`/tmp/clear-card-after.png`。
+- 探针踩到的坑（不属于实现问题）：第一版 mock 的 PUT 分支只记录 body 却总是回传原始 settings，于是乐观更新被回包覆盖，徽标读回「已配置」；把 mock 改成合并 body 后行为才正确。e2e 用例里原本就用的 `mockSettingsApi` 是会合并的。
+- 未做：不改设置契约（`providers: []` 本来就是默认值）、不改密钥存储与 IPC 通道、不改端点策略、不动翻译引擎与本地 CLI 分区；`electron/preload*.cjs` 未动；未跑 `npm run desktop:release`。
+
+### feat-036 抓取失败时提示改用粘贴（2026-09-21，未跑发布门禁）
+
+- RED：`npx playwright test e2e/home.spec.ts --project=chromium` → 新用例 `suggests the paste mode when a link cannot be fetched` 在 `getByRole("button", { name: "改用富文本粘贴" }).click()` 处 30s 超时（`1 failed / 13 passed`）。
+- GREEN：同命令 **14 passed**；`npm run test:e2e` **exit 0 → 187 passed / 2 skipped**（`/tmp/hint-e2e.log`，tracked-file 检查通过）。
+- 基线：`./init.sh` **exit 0**（`/tmp/hint-init.log`）—— 62 files / **859 tests**、statements 95.28%、lint、`tsc --noEmit`、生产构建全绿。
+- 真机探针（`node scripts/start-e2e-server.mjs` + playwright-core，`/api/convert` 由浏览器拦截为 502 `UPSTREAM_ERROR`）：提示按钮 `boundingBox { x:636, y:613, w:98, h:22.4 }`、`color rgb(15, 81, 71)`；点击后 `富文本转换` `aria-selected=true`、`document.activeElement.id === "paste-tab"`、提示按钮计数 0；截图 `/tmp/hint-error.png`（错误卡片与提示左边缘对齐）。
+- 断言敏感性：新用例的按钮文案在实现前不存在（超时即失败）；既有「rejects invalid pasted content without converting」用例补了一句「提示按钮计数为 0」，锁住客户端校验路径不会出现该建议。
+- 未做：不改接口/契约/翻译引擎/打包配置；`electron/preload*.cjs` 未动；未跑 `npm run desktop:release`（版本仍为 `0.3.3`，本机 `main` 现有未提交改动）。
+
 ### 0.3.3 去掉重复的 Electron 运行时（本次）
 
 - 现象：同一份代码，`electron-forge make` 在本机**经常空跑**——直接运行时没有产物、退出码却是 0（发布脚本 `scripts/release-desktop.mjs` 自身有产物校验，缺 ZIP 会抛 `Expected ZIP was not generated`，所以空跑/卡住的是 Forge 这一层）。用户的原话是「跑得好慢」。
@@ -404,7 +438,8 @@
 - **feat-025 隐藏了自定义语言入口（保留字段与函数）**：`languages.custom` 仍在契约里、`addCustomLanguage()` 与其单测仍在，存量自定义标签仍出现在目标语言下拉里；但新标签暂时只能靠手改 `settings.json` 添加。若将来要恢复入口，只需恢复 `settings/page.tsx` 的那段 JSX 与 `setNote("language", …)` 分支。
 - **`0.3.2` 已过门禁并已装本机（2026-09-20）**：ZIP 为 `358,726,788` bytes / SHA-256 `8fb7a93f…f1ba`，已在 `/Applications/MD-Convertor.app`；**已提交（`1c3ed80`）、推送并发布为 GitHub Release `v0.3.2`**（tag `1c3ed80`，资产 `358,726,788` bytes 状态 uploaded）。`0.3.1` 已发布为 GitHub Release `v0.3.1`（tag `af7f6db`，ZIP `358,723,706` bytes / `c7411c58…161b`）；`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.0.zip` 仍留在本机，只作历史，**不要在后续门禁里把它当成当前产物**；**`0.3.3` 已用掉**（已过门禁、已装本机），下一次发布必须先把版本号升到 `0.3.4` 或更高（门禁硬校验目标版本）。
 - **feat-033 起本地服务从包内 Helper 启动**：`electron/main.mjs` 用 `resolveServerBinary(process.execPath)`（`electron/server-binary.mjs`）拿到 `Contents/Frameworks/MD-Convertor Helper.app/Contents/MacOS/MD-Convertor Helper` 再 spawn（仍带 `ELECTRON_RUN_AS_NODE: "1"`）。因该 helper bundle 声明 `LSUIElement`，子进程不再占程序坞。**不要改回 `process.execPath`**（会重新出现跳动的黑色 exec 图标）；helper 缺失时函数会抛 `Desktop helper runtime is missing: <path>`，这是刻意保留的响亮失败。此约束依赖 electron-forge 默认的 helper bundle 布局，若将来换到不带 helper 的打包方式需要同时改这个函数与它的 3 个单测。
-- **feat-031 起密钥输入框在已保存时为只读**：`readOnly={Boolean(cloudProvider?.keyStored)}`，占位文案「••••••••（已保存，先清除密钥再更换）」。不用 `disabled` 是为了保留可聚焦与屏幕阅读器可达；「清除密钥」语义未变（删除密钥库条目 + `keyStored:false` ⇒ 输入框恢复可编辑，再点「保存」才能写入新密钥）。不要把密钥读回页面。
+- **feat-037 起「清除」是云端卡片的唯一重置入口**：`clearCloudProvider()`（`src/app/settings/page.tsx`）一下删密钥库条目 + 清表单草稿 + 写 `cloud: {providers: [], activeProviderId: null}`，卡片回到「未配置」；密钥行已经没有按钮，**要换密钥只能先「清除」再重填整张卡片**（用户 2026-09-21 选定的语义）。按钮不区分有没有东西可清（未配置时等于重置输入），没有二次确认；无 preload 桥时只能清 settings、删不掉密钥库条目（会留下无人引用的密钥，与保存失败时的孤立密钥同一类）。
+- **feat-031 起密钥输入框在已保存时为只读**：`readOnly={Boolean(cloudProvider?.keyStored)}`，占位文案「••••••••（已保存，清除后可重新填写）」。不用 `disabled` 是为了保留可聚焦与屏幕阅读器可达；「清除」（feat-037）会删密钥库条目并把 `providers` 清空，清完输入框自然恢复可编辑。不要把密钥读回页面。
 - **批次数由「≤20 块」而非字符数主导**：长文段落多时批次数偏多、`pi` 的固定启动开销被重复支付（实测 8,000 字符批次 7s，含启动）。修复后已能跑完，因此**未**改动 `TRANSLATE_BATCH_MAX_BLOCKS`；若将来同类文章仍然慢，把这个上限提高是第一个候选优化（代价：单批输出更长，解析与质量风险上升，需另开测试）。
 - The app is not Developer ID signed or notarized. Gatekeeper may require an explicit Open action or removal of the quarantine attribute after the checksum is verified.
 - **Provider 密钥只有一个来源（feat-026 起）**：系统密钥库加密项（`safeStorage` → `secrets.json`）经主进程注入运行时表；`apiKeyEnv` 与 `<userData>/.env` 的环境变量来源已退役（旧键在读取时被容忍、写出时丢弃，未升 `SETTINGS_VERSION`）。因此手工改 `settings.json` 已无法配置密钥，必须通过设置页保存。
@@ -434,8 +469,8 @@
 
 ## Next Step
 
-`feat-033`（程序坞幽灵图标修复 + 版本 `0.3.2`）已实现、已跑完发布门禁（exit 0，产物 `358,726,788` bytes / SHA-256 `8fb7a93f…f1ba`）、已安装到 `/Applications` 替换 `0.3.1`，文档（`CHANGELOG`, `README`, `docs/ARCHITECTURE`, `docs/TESTING`, `docs/QUALITY-AUDIT`, `PROGRESS`, `session-handoff`, `feature_list.json`）已同步。**尚待：提交 + 推送 + 发布 GitHub Release `v0.3.2`（`gh release create v0.3.2 <zip> --target main`，随后 `git fetch --tags origin`）。** 上一版 `feat-031` + `feat-032`（版本 `0.3.1`）已提交（`af7f6db`）、已推送、已发布为 GitHub Release `v0.3.1`，产物已安装。剩余待办：
+`feat-037`（云端卡片「清除」改为整卡重置）与 `feat-036`（抓取失败时提示改用粘贴）已实现并验证（`./init.sh` exit 0、三浏览器 e2e 187 passed / 2 skipped），**尚未提交、未跑发布门禁**；若要发布，先把版本号升到 ≥ `0.3.4`。`feat-033`（程序坞幽灵图标修复 + 版本 `0.3.2`）与 `feat-034`（`0.3.3`）均已完成、已过门禁、已装本机、已发布为 GitHub Release（`v0.3.2` / `v0.3.3`）。剩余待办：
 5. **签名/notarization：用户 2026-09-20 决定不做**（`docs/QUALITY-AUDIT.md` 的 QA-008 已改为 accepted / not planned，判词与 Release Decision 同步）。要恢复需 Apple Developer 付费会员 + **Developer ID Application** 证书 + notarytool 凭据，再在 `forge.config.cjs` 加 `osxSign`/`osxNotarize`（凭据走环境变量）；签名后产物哈希会变，必须重跑门禁并更新记录。在那之前所有产物都只适合个人测试。
 6. **UI 评审已完成，用户决定不整改（2026-09-20）**：用 design-references 环节 4 快速通道评审了 `0.3.1` 的网页与桌面 UI（真实截图 + `getBoundingClientRect` 实测 + WCAG 对比度计算 + 键盘 Tab 焦点扫描 + `design_audit`/`design_contrast`），产出 `docs/UI-REVIEW-2026-09-20.md`（P0×6 + P1×10，均附实测数字；配套的现状/改后对照板是临时 HTML，用户看过即删）。用户看过对照板后决定**全部不改**。因此 `e2e/home.spec.ts` 的像素级对齐断言（转换按钮右边缘与粘贴框右边缘差值 < 4px、与「来源 URL」输入框同行）继续是刻意锁定的效果 —— 若将来真要改 `.sourceInput` 的 `flex`、按钮宽度或 `.sourceRow` 的 gap，先改断言。**不要在没有新证据、也没有用户指认具体条目的情况下重提这批发现。** 本轮代码零改动，`settings.json` 在校验探针前后 SHA-256 一致。
 
-不要重做 S1–S6 与 `feat-024` – `feat-033` 已完成的部分；不要放宽端点、密钥或归档守卫；不要把已退役的历史 ZIP 条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删除。
+不要重做 S1–S6 与 `feat-024` – `feat-037` 已完成的部分；不要放宽端点、密钥或归档守卫；不要把已退役的历史 ZIP 条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删除。

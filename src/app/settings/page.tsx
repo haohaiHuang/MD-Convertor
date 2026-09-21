@@ -225,19 +225,22 @@ export default function SettingsPage() {
     }
   }
 
-  async function clearCloudKey() {
-    if (!settings || !bridge) return;
+  /** The single reset action of the cloud card: the saved provider and its keychain entry both go. */
+  async function clearCloudProvider(): Promise<void> {
+    if (!settings) return;
     const provider = editingProvider(settings.cloud);
-    if (!provider) return;
-    const result = await bridge.clear(provider.id);
-    if (!result.ok) {
-      setNote(CLOUD_NOTE, codeMessage(result.code, "密钥清除失败。"), true);
-      return;
+    if (provider && bridge) {
+      const result = await bridge.clear(provider.id);
+      if (!result.ok) {
+        setNote(CLOUD_NOTE, codeMessage(result.code, "密钥清除失败。"), true);
+        return;
+      }
     }
-    patchCloudForm({ keyInput: "" });
+    // Nothing typed may survive either, or the card would be「未配置」but still hold the old text.
+    setCloudForm(EMPTY_CLOUD_DRAFT);
     await save(
-      { ...settings, cloud: { providers: [{ ...provider, keyStored: false }], activeProviderId: provider.id } },
-      { key: CLOUD_NOTE, text: "已清除该 Provider 的密钥。" },
+      { ...settings, cloud: { providers: [], activeProviderId: null } },
+      { key: CLOUD_NOTE, text: "已清除云端配置。" },
     );
   }
 
@@ -353,6 +356,14 @@ export default function SettingsPage() {
                     className={styles.button}
                     type="button"
                     disabled={saving || loadState !== "ready"}
+                    onClick={() => void clearCloudProvider()}
+                  >
+                    清除
+                  </button>
+                  <button
+                    className={styles.button}
+                    type="button"
+                    disabled={saving || loadState !== "ready"}
                     onClick={() => void saveCloudProvider()}
                   >
                     保存
@@ -421,23 +432,13 @@ export default function SettingsPage() {
                       className={styles.input}
                       type="password"
                       aria-label="Provider 密钥"
-                      placeholder={cloudProvider?.keyStored ? "••••••••（已保存，先清除密钥再更换）" : "请输入 API 密钥"}
+                      placeholder={cloudProvider?.keyStored ? "••••••••（已保存，清除后可重新填写）" : "请输入 API 密钥"}
                       value={cloudForm.keyInput}
                       disabled={saving || loadState !== "ready"}
                       readOnly={Boolean(cloudProvider?.keyStored)}
                       onChange={(event) => patchCloudForm({ keyInput: event.target.value })}
                     />
                   </label>
-                  {cloudProvider ? (
-                    <button
-                      className={styles.button}
-                      type="button"
-                      disabled={saving || loadState !== "ready"}
-                      onClick={() => void clearCloudKey()}
-                    >
-                      清除密钥
-                    </button>
-                  ) : null}
                 </div>
               ) : null}
 

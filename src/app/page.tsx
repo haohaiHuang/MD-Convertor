@@ -136,6 +136,8 @@ export default function Home() {
   const [translateEnabled, setTranslateEnabled] = useState(false);
   const [targetLanguage, setTargetLanguage] = useState<string | null>(null);
   const [translation, setTranslation] = useState<TranslationState>({ status: "idle" });
+  /** True when the last link attempt failed on the server, so pasting the body may still work. */
+  const [linkFetchFailed, setLinkFetchFailed] = useState(false);
   const [resultTab, setResultTab] = useState<ResultTab>("original");
   const controllerRef = useRef<AbortController | null>(null);
   const translationControllerRef = useRef<AbortController | null>(null);
@@ -266,6 +268,7 @@ export default function Home() {
     controllerRef.current = controller;
     setTranslation({ status: "idle" });
     setResultTab("original");
+    setLinkFetchFailed(false);
     setClientState((previous) => ({
       ...previous,
       output: {
@@ -304,6 +307,7 @@ export default function Home() {
       if (controller.signal.aborted) return;
       const message = requestError instanceof Error ? requestError.message : "转换失败，请稍后重试。";
       if (controllerRef.current !== controller) return;
+      setLinkFetchFailed(conversionMode === "link");
       setClientState((previous) => ({
         ...previous,
         output: {
@@ -435,6 +439,12 @@ export default function Home() {
       return;
     }
     await runConversion("paste", payload);
+  }
+
+  /** The fetch failed: the same page can still be converted by pasting what the browser already shows. */
+  function switchToPasteMode(): void {
+    setClientState((previous) => switchPasteMode(previous, "paste"));
+    document.getElementById("paste-tab")?.focus();
   }
 
   function submit(event: FormEvent<HTMLFormElement>): void {
@@ -747,6 +757,14 @@ export default function Home() {
           )}
           {requestState === "error" && (
             <div className={styles.errorCard} role="alert">{error}</div>
+          )}
+          {mode === "link" && requestState === "error" && linkFetchFailed && (
+            <p className={styles.errorHint}>
+              有些页面需要登录或会拒绝自动访问，可以把正文粘贴进来转换：
+              <button className={styles.errorHintAction} type="button" onClick={switchToPasteMode}>
+                改用富文本粘贴
+              </button>
+            </p>
           )}
           {requestState === "cancelled" && (
             <div className={styles.cancelledCard} role="status">
