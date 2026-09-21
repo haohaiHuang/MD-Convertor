@@ -134,6 +134,32 @@ ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1 \
 - `ELECTRON_SMOKE_TEST=1` checks that `window.mdConvertor.secrets` exists and that `safeStorage` reports encryption as available.
 - `ELECTRON_SMOKE_TEST_SECRETS=1` additionally proves the key path: a provider without any key returns 409 `TRANSLATE_NOT_CONFIGURED`, saving a key makes the running server reach the endpoint (502 `TRANSLATE_PROVIDER_ERROR` against the test address) without a restart, and removing the key returns to 409. The smoke removes the key and restores settings before exiting. No environment variable can supply a provider key any more, so the smoke sets one through the bridge only.
 
+## Verifying Package Contents
+
+Read the archive instead of extracting it, and never extract inside the repository (see the gotcha below):
+
+```bash
+APP=out/MD-Convertor-darwin-arm64/MD-Convertor.app
+A="$APP/Contents/Resources/app.asar"
+npx asar list "$A" | grep -c node_modules/electron    # 0 after the 0.3.3 trim
+npx asar list "$A" | grep -c '^/\.next'              # 0: the built frontend is not in the asar
+LC_ALL=C grep -c "<a string from the change under test>" "$A"
+```
+
+The archive holds the **source tree** (`/src`, `/docs`, `/AGENTS.md`, `/.pi/todos`, `/brand`, `CHANGELOG*`; 241 entries in 0.3.3, no `node_modules` and no `.next`). The running app does not use that copy: the built frontend and its server `node_modules` live under `Contents/Resources/server/`, loaded through `extraResource`. So a match (or a miss) in the asar proves nothing about the frontend, and a miss there does not mean the change is not packaged. Check each layer for what it actually serves:
+
+```bash
+npx asar list "$A" | grep settings/page.tsx              # asar: the source copy only
+strings "$A" | grep -c resolveServerBinary              # asar: ASCII strings in the Electron code
+grep -rl "<a string from the change under test>" "$APP/Contents/Resources/server/.next" | head
+test -f "$APP/Contents/Resources/server/node_modules/playwright-core/browsers.json" && echo present
+```
+
+Two traps while searching the asar:
+
+- macOS BSD grep returns **0 for multibyte patterns in a binary file** unless `LC_ALL=C` is set (`grep -c "中文串" app.asar` looks like a clean miss). `strings` has the same blind spot for any non-ASCII code. For real confidence, extract to `/tmp` and grep the tree.
+- `npx asar extract-file <asar> <path> /tmp/out` ignores the third argument, so the file lands in the current directory under its basename (`page.tsx`) and stdout stays empty. Extract to `/tmp`, or use the read-only commands above. Details: `~/.pi/agent/TROUBLESHOOTING.md` §4.
+
 ## Manual Acceptance
 
 1. Extract the ZIP and move `MD-Convertor.app` to Applications.

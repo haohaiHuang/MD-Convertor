@@ -134,6 +134,32 @@ ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1 \
 - `ELECTRON_SMOKE_TEST=1`：检查 `window.mdConvertor.secrets` 存在且 `safeStorage` 报告加密可用。
 - `ELECTRON_SMOKE_TEST_SECRETS=1`：额外验证密钥链路——无密钥的 Provider 返回 409 `TRANSLATE_NOT_CONFIGURED`；保存密钥后无需重启即可让运行中的服务访问该端点（对测试地址为 502 `TRANSLATE_PROVIDER_ERROR`）；删除密钥后回到 409。冒烟结束前会删除该密钥并还原设置。已经不能再用环境变量提供 Provider 密钥，因此冒烟只通过 preload 桥写入。
 
+## 核验包内内容
+
+只读归档，不要解包；更不要在仓库里解包（坑见本节末尾）：
+
+```bash
+APP=out/MD-Convertor-darwin-arm64/MD-Convertor.app
+A="$APP/Contents/Resources/app.asar"
+npx asar list "$A" | grep -c node_modules/electron    # 0.3.3 裁剪后为 0
+npx asar list "$A" | grep -c '^/\.next'              # 0：构建后的前端不在 asar 里
+LC_ALL=C grep -c "<本次改动里的一段字符串>" "$A"
+```
+
+asar 里装的是**源码树**（`/src`、`/docs`、`/AGENTS.md`、`/.pi/todos`、`/brand`、`CHANGELOG*`；0.3.3 共 241 条，没有 `node_modules`、也没有 `.next`），运行中的应用并不使用这份副本：构建后的前端与其 server `node_modules` 位于 `Contents/Resources/server/`（通过 `extraResource` 装载）。因此在 asar 里命中或落空都**不能**说明前端是否打进包；按「各层实际负责什么」分别核验：
+
+```bash
+npx asar list "$A" | grep settings/page.tsx              # asar：只有源码副本
+strings "$A" | grep -c resolveServerBinary              # asar：Electron 代码里的 ASCII 字符串
+grep -rl "<本次改动里的一段字符串>" "$APP/Contents/Resources/server/.next" | head
+test -f "$APP/Contents/Resources/server/node_modules/playwright-core/browsers.json" && echo present
+```
+
+在 asar 里搜索时有两个坑：
+
+- macOS 的 BSD grep 对**二进制文件里的多字节模式会返回 0**，除非加 `LC_ALL=C`（`grep -c "中文串" app.asar` 看起来就像完全没匹配到）；`strings` 对任何非 ASCII 内容同样看不见。要真正放心，就解到 `/tmp` 再 grep 整棵树。
+- `npx asar extract-file <asar> <path> /tmp/out` 的第三个参数会被忽略，文件会按 basename 落在当前目录（`page.tsx`），stdout 为空。请解到 `/tmp`，或只用上面的只读命令。细节见 `~/.pi/agent/TROUBLESHOOTING.md` §4。
+
 ## 人工验收
 
 1. 解压 ZIP，把 `MD-Convertor.app` 拖入“应用程序”。
