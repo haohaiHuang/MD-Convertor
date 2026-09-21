@@ -2,9 +2,9 @@
 
 ## Resume Here
 
-- Current version: `0.3.4`（`package.json`、锁文件、`feature_list.json` 与发布门禁均为 `0.3.4`）。**已跑 `npm run desktop:release`（2026-09-21，exit 0）**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.4.zip`，`237,272,966` bytes，SHA-256 `6910120e004170cc1ff91d29315f883226a852cd012c3e9a1e335e6056b42704`。已安装到 `/Applications/MD-Convertor.app`。**已提交（`e251267`）并作为 `v0.3.4` 发布**（tag `e251267`，标记 Latest）：换 v2 图标时没升版本（用户决定，此前那次发布只是几分钟大的空草稿），而是重跑了完整门禁，所以**已发布的 ZIP 里就是 v2 图标**；tag `v0.3.4` 已移到该提交（tag、ZIP、源码三者一致）。未签名，仅适合个人测试
-- Pending: ① **再改代码前先 bump 到 ≥ `0.3.5`** 并重跑 `npm run desktop:release`（门禁硬校验目标版本）；`0.3.1`–`0.3.4` 的产物与 tag 一律不要移动/覆盖；② **跑门禁必须用 Node 24.14.1 或 24.15.0** —— 本机默认 v24.16.0 在解压 electron zip 时静默卡死，`electron-forge make` 空跑却仍返回 exit 0；③ **真机小点**（等用户清单）；④ **云端 Provider 端到端实测**（`feat-027` 探针已绿，仍需用户用真实文章在设置页走「拉取模型 → 选模型 → 翻译」）；⑤ **UI 评审结论勿重提**（`docs/UI-REVIEW-2026-09-20.md`，用户已决定全部不整改）；⑥ 签名/notarization 用户 2026-09-20 决定不做（QA-008 accepted）；⑦ `0.3.4` 之后若要再换图标：换 `assets/icon.icns` + 升版本 + 重跑门禁，`tests/app-icon.test.ts` 会先红再绿；⑧ **视觉刷新的 S1（色彩系统）与 S2（字重收敛 + 抗锯齿）都已完成、全绿、未提交、已真机目视确认**（2026-09-21）：S1 用 `tests/palette.test.ts`（先 3 failed / 33 个白名单外字面量）+ `e2e/theme.spec.ts` 先 RED，再换 35 处色字面量 GREEN；S2 把 `e2e/theme.spec.ts` 扩到 6 用例先 RED（3 failed / 3 passed），再引入 `--weight-body: 300` / `--weight-ui: 400`、替换 19 处手调字重、加 `.preview` 守卫（守卫自己先红一次：`.preview` 实收 300 期望 400）与全局 `-webkit-font-smoothing: antialiased` 后 GREEN。**其后经真机复核又改了两处**：① S1 范围内的次要灰加深 `--muted` `#6A7280` → `#565E6B`（备注文字读不清，`tests/palette.test.ts` 先 2 failed / 1 passed 再 GREEN 3 passed）；② S2 范围内的正文细体回退 —— `--weight-body` `300` → **`400`**（`e2e/theme.spec.ts` 的 `BODY_WEIGHT` 先改 `400` 得 1 failed / 5 passed，再改 `globals.css` 一行得 6 passed），因此 **S2 净效果只剩「界面手调字重收敛为一档 400」+ 抗锯齿**，`--weight-body` 与 `.preview` 守卫保留为同值保险。两轮都走过 `npm run desktop:package` + CDP 真机目视（S1：computed 全为新色板、包内旧墨绿零命中；S2：`body` **400** + `antialiased`、`.preview` 400、`.preview h2` 700、品牌 400 + michroma）。当前全量：`./init.sh` exit 0（64 files / 866 tests、95.28%）、三引擎 e2e **203 passed / 4 skipped**；`currentVersion` 仍 `0.3.4`。**下一步是 S3（`docs/features/ui-refresh/S3-release.md`：升 `0.3.5` → 门禁 → 安装 → 发布 → 文档收口），但 FSD 硬要求 S1 与 S2 各落一个独立提交（两轮改动行互不重叠，`git add -p` 可干净拆分），所以先提交再进 S3**；一次性脚本 `./shot-compare.tmp.mjs` 与 `./probe-s2.tmp.mjs` 都已删除。
-- Branch: `main`；`feat-031` + `feat-032` 已提交（`af7f6db`）并发布为 `v0.3.1`；`feat-033` 已提交（`1c3ed80`）并发布为 `v0.3.2`；`feat-034` 已提交（`3897cd1`）并发布为 `v0.3.3`；`feat-035`–`feat-037` + 图标 v1 已提交（`a27224e`）并发布为 `v0.3.4`；图标 v2 为 `v0.3.4` 之上的后续提交
+- Current version: `0.3.5`（`package.json`、锁文件、`feature_list.json` 与发布门禁均为 `0.3.5`）。**已跑 `npm run desktop:release`（2026-09-21，exit 0）**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.5.zip`，`237,335,837` bytes，SHA-256 `313bbbc341c94da0a5ca92f668f2df06cea9f734e47d7af65880500aa192d45f`。已安装到 `/Applications/MD-Convertor.app`（版本读回 `0.3.5`）。**已提交（`5f98307`）并作为 `v0.3.5` 发布**（tag `5f98307`，标记 Latest，资产 237,335,837 bytes / uploaded）；`0.3.5` = 视觉刷新 `feat-039`（S1 色彩系统 + S2 字重收敛与抗锯齿）+ 富文本「清空」按钮归位，源码提交 `972ff4a` / `fae16bc` / `a03b175`，其后是版本与文档提交 `5f98307`。未签名，仅适合个人测试。上一版 `0.3.4`（`237,272,966` bytes / `6910120e…2704`，tag `e251267`）已发布且不再变动
+- Pending: ① **再改代码前先 bump 到 ≥ `0.3.6`** 并重跑 `npm run desktop:release`（门禁硬校验目标版本）；`0.3.1`–`0.3.5` 的产物与 tag 一律不要移动/覆盖；② **跑门禁必须用 Node 24.14.1 或 24.15.0** —— 本机默认 v24.16.0 在解压 electron zip 时静默卡死，`electron-forge make` 空跑却仍返回 exit 0；③ **真机小点**（等用户清单）；④ **云端 Provider 端到端实测**（`feat-027` 探针已绿，仍需用户用真实文章在设置页走「拉取模型 → 选模型 → 翻译」）；⑤ **UI 评审结论勿重提**（`docs/UI-REVIEW-2026-09-20.md`，用户已决定全部不整改）；⑥ 签名/notarization 用户 2026-09-20 决定不做（QA-008 accepted）；⑦ `0.3.4` 之后若要再换图标：换 `assets/icon.icns` + 升版本 + 重跑门禁，`tests/app-icon.test.ts` 会先红再绿；⑧ **视觉刷新的 S1（色彩系统）与 S2（字重收敛 + 抗锯齿）都已完成、全绿、未提交、已真机目视确认**（2026-09-21）：S1 用 `tests/palette.test.ts`（先 3 failed / 33 个白名单外字面量）+ `e2e/theme.spec.ts` 先 RED，再换 35 处色字面量 GREEN；S2 把 `e2e/theme.spec.ts` 扩到 6 用例先 RED（3 failed / 3 passed），再引入 `--weight-body: 300` / `--weight-ui: 400`、替换 19 处手调字重、加 `.preview` 守卫（守卫自己先红一次：`.preview` 实收 300 期望 400）与全局 `-webkit-font-smoothing: antialiased` 后 GREEN。**其后经真机复核又改了两处**：① S1 范围内的次要灰加深 `--muted` `#6A7280` → `#565E6B`（备注文字读不清，`tests/palette.test.ts` 先 2 failed / 1 passed 再 GREEN 3 passed）；② S2 范围内的正文细体回退 —— `--weight-body` `300` → **`400`**（`e2e/theme.spec.ts` 的 `BODY_WEIGHT` 先改 `400` 得 1 failed / 5 passed，再改 `globals.css` 一行得 6 passed），因此 **S2 净效果只剩「界面手调字重收敛为一档 400」+ 抗锯齿**，`--weight-body` 与 `.preview` 守卫保留为同值保险。两轮都走过 `npm run desktop:package` + CDP 真机目视（S1：computed 全为新色板、包内旧墨绿零命中；S2：`body` **400** + `antialiased`、`.preview` 400、`.preview h2` 700、品牌 400 + michroma）。当前全量：`./init.sh` exit 0（64 files / 866 tests、95.28%）、三引擎 e2e **203 passed / 4 skipped**；`currentVersion` 仍 `0.3.4`。**下一步是 S3（`docs/features/ui-refresh/S3-release.md`：升 `0.3.5` → 门禁 → 安装 → 发布 → 文档收口），但 FSD 硬要求 S1 与 S2 各落一个独立提交（两轮改动行互不重叠，`git add -p` 可干净拆分），所以先提交再进 S3**；一次性脚本 `./shot-compare.tmp.mjs` 与 `./probe-s2.tmp.mjs` 都已删除。
+- Branch: `main`；`feat-031` + `feat-032` 已提交（`af7f6db`）并发布为 `v0.3.1`；`feat-033` 已提交（`1c3ed80`）并发布为 `v0.3.2`；`feat-034` 已提交（`3897cd1`）并发布为 `v0.3.3`；`feat-035`–`feat-037` + 图标 v1 已提交（`a27224e`）并发布为 `v0.3.4`；图标 v2 为 `v0.3.4` 之上的后续提交；`feat-039` S1（`972ff4a`）、S2（`fae16bc`）、「清空」按钮归位（`a03b175`）与版本及文档提交（`5f98307`）已发布为 `v0.3.5`
 
 ## Latest Change
 
@@ -60,7 +60,7 @@
 
 ### 本轮新开风险（下一轮决策点）
 
-- **feat-024 – feat-033 的构建已分别进入 `0.3.1` 与 `0.3.2` 产物，两者均已过门禁、已装本机并已发布（`v0.3.1` / `v0.3.2`）；`feat-034` 的构建进入 `0.3.3`、`feat-035`–`feat-037` 与应用图标进入 `0.3.4`（均已过门禁、已装本机、已发布）**：下次改动前先 bump 版本号（≥ `0.3.5`）。
+- **feat-024 – feat-033 的构建已分别进入 `0.3.1` 与 `0.3.2` 产物，两者均已过门禁、已装本机并已发布（`v0.3.1` / `v0.3.2`）；`feat-034` 的构建进入 `0.3.3`、`feat-035`–`feat-037` 与应用图标进入 `0.3.4`，`feat-039`（视觉刷新）与「清空」按钮归位进入 `0.3.5`（均已过门禁、已装本机、已发布）**：下次改动前先 bump 版本号（≥ `0.3.6`）。
 - **QA-012 已关闭（2026-09-20）**：`next@16.3.5`、`sharp@0.35.4` 升级后 `npm audit --omit=dev` 为 **0 漏洞**（剩余 28 条仅在 electron-forge 构建链的开发依赖里）；已在 `0.3.1` 与 `0.3.2` 门禁中复验。
 
 ### S5 实际交付接口（S6 直接使用）
@@ -274,7 +274,7 @@
 ## Next Stage Entry（已无待开发阶段）
 
 - S1 → S6 全部完成，`feat-024`（长文翻译超时）与 `feat-025`（设置页 UI 反馈）也已 done；`activeFeature` 为 `null`，不要在无新授权下重启任何阶段文档。
-- 若要开新一轮，入口是用户决策而非某个 S 文档：① **真机小点**（用户提过「稍后把真机测试的一些小点完善了再说」，等清单）；② QA-012 已关闭（`next@16.3.5`、`sharp@0.35.4`，`npm audit --omit=dev` 0 漏洞）；③ **云端 Provider 端到端实测**（`feat-027` 已用自撰探针在真机跑通，仍需用户用真实文章在设置页走一遍「拉取模型 → 选模型 → 翻译」）；④ 发布：`v0.3.1`、`v0.3.2`、`v0.3.3`、`v0.3.4` 均已发布并装到本机（`0.3.4` 含 `feat-036`、`feat-037` 与应用图标）；**下一轮若有改动，先 bump 版本号（≥ `0.3.5`）再跑门禁**。
+- 若要开新一轮，入口是用户决策而非某个 S 文档：① **真机小点**（用户提过「稍后把真机测试的一些小点完善了再说」，等清单）；② QA-012 已关闭（`next@16.3.5`、`sharp@0.35.4`，`npm audit --omit=dev` 0 漏洞）；③ **云端 Provider 端到端实测**（`feat-027` 已用自撰探针在真机跑通，仍需用户用真实文章在设置页走一遍「拉取模型 → 选模型 → 翻译」）；④ 发布：`v0.3.1`–`v0.3.5` 均已发布并装到本机（`0.3.5` 含视觉刷新与「清空」按钮归位）；**下一轮若有改动，先 bump 版本号（≥ `0.3.6`）再跑门禁**。
 - 每轮开头固定读：`PROGRESS.md` → `session-handoff.md` → `feature_list.json` → 相关 `docs/`（涉及翻译行为时先读 `docs/PRD-translation.md`），然后跑 `./init.sh` 建立基线。
 - 全部阶段文档（已完成入口）：`docs/features/translation/S1-settings-infra.md` 至 `S6-release-and-docs.md`；各文档的 Handoff 已写入下一阶段所需的真实接口与边界。
 
@@ -306,7 +306,7 @@
 ## Recommended Next Action
 
 `feat-038`（应用图标 + 版本 `0.3.4`）已实现、**已跑完发布门禁（exit 0，ZIP `237,272,966` bytes / SHA-256 `6910120e…2704`）**、已安装到 `/Applications/MD-Convertor.app`、已发布为 GitHub Release `v0.3.4`（tag 已随 v2 图标移到后续提交），文档（`CHANGELOG`(+zh)、`README`(+zh)、`docs/TESTING`(+zh)、`docs/QUALITY-AUDIT`、`PROGRESS`、`session-handoff`、`feature_list.json`、`AGENTS.md`）已同步。下一步：
-1. **再改代码前先 bump 版本号（≥ `0.3.5`）并重跑 `npm run desktop:release`**（门禁硬校验目标版本）；`0.3.1`–`0.3.4` 的产物与 tag 一律不要移动或覆盖。
+1. **再改代码前先 bump 版本号（≥ `0.3.6`）并重跑 `npm run desktop:release`**（门禁硬校验目标版本）；`0.3.1`–`0.3.5` 的产物与 tag 一律不要移动或覆盖。
 2. **跑门禁必须用 Node 24.14.1 或 24.15.0**：本机默认 v24.16.0 在解压 electron zip 时静默卡死，`electron-forge make` 空跑却仍返回 exit 0。
 3. **真机小点**：等用户给清单后再评估是否单开一轮。
 4. **云端 Provider 端到端实测**：`feat-027` 的自撰探针已绿，仍需用户用真实文章在设置页走一遍「拉取模型 → 选模型 → 翻译」。
