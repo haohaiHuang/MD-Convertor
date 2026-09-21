@@ -139,7 +139,7 @@
   padding: 16px 18px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: var(--surface-muted, #fbfbfa);
+  background: var(--paper);
 }
 
 .providerHead {
@@ -234,7 +234,7 @@
 
 .input:focus-visible {
   border-color: var(--accent);
-  outline: 2px solid rgb(23 107 93 / 18%);
+  outline: 2px solid rgb(42 57 92 / 18%);
 }
 
 .actions {
