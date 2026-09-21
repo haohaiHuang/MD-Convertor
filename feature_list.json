@@ -1,7 +1,7 @@
 {
   "project": "MD-Convertor",
   "currentVersion": "0.3.3",
-  "updatedAt": "2026-09-20",
+  "updatedAt": "2026-09-21",
   "activeFeature": null,
   "features": [
     {
@@ -557,6 +557,30 @@
         "The ZIP has 0 entries under server/node_modules/electron while playwright (75 entries), playwright-core (129), next (1,170), browser/chrome-headless-shell (one 159,293,248-byte binary) and the Sharp arm64 packages (@img/sharp-darwin-arm64 7, @img/sharp-libvips-darwin-arm64 10) are retained, with 24 MD-Convertor Helper entries kept under Contents/Frameworks",
         "The installed build at /Applications/MD-Convertor.app (539 MB, replacing 0.3.2) passed `ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1` with exit 0 (log /tmp/s18-smoke.log)",
         "Not done: no Developer ID signature or notarization, so the artifact stays personal-testing only"
+      ]
+    },
+    {
+      "id": "feat-035",
+      "name": "Keep The Standalone Server Loadable And Reach The Real Convert Handlers In E2E",
+      "title": "Keep The Standalone Server Loadable And Reach The Real Convert Handlers In E2E",
+      "status": "done",
+      "dependencies": [
+        "feat-034"
+      ],
+      "scope": "Next.js output tracing follows the static requires inside playwright-core but omits `node_modules/playwright-core/browsers.json`, the data file the same import reads while loading. Without it `.next/standalone` cannot import Playwright at all, so the standalone service answered 500 for every link; `scripts/prepare-desktop.mjs` hid that from the distributable by re-copying the full packages over the traced subset, which is why the 0.3.3 pruning round looked safe while dev and E2E servers were broken. `next.config.ts` now adds that one file through `outputFileTracingIncludes` for `/api/convert` (narrow route key, single file), and `e2e/convert-api.spec.ts` turns it into a regression: it is the first spec to reach the real route handlers, because every other spec fulfils `**/api/convert` or `**/api/convert-paste` in the browser. It posts a loopback link, which must come back as 403 `PRIVATE_TARGET` (offline, yet only possible after the route loaded its Playwright import), and extracts real pasted content through the paste route, which needs no network.",
+      "acceptance": [
+        "A standalone build can import Playwright and launch a browser without any help from the desktop preparation step",
+        "The real convert endpoint answers with its own error contract instead of failing to load its runtime",
+        "At least one E2E spec reaches a real conversion handler instead of fulfilling the request in the browser"
+      ],
+      "verification": [
+        "RED: `npx playwright test e2e/convert-api.spec.ts --project=chromium` on the unfixed build returned 500 where 403 was expected (`Expected: 403 Received: 500`), with the server log showing the external module failing to load",
+        "GREEN: after the `outputFileTracingIncludes` entry, `npx playwright test e2e/convert-api.spec.ts` passed on chromium, firefox and webkit (3 passed)",
+        "`.next/standalone/node_modules/playwright-core/browsers.json` exists after `npm run build` (1,939 bytes)",
+        "Standalone Playwright is really usable: `require(\".next/standalone/node_modules/playwright\").chromium.launch()` plus `page.setContent` printed the expected text",
+        "Real URL conversion through the fixed standalone service (production build, `scripts/start-e2e-server.mjs`): `POST /api/convert` on the WalkingLabs lecture page returned HTTP 200 in 3.06s with `extractionMode=browser`, `textChars=3812`, `embeddedImageCount=1` and no warnings, so the traced file is enough for the dynamic rendering path too",
+        "The 0.3.3 claim was re-verified on the installed artifact: `/Applications/MD-Convertor.app` 0.3.3 (539 MB) has no `server/node_modules/electron`, still ships `playwright-core/browsers.json`, and its packaged Playwright launches Chromium",
+        "Full tree at the time of commit (Node.js 24.15.0): `./init.sh` exit 0 with 62 files / 859 tests and 95.28% statements, `npm run test:e2e` exit 0 with 184 passed / 2 skipped across the three engines, and `npm run desktop:package` exit 0 producing a 0.3.3 app with no `server/node_modules/electron`"
       ]
     }
   ],

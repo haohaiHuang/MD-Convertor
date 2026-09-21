@@ -2,12 +2,22 @@
 
 ## Current State
 
-- Last updated: 2026-09-20
+- Last updated: 2026-09-21
 - Current version: `0.3.3`（`package.json`、`package-lock.json`、`feature_list.json` 与发布门禁均为 `0.3.3`）。**`0.3.3` 门禁已于 2026-09-20 跑通（exit 0）**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.3.zip`（`232,947,408` bytes，SHA-256 `1bf807df…7a72`），已安装到 `/Applications`（未压缩 539 MB），**已提交（`3897cd1`）并作为 `v0.3.3` 发布**。上一版 `0.3.2`（`358,726,788` bytes，`8fb7a93f…f1ba`）已发布为 GitHub Release `v0.3.2`（tag `1c3ed80`）；`0.3.0` 的 ZIP（`358,562,540` bytes，`2a0e236e…1147`）是修复**前**的构建，仅作历史
-- Active feature: none（`feat-024` – `feat-034` 已 done）
-- Next release step: none —— `0.3.3` 已提交（`3897cd1`）并发布为 GitHub Release `v0.3.3`（tag `3897cd1`，资产 `232,947,408` bytes / SHA-256 `1bf807df…7a72`）。下一次若再改代码，先 bump 版本号（≥ `0.3.4`）再跑 `npm run desktop:release`（门禁硬校验目标版本），不要移动已发布的 tag 与产物
+- Active feature: none（`feat-024` – `feat-035` 已 done）
+- Next release step: `0.3.3` 已提交（`3897cd1`）并发布为 GitHub Release `v0.3.3`（tag `3897cd1`，资产 `232,947,408` bytes / SHA-256 `1bf807df…7a72`）。`feat-035` 改了 `next.config.ts`，因此源码已与已发布的 `0.3.3` 构建不再逐字节对应（打包产物功能等价：那一份 `browsers.json` 原本就被 prepare-desktop 的整包拷贝覆盖进去）。是否 bump `0.3.4` 并重跑 `npm run desktop:release` 待用户决定；无论哪种选择都不要移动已发布的 tag 与产物。**用户已选 B（2026-09-21）：保持 `0.3.3`，只把修复提交在 tag 之上，不重跑门禁、不动发布物**；因此本机 `main` 会领先 `v0.3.3` 一个提交，这是刻意接受的状态
 - Branch: `main`；`feat-031` + `feat-032` 已提交（`af7f6db`）并作为 `v0.3.1` 发布；`feat-033` 已提交（`1c3ed80`）并作为 `v0.3.2` 发布；本轮 `feat-034`（去掉重复的 Electron 运行时 + 版本 `0.3.3`）已提交（`3897cd1`）并作为 `v0.3.3` 发布
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+
+
+## 已完成 in 0.3.3 之后（standalone 可加载 + 真实转换处理器回归，feat-035 done，2026-09-21）
+
+- 来源：本机同步到 `0.3.3` 时复核 `feat-034` 的裁剪，顺带发现一个**早于 0.3.3** 的缺口：`.next/standalone` 里没有 `node_modules/playwright-core/browsers.json`（Next.js 输出追踪跟到了 `playwright-core` 的静态 require，却漏掉它运行时读的那个数据文件），因此 standalone 服务对任何链接都返回 500（本机实测 `Failed to load external module playwright-…: Cannot find module …/playwright-core/browsers.json`）。`scripts/prepare-desktop.mjs` 的「整包重拷」把这个问题从发布物里盖住了。
+- 附带发现：`e2e/home.spec.ts` 全局拦截 `**/api/convert`，`paste.spec.ts` / `translate.spec.ts` 只 mock `convert-paste`，所以**没有任何 e2e 用例触达真实转换处理器** —— 这正是该缺口能连过两次门禁（178 passed）的原因。
+- 修复（TDD，先红后绿）：新增 `e2e/convert-api.spec.ts`（用 `request` fixture，不经浏览器拦截）—— 提交回环链接必须得到 403 `PRIVATE_TARGET`（离线，但只有路由成功加载 Playwright 依赖后才可能返回），并通过真实 paste 路由提取一次真实粘贴内容。RED：在未修构建上 `Expected: 403 / Received: 500`；GREEN：`next.config.ts` 加 `outputFileTracingIncludes: { "/api/convert": ["node_modules/playwright-core/browsers.json"] }`（只加这一个文件、只对这一个路由）后通过。
+- 实证（修复后）：`.next/standalone/node_modules/playwright-core/browsers.json` 存在（1,939 bytes）；standalone 的 playwright 能 `chromium.launch()` + `setContent`；用 production standalone（`scripts/start-e2e-server.mjs`）对真实公网页发 `POST /api/convert` ⇒ **HTTP 200 / 3.06s / `extractionMode=browser` / textChars 3812 / 内嵌图 1 / 无 warning**，说明追踪到的那一个文件对动态渲染路径也够用。
+- 决定（用户 2026-09-21 选 B）：保持 `0.3.3`，不改版本号、不重跑 `npm run desktop:release`，只把修复提交在 `v0.3.3` 之上；源码与已发布的 `0.3.3` ZIP 不再逐字节对应（打包产物文件级等价：`prepare-desktop` 的整包拷贝本来就提供 `browsers.json`；实测本机新包 2725 文件 vs 已装 0.3.3 的 2716，差异只有 3 个 build-hash 静态文件与 `@emnapi/runtime` / `@img/sharp-wasm32` 这两个可选 wasm 回退包）。
+- 全量验证（Node.js 24.15.0）：`./init.sh` **exit 0**（62 files / **859 tests**，statements 95.28%）；`npm run test:e2e` **exit 0，184 passed / 2 skipped**（较 178 增 6 = 新增 2 用例 × 3 引擎）；`npm run desktop:package` **exit 0**，产物版本 `0.3.3`、`server/node_modules/electron` 不存在、`playwright-core/browsers.json` 在（1,939 bytes）。
+- 已知残余：真实公网 URL 的抓取 + 浏览器渲染无法做离线 e2e（SSRF 策略按设计拒绝回环地址），只能由 `tests/live` 与上面那次手工 200 验证覆盖。
 
 ## 已完成 in 0.3.3（去掉重复的 Electron 运行时，feat-034 done）
 

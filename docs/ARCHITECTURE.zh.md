@@ -105,3 +105,4 @@ Electron 渲染进程启用沙箱与上下文隔离，关闭 Node.js 集成。�
 - 第二台 Mac 验收确认未签名应用可能被 Gatekeeper 显示为“文件已经损坏”；个人测试时应先核对 ZIP SHA-256，再只移除 `com.apple.quarantine` 属性。该处理不等同于签名或 notarization，不扩大分发范围。
 - 打包准备脚本把当前 Playwright 版本对应的 Apple Silicon Chromium Headless Shell 放入应用资源，并通过明确的可执行路径启动，避免依赖用户电脑上的浏览器缓存。
 - Next.js 的输出追踪可能保留 Playwright 的可选 Electron 启动器；桌面准备会移除这份未使用的 server-side Electron 包，使应用只含外层 Electron Runtime，分发 ZIP 因此小约 120 MiB。
+- 同一套追踪会跟到 Playwright 的静态导入，却漏掉它在加载时读取的 `playwright-core/browsers.json`，因此 `next.config.ts` 通过 `outputFileTracingIncludes` 为 `/api/convert` 单独列出这一个文件。缺少它时 standalone 服务根本无法导入 Playwright，对任何链接都返回 500；打包流程的整包拷贝只是把这个问题从发布物里盖住了。

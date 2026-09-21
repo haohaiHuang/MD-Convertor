@@ -46,6 +46,8 @@
 
 E2E 使用 production standalone 服务，并在测试后检查 tracked 文件未变化。`playwright.config.ts` 设 `workers: 1`，因为翻译引擎持有一个进程级任务槽，并行 worker 会互相撞出 429 `TRANSLATE_BUSY`。
 
+转换类的 spec 全部在浏览器里拦截 `**/api/convert` 或 `**/api/convert-paste`，因此 `e2e/convert-api.spec.ts` 是唯一触达真实路由处理器的用例：它提交一个回环链接并期待 403 `PRIVATE_TARGET`（无需联网，但只有在该路由成功加载其 Playwright 依赖后才可能返回），并通过真实的 paste 路由提取一次真实粘贴内容。`next.config.ts` 用 `outputFileTracingIncludes` 把 `node_modules/playwright-core/browsers.json`（Next.js 会遗漏的数据文件）加进追踪，使该依赖始终可加载；缺少它时 standalone 服务对任何链接都返回 500，而这正是打包流程曾经用「重新整包拷贝」掩盖掉的问题。
+
 ## 发布保护
 
 `npm run desktop:release` 要求：
