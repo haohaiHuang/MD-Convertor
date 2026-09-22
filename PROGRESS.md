@@ -4,8 +4,8 @@
 
 - Last updated: 2026-09-22
 - Current version: `0.3.6`（`package.json`、`package-lock.json`、`feature_list.json`、发布门禁 `scripts/release-desktop.mjs` 均为 `0.3.6`；尚未发布——`v0.3.5` 仍是最新已发布版本，tag `5f98307`）。S1 与 S2 的全部验证证据在 `feature_list.json` 的 `feat-041.verification`
-- Active feature: `feat-041` 默认 MD 保存路径（**S1、S2 已完成并提交；S2 真机缺陷修复已完成、待打包复测；S3 待开工**）
-- Next step: ① 用 `npm run desktop:package`（Node **24.14.1**）重新打包，让用户在自己终端重跑真机两态验收（当前 `out/` 里的包是修复前的，点「下载」仍然是死的）；② 用户补跑 `npm run test:e2e` 的 **firefox** 引擎（本环境跑不了，见下）；③ 两者都过了再按 `docs/features/default-save-path/S3-release.md` 收口发布
+- Active feature: `feat-041` 默认 MD 保存路径（**S1、S2 已完成并提交；S2 真机缺陷已修复、已重新打包并通过真机复验；S3 待开工**）
+- Next step: ① 用户在自己终端过一遍真机两态验收（包已重新打好，`out/MD-Convertor-darwin-arm64/MD-Convertor.app` 已是修复版；开关当前是关的，`defaultPath` 已指向 iCloud 的 `Note/未归档`，只需开开关 → 点下载）；② 用户补跑 `npm run test:e2e` 的 **firefox** 引擎（本环境跑不了，见下）；③ 两者都过了再按 `docs/features/default-save-path/S3-release.md` 收口发布（发布前先收窄 `forge.config.cjs` 的 asar ignore）
 - Branch: `main`；stash@{0} 是 2026-09-21 拉取前的文档备份、与 feat-041 无关
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+
 
@@ -15,9 +15,9 @@
 - **根因 1：iCloud 路径被路径校验拒掉**。`isAbsoluteDirPath`（`electron/preload-contract.cjs` 与其在 `electron/preload.cjs` 里的等价副本）原实现是 `value.includes("~") → false`，即**路径里出现任何 `~` 都判非法**，而用户选的目录正是 `/Users/huanghaohai/Library/Mobile Documents/com~apple~CloudDocs/Note/未归档`。这是 S1 T1.2 的设计（`leading /, no ~, no .. segment`）被字面执行的结果：`~` 只在**位于路径段开头**时才是家目录简写，`com~apple~CloudDocs` 里的波浪号只是普通字符。改为 `!value.split("/").some((s) => s === ".." || s.startsWith("~"))`，并把 iCloud 场景写进函数注释，防止以后又被收紧回去。
 - **根因 2：preload 抛异常而调用处没接**。preload 的 `assert*` 是**抛 `TypeError`**，不是 resolve `{ ok: false }`；`src/app/page.tsx` 里是裸 `await bridge.saveFile(...)`，异常向上冒泡，又被 `onClick={() => void downloadMarkdown()}` 吞掉 → 完全无声。浏览器 e2e 永远抓不到这个，因为桩永远 resolve。修法是把拒绝并入既有失败分支：`.catch(() => null)` + `result?.ok` + `result ? outputCodeMessage(result.code, "文件写入失败。") : "默认保存设置不可用。"`。
 - **TDD 证据**：先加 RED —— `preload-contract.test.cjs` 增 2 个 accept（真实 iCloud 路径、`/Users/someone/My~Backup`）与 1 个 reject（`/Users/someone/~/notes`）；`preload.test.cjs` 同步 dirCases（与 contract 一致性的属性测试）；`output.test.mjs` 增同名拒绝用例 + 新增一条真的写进 `com~apple~CloudDocs/Note` 目录的测试；`e2e/home.spec.ts` 增「桥接层拒绝时给出反馈并降级为浏览器下载」（桩在 `rejects` 情况下改为抛异常）。RED：模块测试 4 failed / 86 passed；e2e chromium 3 failed / 16 passed。GREEN：模块测试 89 passed（其中 1 条失败是既有环境噪声 `CODEBUDDY_BROKER_DENY`，在 `git show HEAD:electron/output.test.mjs` 的干净版本上同样复现，与本修复无关）；e2e chromium+webkit **158 passed / 2 skipped**，tracked-file 守卫干净；`tsc --noEmit` 与 `eslint .` 全绿。
-- **一个未诊断的观察（不是结论）**：用户实测后留下的 `settings.json` 里 `output.defaultPath` 已是 iCloud 目录（说明「选择目录」持久化正常），但 `output.useDefaultPath: false` —— 盘上是**关**的，而用户说开关是打开的。`toggleUseDefaultPath` 是乐观更新（先改 state、PUT 失败再回滚），所以 PUT 失败会显示「设置保存失败」并把开关拨回去；而**开关若是关的，页面根本不会进入桥接分支**，这本身也足以解释「点了没反应」。列为待复测确认项，不冒充已定位。
-- **代价提醒**：`out/MD-Convertor-darwin-arm64/MD-Convertor.app`（构建于 00:26:17）**早于本次修复**，即当前包仍带着这个死按钮 —— 用户就是这么撞上的。**必须重新打包**才能复测。
-- 唯一推荐下一步：重新打包 → 用户重跑真机两态验收（顺带确认开关是否稳定持久化）→ 补 firefox e2e → 开 S3。
+- **一个未诊断的观察（不是结论）**：用户实测后留下的 `settings.json` 里 `output.defaultPath` 已是 iCloud 目录（说明「选择目录」持久化正常），但 `output.useDefaultPath: false` —— 盘上是**关**的，而用户说开关是打开的。`toggleUseDefaultPath` 是乐观更新（先改 state、PUT 失败再回滚），所以 PUT 失败会显示「设置保存失败」并把开关拨回去；而**开关若是关的，页面根本不会进入桥接分支**，这本身也足以解释「点了没反应」。**T2.8 复验后判定：不是可复现缺陷**（开关确实能持久化，见下），但用户那次为什么留下 `false` 仍未查明。
+- **T2.8 重新打包 + 真机复验：两项全过**。`npm run desktop:package` exit 0（Node 24.14.1）→ 新包 20:37:51 构建，确认**真的带上了修复**（`server/.next/**` 里有 `默认保存设置不可用`、没有 `includes("~")`；`app.asar` 里 `segment.startsWith("~")` 出现 2 次 = preload-contract + preload）。随后 CDP 驱动打包应用的真实渲染层：① 设置页点「使用默认目录」→ 真实 `PUT /api/settings` 落盘，`useDefaultPath` 由 `false` 变 `true`（**开关持久化正常**）；② 开关开 + 目录 `…/com~apple~CloudDocs/Note/未归档` → 转换、点「下载」→ 反馈条 `已保存到 /Users/…/未归档/<文件名>.md`、`download` 事件 0、`createObjectURL` 0、**文件真的落盘（134 B）**。这正是修复前必然失败的那条路径。
+- **真机探针的硬约束（新踩的坑）**：**`MD_CONVERTOR_USER_DATA` 无法隔离打包应用** —— `electron/env.mjs` 的 `buildServerEnv()` 里 `MD_CONVERTOR_USER_DATA: userDataDir` 是**无条件覆盖**（注释写明 MD_CONVERTOR_* 永远权威），所以启动时设这个变量**不生效**。后果：任何真机探针都会读写**用户真实的 `settings.json`**、并把文件写进**开关当前指向的真实目录**（本次就真的写进了用户的 iCloud 云盘）。探针必须四步走：备份真实 settings.json → 跑完逐字段比对确认 `output` 之外未被改动（页面 PUT 是整份替换）→ 还原 `defaultPath`/`useDefaultPath` → 删掉落在真实目录里的探针文件。本次四步已全部执行，用户设置与 iCloud 目录已回到探针前状态。
 
 ## 上一轮（feat-041 S2：主页面下载分叉，2026-09-22）
 
@@ -39,6 +39,7 @@
 - 路径校验里 `~` **只在路径段开头**才算家目录简写；`com~apple~CloudDocs`（iCloud 云盘）里的波浪号是普通字符。别再写 `value.includes("~")`，那会把真实用户最常用的目录全部拒掉。
 - preload 的校验函数是**抛异常**（`TypeError`）而不是 resolve `{ ok: false }`，所以任何 `await bridge.*` 都必须带 `.catch()`；否则异常会被 `void xxx()` 吞掉，表现为「点了没反应」。mock 桥接的 e2e 抓不到这类问题——桩要能抛。
 - 真机探针的目录必须包含**真实用户会选的路径形态**（至少一条 iCloud 路径），只用 `/tmp/...` 的探针等于没测路径校验。
+- **`MD_CONVERTOR_USER_DATA` 不能用来隔离打包应用**：`electron/env.mjs` 的 `buildServerEnv()` 无条件用主进程算出的 `userDataDir` 覆盖它。真机探针一定会碰到用户真实的 `settings.json` 与开关指向的真实目录，必须走「备份 → 跑 → 比对 → 还原 → 删产物」五步（详见 `feature_list.json` 的 T2.8 environment trap）。
 - 下载分叉是**三重条件**（开关 && 目录 && 桥接），且失败路径必须降级浏览器下载并告知原因，不得吞错。
 - e2e 写设置必须用「取真实响应后只改写 `output` 再 fulfill」，不要 PUT 真设置——e2e 设置目录是全 project 共享的，泄漏会连坐其他引擎。
 - 签名/notarization 不做（QA-008 accepted，2026-09-20 用户决定）；UI 评审结论勿重提（2026-09-20 全部不整改）。

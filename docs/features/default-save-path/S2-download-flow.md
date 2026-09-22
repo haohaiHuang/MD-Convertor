@@ -111,3 +111,13 @@ async function downloadMarkdown(): Promise<void> {
 **TDD 证据**：RED —— `preload-contract.test.cjs` +2 accept（真实 iCloud 路径、`/Users/someone/My~Backup`）/+1 reject（`/Users/someone/~/notes`），`preload.test.cjs` 同步 dirCases，`output.test.mjs` 加同名拒绝用例 + 一条真的写进 `com~apple~CloudDocs/Note` 的测试，`e2e/home.spec.ts` 加「桥接层拒绝时给出反馈并降级为浏览器下载」；模块测试 4 failed / 86 passed、e2e chromium 3 failed / 16 passed。GREEN —— 模块 89 passed（1 条既有环境噪声 `CODEBUDDY_BROKER_DENY`，干净版代码同样复现）、e2e chromium+webkit 158 passed / 2 skipped、`tsc --noEmit` + `eslint .` 全绿。
 
 **未定论**：用户实测后留下的 `settings.json` 里 `output.defaultPath` 已是 iCloud 目录（说明「选择目录」持久化正常），但 `output.useDefaultPath: false`，与「我打开了开关」不符。`toggleUseDefaultPath` 是乐观更新（先改 state、PUT 失败再回滚并提示「设置保存失败」），且**开关若是关的，页面根本不会进入桥接分支**——这本身也能解释「点了没反应」。复测时需确认开关是否稳定持久化；若复现回滚，那是一个独立缺陷，要查 PUT 响应。
+
+### 真机复验（2026-09-22，重新打包后，通过）
+
+修完并 `npm run desktop:package`（Node 24.14.1，exit 0）之后，在**打包应用的真实渲染层**上用 CDP 复验，两条都过：
+
+- **开关持久化正常，缺陷不可复现**：在设置页点「使用默认目录」→ 真实 `PUT /api/settings` 落盘，`settings.json` 的 `useDefaultPath` 从 `false` 变成 `true`。上面那条「未定论」因此**不是可复现缺陷**（机制本身是好的），但用户那次为什么留下 `false` 仍未查明。
+- **直写落到带 `~` 的真实目录**：开关打开 + 目录为 `…/com~apple~CloudDocs/Note/未归档` → 转换、点「下载」→ 反馈条 `已保存到 /Users/…/com~apple~CloudDocs/Note/未归档/<文件名>.md`、`download` 事件 0、`createObjectURL` 0、文件**真的落盘**（134 B）。这正是修复前必然失败的那条路径。
+
+**真机探针的硬约束（踩过，务必记住）**：**`MD_CONVERTOR_USER_DATA` 无法隔离打包应用**。`electron/env.mjs` 的 `buildServerEnv()` 里 `MD_CONVERTOR_USER_DATA: userDataDir` 是**无条件覆盖**的（注释写明「the MD_CONVERTOR_* keys are always authoritative」），主进程算出来的 `userDataDir` 永远赢；启动时给应用设这个变量**不生效**。后果：任何真机探针都会读写**用户真实的 `settings.json`**，并把文件写进**开关当前指向的真实目录**。
+因此探针必须：① 先把真实 `settings.json` 备份到 `/tmp`；② 跑完把 `output` 之外的字段逐个比对确认未被改动（探针的 PUT 是整份替换）；③ 恢复 `useDefaultPath` / `defaultPath` 到原值；④ 删掉落在真实目录里的探针文件。本次复验已全部执行，用户目录与设置回到原样。
