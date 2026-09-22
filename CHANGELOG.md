@@ -16,6 +16,8 @@ This project follows the principles of [Keep a Changelog](https://keepachangelog
 
 - The settings file gains an `output` field. A settings file written by an earlier version is still read as-is: the missing field falls back to its default instead of being treated as corruption, so no existing provider, language or translation setting is lost on upgrade. The stored format version is unchanged.
 
+- The application bundle now carries only what it runs. The packaged archive used to include the entire repository — project documentation, source files, tests, build configs and private working notes — none of which the app reads, and all of which would have been published along with the download. It now holds just the application manifest and the Electron-side modules the app loads at startup, cutting the archive from 253 entries to 10.
+
 ### Fixed
 
 - A folder inside iCloud Drive can now be used as the default save folder. The path check on the desktop bridge treated every `~` in a path as home shorthand, and iCloud Drive keeps its data under `com~apple~CloudDocs` — so picking a folder there produced a directory the app then refused, and the refusal was thrown as a rejected promise that nothing caught, leaving the 下载 button looking dead: no file written, no browser download, no message. A `~` is now shorthand only when it starts a path segment, and any remaining refusal is reported in the result area and falls back to the browser download instead of disappearing.

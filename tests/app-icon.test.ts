@@ -4,6 +4,8 @@ import path from "node:path";
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 
+import { isPackaged } from "./packaged-app-scope";
+
 const masterPath = path.join(process.cwd(), "assets/icon-1024.png");
 const icnsPath = path.join(process.cwd(), "assets/icon.icns");
 
@@ -45,10 +47,10 @@ describe("app icon assets", () => {
     expect(forgeConfig).toMatch(/icon:\s*path\.resolve\(__dirname, "assets\/icon\.icns"\)/);
   });
 
-  it("keeps the icon sources out of the packaged app", () => {
-    const forgeConfig = readFileSync(path.join(process.cwd(), "forge.config.cjs"), "utf8");
-
-    // 打包器直接读磁盘上的 assets/icon.icns，因此这份 2.9 MB 母版只需要留在仓库里
-    expect(forgeConfig).toMatch(/\/\^\\\/assets\(\$\|\\\/\)\//);
+  it("keeps the icon sources out of the packaged app", async () => {
+    // 打包器直接读磁盘上的 assets/icon.icns，因此这份 2.9 MB 母版只需要留在仓库里。
+    // 断言的是打包器实际会不会收录，而不是配置文件的措辞 —— 后者换个写法就会误报。
+    expect(await isPackaged("assets/icon.icns")).toBe(false);
+    expect(await isPackaged("assets/icon-1024.png")).toBe(false);
   });
 });

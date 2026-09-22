@@ -176,13 +176,17 @@ APP=out/MD-Convertor-darwin-arm64/MD-Convertor.app
 A="$APP/Contents/Resources/app.asar"
 npx asar list "$A" | grep -c node_modules/electron    # 0 after the 0.3.3 trim
 npx asar list "$A" | grep -c '^/\.next'              # 0: the built frontend is not in the asar
+npx asar list "$A" | grep -c '^/docs'                # 0 after T3.0: only package.json + /electron
 LC_ALL=C grep -c "<a string from the change under test>" "$A"
 ```
 
-The archive holds the **source tree** (`/src`, `/docs`, `/AGENTS.md`, `/.pi/todos`, `/public`, `CHANGELOG*`; 230 entries in 0.3.4, no `node_modules` and no `.next`). It no longer carries `/brand` (deleted in 0.3.4) and never carries `/assets` — the icon sources are build inputs and are excluded on purpose. The running app does not use that copy: the built frontend and its server `node_modules` live under `Contents/Resources/server/`, loaded through `extraResource`. So a match (or a miss) in the asar proves nothing about the frontend, and a miss there does not mean the change is not packaged. Check each layer for what it actually serves:
+The archive holds **only what the runtime reads**: `package.json` (Electron resolves `main` from it) and `/electron` (the Electron-side modules, including the preload). Everything else in the repository root — `src`, `docs`, `e2e`, `tests`, `scripts`, `.workbuddy`, `AGENTS.md`, `CHANGELOG*`, `PROGRESS.md`, `session-handoff.md`, `feature_list.json`, `README*`, `init.sh`, `public`, and the build/lint/test configs — is excluded on purpose (`forge.config.cjs`, task T3.0 of `docs/features/default-save-path/S3-release.md`). `tests/forge-package-scope.test.ts` guards that list in both directions, so a future edit cannot quietly drop `electron/` out of the package.
+
+Two copies of the frontend exist and neither is in the asar: the built frontend and its server `node_modules` live under `Contents/Resources/server/`, loaded through `extraResource`; the repository-root `public/` is copied there by `scripts/prepare-desktop.mjs`. So a match (or a miss) in the asar proves nothing about the frontend, and a miss there does not mean the change is not packaged. Check each layer for what it actually serves:
 
 ```bash
-npx asar list "$A" | grep settings/page.tsx              # asar: the source copy only
+npx asar list "$A" | grep electron/main.mjs              # asar: the Electron entry module
+npx asar list "$A" | grep -c '^/src'                     # 0: sources are not in the asar
 strings "$A" | grep -c resolveServerBinary              # asar: ASCII strings in the Electron code
 grep -rl "<a string from the change under test>" "$APP/Contents/Resources/server/.next" | head
 test -f "$APP/Contents/Resources/server/node_modules/playwright-core/browsers.json" && echo present

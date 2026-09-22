@@ -4,12 +4,31 @@
 
 - Last updated: 2026-09-22
 - Current version: `0.3.6`（`package.json`、`package-lock.json`、`feature_list.json`、发布门禁 `scripts/release-desktop.mjs` 均为 `0.3.6`；尚未发布——`v0.3.5` 仍是最新已发布版本，tag `5f98307`）。S1 与 S2 的全部验证证据在 `feature_list.json` 的 `feat-041.verification`
-- Active feature: `feat-041` 默认 MD 保存路径（**S1、S2 已完成并提交（修复提交 `867aa2a`）；真机缺陷与反馈缺失均已修复；S3 待开工**）
-- Next step: ① **用户先 Cmd+Q 关掉当前窗口**（沙箱内无法代劳：`osascript quit` 报 -10004 权限违例；`open` 对已运行实例只激活、不换构建），再打开 `out/MD-Convertor-darwin-arm64/MD-Convertor.app`（21:12 构建，已含反馈修复，指纹 chunk `2-_s5mj5mt1x0.js`），过一遍真机两态验收 —— **口径已变**：开关开时除了文件落盘，还应看到「下载」按钮短暂变「已保存」+ 带 ✓ 的反馈卡片（这就是上一轮「以为没下载成功」的修复）；② 用户补跑 `npm run test:e2e` 的 **firefox** 引擎（本环境跑不了，见下）；③ 两者都过了再按 `docs/features/default-save-path/S3-release.md` 收口发布（发布前先收窄 `forge.config.cjs` 的 asar ignore）
+- Active feature: `feat-041` 默认 MD 保存路径（**S1、S2 已完成并提交（修复提交 `867aa2a`）；用户真机两态验收已签字通过；S3 进行中 —— T3.0 asar 收窄已完成，剩 T3.1–T3.7**）
+- Next step: ① **用户补跑 `npm run test:e2e` 的 firefox 引擎**（本环境跑不了，见下）—— 这是 S3 发布门禁 `npm run desktop:release` 的唯一阻塞；② S3 的 T3.1–T3.7（全量验证、发布门禁、独立复核、安装本机、提交发布、文档收口）
 - Branch: `main`；stash@{0} 是 2026-09-21 拉取前的文档备份、与 feat-041 无关
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+
 
-## 最近一轮（feat-041 S2 反馈缺失修复，2026-09-22）
+## 最近一轮（feat-041 S3 T3.0 asar 收窄，2026-09-22）
+
+- **为什么要做**（收窄前的实证）：0.3.6 的 `app.asar` 有 **253 个条目**、装着**整个仓库根** —— 含 `.workbuddy/memory/*.md`（跨会话工作日志）、`session-handoff.md`、`PROGRESS.md`、`docs/`、`src/`、`e2e/`、`tests/`、`scripts/` 与全部明文配置。**本版本的交付形态正是 GitHub Release 的 ZIP，所以收窄前等于把这些私有工作文档一起发布出去** —— 这是最硬的理由。附带两条：残留的 6 处 `value.includes("~")` 来自文档而非代码，让「这包带没带修复」的判定含混；仓库根的 `public/` 是 `prepare-desktop.mjs` 已复制到 `.desktop/server/public` 的死副本。
+- **运行时到底读什么**（读代码确认，不猜）：`process.resourcesPath/server`（`extraResource`，不在 asar 内）与 `path.join(import.meta.dirname, "preload.cjs")` 及 `main.mjs` 同级导入的 8 个模块。
+- **实现**：11 条黑名单换成**两条保留清单正则** —— `/^\/(?!package\.json$)(?!electron(\/|$)).*/` 与 `/^\/electron\/.*\.test\.(mjs|cjs)$/`。刻意用反向形式：**列「要丢什么」的规则必须在仓库每次长大时同步扩写，新文件默认进包；列「要留什么」的规则不会悄悄退化**。
+- **两个决定方案的事实**（来自 `@electron/packager` 18.4.4 的 `dist/copy-filter.js`，文档没说准）：① 规则匹配的是 `"/" + 相对打包目录的路径`，**不是**文档所称的绝对路径；② `DEFAULT_IGNORES`（`.git`、锁文件、`*.o`、`node_modules/.bin`）**只在 `ignore` 是数组时**才追加 —— 换成文档推荐的 `IgnoreFunction` 会把这些全部丢掉。
+- **TDD**：RED `/tmp/t3.0-red.log` **26 failed / 18 passed** → GREEN **44 passed**。守卫 `tests/forge-package-scope.test.ts` **调用真实 Packager 过滤器**（`userPathFilter`，经共享 helper `tests/packaged-app-scope.ts`），不是复刻匹配语义；并且**必需模块清单是从 `electron/main.mjs` 自己的 import 反推**的，以后新增模块不会漏。
+- **被带红并修好的既有回归**：`tests/app-icon.test.ts` 原本断言 `forge.config.cjs` 的**源文本**匹配 `/^\/assets($|\/)/` —— 它测的是配置措辞而非契约，所以换个写法就误报。已改成行为断言 `isPackaged("assets/icon.icns") === false`。**教训**：grep 配置文件文本的测试是在测措辞，不是在测契约。
+- **结果与验证**：asar **253 → 10 条目**、**2670300 → 35261 字节**，剩下正好是 `/package.json`、`/electron` 与 8 个运行时模块。`./init.sh` exit 0 → **68 files / 999 tests**、statements 95.28%；双引擎 e2e exit 0 → **160 passed / 2 skipped**（与 S2 基线一致，且是在新守卫落地**之后**复现的）；`desktop:package` exit 0；**打包冒烟 exit 0 且两个断言都真跑了**（`Preload bridge smoke passed: secrets.set function, encryptionAvailable true`、`Runtime secret smoke passed: TRANSLATE_NOT_CONFIGURED → TRANSLATE_PROVIDER_ERROR → TRANSLATE_NOT_CONFIGURED`）；用户的 `settings.json` / `secrets.json` 跑前备份、跑后 md5 逐字节一致；重启后 `/` 与指纹 chunk 均 200，T2.9 的反馈修复仍在包里。
+- **e2e 途中两个操作陷阱**（已记入 `feature_list.json`）：① 首次三引擎运行 7m23s 未结束、被停掉后遗留一个 e2e 服务占着 3000 端口，重试 4 秒就报 `http://127.0.0.1:3000/health is already used` —— 先用 `lsof -p 42508 -a -d txt,cwd` 核实该进程 cwd 是 `.next/standalone` 才 kill，**不能按模式盲杀**；② `scripts/run-e2e.mjs` 会把多余 argv 透传给 Playwright，所以用 `--project=chromium --project=webkit` 选引擎时，build 与 tracked-file 守卫仍在。
+- 证据日志：`/tmp/t3.0-red.log`、`/tmp/t30-init.log`、`/tmp/t30-e2e.log`、`/tmp/t30-package.log`、`/tmp/t30-smoke.log`。
+
+## 用户验收签字（2026-09-22 22:17）
+
+- 用户确认**两态都过**（原话「两态都过了」），满足 `feature_list.json` 的 `feat-041.acceptance[4]`：开关开 → 不弹保存框、文件落进 iCloud 目标目录、且能看到「下载」按钮变**「已保存」**+ 结果区带 ✓ 的卡片；开关关 → 照旧弹保存框。
+- 跑的是 21:12 构建，交付前已反证：指纹 chunk `2-_s5mj5mt1x0.js` 在 pid 40641 / 端口 57125 上返回 **HTTP 200**（175748 B，内含 `data-tone` ×1、`已保存` ×1），修复前的实例对同一路径返回 404。起点条件：`useDefaultPath: true`、`defaultPath = …/com~apple~CloudDocs/Note/未归档`。
+- 旁证：目标目录里早就有用户上一轮落盘的 `第283期 - 经典电影.md`（4929083 B，21:02）—— 那是「反馈还没修时文件就已经能落盘」的直接物证。
+- 剩下的门禁缺口只有一个：**firefox 引擎 e2e 从未跑过**，必须由用户在普通终端补。
+
+## 上一轮（feat-041 S2 反馈缺失修复，2026-09-22）
 
 - **用户真机复测后报障**：直写已经**能下载**了（iCloud 缺陷确认修复），但**没有任何可感知的确认**，导致「会误以为没有下载成功」。
 - **先查事实再动手**：提示**不是没渲染** —— e2e 里 `已保存到` 的断言一直绿，而直写分支是唯一会写文件的代码路径，所以 `setSaveNotice` 在用户那次必然执行了。这是**呈现缺陷**，三个成因：① 成功提示是裸的说明文字（`color: var(--muted)`、14px、无背景无边框无标记），跟正文说明一个长相；② **成功与失败共用同一个样式**，连警告都长得像成功；③ 注意力所在的位置（「下载」按钮）毫无反馈 —— 旁边的「复制」会变「已复制」，而默认目录这套功能**故意不弹保存框**，等于把两条反馈渠道同时关掉了。
@@ -18,7 +37,7 @@
 - **验证**：chromium `home.spec.ts` **21 passed**；`NODE_OPTIONS= ./init.sh` exit 0 → 67 files / **955 tests**、statements 95.28%；双引擎 e2e exit 0 → **160 passed / 2 skipped**（比 158 多的正是新用例 × 2 引擎）；`git status` 确认除三个预期文件外无 tracked-file 漂移。
 - **已提交并重新打包**：提交 `867aa2a`（8 个文件）；`NODE_OPTIONS= npm run desktop:package`（Node 24.14.1）exit 0 → `out/MD-Convertor-darwin-arm64/MD-Convertor.app` 21:12 构建、0.3.6、arm64、566 MB；指纹校验全过（chunk `2-_s5mj5mt1x0.js` 含 `data-tone` + `已保存`；CSS 含 `✓`；客户端无 `includes("~")`；`app.asar` 的 preload 仍含 `startsWith("~")`）。
 - **环境发现**：本沙箱**无法用程序关闭已运行的应用** —— `osascript -e 'quit app "MD-Convertor"'` 报 `权限违例 (-10004)`；`open <路径>` 对已运行实例只做激活、不会换成新构建。所以「重新打包 → 重启复测」这一步必须由用户 Cmd+Q。安全列实例：`lsof -nP -iTCP -sTCP:LISTEN | awk '$1 ~ /^MD-Conv/'`。
-- 唯一推荐下一步：用户 Cmd+Q 后重新打开新包，再看一遍「开关开 → 点下载」 —— 这次应当能看到按钮变「已保存」以及带 ✓ 的卡片。
+- 唯一推荐下一步：用户 Cmd+Q 后重新打开新包，再看一遍「开关开 → 点下载」 —— 这次应当能看到按钮变「已保存」以及带 ✓ 的卡片。**→ 已完成，用户 22:17 确认两态都过（见上节）。**
 
 ## 上一轮（feat-041 S2 真机缺陷修复，2026-09-22）
 
@@ -50,6 +69,9 @@
 - 路径校验里 `~` **只在路径段开头**才算家目录简写；`com~apple~CloudDocs`（iCloud 云盘）里的波浪号是普通字符。别再写 `value.includes("~")`，那会把真实用户最常用的目录全部拒掉。
 - preload 的校验函数是**抛异常**（`TypeError`）而不是 resolve `{ ok: false }`，所以任何 `await bridge.*` 都必须带 `.catch()`；否则异常会被 `void xxx()` 吞掉，表现为「点了没反应」。mock 桥接的 e2e 抓不到这类问题——桩要能抛。
 - 真机探针的目录必须包含**真实用户会选的路径形态**（至少一条 iCloud 路径），只用 `/tmp/...` 的探针等于没测路径校验。
+- `forge.config.cjs` 的 `ignore` 是**保留清单**（「只留 `package.json` + `electron/`」的反向正则），不是黑名单。新增仓库顶层文件/目录时不需要改它；**但要新增运行时模块，必须放在 `electron/` 下**，否则不会进包 —— `tests/forge-package-scope.test.ts` 会从 `main.mjs` 的 import 反推并拦下。
+- 该 `ignore` 必须保持**数组**形式：`@electron/packager` 只在数组形式下追加 `DEFAULT_IGNORES`（`.git`、锁文件、`*.o`、`node_modules/.bin`）；换成文档推荐的 `IgnoreFunction` 会静默丢掉这些默认项。
+- 判断「某个包带没带某项修复」，不要只看字符串命中：asar 收窄前会命中文档文本。正确做法是 grep 新包 `static/chunks/` 得到指纹 chunk 名，再 `curl` 运行中实例的该路径（404 = 仍是旧构建）。
 - **`MD_CONVERTOR_USER_DATA` 不能用来隔离打包应用**：`electron/env.mjs` 的 `buildServerEnv()` 无条件用主进程算出的 `userDataDir` 覆盖它。真机探针一定会碰到用户真实的 `settings.json` 与开关指向的真实目录，必须走「备份 → 跑 → 比对 → 还原 → 删产物」五步（详见 `feature_list.json` 的 T2.8 environment trap）。
 - 下载分叉是**三重条件**（开关 && 目录 && 桥接），且失败路径必须降级浏览器下载并告知原因，不得吞错。
 - e2e 写设置必须用「取真实响应后只改写 `output` 再 fulfill」，不要 PUT 真设置——e2e 设置目录是全 project 共享的，泄漏会连坐其他引擎。
