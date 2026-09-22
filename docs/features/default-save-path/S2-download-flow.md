@@ -40,7 +40,7 @@
 
 - state：`settingsState: Settings | null`；首屏 effect 里 `setSettingsState(settings)`，`translateEnabled` / `targetLanguage` 仍是独立 state（行为不变，不动翻译逻辑），从同一份响应里各取所需、不额外发请求。
 - 新增 `saveNotice: string | null` state，渲染在结果区内、`.stats` **之前**，`role="status"`；样式 `.saveNotice` 复用 `.translationNotice` 的基调（`max-width: 820px` / `color: var(--muted)` / `font-size: 14px`）。
-- `downloadMarkdown()` 改造（**实际落地版本**，与上一版草图的差别见「决策记录」）：
+- `downloadMarkdown()` 改造（**实际落地版本（含 2026-09-22 真机缺陷修复，见文末「缺陷修复」）**，与上一版草图的差别见「决策记录」）：
 
 ```ts
 async function downloadMarkdown(): Promise<void> {
@@ -51,13 +51,17 @@ async function downloadMarkdown(): Promise<void> {
   const configured = settingsState?.output;
   const bridge = outputBridge();
   if (configured?.useDefaultPath && configured.defaultPath && bridge) {
-    const result = await bridge.saveFile(configured.defaultPath, filename, activeMarkdown);
-    if (result.ok) {
+    // preload 的参数校验是「抛异常」而不是 resolve `{ ok: false }`，
+    // 所以必须把拒绝折进同一条失败分支；否则异常会被 void 吞掉，点下载毫无反应。
+    const result = await bridge
+      .saveFile(configured.defaultPath, filename, activeMarkdown)
+      .catch(() => null);
+    if (result?.ok) {
       setSaveNotice(`已保存到 ${result.path ?? `${configured.defaultPath}/${filename}`}`);
       return;
     }
     // 不吞错：报原因，然后照样把文件交给用户
-    const reason = outputCodeMessage(result.code, "文件写入失败。");
+    const reason = result ? outputCodeMessage(result.code, "文件写入失败。") : "默认保存设置不可用。";
     setSaveNotice(`直接保存失败：${reason}已改为浏览器下载。`);
   }
   // ……现有 Blob/anchor 逻辑一字不动……
@@ -91,3 +95,19 @@ async function downloadMarkdown(): Promise<void> {
 - 结束时必须写清：分叉的三重条件、降级路径的存在（失败不吞、降级且告知）、反馈条的生命周期（下次转换清除）、真机两态探针的结果。
 - 已知限制：e2e 无法真实断言「系统对话框弹出与否」，第三态（无桥接）的弹框行为由既有浏览器下载断言与真机人工确认共同覆盖；文件重名直接覆盖（FSD §6）。
 - e2e 定式（复用者请注意）：① 桥接用 `page.addInitScript` 注入，**必须在 `goto` 之前**；② 设置用 `route.fetch()` 拿真实响应后只改写 `output` 再 `fulfill`——**不要**用 PUT 写真设置，e2e server 的设置目录是全 project 共享的，泄漏会连坐 firefox/webkit；③ 负向断言「没走浏览器下载」用 `page.on("download")` 计数器 + 包裹 `URL.createObjectURL` 计数，不要用 `waitForEvent` 超时；④ 断言前先等一次 `/api/settings` 响应，否则与首屏 fetch 竞态。
+
+## 缺陷修复（2026-09-22，S2 标 done 之后，用户真机实测报障）
+
+**现象**：设置页「输出」卡片的勾选能力正常，但配好 iCloud 云盘目录 + 打开开关后，点「下载」**完全没有反应**——不直写、不浏览器下载、不报错。
+
+**两个叠加缺陷**：
+
+1. **路径校验把 iCloud 目录判为非法**。`isAbsoluteDirPath`（`electron/preload-contract.cjs`，以及 `electron/preload.cjs` 里那份等价副本）当时是 `value.includes("~") → false`，即**路径中任何位置出现 `~` 都拒绝**。但 `~` 只在**位于路径段开头**时才是家目录简写；iCloud 云盘的数据落在 `com~apple~CloudDocs` 下，所以用户选的 `/Users/…/com~apple~CloudDocs/Note/未归档` 被拒。这是 S1 T1.2 的原始设计（本文档决策记录里写作 `leading /, no ~, no .. segment`）被字面执行的结果。
+   修法：`!value.split("/").some((s) => s === ".." || s.startsWith("~"))`，并把 iCloud 场景写进函数注释。**不要改回 `includes("~")`**。
+
+2. **preload 抛异常，调用处没接**。preload 的 `assert*` 是**抛 `TypeError`**，不是 resolve `{ ok: false }`；第 1 点里的拒绝正是以异常形式抛出，而 `page.tsx` 当时是裸 `await bridge.saveFile(...)`，异常冒泡后被 `onClick={() => void downloadMarkdown()}` 吞掉 → 完全无声。上面的 Plan 代码块已更新为修复后的形态。
+   为什么 e2e 抓不到：桩永远 resolve，从不抛。新增用例把桩扩成 `{ ok: true } | { ok: false; code } | { ok: false; rejects: true }`，第三种**真的抛**。
+
+**TDD 证据**：RED —— `preload-contract.test.cjs` +2 accept（真实 iCloud 路径、`/Users/someone/My~Backup`）/+1 reject（`/Users/someone/~/notes`），`preload.test.cjs` 同步 dirCases，`output.test.mjs` 加同名拒绝用例 + 一条真的写进 `com~apple~CloudDocs/Note` 的测试，`e2e/home.spec.ts` 加「桥接层拒绝时给出反馈并降级为浏览器下载」；模块测试 4 failed / 86 passed、e2e chromium 3 failed / 16 passed。GREEN —— 模块 89 passed（1 条既有环境噪声 `CODEBUDDY_BROKER_DENY`，干净版代码同样复现）、e2e chromium+webkit 158 passed / 2 skipped、`tsc --noEmit` + `eslint .` 全绿。
+
+**未定论**：用户实测后留下的 `settings.json` 里 `output.defaultPath` 已是 iCloud 目录（说明「选择目录」持久化正常），但 `output.useDefaultPath: false`，与「我打开了开关」不符。`toggleUseDefaultPath` 是乐观更新（先改 state、PUT 失败再回滚并提示「设置保存失败」），且**开关若是关的，页面根本不会进入桥接分支**——这本身也能解释「点了没反应」。复测时需确认开关是否稳定持久化；若复现回滚，那是一个独立缺陷，要查 PUT 响应。

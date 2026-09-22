@@ -3,9 +3,9 @@
 ## Resume Here
 
 - Current version: `0.3.6`（源码与门禁均为 0.3.6，**尚未发布**；`v0.3.5` 仍是最新已发布版本，tag `5f98307`）。S1 与 S2 的逐任务 RED/GREEN 证据在 `feature_list.json` 的 `feat-041.verification`
-- Active feature: **`feat-041` 默认 MD 保存路径——S1、S2 已完成（S2 待提交），S3 待开工**。文档链：`docs/features/default-save-path/FSD.md` + `S1-settings-and-ipc.md`（已完成）+ `S2-download-flow.md`（已完成，含决策记录）+ `S3-release.md`（下一步）
-- **唯一推荐下一步**：① 用户在普通终端跑 `npm run test:e2e` 补 **firefox** 引擎（本环境跑不了，见 Environment Notes）；② 用户亲手过一遍真机两态（开开关 → 下载不弹框且落盘；关开关 → 弹框）；两项都过再开 S3 发布收口
-- Pending: ① 上条两项（firefox e2e + 用户真机确认）；② `npm run desktop:release`（Node **24.14.1 / 24.15.0**，v24.16.0 静默卡死）；③ `0.3.1`–`0.3.5` 的产物与 tag 一律不动；④ 真机小点（等用户清单）；⑤ 云端 Provider 端到端实测（用户真实文章走一遍）；⑥ UI 评审结论勿重提（全部不整改）；⑦ 签名/notarization 不做（QA-008 accepted）；⑧ stash@{0} 是 2026-09-21 拉取前的文档备份、与 feat-041 无关
+- Active feature: **`feat-041` 默认 MD 保存路径——S1、S2 已完成并提交；S2 真机缺陷修复已完成待复测；S3 待开工**。文档链：`docs/features/default-save-path/FSD.md` + `S1-settings-and-ipc.md`（已完成）+ `S2-download-flow.md`（已完成，含决策记录）+ `S3-release.md`（下一步）
+- **唯一推荐下一步**：① 重新打包（Node **24.14.1**，`npm run desktop:package`）——`out/` 里现有的包是**修复前**构建的，点「下载」仍是死的；② 用户在自己终端重跑真机两态验收（开开关 → 下载不弹框且落盘；关开关 → 弹框），顺带确认开关能否稳定持久化；③ 用户补跑 firefox e2e；三项都过再开 S3 发布收口
+- Pending: ① 重新打包（`npm run desktop:package`，Node 24.14.1）——当前 `out/` 的包早于 iCloud 路径修复；② 用户真机两态复测签字 + firefox e2e；③ `npm run desktop:release`（Node **24.14.1 / 24.15.0**，v24.16.0 静默卡死）；④ `0.3.1`–`0.3.5` 的产物与 tag 一律不动；⑤ 真机小点（等用户清单）；⑥ 云端 Provider 端到端实测（用户真实文章走一遍）；⑦ 打包 asar 目前把整个仓库根（含 `.workbuddy/`、`PROGRESS.md`、`feature_list.json`、`docs/`）一起装进包，S3 发布前必须收窄 `forge.config.cjs` 的 ignore；⑧ UI 评审结论勿重提（全部不整改）；⑨ 签名/notarization 不做（QA-008 accepted）；⑩ stash@{0} 是 2026-09-21 拉取前的文档备份、与 feat-041 无关
 - Branch: `main`；发布历史：`v0.3.5` = `5f98307`（feat-039 + 清空按钮归位）、`v0.3.4` = `e251267`（图标 v2）、`v0.3.3` = `3897cd1`（feat-034）、`v0.3.2` = `1c3ed80`（feat-033）、`v0.3.1` = `af7f6db`（feat-031/032）
 
 ## 新会话开工提示词（复制即用）
@@ -14,8 +14,9 @@
 继续 MD-Convertor 的 feat-041「默认 MD 保存路径」S3（发布收口）。
 
 先按 Startup Workflow 读 AGENTS.md、PROGRESS.md、feature_list.json（feat-041.verification 有
-S1+S2 全部证据）、session-handoff.md，然后读 docs/features/default-save-path/FSD.md 与
-docs/features/default-save-path/S3-release.md。S1 已提交（ac8f91a），S2 已提交，**不要回头改 S1/S2**。
+S1+S2+真机缺陷修复的全部证据）、session-handoff.md，然后读 docs/features/default-save-path/FSD.md 与
+docs/features/default-save-path/S3-release.md。S1 已提交（ac8f91a），S2 已提交（f9b7534），
+真机缺陷修复已单独提交，**不要回头改 S1/S2 的实现语义**。
 
 S2 交付的真实行为（S3 只需发不重做）：
 - 主页面下载按三重条件分叉：settings.output.useDefaultPath && settings.output.defaultPath &&
@@ -25,12 +26,22 @@ S2 交付的真实行为（S3 只需发不重做）：
 - OUTPUT_CODE_MESSAGES 现已含 EACCES / EPERM / ENOENT / ENOTDIR / ENOSPC / EROFS 六个真实 fs 码。
 - 页面用 settingsState 留住整份 Settings；按钮是 onClick={() => void downloadMarkdown()}。
 
-S2 结束时**仍未完成的两件事**（S3 开工前必须先要用户做掉）：
+**真机缺陷（已修复，但复测未做）**：用户在真机上撞到「配好 iCloud 目录 + 开关打开 → 点下载毫无反应」，
+两个叠加原因都已修：① `isAbsoluteDirPath` 把路径里任何 `~` 都当家目录简写拒掉，而 iCloud 云盘落在
+`com~apple~CloudDocs` 下（现在 `~` 只在路径段开头才算简写）；② preload 的校验是**抛异常**而非 resolve
+`{ ok: false }`，`page.tsx` 里裸 `await bridge.saveFile(...)` 没有 `.catch()`，异常被
+`onClick={() => void downloadMarkdown()}` 吞掉（现在拒绝并入既有失败分支，仍降级浏览器下载）。
+**`out/` 里现有的包是修复前构建的，点下载仍然是死的** —— 必须先 `npm run desktop:package` 让用户复测。
+
+S3 开工前必须由用户做掉的三件事：
+- 复测真机两态（重新打包后）：开开关 → 下载不弹框且文件落进 iCloud 目标目录；关开关 → 弹框。
+  顺带确认开关能否**稳定持久化**：用户上次实测留下的 settings.json 里 `useDefaultPath` 是 `false`，
+  与「我打开了开关」不符，尚未定论（详见 feature_list.json 的 T2.7 open observation）。
 - firefox 引擎 e2e 从未跑过：Playwright Firefox 在本 agent 环境**完全无法启动**
   （`Sandbox error: sandbox_init() failed with error "Operation not permitted"`，每个用例 30s 超时）。
   必须由用户在普通终端跑 `npm run test:e2e` 补齐。
-- 真机两态探针已由我方在打包应用上跑通（开=直写落盘无 download 事件；关=走浏览器下载、目标目录空），
-  但 acceptance 里的「用户确认」还没有签字，需要用户亲手过一遍。
+- 打包前收窄 `forge.config.cjs` 的 asar ignore：当前会把 `.workbuddy/`、`PROGRESS.md`、
+  `feature_list.json`、`docs/` 一并打进应用包，而应用运行时只读 `Resources/server/`。
 
 S3 要求：
 1. 用户终端 `npm run test:e2e` 三引擎全绿后，再跑 `npm run desktop:release`
@@ -50,7 +61,13 @@ S3 要求：
 
 ## Latest Change
 
-**本轮（feat-041 S2 完成：主页面下载分叉 + 真机两态探针，2026-09-22，S2 单独提交）**：按 `docs/features/default-save-path/S2-download-flow.md` 执行 T2.1–T2.6，全程 TDD。① **T2.1 三态 e2e**：`e2e/home.spec.ts` 新增 describe「下载分叉（默认保存目录）」三例——桥接 + 开关 + 目录 → `saveFile` 直写、`role=status` 反馈「已保存到 …」、**零** download 事件 + **零** `createObjectURL`；`saveFile` 失败（EACCES）→ 反馈含「没有写入权限」并降级浏览器下载（`createObjectURL` 计到 1）；无桥接 → 忽略设置走旧路径。RED 2 failed / 16 passed ⇒ GREEN 18 passed。**e2e 定式**（踩出来的）：桥接用 `addInitScript` 且必须在 `goto` 之前；设置用 `route.fetch()` 拿真实响应后只改写 `output` 再 `fulfill`（**不要 PUT**，e2e 设置是全 project 共享的）；负向断言用 `page.on("download")` 计数器 + 包裹 `URL.createObjectURL` 计数，**不要** `waitForEvent` 超时；断言前先等一次 `/api/settings` 响应避免与首屏 fetch 竞态。② **决策：S2 §4 与实现冲突，取方案 (a)**——文档原称 `EACCES → 没有写入权限`、`ENOENT → 目录不存在`，但 S1 只交付了业务码而 `electron/output.mjs` 原样回传 fs 的 `error.code`，§4 当时不成立。选择补映射并另补 `EPERM`/`ENOTDIR`/`ENOSPC`/`EROFS`（否决「改文档用笼统文案」：直写失败时页面已降级，反馈条里「为什么没直写」是唯一信息量；归一化放主进程会把展示口径下沉进 IPC 契约）。连接词由括号改冒号，因为映射表每条都是带句号的完整句（设置页整句展示），`（没有写入权限。）` 会嵌套标点。③ **T2.2 实现**：`page.tsx` 用 `settingsState` 留住整份 `Settings`（`translateEnabled`/`targetLanguage` 行为不变、同一响应、不额外发请求）；`downloadMarkdown()` 改 `async`，按**三重条件**分叉，成功直接 `return`，失败设反馈后**继续落到原有 Blob/anchor 逻辑**；按钮改 `onClick={() => void downloadMarkdown()}`；`.saveNotice` 落在 stats 之前。新增 `src/app/settings/client.test.ts`（RED 4 failed / 2 passed ⇒ GREEN 6 passed）。④ **T2.3 生命周期**：新用例先跑出**真实 RED**（`Expected: 0, Received: 1`，陈旧提示残留——T2.2 的编辑当时确实没写下清除语句），再补 `runConversion()` 开头的 `setSaveNotice(null)` ⇒ 19 passed。⑤ **T2.4**：`./init.sh` exit 0 —— 67 files / **950 tests**（基线 66 / 944）；双引擎 e2e **156 passed / 2 skipped** 且 tracked-file 守卫干净。⑥ **T2.5 真机两态探针通过**：`npm run desktop:package` exit 0（Node 24.14.1）→ 打包应用 + CDP 驱动真实渲染层。**开开关**：桥接存在、反馈 `已保存到 /tmp/s2-probe-out/# 真机探针.md`、`download events: 0`、文件真实落盘（128 B）；**关开关**：无反馈、`download events: 1`、目标目录保持空。探针脚本已删，用户真实 `settings.json` 已从备份逐字节还原（该文件正好是无 `output` 的旧版本，顺带覆盖了宽容读入的真实场景）。⑦ 文档与状态：`S2-download-flow.md` 标完成并加「决策记录」与 e2e 定式；`FSD.md` 状态更新；`CHANGELOG.md`(+zh) 新增 `[Unreleased]`（覆盖 S1 的输出卡片与 S2 的下载分叉）；`feature_list.json` 写入 9 条 S2 证据。
+**本轮（feat-041 S2 真机缺陷修复：iCloud 路径校验 + 静默失败，2026-09-22，单独提交）**：用户真机实测报障——设置页「输出」卡片的勾选能力正常，但**配好 iCloud 目录 + 打开开关后点「下载」完全没有反应**（不直写、不浏览器下载、不报错）。定位到**两个叠加缺陷**，全程 TDD 修复。① **根因 1**：`isAbsoluteDirPath`（`electron/preload-contract.cjs` 及其在 `electron/preload.cjs` 的等价副本）原实现 `value.includes("~") → false`，即路径里出现任何 `~` 都判非法；而用户选的目录是 `/Users/huanghaohai/Library/Mobile Documents/com~apple~CloudDocs/Note/未归档` —— 于是**所有 iCloud 云盘目录都不可用**。这是 S1 T1.2 的设计被字面执行的结果：`~` 只在**路径段开头**才是家目录简写。改为 `!value.split("/").some((s) => s === ".." || s.startsWith("~"))`，并把 iCloud 场景写进注释防止被收紧回去。② **根因 2**：preload 的 `assert*` 是**抛 `TypeError`** 而不是 resolve `{ ok: false }`，`page.tsx` 里是裸 `await bridge.saveFile(...)`，异常冒泡后被 `onClick={() => void downloadMarkdown()}` 吞掉 → 无声；浏览器 e2e 抓不到，因为桩永远 resolve。修法是把拒绝并入既有失败分支（`.catch(() => null)` + `result?.ok` + 三元取原因），失败仍降级浏览器下载。③ **RED→GREEN**：`preload-contract.test.cjs` +2 accept（真实 iCloud 路径、`/Users/someone/My~Backup`）/+1 reject（`/Users/someone/~/notes`），`preload.test.cjs` 同步 dirCases，`output.test.mjs` 加同名拒绝用例 + 一条真的写进 `com~apple~CloudDocs/Note` 的测试，`e2e/home.spec.ts` 加「桥接层拒绝时给出反馈并降级为浏览器下载」（桩改为可抛异常）。RED 模块 4 failed / 86 passed、e2e chromium 3 failed / 16 passed ⇒ GREEN 模块 89 passed（1 条为既有环境噪声 `CODEBUDDY_BROKER_DENY`，干净版代码同样复现）、e2e chromium+webkit **158 passed / 2 skipped** 且 tracked-file 守卫干净、`tsc --noEmit` + `eslint .` 全绿。④ **文档与状态**：`CHANGELOG.md`(+zh) `[Unreleased]` 增 `Fixed`；`feature_list.json` 增 T2.7 证据与一条 open observation；PROGRESS.md 新增本轮小节并补三条硬约束（`~` 语义 / preload 抛异常必须 `.catch()` / 探针必须包含真实用户路径形态）。⑤ **仍未签字**：真机两态验收，且 `out/` 里的包是修复前构建的，**必须先重新打包**。
+
+**一个未诊断的观察（不是结论）**：用户实测后留下的 `settings.json` 里 `output.defaultPath` 已是 iCloud 目录（说明「选择目录」持久化正常），但 `output.useDefaultPath: false` —— 盘上是关的，而用户说开关打开了。`toggleUseDefaultPath` 是乐观更新（先改 state、PUT 失败再回滚），PUT 失败会显示「设置保存失败」并把开关拨回去；而**开关若是关的，页面根本不会进入桥接分支**，这本身也足以解释「点了没反应」。列为待复测确认项。
+
+## Archived Change Log
+
+**上一轮（feat-041 S2 完成：主页面下载分叉 + 真机两态探针，2026-09-22，S2 单独提交）**：按 `docs/features/default-save-path/S2-download-flow.md` 执行 T2.1–T2.6，全程 TDD。① **T2.1 三态 e2e**：`e2e/home.spec.ts` 新增 describe「下载分叉（默认保存目录）」三例——桥接 + 开关 + 目录 → `saveFile` 直写、`role=status` 反馈「已保存到 …」、**零** download 事件 + **零** `createObjectURL`；`saveFile` 失败（EACCES）→ 反馈含「没有写入权限」并降级浏览器下载（`createObjectURL` 计到 1）；无桥接 → 忽略设置走旧路径。RED 2 failed / 16 passed ⇒ GREEN 18 passed。**e2e 定式**（踩出来的）：桥接用 `addInitScript` 且必须在 `goto` 之前；设置用 `route.fetch()` 拿真实响应后只改写 `output` 再 `fulfill`（**不要 PUT**，e2e 设置是全 project 共享的）；负向断言用 `page.on("download")` 计数器 + 包裹 `URL.createObjectURL` 计数，**不要** `waitForEvent` 超时；断言前先等一次 `/api/settings` 响应避免与首屏 fetch 竞态。② **决策：S2 §4 与实现冲突，取方案 (a)**——文档原称 `EACCES → 没有写入权限`、`ENOENT → 目录不存在`，但 S1 只交付了业务码而 `electron/output.mjs` 原样回传 fs 的 `error.code`，§4 当时不成立。选择补映射并另补 `EPERM`/`ENOTDIR`/`ENOSPC`/`EROFS`（否决「改文档用笼统文案」：直写失败时页面已降级，反馈条里「为什么没直写」是唯一信息量；归一化放主进程会把展示口径下沉进 IPC 契约）。连接词由括号改冒号，因为映射表每条都是带句号的完整句（设置页整句展示），`（没有写入权限。）` 会嵌套标点。③ **T2.2 实现**：`page.tsx` 用 `settingsState` 留住整份 `Settings`（`translateEnabled`/`targetLanguage` 行为不变、同一响应、不额外发请求）；`downloadMarkdown()` 改 `async`，按**三重条件**分叉，成功直接 `return`，失败设反馈后**继续落到原有 Blob/anchor 逻辑**；按钮改 `onClick={() => void downloadMarkdown()}`；`.saveNotice` 落在 stats 之前。新增 `src/app/settings/client.test.ts`（RED 4 failed / 2 passed ⇒ GREEN 6 passed）。④ **T2.3 生命周期**：新用例先跑出**真实 RED**（`Expected: 0, Received: 1`，陈旧提示残留——T2.2 的编辑当时确实没写下清除语句），再补 `runConversion()` 开头的 `setSaveNotice(null)` ⇒ 19 passed。⑤ **T2.4**：`./init.sh` exit 0 —— 67 files / **950 tests**（基线 66 / 944）；双引擎 e2e **156 passed / 2 skipped** 且 tracked-file 守卫干净。⑥ **T2.5 真机两态探针通过**：`npm run desktop:package` exit 0（Node 24.14.1）→ 打包应用 + CDP 驱动真实渲染层。**开开关**：桥接存在、反馈 `已保存到 /tmp/s2-probe-out/# 真机探针.md`、`download events: 0`、文件真实落盘（128 B）；**关开关**：无反馈、`download events: 1`、目标目录保持空。探针脚本已删，用户真实 `settings.json` 已从备份逐字节还原（该文件正好是无 `output` 的旧版本，顺带覆盖了宽容读入的真实场景）。⑦ 文档与状态：`S2-download-flow.md` 标完成并加「决策记录」与 e2e 定式；`FSD.md` 状态更新；`CHANGELOG.md`(+zh) 新增 `[Unreleased]`（覆盖 S1 的输出卡片与 S2 的下载分叉）；`feature_list.json` 写入 9 条 S2 证据。
 **两个未完成项（S3 开工前必须由用户处理）**：① **firefox 引擎 e2e 从未跑过且本环境跑不了**——Playwright Firefox 启动时要再套一层 macOS seatbelt，报 `Sandbox error: sandbox_init() failed with error "Operation not permitted"` 后退出，表现为每个用例 30s 超时；同用例 chromium 与 webkit 均绿，属环境限制而非代码缺陷（另：首轮全量还撞上继承的 `HTTP_PROXY`，Firefox 跟随系统代理、Chromium 不跟随）。**S2 因此不宣称 firefox 覆盖**，需用户在普通终端补 `npm run test:e2e`。② acceptance 里「用户确认」的真机两态签字未完成——探针是我方机器证据，不是用户确认。
 **一个偶发（未修，已记录）**：既有用例 `supports keyboard submission and download` 在 webkit 上偶发 `getByText('转换完成')` 5s 内未出现（疑似 `press("Enter")` 撞上 React 水合未完成），单跑 3/3 绿、随后全量立即复绿；该断言与下载无关，S2 未触碰转换路径，故按 out-of-scope 记录而不修改。
 
@@ -329,8 +346,8 @@ S3 要求：
 
 ## Next Stage Entry
 
-- S1 → S6 全部完成；`feat-024` – `feat-039` 均 done；当前 `activeFeature` = `feat-041`（默认 MD 保存路径，**in-progress：S1 已 done 并提交 `ac8f91a`，S2 待开工**）。
-- 下一轮入口就是 `feat-041` 的 S2：按 `docs/features/default-save-path/S2-download-flow.md` 开工，从 T2.1 开始。**版本已是 `0.3.6`（S1 的 T1.0 已完成升级），S2 不需要再 bump**；再改代码前若已发布 0.3.6 才需 bump 到 ≥ `0.3.7`。
+- S1 → S6 全部完成；`feat-024` – `feat-039` 均 done；当前 `activeFeature` = `feat-041`（默认 MD 保存路径，**in-progress：S1 done 并提交 `ac8f91a`，S2 done 并提交 `f9b7534`，S2 真机缺陷（iCloud 路径校验 + 静默失败）已修复并单独提交、待重新打包复测**）。
+- 下一轮入口是 `feat-041` 的 S3 发布收口：按 `docs/features/default-save-path/S3-release.md` 执行。**版本已是 `0.3.6`（S1 的 T1.0 已完成升级），S2 不需要再 bump**；再改代码前若已发布 0.3.6 才需 bump 到 ≥ `0.3.7`。开工前先把上面那两件用户侧的事（重新打包 + 真机复测、firefox e2e）要掉。
 - 每轮开头固定读：`PROGRESS.md` → `session-handoff.md` → `feature_list.json` → 相关 `docs/`（涉及翻译行为时先读 `docs/PRD-translation.md`），然后跑 `./init.sh` 建立基线。
 - 全部阶段文档（已完成入口）：`docs/features/translation/S1-settings-infra.md` 至 `S6-release-and-docs.md`；各文档的 Handoff 已写入下一阶段所需的真实接口与边界。
 
@@ -364,13 +381,14 @@ S3 要求：
 
 ## Recommended Next Action
 
-`feat-041`（默认 MD 保存路径）**S1 已提交（`ac8f91a`）、S2 已完成待提交**（S1 契约 + IPC + 设置页输出卡片；S2 主页面三态分叉 + 降级 + 反馈条，并在打包应用上跑通了真机两态探针）；S3 文档就绪。**新会话开工提示词见本文件顶部「新会话开工提示词（复制即用）」**。下一步：
-1. **先补两项 S2 遗留**（S3 开工前置）：① 用户在普通终端跑 `npm run test:e2e` 补 **firefox** 引擎（本 agent 环境跑不了 Firefox，原因见 Environment Notes）；② 用户亲手过一遍真机两态（开开关 → 不弹框且落盘；关开关 → 弹框）——探针是我方机器证据，acceptance 里的「用户确认」仍未签字。
-2. **然后按 `docs/features/default-save-path/S3-release.md` 收口**：`npm run desktop:release`、本机安装、GitHub Release、文档收口。
-3. **跑门禁必须用 Node 24.14.1 或 24.15.0**：本机默认 v24.16.0 在解压 electron zip 时静默卡死，`electron-forge make` 空跑却仍返回 exit 0。
-4. **真机小点**：等用户给清单后再评估是否单开一轮。
-5. **云端 Provider 端到端实测**：`feat-027` 的自撰探针已绿，仍需用户用真实文章在设置页走一遍「拉取模型 → 选模型 → 翻译」。
-6. **签名/notarization 用户 2026-09-20 决定不做**（QA-008 accepted / not planned）；要恢复需 Developer ID Application 证书 + notarytool 凭据，签名后必须重跑门禁更新哈希。
-7. **UI 评审结论勿重提**：`docs/UI-REVIEW-2026-09-20.md` 的 P0×6 + P1×10 用户已决定全部不改；主页像素级断言（转换按钮右边缘与粘贴框右边缘差值 < 4px 且与「来源 URL」输入框同行）继续是刻意锁定的效果，要改先改断言。
+`feat-041`（默认 MD 保存路径）**S1 已提交（`ac8f91a`）、S2 已提交（`f9b7534`）、真机缺陷修复已完成待复测**（S1 契约 + IPC + 设置页输出卡片；S2 主页面三态分叉 + 降级 + 反馈条 + 真机两态探针；修复 iCloud 路径被路径校验拒掉 + preload 抛异常被 `void` 吞掉导致的「点下载毫无反应」）；S3 文档就绪。**新会话开工提示词见本文件顶部「新会话开工提示词（复制即用）」**。下一步：
+1. **先重新打包**：`npm run desktop:package`（Node **24.14.1**）——`out/` 里现有的包构建于修复前，点「下载」仍是死的，不复测等于没测。
+2. **再补两项 S3 前置**：① 用户亲手过一遍真机两态（开开关 → 不弹框且文件落进 iCloud 目标目录；关开关 → 弹框）；顺带确认开关能否稳定持久化（上次留下的 `settings.json` 里 `useDefaultPath` 是 `false`，与用户描述不符，尚未定论）；② 用户在普通终端跑 `npm run test:e2e` 补 **firefox** 引擎（本 agent 环境跑不了 Firefox，原因见 Environment Notes）。
+3. **然后按 `docs/features/default-save-path/S3-release.md` 收口**：`npm run desktop:release`、本机安装、GitHub Release、文档收口。发布前记得收窄 `forge.config.cjs` 的 asar ignore（当前把 `.workbuddy/`、`PROGRESS.md`、`feature_list.json`、`docs/` 都打进了包）。
+4. **跑门禁必须用 Node 24.14.1 或 24.15.0**：本机默认 v24.16.0 在解压 electron zip 时静默卡死，`electron-forge make` 空跑却仍返回 exit 0。
+5. **真机小点**：等用户给清单后再评估是否单开一轮。
+6. **云端 Provider 端到端实测**：`feat-027` 的自撰探针已绿，仍需用户用真实文章在设置页走一遍「拉取模型 → 选模型 → 翻译」。
+7. **签名/notarization 用户 2026-09-20 决定不做**（QA-008 accepted / not planned）；要恢复需 Developer ID Application 证书 + notarytool 凭据，签名后必须重跑门禁更新哈希。
+8. **UI 评审结论勿重提**：`docs/UI-REVIEW-2026-09-20.md` 的 P0×6 + P1×10 用户已决定全部不改；主页像素级断言（转换按钮右边缘与粘贴框右边缘差值 < 4px 且与「来源 URL」输入框同行）继续是刻意锁定的效果，要改先改断言。
 
-不要重做 S1 与 S2 及之前全部已完成 feature（含 `feat-024` – `feat-040`）；不要把下载分叉扩成「另存为」对话框（FSD 非目标：用户要的是「不再弹」）；不要改成「只报笼统文案」——`OUTPUT_CODE_MESSAGES` 的六个真实 fs 码是 S2 的明确决策（见 S2 文档「决策记录」）；不要放宽端点、密钥或归档守卫；不要把已退役的历史 ZIP 条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删除。
+不要重做 S1 与 S2 及之前全部已完成 feature（含 `feat-024` – `feat-040`）；不要把下载分叉扩成「另存为」对话框（FSD 非目标：用户要的是「不再弹」）；不要改成「只报笼统文案」——`OUTPUT_CODE_MESSAGES` 的六个真实 fs 码是 S2 的明确决策（见 S2 文档「决策记录」）；**不要把 `isAbsoluteDirPath` 收紧回 `value.includes("~")`**（那正是本次真机缺陷的根因，iCloud 云盘目录会被全部拒掉）；**不要给任何 `await bridge.*` 去掉 `.catch()`**（preload 是抛异常而非 resolve `{ ok: false }`）；不要放宽端点、密钥或归档守卫；不要把已退役的历史 ZIP 条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删除。

@@ -206,7 +206,16 @@ describe("preload output bridge", () => {
       expect(accepted, JSON.stringify(filename)).toBe(contract.isValidOutputFilename(filename));
     }
 
-    const dirCases = ["/tmp/notes", "~/Documents", "Documents", "/a/../b", "", 42];
+    const dirCases = [
+      "/tmp/notes",
+      "~/Documents",
+      "Documents",
+      "/a/../b",
+      "/Users/someone/Library/Mobile Documents/com~apple~CloudDocs/Note",
+      "/Users/someone/~/notes",
+      "",
+      42,
+    ];
     for (const dirPath of dirCases) {
       const loaded = loadPreload();
       const accepted = await loaded.output

@@ -111,6 +111,7 @@ describe("createOutputChannels", () => {
     ["a home dirPath", "~/Documents"],
     ["a relative dirPath", "Documents/notes"],
     ["a traversal dirPath", "/Users/someone/../someone_else"],
+    ["a home shorthand segment dirPath", "/Users/someone/~/notes"],
     ["an empty dirPath", ""],
     ["a non-string dirPath", 42],
     ["a missing dirPath", undefined],
@@ -135,6 +136,21 @@ describe("createOutputChannels", () => {
 
     expect(result.ok).toBe(false);
     expect(readdir(directory)).resolves.toEqual([]);
+  });
+
+  it("writes into a directory whose segment contains a tilde", async () => {
+    // iCloud Drive is mounted under `com~apple~CloudDocs`. Treating every tilde as
+    // home shorthand made the default save directory unusable for the users who
+    // actually set one, so a tilde inside a segment must stay ordinary data.
+    const tildeDirectory = path.join(directory, "com~apple~CloudDocs", "Note");
+    const ipcMain = fakeIpcMain();
+    createOutputChannels({ ipcMain, dialog: makeDialog(), warn: () => {} });
+
+    const handler = ipcMain.handler("md-convertor:output:save-file");
+    const result = await handler({}, { dirPath: tildeDirectory, filename: "notes.md", content: "# Hello" });
+
+    expect(result.ok).toBe(true);
+    await expect(readFile(path.join(tildeDirectory, "notes.md"), "utf8")).resolves.toBe("# Hello");
   });
 
   it("writes the file into the directory and reports its path", async () => {

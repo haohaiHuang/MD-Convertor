@@ -31,14 +31,19 @@ function isValidOutputFilename(value) {
 }
 
 /**
- * Absolute POSIX directory path without traversal segments. Deliberately light
- * (no node:path in the sandbox preload); main re-checks with real path semantics.
+ * Absolute POSIX directory path without traversal or home-shorthand segments.
+ * Deliberately light (no node:path in the sandbox preload); main re-checks with
+ * real path semantics.
+ *
+ * A tilde is home shorthand only when it *starts* a segment. iCloud Drive lives
+ * under `com~apple~CloudDocs`, so rejecting every tilde made the directories that
+ * real users pick unusable.
  */
 function isAbsoluteDirPath(value) {
-  if (typeof value !== "string" || !value.startsWith("/") || value.includes("~")) {
+  if (typeof value !== "string" || !value.startsWith("/")) {
     return false;
   }
-  return !value.split("/").some((segment) => segment === "..");
+  return !value.split("/").some((segment) => segment === ".." || segment.startsWith("~"));
 }
 
 module.exports = {

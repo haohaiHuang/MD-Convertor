@@ -38,7 +38,15 @@ describe("isValidOutputFilename", () => {
 });
 
 describe("isAbsoluteDirPath", () => {
-  it.each(["/Users/someone/Documents", "/", "/tmp/md-convertor"])("accepts %s", (dirPath) => {
+  it.each([
+    "/Users/someone/Documents",
+    "/",
+    "/tmp/md-convertor",
+    // iCloud Drive lives under `com~apple~CloudDocs`, so a tilde inside a segment
+    // is ordinary data. Only a segment that *starts* with `~` is home shorthand.
+    "/Users/someone/Library/Mobile Documents/com~apple~CloudDocs/Note",
+    "/Users/someone/My~Backup",
+  ])("accepts %s", (dirPath) => {
     expect(contract.isAbsoluteDirPath(dirPath)).toBe(true);
   });
 
@@ -48,6 +56,7 @@ describe("isAbsoluteDirPath", () => {
     ["a current-relative path", "./Documents"],
     ["a parent traversal", "/Users/someone/../someone_else"],
     ["a dot-dot middle segment", "/a/../b"],
+    ["a home shorthand segment", "/Users/someone/~/notes"],
     ["an empty path", ""],
     ["a non-string", 42],
     ["a missing path", undefined],

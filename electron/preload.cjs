@@ -44,10 +44,12 @@ function isValidOutputFilename(value) {
 }
 
 function isAbsoluteDirPath(value) {
-  if (typeof value !== "string" || !value.startsWith("/") || value.includes("~")) {
+  // A tilde is home shorthand only when it *starts* a segment; iCloud Drive lives
+  // under `com~apple~CloudDocs`. Kept in sync with `preload-contract.cjs`.
+  if (typeof value !== "string" || !value.startsWith("/")) {
     return false;
   }
-  return !value.split("/").some((segment) => segment === "..");
+  return !value.split("/").some((segment) => segment === ".." || segment.startsWith("~"));
 }
 
 function assertFilename(value) {

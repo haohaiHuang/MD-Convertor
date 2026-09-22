@@ -16,6 +16,10 @@ This project follows the principles of [Keep a Changelog](https://keepachangelog
 
 - The settings file gains an `output` field. A settings file written by an earlier version is still read as-is: the missing field falls back to its default instead of being treated as corruption, so no existing provider, language or translation setting is lost on upgrade. The stored format version is unchanged.
 
+### Fixed
+
+- A folder inside iCloud Drive can now be used as the default save folder. The path check on the desktop bridge treated every `~` in a path as home shorthand, and iCloud Drive keeps its data under `com~apple~CloudDocs` — so picking a folder there produced a directory the app then refused, and the refusal was thrown as a rejected promise that nothing caught, leaving the 下载 button looking dead: no file written, no browser download, no message. A `~` is now shorthand only when it starts a path segment, and any remaining refusal is reported in the result area and falls back to the browser download instead of disappearing.
+
 ## [0.3.5] - 2026-09-21
 
 ### Changed

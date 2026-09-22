@@ -555,13 +555,18 @@ export default function Home() {
     const configured = settingsState?.output;
     const bridge = outputBridge();
     if (configured?.useDefaultPath && configured.defaultPath && bridge) {
-      const result = await bridge.saveFile(configured.defaultPath, filename, activeMarkdown);
-      if (result.ok) {
+      // The preload validates its arguments and *rejects* instead of resolving
+      // `{ ok: false }`, so a thrown assertion is folded into the same branch as a
+      // refused write. Either way the user must still end up with a file.
+      const result = await bridge
+        .saveFile(configured.defaultPath, filename, activeMarkdown)
+        .catch(() => null);
+      if (result?.ok) {
         setSaveNotice(`已保存到 ${result.path ?? `${configured.defaultPath}/${filename}`}`);
         return;
       }
       // Never swallow the failure: name the reason, then still hand the user a file.
-      const reason = outputCodeMessage(result.code, "文件写入失败。");
+      const reason = result ? outputCodeMessage(result.code, "文件写入失败。") : "默认保存设置不可用。";
       setSaveNotice(`直接保存失败：${reason}已改为浏览器下载。`);
     }
     const blob = new Blob([activeMarkdown], { type: "text/markdown;charset=utf-8" });

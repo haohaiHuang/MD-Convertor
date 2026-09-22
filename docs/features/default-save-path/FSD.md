@@ -119,6 +119,8 @@ preload 的 `output` 桥接在**浏览器/e2e 环境不存在**——与 `secret
 
 S1 与 S2 分两次提交（关注点不同：前者是设置面与桥接，后者是转换页行为）；S3 单独提交。
 
+**状态（2026-09-22）**：S1 done（提交 `ac8f91a`）、S2 done（提交 `f9b7534`）；S2 标 done 之后用户真机实测撞到「配好 iCloud 目录 + 开开关 → 点下载毫无反应」，根因是 `isAbsoluteDirPath` 把路径里任何 `~` 都当家目录简写拒掉（iCloud 云盘落在 `com~apple~CloudDocs` 下），叠加 preload 抛异常未被 `page.tsx` 捕获——两个缺陷均已按 TDD 修复并单独提交，详见 `S2-download-flow.md` 的「缺陷修复」。**S3 未开工**，前置条件：重新打包 + 用户真机两态复测签字 + 用户补跑 firefox e2e。
+
 ---
 
 ## 5. 验收标准（DoD 补充）

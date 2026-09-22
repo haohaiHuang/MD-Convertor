@@ -316,7 +316,7 @@ test.describe("富文本转换表单", () => {
   });
 });
 
-type StubSaveResult = { ok: true } | { ok: false; code: string };
+type StubSaveResult = { ok: true } | { ok: false; code: string } | { ok: false; rejects: true };
 
 /**
  * Installs a stand-in for the desktop preload bridge. The real bridge only exists
@@ -340,6 +340,11 @@ async function installOutputBridge(page: Page, result: StubSaveResult | null): P
         selectDirectory: async () => ({ ok: false, code: "CANCELLED" }),
         saveFile: async (dirPath: string, filename: string, content: string) => {
           target.outputCalls!.push({ dirPath, filename, content });
+          // The real preload asserts its arguments and rejects the promise; a stand-in
+          // that only ever resolves would leave that path untested.
+          if (!saveResult.ok && "rejects" in saveResult) {
+            throw new TypeError("dirPath must be an absolute path without traversal segments.");
+          }
           return saveResult.ok ? { ok: true, path: `${dirPath}/${filename}` } : saveResult;
         },
       },
@@ -466,5 +471,26 @@ test.describe("下载分叉（默认保存目录）", () => {
     await expect(page.getByText("已保存到")).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toBeVisible();
     await expect(page.getByText("已保存到")).toHaveCount(0);
+  });
+
+  test("桥接层拒绝时给出反馈并降级为浏览器下载", async ({ page }) => {
+    // The preload validates its arguments and *rejects*; it does not resolve `{ ok: false }`.
+    // An unhandled rejection here used to produce no file, no download and no feedback at all.
+    await installOutputBridge(page, { ok: false, rejects: true });
+    await countObjectUrls(page);
+    await routeSettingsOutput(page, { defaultPath: OUTPUT_DIRECTORY, useDefaultPath: true });
+    let downloads = 0;
+    page.on("download", () => { downloads += 1; });
+    await gotoWithSettings(page);
+
+    await page.getByLabel("网页链接").fill("https://example.com/article");
+    await page.getByRole("button", { name: "转换", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toBeVisible();
+
+    await page.getByRole("button", { name: "下载", exact: true }).click();
+
+    await expect(page.getByRole("status").filter({ hasText: "已改为浏览器下载" })).toBeVisible();
+    expect(downloads).toBe(1);
+    expect(await page.evaluate(() => (window as typeof window & { objectUrlCount?: number }).objectUrlCount)).toBe(1);
   });
 });
