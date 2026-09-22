@@ -4,8 +4,8 @@
 
 - Current version: `0.3.6`（源码与门禁均为 0.3.6，**尚未发布**；`v0.3.5` 仍是最新已发布版本，tag `5f98307`）。S1 与 S2 的逐任务 RED/GREEN 证据在 `feature_list.json` 的 `feat-041.verification`
 - Active feature: **`feat-041` 默认 MD 保存路径——S1、S2 已完成并提交（`867aa2a`）；用户真机两态验收已签字通过；S3 进行中，T3.0（asar 收窄）已完成，剩 T3.1–T3.7**。文档链：`docs/features/default-save-path/FSD.md` + `S1-settings-and-ipc.md`（已完成）+ `S2-download-flow.md`（已完成，含决策记录）+ `S3-release.md`（**进行中**）
-- **唯一推荐下一步**：① **用户在自己的终端补跑 `npm run test:e2e` 的 firefox 引擎** —— 这是 S3 发布门禁 `npm run desktop:release` 的**唯一阻塞**（本沙箱 Playwright Firefox 起不来，见下）；② firefox 全绿后按 `docs/features/default-save-path/S3-release.md` 跑 T3.1–T3.7 收口发布
-- Pending: ① **firefox e2e**（唯一阻塞项）；② `npm run desktop:release`（Node **24.14.1 / 24.15.0**，v24.16.0 静默卡死）；③ `0.3.1`–`0.3.5` 的产物与 tag 一律不动；④ 真机小点（等用户清单）；⑤ 云端 Provider 端到端实测（用户真实文章走一遍）；⑥ ~~收窄 asar~~ **已完成（T3.0）**：253 → 10 条目；⑦ UI 评审结论勿重提（全部不整改）；⑧ 签名/notarization 不做（QA-008 accepted）；⑨ stash@{0} 是 2026-09-21 拉取前的文档备份、与 feat-041 无关
+- **唯一推荐下一步**：按 `docs/features/default-save-path/S3-release.md` 跑 **T3.1 全量验证**（`./init.sh` + 三引擎 `npm run test:e2e` + `npm run test:live`）→ **T3.2 `npm run desktop:release`** →T3.3–T3.7。**用户侧不再有任何阻塞**：真机两态已签字，firefox 引擎已解锁（见下）
+- Pending: ① ~~firefox e2e~~ **已解决（2026-09-22）**：`MOZ_DISABLE_CONTENT_SANDBOX=1` 已固化进 `playwright.config.ts`，三引擎 239 passed / 4 skipped 自足跑通；② `npm run desktop:release`（Node **24.14.1 / 24.15.0**，v24.16.0 静默卡死）；③ `0.3.1`–`0.3.5` 的产物与 tag 一律不动；④ 真机小点（等用户清单）；⑤ 云端 Provider 端到端实测（用户真实文章走一遍）；⑥ ~~收窄 asar~~ **已完成（T3.0）**：253 → 10 条目；⑦ UI 评审结论勿重提（全部不整改）；⑧ 签名/notarization 不做（QA-008 accepted）；⑨ stash@{0} 是 2026-09-21 拉取前的文档备份、与 feat-041 无关
 - Branch: `main`；发布历史：`v0.3.5` = `5f98307`（feat-039 + 清空按钮归位）、`v0.3.4` = `e251267`（图标 v2）、`v0.3.3` = `3897cd1`（feat-034）、`v0.3.2` = `1c3ed80`（feat-033）、`v0.3.1` = `af7f6db`（feat-031/032）
 
 ## 新会话开工提示词（复制即用）
@@ -40,23 +40,25 @@ S2 交付的真实行为（S3 只需发不重做）：
 **注意：重新打包只换磁盘文件，不换已运行的进程。** 沙箱内关不掉旧实例（`osascript quit` → `-10004` 权限违例），
 所以「重启应用」这一步必须由用户 Cmd+Q。安全列实例：`lsof -nP -iTCP -sTCP:LISTEN | awk '$1 ~ /^MD-Conv/'`。
 
-S3 开工前必须由用户做掉的两件事：
-- 亲手过一遍真机两态：**重启应用后**，开开关 → 下载不弹框、文件落进 iCloud 目标目录，且「下载」按钮变「已保存」+
-  结果区出现带 ✓ 的确认卡片；关开关 → 弹保存框。
-  （开关当前是关的，`defaultPath` 已指向 iCloud 的 `Note/未归档`，开开关即可测。）
-- firefox 引擎 e2e 从未跑过：Playwright Firefox 在本 agent 环境**完全无法启动**
-  （`Sandbox error: sandbox_init() failed with error "Operation not permitted"`，每个用例 30s 超时）。
-  必须由用户在普通终端跑 `npm run test:e2e` 补齐。
+S3 开工前必须由用户做掉的两件事（**2026-09-22 全部完成**）：
+- ✅ 亲手过一遍真机两态：**重启应用后**，开开关 → 下载不弹框、文件落进 iCloud 目标目录，且「下载」按钮变「已保存」+
+  结果区出现带 ✓ 的确认卡片；关开关 → 弹保存框。**用户 22:17 确认「两态都过了」。**
+- ✅ firefox 引擎 e2e。**此前「本 agent 环境完全无法启动」的判断是错的。** 根因是 macOS 禁止嵌套沙箱：
+  Firefox 给 content process 套自己的 Seatbelt 时 `sandbox_init()` 返回 EPERM（`Sandbox error: sandbox_init()
+  failed with error "Operation not permitted"`）。解法是环境变量 `MOZ_DISABLE_CONTENT_SANDBOX=1`，**只需这一个**
+  （GMP / RDD / Socket 三个同名开关各自都无效）。已固化进 `playwright.config.ts` 顶部：
+  `process.env.MOZ_DISABLE_CONTENT_SANDBOX ??= "1";` —— 用 `??=` 所以调用方仍可 `=0` 把沙箱放回来。
+  **别改用 `firefoxUserPrefs: { "security.sandbox.content.level": 0 }`**：实测进程被 SIGKILL（exit 137）。
+  三引擎结果：firefox 单引擎 79 passed / 2 skipped；三引擎 **239 passed / 4 skipped / exit 0**。
 
 另外两件 S3 的活：
-- 收窄 `forge.config.cjs` 的 asar ignore：当前会把 `.workbuddy/`、`PROGRESS.md`、`session-handoff.md`、
-  `feature_list.json`、`docs/` 一并打进应用包，而应用运行时只读 `Resources/server/`。
+- ✅ 收窄 `forge.config.cjs` 的 asar ignore（**已完成，T3.0，提交 `7cf1111`**）：现在是保留清单，asar 253 → 10 条目。
 - 真机探针注意：**`MD_CONVERTOR_USER_DATA` 无法隔离打包应用**（`buildServerEnv()` 无条件覆盖它），
   探针必然读写用户真实 `settings.json` 并把文件写进开关指向的真实目录。必须走
   「备份 → 跑 → 逐字段比对 → 还原 → 删产物」，recipe 见 `docs/features/default-save-path/S2-download-flow.md`。
 
 S3 要求：
-1. 用户终端 `npm run test:e2e` 三引擎全绿后，再跑 `npm run desktop:release`
+1. 跑 `npm run test:e2e` 三引擎，再跑 `npm run desktop:release`
    （Node 只能用 24.14.1 或 24.15.0；v24.16.0 解压 electron zip 静默卡死）。
 2. `0.3.1`–`0.3.5` 的产物与 tag 一律不动；历史 ZIP 缺失项按退役处理。
 3. 签名/notarization 不做，产物只能标注为个人测试用。
@@ -80,11 +82,15 @@ S3 要求：
 
 ## Latest Change
 
-**本轮（feat-041 S3 T3.0：asar 收窄，2026-09-22）**：把打包产物从「整个仓库根」收窄到「运行时真正会读的东西」。**最硬的理由是安全而非体积**：收窄前 `app.asar` 有 **253 个条目**，里面装着 `.workbuddy/memory/*.md`（跨会话工作日志）、`session-handoff.md`、`PROGRESS.md`、`docs/`、`src/`、`e2e/`、`tests/`、`scripts/` 与全部明文配置 —— 而本版本的交付形态正是 GitHub Release 的 ZIP，**等于把这些私有工作文档一起发布出去**。附带两条：残留的 6 处 `value.includes("~")` 全来自这些文档文本（让「这包带没带修复」的判定含混）；仓库根的 `public/` 是 `prepare-desktop.mjs` 已复制进 `.desktop/server/public` 的死副本。**读代码确认真实依赖**（不猜）：`process.resourcesPath/server`（`extraResource`，不在 asar 内）+ `path.join(import.meta.dirname, "preload.cjs")` 及 `main.mjs` 同级导入的 8 个模块。**实现**：11 条黑名单换成**两条保留清单正则**（一条反向正则保留 `package.json` 与 `electron/`，一条排除 Electron 侧测试文件）—— 刻意用反向形式，因为**列「要丢什么」的规则必须在仓库每次长大时同步扩写、新文件默认进包；列「要留什么」的规则不会悄悄退化**。**两个来自 `@electron/packager` 18.4.4 `dist/copy-filter.js` 的事实决定了写法**（官方文档没说准）：① 规则匹配 `"/" + 相对打包目录的路径`，不是绝对路径；② `DEFAULT_IGNORES`（`.git`、锁文件、`*.o`、`node_modules/.bin`）**只在 `ignore` 是数组时**追加 —— 换成文档推荐的 `IgnoreFunction` 会静默丢掉这些。**TDD**：RED 26 failed / 18 passed → GREEN 44 passed；守卫 `tests/forge-package-scope.test.ts` **调用真实 Packager 过滤器**（经共享 helper `tests/packaged-app-scope.ts`，不是复刻语义），且必需清单**从 `main.mjs` 自己的 import 反推**。**修好一条被带红的既有回归**：`tests/app-icon.test.ts` 原本 grep `forge.config.cjs` 的源文本找 `/^\/assets($|\/)/` —— 测的是措辞不是契约，已改成行为断言 `isPackaged("assets/icon.icns") === false`。**结果与验证**：asar **253 → 10 条目**、**2670300 → 35261 字节**，剩下正好 `/package.json`、`/electron` 与 8 个运行时模块；`./init.sh` exit 0 → **68 files / 999 tests**、statements 95.28%；双引擎 e2e exit 0 → **160 passed / 2 skipped**（与 S2 基线一致，且是在新守卫落地**之后**复现的）；`desktop:package` exit 0；**打包冒烟 exit 0 且两个断言都真跑了**；用户 `settings.json` / `secrets.json` 跑前备份、跑后 md5 逐字节一致；重启后 `/` 与指纹 chunk 均 200（反馈修复仍在包里）。**途中两个操作陷阱**：三引擎首跑 7m23s 未结束、停掉后遗留 e2e 服务占着 3000 端口，重试 4 秒即报 `health is already used`（先 `lsof -p <pid> -a -d txt,cwd` 核实 cwd 是 `.next/standalone` 再 kill，不按模式盲杀）；`scripts/run-e2e.mjs` 会透传 argv 给 Playwright，故用 `--project=...` 选引擎时 build 与 tracked-file 守卫仍在。
+**本轮（feat-041 S3 前置：e2e 几何断言竞态修复，2026-09-22）**：三引擎套件偶发 **1 failed / 238 passed**，失败的是 `e2e/settings.spec.ts`「拉取模型只读取端点，按钮位于 Base URL 右侧」的 `expect(Math.abs(pullBox.y - urlBox.y)).toBeLessThan(urlBox.height)`，实收 **131**（期望 < 42）。**真正的根因不是字体加载，而是断言写法本身有竞态**：它用**两次独立的 `boundingBox()`** 比较 `y`，每次调用都是一次独立往返，两次之间 `fill()` 触发的**滚动**才落定，于是把 **132px 的滚动位移量成了「按钮换行」**。`x` 一直正确（横向无滚动）、**只有 `y` 坏 —— 这就是竞态指纹**。一次性探针取证（**已删除**）：firefox 重复 40 次中 **6/40（15%）** 出现 `two=131`，同帧读取给出 `urlY=689 / pullY=690 / scrollY=132`，而 `821 = 689 + 132` 精确解释差值；`innerH=720 < 689+132` ⇒ 该输入框**必须滚动才能被 `fill()` 到**。另 3 个几何断言在 75 次重复中 0 失败，因为它们量到的元素本来就在视口内（`scrollY=0`）。**修法**：新增 `e2e/geometry.ts` 的 `rectsInOneFrame()`，在**同一个 `evaluate` 内**读完所有矩形（浏览器无法在同一 task 内两次 `getBoundingClientRect()` 之间插入滚动或重排），四处断言改用它；**同时删掉上一轮错误的 `document.fonts.ready` 等待**（它跑在触发滚动的 `fill()` 之前，管不到）。**验证**：易失败用例 firefox `--repeat-each=60` → **300 / 300 passed**；同帧读取 `y` 差 40 次恒定为同一值；全量三引擎 **exit 0 → 239 passed / 4 skipped**（`/tmp/t30-fixed-3engine.log`）。**顺带修正两条操作事实**：① 中途被杀掉的运行会在 3000 端口留下 e2e 服务，下一次运行几秒内报 `health is already used`；`reuseExistingServer: false` 是**刻意**的（保证每轮从本轮构建起服务），所以处置是核实 PID（`lsof -p <pid> -a -d cwd` = `.next/standalone`）后按精确 PID 结束，**不能按模式盲杀**；② `npm run test:e2e` 是**门禁不是内循环**（约两分钟，`workers: 1` 是翻译任务锁要求的），迭代用 `npx playwright test` 复用现有构建 + `--project=chromium` + `-g`，验证时序竞态 `--repeat-each=20` 量级足够 —— 重复上百次只换来等待时间。两条已写入 `docs/TESTING.md` / `docs/TESTING.zh.md`。
+
+**（接上一轮）feat-041 S3 前置：Firefox e2e 解锁，2026-09-22**：此前的结论**是错的**。21:xx 我第一次跑三引擎，7m23s 卡死，看到 `Sandbox error: sandbox_init() failed with error "Operation not permitted"` 就判定「环境硬限制、无法绕过」，并让用户自己去终端补跑 firefox。**我试过的只是「什么都不设」，却没查 Firefox 有没有官方开关。** 用户追问「你为啥不能跑」后才去查，答案就在二进制里。**根因**：Firefox 在 macOS 上会给 **content process** 套自己的 Seatbelt profile，而 macOS **禁止嵌套沙箱** —— 已在沙箱里的进程无法再次 `sandbox_init()`，返回 EPERM；WorkBuddy 给派生的 CLI 进程套了进程级 seatbelt，于是 Firefox 的 content 进程一启动就死。**解法实测**：`MOZ_DISABLE_CONTENT_SANDBOX=1`，**逐项验证只需这一个**（GMP / RDD / Socket 三个同名开关各自都 1 failed，只有它 1 passed / 1.6s）。二进制佐证：`XUL` 里存在 `MOZ_DISABLE_CONTENT_SANDBOX` 与 `sandbox_init_with_parameters`（与报错文案完全对应）以及 `security.sandbox.content.*` 一族 pref。**试过并否掉**：`firefoxUserPrefs: { "security.sandbox.content.level": 0 }` → 进程被 SIGKILL（exit 137）。**固化**：`playwright.config.ts` 顶部一行 `process.env.MOZ_DISABLE_CONTENT_SANDBOX ??= "1";` —— 用 `??=` 保留调用方显式值（`=0` 可放回沙箱）；放 config 而不是 `run-e2e.mjs`，是为了让 `npx playwright test`、`npm run test:e2e`、`npm run desktop:release` 三条入口一并生效（实测 worker 继承 config 修改后的 env）。**不削弱测试效力**：禁的只是浏览器 content process 沙箱，而本套 e2e 只加载 `127.0.0.1:3000` 上由本仓库构建的页面，没有需要隔离的不可信内容。**结果**：firefox 单引擎 **79 passed / 2 skipped / 44.7s**（`/tmp/fx-e2e.log`）；三引擎 **239 passed / 4 skipped / 1.9m / exit 0**（`/tmp/t30-e2e-3engine.log`）。**用户侧阻塞清零。** 教训：把「我试过的一次失败」当成「不可能」是懒惰归因 —— 看到底层错误码时，先查被启动的程序有没有为这种情况准备的官方开关。
+
+**（接上一轮）feat-041 S3 T3.0：asar 收窄，2026-09-22**：把打包产物从「整个仓库根」收窄到「运行时真正会读的东西」。**最硬的理由是安全而非体积**：收窄前 `app.asar` 有 **253 个条目**，里面装着 `.workbuddy/memory/*.md`（跨会话工作日志）、`session-handoff.md`、`PROGRESS.md`、`docs/`、`src/`、`e2e/`、`tests/`、`scripts/` 与全部明文配置 —— 而本版本的交付形态正是 GitHub Release 的 ZIP，**等于把这些私有工作文档一起发布出去**。附带两条：残留的 6 处 `value.includes("~")` 全来自这些文档文本（让「这包带没带修复」的判定含混）；仓库根的 `public/` 是 `prepare-desktop.mjs` 已复制进 `.desktop/server/public` 的死副本。**读代码确认真实依赖**（不猜）：`process.resourcesPath/server`（`extraResource`，不在 asar 内）+ `path.join(import.meta.dirname, "preload.cjs")` 及 `main.mjs` 同级导入的 8 个模块。**实现**：11 条黑名单换成**两条保留清单正则**（一条反向正则保留 `package.json` 与 `electron/`，一条排除 Electron 侧测试文件）—— 刻意用反向形式，因为**列「要丢什么」的规则必须在仓库每次长大时同步扩写、新文件默认进包；列「要留什么」的规则不会悄悄退化**。**两个来自 `@electron/packager` 18.4.4 `dist/copy-filter.js` 的事实决定了写法**（官方文档没说准）：① 规则匹配 `"/" + 相对打包目录的路径`，不是绝对路径；② `DEFAULT_IGNORES`（`.git`、锁文件、`*.o`、`node_modules/.bin`）**只在 `ignore` 是数组时**追加 —— 换成文档推荐的 `IgnoreFunction` 会静默丢掉这些。**TDD**：RED 26 failed / 18 passed → GREEN 44 passed；守卫 `tests/forge-package-scope.test.ts` **调用真实 Packager 过滤器**（经共享 helper `tests/packaged-app-scope.ts`，不是复刻语义），且必需清单**从 `main.mjs` 自己的 import 反推**。**修好一条被带红的既有回归**：`tests/app-icon.test.ts` 原本 grep `forge.config.cjs` 的源文本找 `/^\/assets($|\/)/` —— 测的是措辞不是契约，已改成行为断言 `isPackaged("assets/icon.icns") === false`。**结果与验证**：asar **253 → 10 条目**、**2670300 → 35261 字节**，剩下正好 `/package.json`、`/electron` 与 8 个运行时模块；`./init.sh` exit 0 → **68 files / 999 tests**、statements 95.28%；双引擎 e2e exit 0 → **160 passed / 2 skipped**（与 S2 基线一致，且是在新守卫落地**之后**复现的）；`desktop:package` exit 0；**打包冒烟 exit 0 且两个断言都真跑了**；用户 `settings.json` / `secrets.json` 跑前备份、跑后 md5 逐字节一致；重启后 `/` 与指纹 chunk 均 200（反馈修复仍在包里）。**途中两个操作陷阱**：三引擎首跑 7m23s 未结束、停掉后遗留 e2e 服务占着 3000 端口，重试 4 秒即报 `health is already used`（先 `lsof -p <pid> -a -d txt,cwd` 核实 cwd 是 `.next/standalone` 再 kill，不按模式盲杀）；`scripts/run-e2e.mjs` 会透传 argv 给 Playwright，故用 `--project=...` 选引擎时 build 与 tracked-file 守卫仍在。
 
 **（接上一轮）用户真机两态验收已签字**（2026-09-22 22:17，原话「两态都过了」）：开关开 → 不弹框、文件落进 iCloud 目录、且看到「下载」变**「已保存」**+ 带 ✓ 的卡片；开关关 → 弹保存框。跑的是 21:12 构建，交付前用 chunk 指纹反证过（`2-_s5mj5mt1x0.js` 在该实例返回 200，修复前实例是 404）。
 
-**T3.0 已提交**：`7cf1111`（11 个文件、+210 / −28，前一个 HEAD `900e108`），提交后工作区干净。**下一步由用户做的事只有一件**：在自己的终端补跑 `npm run test:e2e` 的 firefox 引擎 —— 那是 `npm run desktop:release` 的唯一阻塞。
+**T3.0 已提交**：`7cf1111`（11 个文件、+210 / −28，前一个 HEAD `900e108`），提交后工作区干净。**用户侧不再有任何待办** —— firefox 引擎已解锁（见上），直接进 T3.1 全量验证即可。
 
 **本轮（feat-041 S2 反馈缺失修复：成功提示不可辨识，2026-09-22）**：用户真机复测后报障 —— 直写已经能下载了（iCloud 缺陷确认修复），但**没有任何可感知的确认**，会误以为没下载成功。**先查事实再动手**：提示并非没渲染（e2e 的 `已保存到` 断言一直绿，且直写分支是唯一会写文件的路径，`setSaveNotice` 在用户那次必然执行），是**呈现缺陷**，三个成因：① 成功提示是裸说明文字（`var(--muted)`、14px、无背景无边框无标记），与正文说明同貌；② **成功与失败共用同一套样式**，连警告都像成功；③ 注意力所在的「下载」按钮毫无反馈 —— 旁边「复制」会变「已复制」，而默认目录这套功能**故意不弹保存框**，等于同时关掉两条反馈渠道。RED：`e2e/home.spec.ts` 加「直写成功时给出醒目确认」+ 既有失败用例加 tone 断言 ⇒ chromium 2 failed / 4 passed（失败输出打印出当时的裸 `<p role="status" class="…saveNotice">`，无 tone，也没有「已保存」按钮）。GREEN：`saveNotice` 改为 `{ tone, text }` 并以 `data-tone` + `aria-live="polite"` 渲染；「下载」成功后就地显示「已保存」1800ms（照搬「已复制」做法，ref 持有计时器保证新闪烁胜过旧，`runConversion()` 同时清两者）；`.saveNotice` 从说明文字改为填充卡片（成功 `accent-soft` + ✓；失败 `warning-soft`），只复用本页既有语汇与已白名单字面量。验证：chromium 21 passed；`NODE_OPTIONS= ./init.sh` exit 0 → 67 files / 955 tests、95.28%；双引擎 e2e exit 0 → **160 passed / 2 skipped**（+2 = 新用例 × 2 引擎）；`git status` 无额外 tracked-file 漂移。
 
@@ -378,7 +384,7 @@ S3 要求：
 ## Next Stage Entry
 
 - S1 → S6 全部完成；`feat-024` – `feat-039` 均 done；当前 `activeFeature` = `feat-041`（默认 MD 保存路径，**in-progress：S1 done 并提交 `ac8f91a`，S2 done 并提交 `f9b7534`，S2 真机缺陷（iCloud 路径校验 + 静默失败）已修复并单独提交，重新打包与真机复验均已完成，只剩用户签字**）。
-- 下一轮入口是 `feat-041` 的 S3 发布收口：按 `docs/features/default-save-path/S3-release.md` 执行。**版本已是 `0.3.6`（S1 的 T1.0 已完成升级），S2 不需要再 bump**；再改代码前若已发布 0.3.6 才需 bump 到 ≥ `0.3.7`。开工前先把用户侧那两件事（真机两态签字 + firefox e2e）要掉，并先收窄 `forge.config.cjs` 的 asar ignore。
+- 下一轮入口是 `feat-041` 的 S3 发布收口：按 `docs/features/default-save-path/S3-release.md` 执行。**版本已是 `0.3.6`（S1 的 T1.0 已完成升级），S2 不需要再 bump**；再改代码前若已发布 0.3.6 才需 bump 到 ≥ `0.3.7`。**用户侧两件事均已完成**（真机两态签字 + firefox 引擎解锁，见 Latest Change），asar 收窄也已完成（T3.0）—— 直接从 T3.1 全量验证开工。
 - 每轮开头固定读：`PROGRESS.md` → `session-handoff.md` → `feature_list.json` → 相关 `docs/`（涉及翻译行为时先读 `docs/PRD-translation.md`），然后跑 `./init.sh` 建立基线。
 - 全部阶段文档（已完成入口）：`docs/features/translation/S1-settings-infra.md` 至 `S6-release-and-docs.md`；各文档的 Handoff 已写入下一阶段所需的真实接口与边界。
 
@@ -406,18 +412,18 @@ S3 要求：
 - 代理（2026-09-20 实测）：本机 `ALL_PROXY` / `HTTPS_PROXY` 指向 `127.0.0.1:7897`，当时客户端在监听但转发已坏 —— `gh`、`curl` 报 `EOF` / `SSL_ERROR_SYSCALL`，`git fetch` / `git push` 同样失败，**直连正常**。发布 `v0.3.3` 时用直连绕过：`git -c http.proxy= -c https.proxy= push|fetch origin`，`gh` 则先 `unset ALL_PROXY HTTPS_PROXY HTTP_PROXY`。下次再遇到 `EOF` 先试直连，不要以为是 GitHub 挂了。
 - Playwright 浏览器：`npx playwright install chromium firefox webkit`（当前 revision 1228 / 1532 / 2311），缺浏览器时 `npm run test:e2e` 会直接报缺可执行文件。
 - `MD_CONVERTOR_TEST_PROVIDER=1` 是测试/e2e 专用开关（内置伪模型，不联网）；生产未设置时该分支不可达。生产路径的环境变量仍是 `MD_CONVERTOR_USER_DATA` / `MD_CONVERTOR_SECRETS` / `MD_CONVERTOR_SESSION_TOKEN` / `PATH`。
-- **Firefox e2e 在本 agent 环境无法运行（2026-09-22 实测）**：Playwright Firefox 启动时要再套一层 macOS seatbelt，报 `Sandbox error: sandbox_init() failed with error "Operation not permitted"` 后进程退出，表现为**每个用例 30s 超时**。同一用例 chromium / webkit 均绿（`/tmp/s2-wk-probe.log`：webkit 1 passed in 2.4s），故属环境限制而非代码缺陷。三引擎 e2e 必须由用户在普通终端补跑；在本环境请用 `npx playwright test --project=chromium --project=webkit`。
+- **Firefox e2e 在本 agent 环境需要 `MOZ_DISABLE_CONTENT_SANDBOX=1`（2026-09-22 修正）**：此前记的「无法运行、必须由用户补跑」是**错误结论**，现已在 `playwright.config.ts` 顶部固化，三引擎可自足跑通。**根因**：Firefox 在 macOS 上给 content process 套自己的 Seatbelt profile，而 macOS 禁止嵌套沙箱 —— 已在沙箱里的进程无法再次 `sandbox_init()`，报 `Sandbox error: sandbox_init() failed with error "Operation not permitted"` 后进程退出，表现为每个用例 30s 超时。**只需 `MOZ_DISABLE_CONTENT_SANDBOX=1` 这一个变量**（逐项实测：GMP / RDD / Socket 三个同名开关各自都 1 failed，只有它 1 passed）。**不要用** `firefoxUserPrefs: { "security.sandbox.content.level": 0 }`（实测 exit 137 / SIGKILL）。三引擎数字：**239 passed / 4 skipped / exit 0**。Chromium / WebKit 从来不受影响。
 - **代理会污染 Playwright（2026-09-22）**：环境注入 `HTTP_PROXY=http://127.0.0.1:50291`，Playwright 会继承它——`connectOverCDP` 报 `Unexpected status 502`。跑任何 Playwright / 网络命令前先 `unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy ALL_PROXY all_proxy` 并设 `NO_PROXY=127.0.0.1,localhost no_proxy=...`；系统代理则是 Clash 的 `127.0.0.1:7897`（Firefox 跟随、Chromium 不跟随）。
 - **打包应用在本 shell 里的启动姿势（2026-09-22）**：环境注入 `ELECTRON_RUN_AS_NODE=1`，会让 Electron 当纯 Node 跑并报 `bad option: --remote-debugging-port=9222`；取消后 Chromium 自己的沙箱又被宿主 seatbelt 拒（`Failed to initialize sandbox ... Operation not permitted` → GPU 进程崩溃）。探针用 `unset ELECTRON_RUN_AS_NODE` + `--no-sandbox --disable-gpu --remote-debugging-port=9222` 跑通；**`--no-sandbox` 仅为探针用，正常双击启动不受影响**。另注意后台 `&` 起的应用进程会在该次 Bash 调用结束时被回收，启动与探针要放进同一条命令；zsh 下 `rm -f dir/*` 遇无匹配会报错并中断整条 `&&` 链，改用 `find dir -type f -delete`。
 - **`MD_CONVERTOR_USER_DATA` 无法隔离打包应用（2026-09-22 实测）**：`electron/env.mjs` 的 `buildServerEnv()` 无条件写入 `MD_CONVERTOR_USER_DATA: userDataDir`（注释原文「the MD_CONVERTOR_* keys are always authoritative」），主进程算出的目录永远赢，启动前设这个变量**没有任何效果**。因此真机探针必然读写用户真实的 `settings.json`、并把文件写进开关当前指向的真实目录（本次真的写进了用户的 iCloud 云盘）。探针必须五步收尾：备份真实 settings.json → 跑 → 逐字段比对证明 `output` 之外未被改动（页面 PUT 是整份替换）→ 还原 `defaultPath`/`useDefaultPath` → 删除落在真实目录里的探针文件。
 
 ## Recommended Next Action
 
-`feat-041`（默认 MD 保存路径）**S1 已提交（`ac8f91a`）、S2 已提交（`f9b7534`）、真机缺陷已修复并单独提交，且已重新打包 + 真机复验通过**（S1 契约 + IPC + 设置页输出卡片；S2 主页面三态分叉 + 降级 + 反馈条 + 真机两态探针；修复 iCloud 路径被路径校验拒掉 + preload 抛异常被 `void` 吞掉导致的「点下载毫无反应」）；S3 文档就绪。**新会话开工提示词见本文件顶部「新会话开工提示词（复制即用）」**。下一步：
-1. **要用户做两件事**（包已就绪，不用再打）：① 亲手过一遍真机两态（开开关 → 不弹框且文件落进 iCloud 的 `Note/未归档`；关开关 → 弹框）——开关当前是关的，`defaultPath` 已就位，开开关即可测；② 在普通终端跑 `npm run test:e2e` 补 **firefox** 引擎（本 agent 环境跑不了 Firefox，原因见 Environment Notes）。
-2. **然后按 `docs/features/default-save-path/S3-release.md` 收口**：`npm run desktop:release`、本机安装、GitHub Release、文档收口。发布前先收窄 `forge.config.cjs` 的 asar ignore（当前把 `.workbuddy/`、`PROGRESS.md`、`session-handoff.md`、`feature_list.json`、`docs/` 都打进了包——实证：修复后新包 `app.asar` 里残留的 6 处 `value.includes("~")` 全部来自这些文档，不是代码）。
+`feat-041`（默认 MD 保存路径）**S1 已提交（`ac8f91a`）、S2 已提交（`f9b7534`）、真机缺陷与反馈缺失均已修复并提交（`867aa2a`）、S3 的 T3.0 asar 收窄已提交（`7cf1111`）；用户真机两态已签字；firefox 引擎已解锁。用户侧阻塞清零。** S3 文档就绪。**新会话开工提示词见本文件顶部「新会话开工提示词（复制即用）」**。下一步：
+1. **直接跑 T3.1 全量验证**：`./init.sh` + 三引擎 `npm run test:e2e`（自足，无需环境变量）+ `npm run test:live`。注意：跑带 tracked-file 守卫的 `npm run test:e2e` 时**不要在运行期间编辑任何 tracked 文件**，否则守卫会误报 `E2E modified tracked files`（本次已踩过一次，是编辑文档造成的，不是 e2e 的问题）。
+2. **然后按 `docs/features/default-save-path/S3-release.md` 收口**：`npm run desktop:release`、本机安装、GitHub Release、文档收口。asar 收窄（原第 2 步的前置）已在 T3.0 完成：253 → 10 条目。
 3. **跑门禁必须用 Node 24.14.1 或 24.15.0**：本机默认 v24.16.0 在解压 electron zip 时静默卡死，`electron-forge make` 空跑却仍返回 exit 0。
-4. **断言真实 errno 的测试在本 agent 环境要用 `NODE_OPTIONS=` 跑**：WorkBuddy 通过 `NODE_OPTIONS` 注入 brokered-fs shim，会把 `ENOTDIR`/`EPERM` 变成 `CODEBUDDY_BROKER_DENY`。`NODE_OPTIONS= ./init.sh` 即全绿（67 files / 955 tests）。
+4. **断言真实 errno 的测试在本 agent 环境要用 `NODE_OPTIONS=` 跑**：WorkBuddy 通过 `NODE_OPTIONS` 注入 brokered-fs shim，会把 `ENOTDIR`/`EPERM` 变成 `CODEBUDDY_BROKER_DENY`。`NODE_OPTIONS= ./init.sh` 即全绿（68 files / 999 tests）。
 5. **真机小点**：等用户给清单后再评估是否单开一轮。
 6. **云端 Provider 端到端实测**：`feat-027` 的自撰探针已绿，仍需用户用真实文章在设置页走一遍「拉取模型 → 选模型 → 翻译」。
 7. **签名/notarization 用户 2026-09-20 决定不做**（QA-008 accepted / not planned）；要恢复需 Developer ID Application 证书 + notarytool 凭据，签名后必须重跑门禁更新哈希。

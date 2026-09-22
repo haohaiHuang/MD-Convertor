@@ -25,6 +25,18 @@
 
 真实网页对照不保存或打印网页正文。只按测试源码中记录的环境变量替换样本，禁止提交私有或受版权保护的页面内容。
 
+`npm run test:e2e` 是**门禁，不是内循环**：它先构建，再用 `workers: 1` 把全部用例跑满三个引擎（翻译引擎持有进程级任务锁，并行 worker 会与之竞争），约两分钟。迭代时直接用 `npx playwright test` —— 它复用 `.next/standalone` 里已有的构建、跳过重建 —— 并用 `--project=chromium` 加 `-g "<用例名>"` 收窄范围。改动定稿后再上三引擎。要验证时序类修复时，`-g "<用例名>" --project=firefox --repeat-each=N` 才是划算的形状：15% 概率触发的竞态大约二十次就能高置信度抓到，重复上百次只换来等待时间。
+
+`playwright.config.ts` 会为整轮运行设置 `MOZ_DISABLE_CONTENT_SANDBOX=1`，并在原处写明原因：Firefox 会给自己的 content process 套一份 macOS Seatbelt profile，而 macOS 禁止嵌套沙箱，所以在进程级沙箱内 Firefox 会以 `sandbox_init() failed with error "Operation not permitted"` 退出，每个用例都要耗满 30s 超时。这是唯一有效的开关（等价的 pref `security.sandbox.content.level: 0` 会直接把进程杀掉），且不削弱测试效力 —— 本套 e2e 只加载 `127.0.0.1:3000` 上由本仓库构建的页面。写成 `??=` 形式保留了调用方的显式取值，所以可以用 `MOZ_DISABLE_CONTENT_SANDBOX=0 npm run test:e2e` 把沙箱放回来。
+
+跑 e2e 前请清掉 `HTTP_PROXY` / `HTTPS_PROXY`（含小写形式）并设 `NO_PROXY=127.0.0.1,localhost`：Playwright 会继承它们，Firefox 还会跟随系统代理，历史上因此出现过 `NS_ERROR_PROXY_CONNECTION_REFUSED`。
+
+`npm run test:e2e` 会在运行前后对 tracked 工作区取哈希，一旦变动即失败。**不要在它运行期间编辑 tracked 文件** —— 那会触发守卫，看起来像 e2e 失败，其实不是。
+
+配置里刻意保留 `reuseExistingServer: false`，好让每轮都从本轮刚构建的产物起服务，而不是信任端口上现有的那个。代价是：中途被杀掉的运行会把服务留在 3000 端口，下一次运行会在几秒内以 `http://127.0.0.1:3000/health is already used` 报错退出。动手前先确认它是谁 —— `lsof -nP -iTCP:3000 -sTCP:LISTEN`，再用 `lsof -p <pid> -a -d cwd` 确认 cwd 是本仓库下的 `.next/standalone` —— 然后按精确 PID 结束它。**绝不要按模式杀进程。**
+
+比较布局矩形一律用 `e2e/geometry.ts` 的 `rectsInOneFrame`，**不要连着调两次 `boundingBox()`**。每次 `boundingBox()` 都是一次独立往返，两次调用之间任何让页面移动的因素都会被量成「布局坏了」。最常见的元凶是滚动：`fill()` 会把字段滚进视口，这个滚动在调用返回时可能还没落定，两次采样于是相差一个滚动位移。设置页 Base URL 行在 firefox 上有 **15%** 的概率复现出一个很像回事的 131px「错位」（两次调用的 `urlY` 821、单帧读取 690，`scrollY` 132），但两个元素其实从未相对移动。把全部矩形放进同一个 `evaluate` 里读取就能堵掉这个窗口 —— 浏览器无法在同一个 task 内的两次 `getBoundingClientRect()` 之间插入滚动或重排。等 `document.fonts.ready` 在这里没用：它跑在触发滚动的 `fill()` 之前。
+
 翻译测试不需要联网也不需要密钥：`scripts/start-e2e-server.mjs` 会设置 `MD_CONVERTOR_TEST_PROVIDER=1`，让 `/api/translate/*` 使用进程内伪模型。未设置该标志时分支不存在，因此生产环境在未配置模型时仍返回 409 `TRANSLATE_NOT_CONFIGURED`。不要把该标志带入任何生产或发布命令。
 
 ## 覆盖范围

@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { rectsInOneFrame } from "./geometry";
+
 type StoredSettings = {
   version: number;
   mode: string;
@@ -276,17 +278,18 @@ test.describe("云端 Provider", () => {
     await page.goto("/settings");
 
     const card = page.locator(CLOUD_CARD);
-    const saveBox = await card.getByRole("button", { name: "保存", exact: true }).boundingBox();
-    const clearBox = await card.getByRole("button", { name: "清除", exact: true }).boundingBox();
-    const nameBox = await card.getByLabel("Provider 名称").boundingBox();
-    const cardBox = await card.boundingBox();
-    if (!saveBox || !clearBox || !nameBox || !cardBox) throw new Error("missing layout box");
-    expect(saveBox.y).toBeLessThan(nameBox.y);
-    expect(saveBox.x).toBeGreaterThan(cardBox.x + cardBox.width / 2);
+    const { save, clear, name, card: cardBox } = await rectsInOneFrame(page, {
+      save: card.getByRole("button", { name: "保存", exact: true }),
+      clear: card.getByRole("button", { name: "清除", exact: true }),
+      name: card.getByLabel("Provider 名称"),
+      card,
+    });
+    expect(save.y).toBeLessThan(name.y);
+    expect(save.x).toBeGreaterThan(cardBox.x + cardBox.width / 2);
     // 清除与保存并列在卡片头部。
-    expect(clearBox.y).toBeLessThan(nameBox.y);
-    expect(clearBox.x).toBeGreaterThan(cardBox.x + cardBox.width / 2);
-    expect(clearBox.x).toBeLessThan(saveBox.x);
+    expect(clear.y).toBeLessThan(name.y);
+    expect(clear.x).toBeGreaterThan(cardBox.x + cardBox.width / 2);
+    expect(clear.x).toBeLessThan(save.x);
   });
 
   test("保存要求四项齐全，缺一项就提示且不写盘", async ({ page }) => {
@@ -395,12 +398,12 @@ test.describe("云端 Provider", () => {
     await expect(card.getByLabel("Provider 模型")).toHaveAttribute("placeholder", "从下拉选择或直接填写模型名");
     await card.getByLabel("Provider Base URL").fill("https://api.xiaomimimo.com/v1");
 
-    const urlBox = await card.getByLabel("Provider Base URL").boundingBox();
-    const pullBox = await card.getByRole("button", { name: "拉取模型" }).boundingBox();
-    expect(urlBox).not.toBeNull();
-    expect(pullBox).not.toBeNull();
-    expect(pullBox!.x).toBeGreaterThan(urlBox!.x);
-    expect(Math.abs(pullBox!.y - urlBox!.y)).toBeLessThan(urlBox!.height);
+    const { url, pull } = await rectsInOneFrame(page, {
+      url: card.getByLabel("Provider Base URL"),
+      pull: card.getByRole("button", { name: "拉取模型" }),
+    });
+    expect(pull.x).toBeGreaterThan(url.x);
+    expect(Math.abs(pull.y - url.y)).toBeLessThan(url.height);
 
     await card.getByRole("button", { name: "拉取模型" }).click();
     await expect(card.getByText("已获取 2 个模型，请选择其中一个。")).toBeVisible();

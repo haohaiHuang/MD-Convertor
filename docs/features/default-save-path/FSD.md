@@ -119,7 +119,7 @@ preload 的 `output` 桥接在**浏览器/e2e 环境不存在**——与 `secret
 
 S1 与 S2 分两次提交（关注点不同：前者是设置面与桥接，后者是转换页行为）；S3 单独提交。
 
-**状态（2026-09-22）**：S1 done（提交 `ac8f91a`）、S2 done（提交 `f9b7534`）；S2 标 done 之后用户真机实测撞到「配好 iCloud 目录 + 开开关 → 点下载毫无反应」，根因是 `isAbsoluteDirPath` 把路径里任何 `~` 都当家目录简写拒掉（iCloud 云盘落在 `com~apple~CloudDocs` 下），叠加 preload 抛异常未被 `page.tsx` 捕获——两个缺陷均已按 TDD 修复并单独提交，详见 `S2-download-flow.md` 的「缺陷修复」。**重新打包与真机复验均已通过**（开关持久化正常；开关开 + 真实 iCloud 目录时下载真的落盘、零浏览器下载事件）。**S3 未开工**，前置条件：用户亲手过一遍真机两态并签字 + 用户补跑 firefox e2e；开工时先收窄 `forge.config.cjs` 的 asar ignore。
+**状态（2026-09-22）**：S1 done（提交 `ac8f91a`）、S2 done（提交 `f9b7534`）；S2 标 done 之后用户真机实测撞到「配好 iCloud 目录 + 开开关 → 点下载毫无反应」，根因是 `isAbsoluteDirPath` 把路径里任何 `~` 都当家目录简写拒掉（iCloud 云盘落在 `com~apple~CloudDocs` 下），叠加 preload 抛异常未被 `page.tsx` 捕获——两个缺陷均已按 TDD 修复并单独提交，详见 `S2-download-flow.md` 的「缺陷修复」。**重新打包与真机复验均已通过**（开关持久化正常；开关开 + 真实 iCloud 目录时下载真的落盘、零浏览器下载事件）；反馈缺失（直写成功却看不出成功）也已修复并提交 `867aa2a`。**S3 进行中，三项前置全部完成**：① 用户 22:17 亲手过完真机两态并签字（「两态都过了」）；② 收窄 `forge.config.cjs` 的 asar ignore 已完成（T3.0，提交 `7cf1111`，253 → 10 条目）；③ firefox e2e 此前被误判为「本环境跑不了」，实际只需 `MOZ_DISABLE_CONTENT_SANDBOX=1`，已固化进 `playwright.config.ts`，三引擎 239 passed / 4 skipped 自足跑通——**用户侧不再有任何阻塞**。
 
 ---
 
