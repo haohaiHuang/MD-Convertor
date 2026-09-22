@@ -53,7 +53,7 @@ Everything from `feat-024` through `feat-034` shipped in the gated `0.3.1`, `0.3
 | Feature in the bundle | both IPC channels present in the asar, and the traced server carries the settings copy, the 使用默认目录 label and the 已保存到 result string |
 | Bundled runtime | 0 entries under `server/node_modules/electron` |
 | Real machine | installed to `/Applications/MD-Convertor.app` (546 MB, replacing `0.3.5`, which is kept at `~/Downloads/MD-Convertor-archive/installed-apps/`); packaged smoke passed; the user's `settings.json` / `secrets.json` md5 identical before and after |
-| Published | GitHub Release [`v0.3.6`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.6), asset uploaded and byte-count checked |
+| Published | GitHub Release [`v0.3.6`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.6), tag `3578822` (the wrap-up commit), marked **Latest**; asset `MD-Convertor-darwin-arm64-0.3.6.zip` uploaded at `235,956,668` bytes, and the server-side digest the API reports is `sha256:9b89d55c5c3cbf63519d56136f63e14170de26489623ea149c0a1daf0569f351` — byte-for-byte the local ZIP |
 | Signing | not signed, not notarized |
 
 The ZIP is `1,379,169` bytes (1.32 MiB) smaller than `0.3.5`, and the unpacked app is unchanged within rounding (`du -sm` reports 549 MB for the archived `0.3.5` bundle and 547 MB for `0.3.6`). `feat-041`'s own packaging change removes only asar entries, so both numbers come from ordinary build-to-build variation.

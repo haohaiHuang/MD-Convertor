@@ -6,7 +6,7 @@
 - Active feature: **无**。`feat-041`（默认 MD 保存路径）**已完成、已发布、已关闭（`done`）**。文档链：`docs/features/default-save-path/`（`FSD.md` + `S1-settings-and-ipc.md` + `S2-download-flow.md` + `S3-release.md`，四份均已标完成）
 - **唯一推荐下一步**：没有必须做的事。要么由用户指定新目标，要么按 `docs/PLAN-next-phase.md` 从在册方向里挑（未开工的只有 `docs/features/browser-extension/`，三问未决、刻意无阶段文档）。**若下一轮要改代码，第一步是 bump 到 `0.3.7`**（版本面所有出现处必须同步，清单见下方开工提示词）
 - Pending（无一是阻塞项）：① 云端 Provider 端到端实测（用户真实文章走一遍「拉取模型 → 选模型 → 翻译」）；② 真机小点清单（等用户给）；③ `0.3.1`–`0.3.6` 的产物与 tag 一律不动，缺失项按退役处理；④ 签名/notarization 不做（QA-008 accepted）；⑤ UI 评审结论勿重提（全部不整改）；⑥ `stash@{0}` 是 2026-09-21 拉取前的文档备份、与 feat-041 无关；⑦ 可选：在 Terminal 里跑一次**规范**的打包冒烟（Chromium 沙箱开启）—— 本 agent 沙箱内只能以 `--no-sandbox --disable-gpu` 取证，属环境限制
-- Branch: `main`；发布历史：`v0.3.6`（feat-041 默认 MD 保存路径，asar 253 → 10 条目）、`v0.3.5` = `5f98307`（feat-039 + 清空按钮归位）、`v0.3.4` = `e251267`（图标 v2）、`v0.3.3` = `3897cd1`（feat-034）、`v0.3.2` = `1c3ed80`（feat-033）、`v0.3.1` = `af7f6db`（feat-031/032）；`v0.1.3` = `ce041c9`（不可变历史锚点）
+- Branch: `main`；发布历史：`v0.3.6` = `3578822`（feat-041 默认 MD 保存路径，asar 253 → 10 条目，Latest）、`v0.3.5` = `5f98307`（feat-039 + 清空按钮归位）、`v0.3.4` = `e251267`（图标 v2）、`v0.3.3` = `3897cd1`（feat-034）、`v0.3.2` = `1c3ed80`（feat-033）、`v0.3.1` = `af7f6db`（feat-031/032）；`v0.1.3` = `ce041c9`（不可变历史锚点）
 
 ## 新会话开工提示词（复制即用）
 
@@ -250,7 +250,7 @@
 - Package narrowing (T3.0): `Contents/Resources/app.asar` is now **10 entries / 35,261 bytes** (`/package.json` plus the 8 runtime modules under `/electron`); the front end is a `extraResource` at `Contents/Resources/server/` and was never inside the asar. Both IPC channel names grep 3× inside the asar; the three default-folder strings grep 2× each under `server/`. 0 entries under `server/node_modules/electron`
 - Verification: `unzip -t` clean over 3,511 entries; `CFBundleShortVersionString` 0.3.6 / `CFBundleVersion` 0.3.6; `Mach-O 64-bit executable arm64`; installed at `/Applications/MD-Convertor.app` (previous 0.3.5 moved to `~/Downloads/MD-Convertor-archive/installed-apps/MD-Convertor-0.3.5.app`); packaged smoke test passed (exit 0; inside this agent sandbox it needs `env -u ELECTRON_RUN_AS_NODE` and `--no-sandbox --disable-gpu` — see `docs/TESTING.md`); the user's `settings.json` / `secrets.json` md5 unchanged across the smoke (`e3517a5f…` / `f26c69b2…`)
 - Size delta: `-1,379,169` bytes vs `0.3.5` (smaller, from the narrowed asar); unpacked app is unchanged within `du -sm` rounding (549 MB → 547 MB)
-- Published: GitHub Release `v0.3.6`, tag points at this round's wrap-up commit; asset `235,956,668` bytes uploaded. The ZIP builds from a tree whose packaged inputs are identical to the tag's — after `7cf1111` (the asar narrowing) only docs, `e2e/`, `playwright.config.ts` and `feature_list.json` changed, none of which enter the package
+- Published: GitHub Release `v0.3.6`, tag `3578822` (this round's wrap-up commit), marked **Latest**. The asset is `235,956,668` bytes and the server-side digest reported by the API is `sha256:9b89d55c5c3cbf63519d56136f63e14170de26489623ea149c0a1daf0569f351` — the same value as the local ZIP, so the uploaded file is provably the gated one. The ZIP builds from a tree whose packaged inputs are identical to the tag's — after `7cf1111` (the asar narrowing) only docs, `e2e/`, `playwright.config.ts` and `feature_list.json` changed, none of which enter the package (the asar holds `package.json` + `electron/`, and the front end ships through the `server` extraResource)
 - Not signed or notarized (personal test only)
 
 ### 0.3.4（历史产物，已过门禁、已装本机、已发布）
