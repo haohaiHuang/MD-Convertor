@@ -121,3 +121,5 @@ async function downloadMarkdown(): Promise<void> {
 
 **真机探针的硬约束（踩过，务必记住）**：**`MD_CONVERTOR_USER_DATA` 无法隔离打包应用**。`electron/env.mjs` 的 `buildServerEnv()` 里 `MD_CONVERTOR_USER_DATA: userDataDir` 是**无条件覆盖**的（注释写明「the MD_CONVERTOR_* keys are always authoritative」），主进程算出来的 `userDataDir` 永远赢；启动时给应用设这个变量**不生效**。后果：任何真机探针都会读写**用户真实的 `settings.json`**，并把文件写进**开关当前指向的真实目录**。
 因此探针必须：① 先把真实 `settings.json` 备份到 `/tmp`；② 跑完把 `output` 之外的字段逐个比对确认未被改动（探针的 PUT 是整份替换）；③ 恢复 `useDefaultPath` / `defaultPath` 到原值；④ 删掉落在真实目录里的探针文件。本次复验已全部执行，用户目录与设置回到原样。
+
+**另一个硬约束：探针之前必须让用户彻底退出旧实例**。探针实例与用户已开的实例**共用同一个 userData 目录**（因为上面那条隔离失效），两个实例并发会让 `DevToolsActivePort` 互相覆盖。更重要的是：**重新打包只会更新磁盘上的文件，不会更新已经运行的进程**。实测证据——用户当时开着的实例（pid 18465）的 Next 服务器对**只属于新构建**的 chunk 返回 404（`/_next/static/chunks/036-u2_14gd3v.js`，而 `默认保存设置不可用` 只存在于该 chunk），且它首页引用的仍是旧 chunk 集合，说明它整体仍是**旧代码**：在它里面点「下载」依旧会没反应。所以复测前必须 **Cmd+Q 彻底退出再重新启动**，否则会拿着旧进程误判「修复无效」。同源判断法（以后可复用）：拿新构建里**只在修复后存在**的字符串去 grep 新包的 `static/chunks/`，定位到 chunk 文件名，再 `curl` 运行中实例的该路径——404 就说明它还活在旧构建上。
