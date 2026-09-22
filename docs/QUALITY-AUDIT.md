@@ -2,7 +2,7 @@
 
 ## Current Verdict
 
-Version `0.3.4` passed its own release gate on 2026-09-21 - baseline, three-browser E2E, live, packaging, and artifact verification all passed - producing `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.4.zip`, then published as GitHub Release `v0.3.4`. It carries the `feat-036` link-failure paste hint, the `feat-037` cloud-card reset, and the application icon (`assets/icon.icns` replacing Electron's default, with `assets/` excluded from the asar). `0.3.3` passed its own gate on 2026-09-20 and stays as history (`out/` no longer holds its ZIP); `0.3.2` and `0.3.1` passed the same gate earlier that day and were published as GitHub Releases `v0.3.2` (tag `1c3ed80`) and `v0.3.1` (tag `af7f6db`). The `0.3.0` gate ran end to end on 2026-09-18 and that artifact predates `feat-024` onward; it is kept as history. The historical-archive precondition was retired for the 0.1.0-0.2.0 ZIPs and the 0.1.3 read-only copy, which were lost from this Mac and cannot be restored; every archive that still exists is hash-checked exactly as before, and `0.2.1` was re-downloaded from its GitHub release and matched its recorded SHA-256 byte for byte. The `v0.1.3` source tag remains a hard precondition. QA-012 (the advisory set found in `next` and `sharp`) is resolved: as of 2026-09-20 `next` is 16.3.5 and `sharp` is 0.35.4, and `npm audit --omit=dev` reports no production advisories. The remaining release constraint is the absence of Developer ID signing and notarization, which the user decided on 2026-09-20 not to pursue: every artifact stays personal-testing only, and the `v0.3.1`-`v0.3.4` release notes say so plainly.
+Version `0.3.6` passed its own release gate on 2026-09-22 - baseline, three-browser E2E, live, packaging, and artifact verification all passed - producing `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.6.zip`, then published as GitHub Release `v0.3.6`. It carries `feat-041` (a default folder for downloaded Markdown: the Output card in Settings, and a 下载 button that writes straight into that folder or falls back to the system save dialog and names the reason) plus that feature's packaging narrowing, which cut the packaged archive from 253 entries / `2,670,300` bytes to 10 entries / `35,261` bytes. `0.3.5` passed its own gate on 2026-09-21 and stays as history. Version `0.3.4` passed its own release gate on 2026-09-21 - baseline, three-browser E2E, live, packaging, and artifact verification all passed - producing `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.4.zip`, then published as GitHub Release `v0.3.4`. It carries the `feat-036` link-failure paste hint, the `feat-037` cloud-card reset, and the application icon (`assets/icon.icns` replacing Electron's default, with `assets/` excluded from the asar). `0.3.3` passed its own gate on 2026-09-20 and stays as history (`out/` no longer holds its ZIP); `0.3.2` and `0.3.1` passed the same gate earlier that day and were published as GitHub Releases `v0.3.2` (tag `1c3ed80`) and `v0.3.1` (tag `af7f6db`). The `0.3.0` gate ran end to end on 2026-09-18 and that artifact predates `feat-024` onward; it is kept as history. The historical-archive precondition was retired for the 0.1.0-0.2.0 ZIPs and the 0.1.3 read-only copy, which were lost from this Mac and cannot be restored; every archive that still exists is hash-checked exactly as before, and `0.2.1` was re-downloaded from its GitHub release and matched its recorded SHA-256 byte for byte. The `v0.1.3` source tag remains a hard precondition. QA-012 (the advisory set found in `next` and `sharp`) is resolved: as of 2026-09-20 `next` is 16.3.5 and `sharp` is 0.35.4, and `npm audit --omit=dev` reports no production advisories. The remaining release constraint is the absence of Developer ID signing and notarization, which the user decided on 2026-09-20 not to pursue: every artifact stays personal-testing only, and the `v0.3.1`-`v0.3.6` release notes say so plainly.
 
 ## Post-0.3.0 Fix Detail (feat-024, 2026-09-18)
 
@@ -35,6 +35,28 @@ Everything from `feat-024` through `feat-034` shipped in the gated `0.3.1`, `0.3
 | feat-037 | the cloud card's clearing action resets the whole card: it deletes the stored key, clears the draft, and writes `providers: []` + `activeProviderId: null` | `e2e/settings.spec.ts` (header layout by `boundingBox()`, cleared-state assertions, PUT body), packaged-app probe |
 | app icon | `assets/icon.icns` replaces Electron's default icon and `assets/` is excluded from the asar, so the app no longer wears the generic Electron icon | `tests/app-icon.test.ts` (4 cases: 1024px transparent master, required icns types, the `forge.config.cjs` wiring trap, the ignore pattern), bundle `electron.icns` compared with the repository file by SHA-256, asar shows 0 `/assets` entries |
 | Gate | `0.3.1` gated on 2026-09-20 (exit 0) and published as GitHub Release `v0.3.1`; `0.3.2` gated on 2026-09-20 (exit 0) and published as GitHub Release `v0.3.2`; `0.3.3` gated on 2026-09-20 (exit 0) and published as GitHub Release `v0.3.3`; `0.3.4` gated on 2026-09-21 (exit 0) and published as GitHub Release `v0.3.4` | `npm run desktop:release`, ZIP size and SHA-256 recorded in `docs/TESTING.md` |
+
+## Verified Release (0.3.6)
+
+| Check | Result |
+|---|---|
+| Node.js | 24.14.1 (24.16.0 stalls inside `yauzl` while unpacking the Electron archive, so `electron-forge make` never produces a ZIP) |
+| Baseline | lint, typecheck, coverage, production build passed |
+| Tests | 68 files / 999 tests passed, 95.28% statements (86.64% branches, 98.34% functions) |
+| Browser E2E | Chromium, Firefox, WebKit — 239 passed / 4 skipped |
+| Stable live gate | WalkingLabs link/paste — 2/2 passed |
+| Production dependency audit | no production advisories (QA-012 closed) |
+| Package | 0.3.6, arm64, macOS 12.0+ |
+| ZIP bytes | 235,956,668 |
+| ZIP SHA-256 | `9b89d55c5c3cbf63519d56136f63e14170de26489623ea149c0a1daf0569f351` |
+| Archive scope | asar **10 entries / `35,261` bytes** (`package.json` + the eight `electron/` modules), down from 253 entries; `tests/forge-package-scope.test.ts` guards the allowlist both ways |
+| Feature in the bundle | both IPC channels present in the asar, and the traced server carries the settings copy, the 使用默认目录 label and the 已保存到 result string |
+| Bundled runtime | 0 entries under `server/node_modules/electron` |
+| Real machine | installed to `/Applications/MD-Convertor.app` (546 MB, replacing `0.3.5`, which is kept at `~/Downloads/MD-Convertor-archive/installed-apps/`); packaged smoke passed; the user's `settings.json` / `secrets.json` md5 identical before and after |
+| Published | GitHub Release [`v0.3.6`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.6), asset uploaded and byte-count checked |
+| Signing | not signed, not notarized |
+
+The ZIP is `1,379,169` bytes (1.32 MiB) smaller than `0.3.5`, and the unpacked app is unchanged within rounding (`du -sm` reports 549 MB for the archived `0.3.5` bundle and 547 MB for `0.3.6`). `feat-041`'s own packaging change removes only asar entries, so both numbers come from ordinary build-to-build variation.
 
 ## Verified Release (0.3.4)
 
@@ -221,6 +243,18 @@ The package is about 4.3 MB larger than `0.3.3`; the delta comes from this build
 - Historical Git commits and tags are intentionally retained; no history was rewritten.
 - Release guards verify fixed historical ZIP hashes from the external archive before and after a release attempt; an absent entry is reported as retired and any present entry is still hash-checked.
 
+## Re-verification Checklist for 0.3.6
+
+- `./init.sh` green on Node.js 24.x: lint, `tsc --noEmit`, coverage with every per-file threshold, production build. Last green: 68 files / 999 tests, 95.28% statements (2026-09-22, inside the `0.3.6` gate).
+- `npm run test:e2e` green across Chromium, Firefox, and WebKit. Last green: 239 passed / 4 skipped (2026-09-22, inside the `0.3.6` gate).
+- `tests/forge-package-scope.test.ts` green: the packaged asar still holds exactly `package.json` plus the `electron/` runtime modules, and nothing the runtime reads is missing from it.
+- The two desktop-bridge channels (`md-convertor:output:select-directory`, `md-convertor:output:save-file`) are present in the packaged asar, and `electron/output.mjs` still re-validates `dirPath` and `filename` in the main process rather than trusting the preload.
+- `npm run desktop:release` passed with version `0.3.6` on 2026-09-22: historical ZIP snapshot unchanged before and after, fresh ZIP, packaged version, arm64 executable, bundle structure, size, and SHA-256.
+- `npm run test:live` result recorded, even when it is skipped or fails because the network is unavailable. Last green: 2/2.
+- Packaged smoke test with `ELECTRON_SMOKE_TEST=1` and `ELECTRON_SMOKE_TEST_SECRETS=1` prints the preload bridge and runtime secret results and leaves `settings.json` / `secrets.json` byte-identical. Launch it from a plain Terminal: a shell inside an Electron host exports `ELECTRON_RUN_AS_NODE=1`, and a shell already under macOS seatbelt cannot let Chromium sandbox itself (both traps are written up in `docs/TESTING.md`).
+- No key, article body, or CLI output appears in logs, error messages, test output, or the repository.
+- The historical `v0.1.3` tag is intact, no historical ZIP that still exists changed its hash, and every retired entry is reported by the gate.
+
 ## Re-verification Checklist for 0.3.4
 
 - `./init.sh` green on Node.js 24.x: lint, `tsc --noEmit`, coverage with every per-file threshold, production build. Last green: 63 files / 863 tests, 95.28% statements (2026-09-21, inside the `0.3.4` gate).
@@ -242,9 +276,22 @@ The package is about 4.3 MB larger than `0.3.3`; the delta comes from this build
 
 ## Release Decision
 
-Approved for personal testing. Not approved for frictionless public distribution, and QA-008 is accepted rather than being worked: the user decided on 2026-09-20 not to buy a Developer ID / notarize, so signing stays out of scope until that decision changes. `0.3.4` passed its gate on 2026-09-21 and was published as GitHub Release `v0.3.4` (237,272,966 bytes, SHA-256 `6910120e…2704`); that ZIP was rebuilt after the user's second icon version was put in place and the tag was moved onto that commit, so the tag, the released ZIP and `checkout v0.3.4` agree. QA-012 no longer applies: `next` is 16.3.5 and `sharp` is 0.35.4 as of 2026-09-20 and `npm audit --omit=dev` reports no production advisories. `0.3.3` passed its gate on 2026-09-20 and was published as GitHub Release `v0.3.3`; `0.3.2` passed its gate on 2026-09-20 and was published as GitHub Release `v0.3.2` (tag `1c3ed80`); `0.3.1` passed its gate and was published as GitHub Release `v0.3.1` earlier the same day. The release notes state that the build is unsigned and intended for personal testing.
+Approved for personal testing. Not approved for frictionless public distribution, and QA-008 is accepted rather than being worked: the user decided on 2026-09-20 not to buy a Developer ID / notarize, so signing stays out of scope until that decision changes. `0.3.6` passed its gate on 2026-09-22 and was published as GitHub Release `v0.3.6` (235,956,668 bytes, SHA-256 `9b89d55c…f351`); it adds the default Markdown save folder and narrows the packaged archive to what the app actually reads. `0.3.5` passed its gate on 2026-09-21 and was published as GitHub Release `v0.3.5` (tag `5f98307`). `0.3.4` passed its gate on 2026-09-21 and was published as GitHub Release `v0.3.4` (237,272,966 bytes, SHA-256 `6910120e…2704`); that ZIP was rebuilt after the user's second icon version was put in place and the tag was moved onto that commit, so the tag, the released ZIP and `checkout v0.3.4` agree. QA-012 no longer applies: `next` is 16.3.5 and `sharp` is 0.35.4 as of 2026-09-20 and `npm audit --omit=dev` reports no production advisories. `0.3.3` passed its gate on 2026-09-20 and was published as GitHub Release `v0.3.3`; `0.3.2` passed its gate on 2026-09-20 and was published as GitHub Release `v0.3.2` (tag `1c3ed80`); `0.3.1` passed its gate and was published as GitHub Release `v0.3.1` earlier the same day. The release notes state that the build is unsigned and intended for personal testing.
 
 ## Archived Round Log
+
+### 2026-09-22 — feat-041 默认 MD 保存路径 + 0.3.6 发布（本轮收尾归档）
+
+- S1（设置契约 + IPC）：`Settings` 新增 `output: { defaultPath, useDefaultPath }`，旧 `settings.json` 缺该字段时按默认值补齐而不判为损坏；Electron 新增 `md-convertor:output:select-directory` 与 `md-convertor:output:save-file` 两个通道，`electron/output.mjs` 写成可注入纯模块（`ipcMain` / `dialog` 注入），`dirPath` 与 `filename` 在沙箱化 preload 与主进程各校验一次。提交 `ac8f91a`。
+- S2（下载三态分叉）：主页面 `downloadMarkdown()` 分叉为「桥接直写 / 浏览器下载」，新增 fs 错误码映射（`src/app/settings/client.ts`），失败时在结果区说明原因并降级；设置页新增「输出」卡片（只读路径展示、选择目录按钮、使用默认目录开关）。提交 `f9b7534`。
+- 真机缺陷修复：`isAbsoluteDirPath` 原先把路径里每个 `~` 都当家目录简写，而 iCloud 云盘的数据落在 `com~apple~CloudDocs` 下，于是真实用户选出的目录被判非法；且该拒绝以未捕获的 promise 拒绝抛出，表现为「点下载毫无反应：不写文件、不下载、不报错」。改为 `~` 仅在路径段开头才算简写，并让所有拒绝都走结果区说明 + 降级。提交 `dde369e`。
+- 反馈修复：直写成功原先没有任何可见确认（文件落盘了、页面看不出变化），改为「下载」按钮短暂显示「已保存」+ 结果区带 ✓ 的状态卡片，失败改用警告色。提交 `867aa2a`。
+- S3/T3.0（打包收窄）：`forge.config.cjs` 的 11 条黑名单换成「保留清单」——asar 只留 `package.json` 与 `electron/`（`main.mjs`、`preload.cjs`、`preload-contract.cjs`、`env.mjs`、`output.mjs`、`runtime-secrets.mjs`、`server-binary.mjs`、`secrets.mjs`），**253 条 / `2,670,300` bytes → 10 条 / `35,261` bytes**；`tests/forge-package-scope.test.ts` 双向守卫（RED 26 failed / 18 passed → GREEN 44 passed）。提交 `7cf1111`。
+- 同轮顺手修掉的既有 e2e flake（范围外，已在 `PROGRESS.md` 留下教训）：几何断言原先用两次 `boundingBox()` 比较 `y`，而 `fill()` 触发的滚动会在两次采样之间落定，把滚动位移量成布局错位（firefox 40 次跑出 6 次 131px「错位」，实为 `821 = 689 + 132`）。改为 `rectsInOneFrame()` 单帧读取后 firefox 300/300。同时把 firefox 的 `MOZ_DISABLE_CONTENT_SANDBOX=1` 固化进 `playwright.config.ts`，三引擎自此自足可跑。提交 `14e9684`。
+- S3/T3.1+T3.2+T3.3：`npm run desktop:release` exit 0（Node 24.14.1，2m54s）—— 68 files / 999 tests、95.28%、三引擎 e2e 239 passed / 4 skipped、live 2/2；产物 `MD-Convertor-darwin-arm64-0.3.6.zip` 235,956,668 bytes、SHA-256 `9b89d55c…f351`；独立复核 `unzip -t` 3511 条目、包内版本 0.3.6、Mach-O arm64、asar 恰 10 条目。T3.1 与 T3.2 **刻意合并为一次**，因为 `release-desktop.mjs` 内部已依次 await `init.sh` → `test:e2e` → `test:live` → `desktop:make`。
+- S3/T3.4：旧 `0.3.5` 从 `/Applications` 移到 `~/Downloads/MD-Convertor-archive/installed-apps/`；安装源改用**发布 ZIP 本身**解压（因此完全不碰正在运行的 `out/` bundle）；`ditto` 到 `/Applications`（546 MB）、`defaults read` 为 0.3.6 / 0.3.6、arm64、lsregister 注册。冒烟 `ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1` **exit 0**（须 `env -u ELECTRON_RUN_AS_NODE`；在外层沙箱内还须 `--no-sandbox --disable-gpu`——两个坑已写入 `docs/TESTING.md`）；用户 `settings.json` / `secrets.json` 的 md5 前后逐字节一致。
+- S3/T3.5：真机两态走查由用户于 2026-09-22 签字通过（开默认目录：不弹框、文件落盘；关默认目录：弹框）。
+- **一处就地更正**：T3.0 的动机最初表述为「私有工作文档会随发布物一起公开」。核实后该定性**不成立**——仓库是 public，`PROGRESS.md`、`session-handoff.md`、`feature_list.json`、`AGENTS.md`、`docs/**` 早已在 `origin/main` 上公开（逐个 `git cat-file -e origin/main:<file>` 确认），打进 asar 不构成新增暴露；唯一真正非公开的是 `.workbuddy/memory/*.md`（`.gitignore` 第 10 行，从未进入任何提交）。收窄本身仍然正确（少装 2500 余条运行时不读的条目、asar 从 2.6 MB 降到 35 KB），但理由已就地更正。
 
 ### 2026-09-21 — feat-039 视觉刷新 + 0.3.5 发布（上一轮收尾归档）
 

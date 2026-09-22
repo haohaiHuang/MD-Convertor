@@ -2,7 +2,7 @@
 
 - 上游：`docs/features/default-save-path/FSD.md`
 - 前置：S1 + S2 已完成且各自提交；用户真机两态验收已签字（2026-09-22）
-- 状态：**进行中（T3.0 已完成，剩 T3.1–T3.7）**
+- 状态：**已完成**（2026-09-22；T3.0–T3.7 全部完成，`0.3.6` 已发布为 GitHub Release `v0.3.6`、已装本机、`feat-041` 已置 `done`）
 - feature_list id：`feat-041`
 
 ## Spec
@@ -21,7 +21,7 @@
 
 收窄前的 asar 把**整个仓库根**装进包（253 个条目：`.workbuddy/`、`AGENTS.md`、`CHANGELOG*`、`docs/`、`e2e/`、`feature_list.json`、`init.sh`、`next.config.ts`、`playwright.config.ts`、`PROGRESS.md`、`README*`、`scripts/`、`session-handoff.md`、`src/`、`tests/`、`tsconfig*`、`vitest*`），而运行时不读其中任何一个。已知代价有三条，**第一条最严重**：
 
-- **私有工作文档会随发布物公开**：`app.asar` 里装着 `.workbuddy/memory/*.md`（跨会话工作日志）、`session-handoff.md`、`PROGRESS.md` 等。本版本的交付形态正是 GitHub Release 的 ZIP，下载者解包即可读到这些内部记录。收窄前等于把它们发布出去。
+- **私有工作日志会随发布物公开（2026-09-22 就地更正）**：`app.asar` 里装着 `.workbuddy/memory/*.md`（跨会话工作日志）。本版本的交付形态正是 GitHub Release 的 ZIP，下载者解包即可读到它们。**但「把私有文档一起发布出去」这个说法当时是错的**：仓库 `haohaiHuang/MD-Convertor` 是 **public**，`PROGRESS.md` / `session-handoff.md` / `feature_list.json` / `AGENTS.md` / `docs/**` **早已在 `origin/main` 上公开可浏览**（逐个 `git cat-file -e origin/main:<file>` 确认），打进 ZIP 不构成新增暴露。**唯一真正的新增暴露是 `.workbuddy/memory/*.md`** —— 它被 `.gitignore` 第 10 行排除、从未进过任何提交。
 - **字符串判定被污染**：修复 iCloud 缺陷后，asar 里仍能搜到 6 处 `value.includes("~")`，全部来自被打进包的文档。判断「这个包有没有带上修复」因此需要额外的排除推理，容易误判。
 - **冗余副本**：仓库根的 `public/` 已被 `scripts/prepare-desktop.mjs` 复制进 `.desktop/server/public`，asar 里那份是死副本。
 
@@ -40,13 +40,13 @@
 | id | 任务 | 说明 | 验证 |
 | --- | --- | --- | --- |
 | T3.0 | asar 收窄 ✅ **已完成**（2026-09-22，提交 `7cf1111`） | `forge.config.cjs` 的 `packagerConfig.ignore` 改为**保留清单**：应用运行时只读 `process.resourcesPath/server`（`extraResource`，不在 asar 内）与 `import.meta.dirname` 下的 `electron/` 模块，因此 asar 只保留 `package.json` 与 `electron/`（含 `main.mjs`、`preload.cjs`、`preload-contract.cjs` 及其同级的 `env.mjs` / `output.mjs` / `runtime-secrets.mjs` / `server-binary.mjs` / `secrets.mjs`）。原先的 11 条黑名单换成一条反向正则 + 一条排除 Electron 侧测试文件的正则。**动机**：见下「T3.0 背景」，首要一条是私有工作文档会随发布物公开 | 三项全过：① `tests/forge-package-scope.test.ts` GREEN 44 passed（RED 26 failed / 18 passed）；② `npx asar list` **253 → 10 条目**、2670300 → 35261 字节；③ **打包冒烟 exit 0** 且两个断言都真跑。附带：`./init.sh` exit 0 → 68 files / 999 tests；双引擎 e2e exit 0 → 160 passed / 2 skipped |
-| T3.1 | 全量验证 | `./init.sh`（lint/typecheck/coverage/build）+ `npm run test:e2e` 三引擎 + `npm run test:live` | 全部 exit 0，计数记入 PROGRESS。**三引擎自足可跑**（firefox 的沙箱开关已固化进 `playwright.config.ts`，无需任何环境变量）；注意跑 e2e 期间不要编辑 tracked 文件（tracked-file 守卫会报假失败），且若上一轮运行被杀掉，先核实并结束残留的 3000 端口服务（见 `docs/TESTING.md`），否则本轮几秒内就会报 `health is already used` |
-| T3.2 | 发布门禁 | `npm run desktop:release`（Node 24.14.1/24.15.0） | exit 0；记录 ZIP bytes 与 SHA-256 |
-| T3.3 | 独立复核 | `unzip -t`、`CFBundleShortVersionString`、Mach-O arm64、包结构、asar 检查 | 与 `docs/TESTING.md` 口径一致 |
-| T3.4 | 安装本机 | 退出旧应用（**必须由用户 Cmd+Q**：本沙箱 `osascript quit` 报 -10004）→ 备份现有 `settings.json` / `secrets.json` 并记 md5 → 移除旧安装 → `ditto` 新包 → 清隔离属性（`xattr -dr com.apple.quarantine`）。**不要用 `rm -rf` 删构建输出**：本沙箱里它会让整条链式命令静默中止且不产出日志，而 Forge 本来就会替换 `out/MD-Convertor-darwin-arm64`；旧安装也应先移到废纸篓或临时目录 | `defaults read` 版本正确；`ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1` exit 0；用户 `settings.json` / `secrets.json` md5 与备份一致 |
-| T3.5 | 真机验收 | 用户两态走查：开默认目录（不弹框、文件落盘）+ 关默认目录（弹框） | 用户确认 |
-| T3.6 | 提交与发布 | 提交（含版本与文档）→ `git push` → `gh release create v0.3.6 <zip>`（notes 写明未签名） | tag 指向发布提交、资产 uploaded |
-| T3.7 | 文档收口 | `CHANGELOG.md`(+zh) `[Unreleased]` → `[0.3.6]`；`docs/TESTING.md`(+zh) 门禁计数与产物段；`README`(+zh) 如有行为差异；`docs/ARCHITECTURE.md`(+zh) 增补 IPC 通道与安全边界（filename 校验、日志纪律）；`docs/QUALITY-AUDIT.md` 归档本轮；`AGENTS.md` 版本行 → `0.3.6`；`PROGRESS.md` / `session-handoff.md` 重写；`feature_list.json` `feat-041` → done | 下一会话可按 Startup Workflow 无歧义恢复 |
+| T3.1 | 全量验证 ✅ **已完成**（2026-09-22，**并入 T3.2 的那一次运行**） | `./init.sh`（lint/typecheck/coverage/build）+ `npm run test:e2e` 三引擎 + `npm run test:live` | 全部 exit 0，计数记入 PROGRESS。实得：`init.sh` 68 files / 999 tests、三引擎 e2e 239 passed / 4 skipped、live 2 passed。**三引擎自足可跑**（firefox 的沙箱开关已固化进 `playwright.config.ts`，无需任何环境变量）；注意跑 e2e 期间不要编辑 tracked 文件（tracked-file 守卫会报假失败），且若上一轮运行被杀掉，先核实并结束残留的 3000 端口服务（见 `docs/TESTING.md`），否则本轮几秒内就会报 `health is already used`。**不要单独再跑一遍**：`release-desktop.mjs` 内部已依次 await `init.sh` → `test:e2e` → `test:live` → `desktop:make`，拆开跑等于把同一套验证做两遍 |
+| T3.2 | 发布门禁 ✅ **已完成**（2026-09-22，与 T3.1 合并为一次） | `npm run desktop:release`（Node 24.14.1/24.15.0） | exit 0；记录 ZIP bytes 与 SHA-256。实得：exit 0、2m54s、`MD-Convertor-darwin-arm64-0.3.6.zip` **235,956,668** bytes、SHA-256 `9b89d55c5c3cbf63519d56136f63e14170de26489623ea149c0a1daf0569f351` |
+| T3.3 | 独立复核 ✅ **已完成**（2026-09-22） | `unzip -t`、`CFBundleShortVersionString`、Mach-O arm64、包结构、asar 检查 | 与 `docs/TESTING.md` 口径一致。实得：哈希一致、`unzip -t` 3511 条目无错、版本 0.3.6 / 0.3.6、`Mach-O 64-bit executable arm64`、asar **恰 10 条目** |
+| T3.4 | 安装本机 ✅ **已完成**（2026-09-22） | 退出旧应用（**必须由用户 Cmd+Q**：本沙箱 `osascript quit` 报 -10004）→ 备份现有 `settings.json` / `secrets.json` 并记 md5 → 移除旧安装 → `ditto` 新包 → 清隔离属性（`xattr -dr com.apple.quarantine`）。**不要用 `rm -rf` 删构建输出**：本沙箱里它会让整条链式命令静默中止且不产出日志，而 Forge 本来就会替换 `out/MD-Convertor-darwin-arm64`；旧安装也应先移到废纸篓或临时目录 | `defaults read` 版本正确；`ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1` exit 0；用户 `settings.json` / `secrets.json` md5 与备份一致。实得：0.3.6 / 0.3.6、冒烟 exit 0（两条 `Preload bridge smoke passed` / `Runtime secret smoke passed` 都真跑）、md5 `e3517a5f…` / `f26c69b2…` 前后一致。**两个执行环境坑**（已写入 `docs/TESTING.md`）：必须 `env -u ELECTRON_RUN_AS_NODE`，否则 Electron 二进制以纯 Node 启动并卡在 stdin；本沙箱内还须 `--no-sandbox --disable-gpu`，因为外层 seatbelt 不允许 Chromium 再给自己套沙箱——这是环境限制而非产物缺陷，规范的那一次应在 Terminal 里跑 |
+| T3.5 | 真机验收 ✅ **已完成**（用户 2026-09-22 签字） | 用户两态走查：开默认目录（不弹框、文件落盘）+ 关默认目录（弹框） | 用户确认「两态都过了」 |
+| T3.6 | 提交与发布 ✅ **已完成**（2026-09-22） | 提交（含版本与文档）→ `git push` → `gh release create v0.3.6 <zip>`（notes 写明未签名） | tag 指向发布提交、资产 uploaded |
+| T3.7 | 文档收口 ✅ **已完成**（2026-09-22） | `CHANGELOG.md`(+zh) `[Unreleased]` → `[0.3.6]`；`docs/TESTING.md`(+zh) 门禁计数与产物段；`README`(+zh) 如有行为差异；`docs/ARCHITECTURE.md`(+zh) 增补 IPC 通道与安全边界（filename 校验、日志纪律）；`docs/QUALITY-AUDIT.md` 归档本轮；`AGENTS.md` 版本行 → `0.3.6`；`PROGRESS.md` / `session-handoff.md` 重写；`feature_list.json` `feat-041` → done | 下一会话可按 Startup Workflow 无歧义恢复 |
 
 ## Handoff
 

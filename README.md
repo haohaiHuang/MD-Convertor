@@ -16,6 +16,7 @@ MD-Convertor is a local webpage-to-Markdown app for Apple Silicon Macs. Convert 
 - Embeds JPEG, PNG, WebP, GIF, and AVIF images as Data URIs
 - Keeps body text first under a 20 MiB output limit; unsupported or over-budget images fall back to alt text with warnings
 - Supports stopping a conversion, clearing either input mode, copying, downloading, result statistics, and quick return to the input area
+- Can save Markdown straight into a default folder you choose once in Settings, so the save dialog stops appearing on every download; a refused write names the reason and falls back to the normal download
 
 - Translation uses a model you configure yourself: an agent CLI already installed on the Mac (`pi` or `claude`), or one OpenAI-compatible cloud provider you configure in Settings. Nothing is translated until you check the translation box, and no MD-Convertor key or account exists.
 
@@ -38,17 +39,17 @@ Do not run this command for an app whose source or checksum you do not trust.
 
 ## Current Release
 
-- Current version: `0.3.4` — document translation and its own application icon (Apple Silicon Mac, macOS 12.0+). The `0.3.4` gate passed on 2026-09-21 and the build is installed locally.
-- Latest published release: [`v0.3.4`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.4).
+- Current version: `0.3.6` — a default folder for downloaded Markdown files (Apple Silicon Mac, macOS 12.0+). The `0.3.6` gate passed on 2026-09-22 and the build is installed locally.
+- Latest published release: [`v0.3.6`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.6).
 - No build is Developer ID signed or notarized, so every artifact is suitable for personal testing only.
 
-Current gated and published artifact (`0.3.4`):
+Current gated and published artifact (`0.3.6`):
 
-- ZIP: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.4.zip`
-- Size: `237,272,966` bytes
-- SHA-256: `6910120e004170cc1ff91d29315f883226a852cd012c3e9a1e335e6056b42704`
+- ZIP: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.6.zip`
+- Size: `235,956,668` bytes
+- SHA-256: `9b89d55c5c3cbf63519d56136f63e14170de26489623ea149c0a1daf0569f351`
 
-Previous published artifact (`0.3.3`): `232,947,408` bytes, SHA-256 `1bf807dfe294860c24345efe5caf2b0fcbd54f88476df7085c9bd03b47b37a72`.
+Previous published artifact (`0.3.5`): `237,335,837` bytes, SHA-256 `313bbbc341c94da0a5ca92f668f2df06cea9f734e47d7af65880500aa192d45f`.
 
 Download the ZIP from the [GitHub Releases](https://github.com/haohaiHuang/MD-Convertor/releases) page.
 
@@ -76,6 +77,6 @@ npm run test:live
 npm run desktop:release
 ```
 
-The release workflow requires version `0.3.3`, hash-checks every historical artifact that still exists outside the repository (missing entries are reported as retired instead of blocking), rejects stale output, and validates the packaged version, arm64 architecture, bundle structure, size, and SHA-256.
+The release workflow requires version `0.3.6`, hash-checks every historical artifact that still exists outside the repository (missing entries are reported as retired instead of blocking), rejects stale output, and validates the packaged version, arm64 architecture, bundle structure, size, and SHA-256.
 
 See [Product](docs/PRODUCT.md), [Architecture](docs/ARCHITECTURE.md), [Testing](docs/TESTING.md), [Quality Audit](docs/QUALITY-AUDIT.md), and [Changelog](CHANGELOG.md).

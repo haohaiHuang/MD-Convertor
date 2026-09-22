@@ -45,6 +45,17 @@ Translation endpoints and webpage scraping deliberately use independent address 
 
 A local translation call spawns the configured CLI with `shell: false`, an argument list from a fixed registry, the prompt on stdin only, and a one-use temporary working directory. The child environment is a copy of the server environment with every `MD_CONVERTOR_*` variable removed, so the session token and the serialized secret map never reach the child. stdout and stderr are capped at 1 MiB and are never echoed back; a non-zero exit reports only the status code and exit code. Timeouts kill the process.
 
+### Desktop bridge (IPC)
+
+The renderer reaches the filesystem only through a narrow preload bridge — it has no general-purpose `fs` or `path`, and a sandboxed preload can resolve built-in modules only. `0.3.6` added two channels beside the three `secrets` ones:
+
+- `md-convertor:output:select-directory` opens the native directory chooser (`openDirectory` plus `createDirectory`, so a folder can be created inside the picker) and returns the chosen absolute path, or `{ok: false, code: "CANCELLED"}`.
+- `md-convertor:output:save-file` takes `{dirPath, filename, content}`, re-validates all three in the main process, creates the directory when it is missing, and writes the file. It returns `{ok: true, path}` or `{ok: false, code}`, where the code is the `fs` error code or one of `INVALID_DIR_PATH` / `INVALID_FILENAME` / `INVALID_CONTENT`.
+
+The two values that cross the bridge are validated twice on purpose: the sandboxed preload rejects bad input, and the main process re-validates with real path semantics, because the two layers are independent defences and neither is redundant. `filename` must be a bare file name — no `/`, no `\`, no `..`, at most 255 characters — so a renderer cannot steer the write outside the chosen directory. `dirPath` must be absolute POSIX with no `..` and no home-shorthand segment, and a tilde counts as shorthand only when it *starts* a segment: iCloud Drive keeps its data under `com~apple~CloudDocs`, so rejecting every tilde made the folders real users pick unusable.
+
+A refused write never throws across the bridge; it comes back as a code, and the page names the reason and falls back to the browser download path. The only line this path logs is `Saving the markdown file failed: <code>` — the directory, the file name, and the content are never logged.
+
 ## Conversion pipelines
 
 Link mode:
@@ -85,6 +96,7 @@ Both modes then share the following stages:
 - Markdown preview does not parse raw HTML. It allows only application-generated raster Data URIs. Fenced Mermaid is displayed as code and is not executed in the app.
 - Before Turndown, the shared Markdown stage normalizes only `pre` elements with multiple direct `code` children into one complete code block; ordinary code blocks and Mermaid markers remain unchanged.
 - Client cancellation aborts the same-origin request and propagates through direct fetches, browser rendering, and image requests so local resources are released promptly.
+- The renderer's filesystem reach is two IPC channels and nothing else (see *Desktop bridge* above). The Markdown write path takes a bare file name inside a validated absolute directory, cannot be steered outside it, and logs only the failure code — never the path, the file name, or the content.
 
 ## Data and logs
 
@@ -96,12 +108,12 @@ The application code uses no database, object storage, cookies, LocalStorage, or
 - `npm run dev:desktop` starts local development.
 - `npm run desktop:package` creates an unpacked app; `npm run desktop:make` creates the distributable ZIP.
 - The daily baseline includes exact synthetic webpage-to-Markdown golden tests. `npm run test:live` uses stable WalkingLabs fixtures as the release-blocking link/paste Mermaid gate. `npm run test:live:wechat` retains the real WeChat comparison as a non-blocking diagnostic because upstream verification and timeouts vary.
-- `./init.sh` and release scripts require Node.js 24.x. The release script requires version `0.3.4` and verifies the immutable historical ZIP manifest in `~/Downloads/MD-Convertor-archive/releases/` before running baseline, E2E, live, or Forge commands. Historical artifacts are checked again after success or failure. `npm run desktop:release` then verifies that the new ZIP belongs to the current run, contains the current version and an arm64 executable, has a complete package structure, and prints its size and SHA-256.
+- `./init.sh` and release scripts require Node.js 24.x. The release script requires version `0.3.6` and verifies the immutable historical ZIP manifest in `~/Downloads/MD-Convertor-archive/releases/` before running baseline, E2E, live, or Forge commands. Historical artifacts are checked again after success or failure. `npm run desktop:release` then verifies that the new ZIP belongs to the current run, contains the current version and an arm64 executable, has a complete package structure, and prints its size and SHA-256.
 - E2E runs against the production standalone service and fails if tracked files change.
 - See [`TESTING.md`](TESTING.md) for commands, environment variables, smoke tests, and manual acceptance.
 - The current artifact is unsigned and intended for personal testing. Developer ID signing and notarization are required for broad external distribution.
 - The packaged app starts its local Next.js server with the bundled `MD-Convertor Helper` binary rather than the app's own executable (`electron/server-binary.mjs`). The helper bundle declares `LSUIElement`, so the child never takes a Dock tile; spawning the app executable made macOS treat the server as a second launch of MD-Convertor and left a generic executable icon bouncing in the Dock.
-- v0.3.4 is the current version (the recorded `0.3.0`–`0.3.3` artifacts are historical). The application icon is a repository asset since this release: `forge.config.cjs` points at `assets/icon.icns` and excludes `/assets` from the asar. Historical tags and the external 0.1.0–0.2.0 ZIP archive remain immutable regression references.
+- v0.3.6 is the current version (the recorded `0.3.0`–`0.3.5` artifacts are historical). The application icon is a repository asset since `0.3.4`: `forge.config.cjs` points at `assets/icon.icns` and excludes `/assets` from the asar. Since `0.3.6` the asar holds only what the app reads — `package.json` and `electron/` — and `assets` is no longer the only exclusion. Historical tags and the external 0.1.0–0.2.0 ZIP archive remain immutable regression references.
 - A second-Mac acceptance test confirmed that Gatekeeper may report an unsigned app as damaged. Personal testers should verify the ZIP SHA-256 before removing only `com.apple.quarantine`. This is not a substitute for signing or notarization.
 - Desktop preparation packages the Apple Silicon Chromium Headless Shell matching the current Playwright version and launches it through an explicit executable path, avoiding reliance on browser caches installed on the target Mac.
 - Next.js output tracing can retain Playwright's optional Electron launcher. Desktop preparation removes that unused server-side Electron package, so the application contains only the outer Electron runtime and the distributable ZIP is about 120 MiB smaller.

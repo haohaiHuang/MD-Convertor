@@ -13,7 +13,7 @@ MD-Convertor is designed for individuals who want to archive web content. The fi
 3. Rich text mode processes only an explicit clipboard snapshot. It reads both `text/html` and `text/plain`, while the text area displays plain text. Semantically structured content uses sanitized HTML; otherwise clipboard plain text is authoritative.
 4. Editing pasted content immediately discards the captured HTML and switches to plain text. A new paste replaces the entire previous input rather than merging fragments. The optional source URL affects only source metadata and relative link/image resolution. Clear removes HTML, plain text, the source URL, and the previous result; it is disabled while converting.
 5. Link mode can use the embedded browser for dynamic pages. Rich text mode never refetches the source webpage. Both modes show file size, text character count, image statistics, warnings, and a Markdown preview.
-6. Copy writes the original Markdown to the clipboard. Download saves the `.md` file locally. A successful copy briefly displays a confirmation. After the page is scrolled by roughly 500px, Back to Top returns to the input area without clearing any input or result.
+6. Copy writes the original Markdown to the clipboard. Download saves the `.md` file locally: with the Settings switch on it writes straight into the configured default folder and reports the path it landed on, and with the switch off it keeps the system save dialog. A refused direct write names the reason and falls back to the save dialog, so the file still reaches the user. A successful copy briefly displays a confirmation. After the page is scrolled by roughly 500px, Back to Top returns to the input area without clearing any input or result.
 
 ## Output rules
 

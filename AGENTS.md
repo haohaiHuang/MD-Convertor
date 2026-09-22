@@ -6,7 +6,7 @@
 
 本项目将开发一个把网页链接转换为 Markdown 文档的工具。
 
-第一阶段交付 Apple Silicon Mac 单机应用。Electron 承载现有 Next.js 16 / Node.js 24 / TypeScript strict 应用，使用 Readability、Turndown、Playwright 和 Sharp 完成安全抓取、正文提取、动态渲染和图片内嵌。0.3.0 起另提供可选文档翻译：正文交给用户自行配置的模型（本机 agent CLI 或云 Provider），只翻译非目标语言部分。产品范围见 `docs/PRODUCT.md`，翻译产品需求见 `docs/PRD-translation.md`，本地安全与打包边界见 `docs/ARCHITECTURE.md`。
+第一阶段交付 Apple Silicon Mac 单机应用。Electron 承载现有 Next.js 16 / Node.js 24 / TypeScript strict 应用，使用 Readability、Turndown、Playwright 和 Sharp 完成安全抓取、正文提取、动态渲染和图片内嵌。0.3.0 起另提供可选文档翻译：正文交给用户自行配置的模型（本机 agent CLI 或云 Provider），只翻译非目标语言部分。0.3.6 起可在设置里指定默认保存目录，让「下载」直接把 Markdown 写进该目录而不再每次弹保存框（未启用或直写被拒时仍走原保存对话框）。产品范围见 `docs/PRODUCT.md`，翻译产品需求见 `docs/PRD-translation.md`，本地安全与打包边界见 `docs/ARCHITECTURE.md`。
 
 ## Startup Workflow
 
@@ -30,7 +30,7 @@
 - 当前项目只构建和验收 `darwin/arm64`；Windows、多平台仓库迁移均已取消，未经用户重新明确授权不得恢复。
 - 富文本粘贴转换只处理用户主动复制的剪贴板 HTML/纯文本，不读取浏览器登录态，也不绕过任何访问限制；现行范围以 `docs/PRODUCT.md` 和 `docs/ARCHITECTURE.md` 为准。
 - **所有代码开发必须遵循 TDD**：先写失败测试（RED），再写最小实现使其通过（GREEN），最后清理重构（REFACTOR）；每个实现步骤都应有对应的自动化测试作为证据，禁止先实现后补测试。
-- **v0.3.6 是当前源码版本（尚未发布；`0.3.1`–`0.3.5` 均已发布为 GitHub Release，`0.3.0` 的 ZIP 是历史构建），0.1.3 为不可变历史基线**：`main` 代表当前版本；`v0.3.3` 的 ZIP 与源码不再逐字节对应（其后的 `feat-035` 修掉了 `next.config.ts` 的追踪缺口，但打包产物保持文件级等价），`v0.3.5` 的 ZIP 由视觉刷新完成后的源码构建，tag `v0.3.5` 指向提交 `5f98307`；`v0.1.3` 标签固定在提交 `ce041c9`。0.2.1 的 ZIP 归档于 `~/Downloads/MD-Convertor-archive/releases/`；0.1.0–0.2.0 的 ZIP 与原 0.1.3 只读副本已从本机丢失且无法恢复，发布门禁对这些缺失项只报退役。后续版本不得移动历史标签、覆盖或删除仍然存在的受保护产物；既有回归继续包含在扩展测试集中。
+- **v0.3.6 是当前版本（已于 2026-09-22 发布为 GitHub Release `v0.3.6`；`0.3.1`–`0.3.5` 亦均已发布，`0.3.0` 的 ZIP 是历史构建），0.1.3 为不可变历史基线**：`main` 代表当前版本；`v0.3.3` 的 ZIP 与源码不再逐字节对应（其后的 `feat-035` 修掉了 `next.config.ts` 的追踪缺口，但打包产物保持文件级等价），`v0.3.5` 的 ZIP 由视觉刷新完成后的源码构建，tag `v0.3.5` 指向提交 `5f98307`；`v0.1.3` 标签固定在提交 `ce041c9`。0.2.1 的 ZIP 归档于 `~/Downloads/MD-Convertor-archive/releases/`；0.1.0–0.2.0 的 ZIP 与原 0.1.3 只读副本已从本机丢失且无法恢复，发布门禁对这些缺失项只报退役。后续版本不得移动历史标签、覆盖或删除仍然存在的受保护产物；既有回归继续包含在扩展测试集中。
 - 产品或架构决策写入相应项目文档；会话状态写入 `PROGRESS.md`，不要依赖聊天记录延续上下文。
 - 面向用户的显著变化记录到 `CHANGELOG.md` 的 `[Unreleased]`。
 - 不提交密钥、令牌、Cookie、个人数据、受版权保护的完整网页内容或其他敏感材料。
@@ -47,7 +47,7 @@
 - `docs/PRD-*.md`：产品需求事实源（当前 `docs/PRD-translation.md`）。涉及产品范围、非目标或隐私条款变化时，先读 PRD 再读 `docs/PRODUCT.md`；PRD 与 PRODUCT.md 冲突时以 PRD 为准并同步修订 PRODUCT.md。
 - `docs/PLAN-next-phase.md`：下一阶段**路线图**（方向、顺序、边界、已定决策）；施工级细节在对应方向的 feature 文档里。开工前先读本文件。
 - `docs/PRD-upgrade-v2.md` 与 `docs/UI-DESIGN-SPEC.md`：**已于 2026-09-21 删除**（作废原因见路线图 §7）；不要重建，也不要把两者中的范围、色板或改造文件清单搬回来。
-- `docs/features/<feature>/**`：FSD 执行文档（`FSD.md` 总纲 + 每阶段一份 Spec/Plan/Task 一体的执行文档）。实施某阶段时只读 `FSD.md` 与该阶段文档，不必读其它阶段文档。当前在册：`docs/features/translation/`（0.3.0，已完成）、`docs/features/ui-refresh/`（0.3.5，已完成）、`docs/features/browser-extension/`（方向，三问未决、刻意无阶段文档）、`docs/features/default-save-path/`（feat-041 默认 MD 保存路径，当前 active）。
+- `docs/features/<feature>/**`：FSD 执行文档（`FSD.md` 总纲 + 每阶段一份 Spec/Plan/Task 一体的执行文档）。实施某阶段时只读 `FSD.md` 与该阶段文档，不必读其它阶段文档。当前在册：`docs/features/translation/`（0.3.0，已完成）、`docs/features/ui-refresh/`（0.3.5，已完成）、`docs/features/browser-extension/`（方向，三问未决、刻意无阶段文档）、`docs/features/default-save-path/`（feat-041 默认 MD 保存路径，0.3.6，已完成）。
 
 后续企划新增文档时，应在这里补充其用途和读取时机，而不是把详细方案堆入本文件。
 
@@ -85,7 +85,7 @@
 npm run test:e2e
 ```
 
-真实网页对照只在发布前执行 `npm run test:live`，不得加入日常单元测试；它会联网但不得保存或输出网页正文。桌面打包、环境变量、冒烟和人工验收统一按 `docs/TESTING.md` 执行。当前正式发布门禁使用 `npm run desktop:release`，且只允许目标版本 `0.3.6`（再改代码前先 bump 到 `0.3.7` 并同步该行）；脚本必须对仍然存在的历史 ZIP 逐个校验哈希（缺失项报退役并继续），并自动验证新 ZIP 的新鲜度、版本、arm64 架构、包结构和 SHA-256，不能把 Forge 无产物退出视为成功。签名和 notarization 尚未配置时必须明确报告产物仅适合个人测试。
+真实网页对照只在发布前执行 `npm run test:live`，不得加入日常单元测试；它会联网但不得保存或输出网页正文。桌面打包、环境变量、冒烟和人工验收统一按 `docs/TESTING.md` 执行。当前正式发布门禁使用 `npm run desktop:release`，且只允许目标版本 `0.3.6`（`0.3.6` 已发布；再改代码前先 bump 到 `0.3.7` 并同步该行）；脚本必须对仍然存在的历史 ZIP 逐个校验哈希（缺失项报退役并继续），并自动验证新 ZIP 的新鲜度、版本、arm64 架构、包结构和 SHA-256，不能把 Forge 无产物退出视为成功。签名和 notarization 尚未配置时必须明确报告产物仅适合个人测试。
 
 ## Escalation
 

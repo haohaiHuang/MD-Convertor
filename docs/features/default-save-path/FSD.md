@@ -1,6 +1,6 @@
 # FSD 总纲 — 默认 MD 保存路径（Default Save Path）
 
-- 状态：**S1 已完成并提交（`ac8f91a`）、S2 已完成（2026-09-21，待提交）**；S3 待开工；目标版本 `0.3.6`
+- 状态：**S1 已完成（`ac8f91a`）、S2 已完成（`f9b7534`）、S3 已完成并发布（2026-09-22，GitHub Release `v0.3.6`）**；目标版本 `0.3.6` 已交付，本 feature 关闭
 - 日期：2026-09-21
 - 上游：用户口头需求（无 PRD 文档）；本文件是唯一事实源
 - 阶段执行文档：`docs/features/default-save-path/S1-settings-and-ipc.md`（设置项 + IPC 通道）、`S2-download-flow.md`（下载逻辑改造）、`S3-release.md`（发布收口）
@@ -119,7 +119,7 @@ preload 的 `output` 桥接在**浏览器/e2e 环境不存在**——与 `secret
 
 S1 与 S2 分两次提交（关注点不同：前者是设置面与桥接，后者是转换页行为）；S3 单独提交。
 
-**状态（2026-09-22）**：S1 done（提交 `ac8f91a`）、S2 done（提交 `f9b7534`）；S2 标 done 之后用户真机实测撞到「配好 iCloud 目录 + 开开关 → 点下载毫无反应」，根因是 `isAbsoluteDirPath` 把路径里任何 `~` 都当家目录简写拒掉（iCloud 云盘落在 `com~apple~CloudDocs` 下），叠加 preload 抛异常未被 `page.tsx` 捕获——两个缺陷均已按 TDD 修复并单独提交，详见 `S2-download-flow.md` 的「缺陷修复」。**重新打包与真机复验均已通过**（开关持久化正常；开关开 + 真实 iCloud 目录时下载真的落盘、零浏览器下载事件）；反馈缺失（直写成功却看不出成功）也已修复并提交 `867aa2a`。**S3 进行中，三项前置全部完成**：① 用户 22:17 亲手过完真机两态并签字（「两态都过了」）；② 收窄 `forge.config.cjs` 的 asar ignore 已完成（T3.0，提交 `7cf1111`，253 → 10 条目）；③ firefox e2e 此前被误判为「本环境跑不了」，实际只需 `MOZ_DISABLE_CONTENT_SANDBOX=1`，已固化进 `playwright.config.ts`，三引擎 239 passed / 4 skipped 自足跑通——**用户侧不再有任何阻塞**。
+**状态（2026-09-22）**：S1 done（提交 `ac8f91a`）、S2 done（提交 `f9b7534`）；S2 标 done 之后用户真机实测撞到「配好 iCloud 目录 + 开开关 → 点下载毫无反应」，根因是 `isAbsoluteDirPath` 把路径里任何 `~` 都当家目录简写拒掉（iCloud 云盘落在 `com~apple~CloudDocs` 下），叠加 preload 抛异常未被 `page.tsx` 捕获——两个缺陷均已按 TDD 修复并单独提交，详见 `S2-download-flow.md` 的「缺陷修复」。**重新打包与真机复验均已通过**（开关持久化正常；开关开 + 真实 iCloud 目录时下载真的落盘、零浏览器下载事件）；反馈缺失（直写成功却看不出成功）也已修复并提交 `867aa2a`。**S3 已完成并发布（`0.3.6`，GitHub Release `v0.3.6`，2026-09-22）**：门禁 `npm run desktop:release` exit 0（Node 24.14.1，2m54s；`init.sh` 68 files / 999 tests、三引擎 e2e 239 passed / 4 skipped、live 2/2），产物 235,956,668 bytes / SHA-256 `9b89d55c…f351`，独立复核 `unzip -t` 3511 条目、asar 恰 10 条目；已装到 `/Applications`（冒烟 exit 0、用户 settings 的 md5 前后一致）；已在 GitHub 发布；文档与状态文件已收口，`feat-041` 在 `feature_list.json` 里已置 `done` 且 `activeFeature` 归空。**本 feature 关闭，无待办。**
 
 ---
 

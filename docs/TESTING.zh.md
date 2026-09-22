@@ -64,11 +64,11 @@ E2E 使用 production standalone 服务，并在测试后检查 tracked 文件�
 
 `npm run desktop:release` 要求：
 
-- package 版本严格为 `0.3.5`
+- package 版本严格为 `0.3.6`
 - Node.js 24.x，但 **24.16.0 不可用**：该补丁在 `yauzl` 解压 Electron 归档时会卡住，`electron-forge make` 永远不产出 ZIP。24.14.1 与 24.15.0 均可完整跑过门禁
 - 历史归档集合：清单中仍然存在的 ZIP 必须保持固定 SHA-256，`~/Downloads/MD-Convertor-archive/releases/` 中不得出现未登记的发布 ZIP
 - ZIP 必须由本轮命令新生成
-- 包内版本为 `0.3.5`
+- 包内版本为 `0.3.6`
 - 可执行文件为 arm64，应用结构完整
 
 成功和失败路径都会再次校验历史产物。Forge 未生成新 ZIP 即使退出也必须判为失败。
@@ -85,11 +85,26 @@ E2E 使用 production standalone 服务，并在测试后检查 tracked 文件�
 
 `0.3.5` 门禁于 2026-09-21 完整通过。它包含视觉刷新（`feat-039`，纯 CSS）：强调色由墨绿改为海军蓝（`#176b5d` → `#2a395c`），十处手调界面字重收敛为一个 `--weight-ui` token，并开启 `-webkit-font-smoothing: antialiased`。`tests/palette.test.ts` 会在出现白名单外的颜色字面量时失败，`e2e/theme.spec.ts` 直接读两个页面上的 computed 样式，因此旧调色板或漏改的字重都无法静默通过。
 
+`0.3.6` 门禁于 2026-09-22 完整通过。它包含 `feat-041`：Markdown 默认保存目录（设置页「输出」卡片，以及「下载」按「走桥接直写 / 降级为浏览器下载」分叉），以及该 feature 的 T3.0 打包收窄（asar 只留 `package.json` 与 `electron/`，253 条 → 10 条）。计数：`./init.sh` 68 files / 999 tests、三引擎 E2E 239 passed / 4 skipped、live 2 passed。详见 [`features/default-save-path/S3-release.md`](features/default-save-path/S3-release.md)。
+
 `0.3.4` 门禁于 2026-09-21 完整通过。它包含 `feat-036`（链接抓取失败时在错误卡片下提示改用富文本粘贴）、`feat-037`（云端卡片「清除」改为整卡重置）与应用图标：`assets/icon.icns` 取代 Electron 默认图标，`assets/` 被排除在 asar 之外。`tests/app-icon.test.ts` 守住图标（1024px 透明母版、必需 icns 类型、`forge.config.cjs` 的接线陷阱与排除规则），包内 `electron.icns` 与仓库文件按 SHA-256 比对一致。
 
-之后新增的长文翻译超时修复（`feat-024`，2026-09-18）把任务预算改为按批次数动态计算。更后一轮（`feat-029`，2026-09-18）让云端 Provider 保存时四项必填、允许设置页用未保存的草稿拉取模型（拉取不写设置），并把已保存密钥的输入框改为八个黑点占位；覆盖它的单测见 `src/lib/settings/provider-form.test.ts` 与 `src/app/api/provider/models/route.test.ts`，另有 3 个新增设置页 e2e 用例与 3 个改写用例（原先「拉取模型先保存草稿」的断言已不成立）。另一轮把单次调用上限从 60s 调高到 180s（`feat-027`）并修掉了「超时被误报成无法识别的回答」，同时删除了设置页「当前生效」标签（`feat-028`）。这些改动已通过单元测试、`./init.sh` 全量基线、三浏览器 e2e 与真机探针（用户云端 Provider 上一个原本撞 60s 上限失败的 121 块文档现在返回 200）。版本决策已定为 `0.3.1`：`package.json`、锁文件、`feature_list.json` 与发布门禁都已改为 `0.3.1`（门禁测试先改到 RED，再回到 29 passed）。之后一轮（`feat-031`，2026-09-20）把 `next` 升到 16.3.5、`sharp` 升到 0.35.4，使 `npm audit --omit=dev` 不再报生产依赖公告；同时去掉页头齿轮图标、把两个转换按钮改名为「转换」、让富文本面板的转换按钮右边缘与上方粘贴框对齐，并在已保存密钥时把密钥输入框设为只读。最后一轮（`feat-032`，2026-09-20）去掉绿色「MD」方块并把品牌字改为 Michroma，字体与 OFL 许可证随仓库放在 `public/fonts/`，用 `next/font/local` 加载；`tests/brand-font.test.ts` 守住这两个文件，e2e 的品牌用例按 SHA-256 比对页面实际加载的 woff2 与仓库文件，并在拒绝全部网络（`sandbox-exec … (deny network*) npm run build`，exit 0）的条件下重跑构建以证明不再访问 Google。下文记录的产物是修复**前**的 `0.3.0` 构建（保留为历史）；`feat-024` 之后的所有改动依次包含在 `0.3.1`–`0.3.5` 产物中。
+之后新增的长文翻译超时修复（`feat-024`，2026-09-18）把任务预算改为按批次数动态计算。更后一轮（`feat-029`，2026-09-18）让云端 Provider 保存时四项必填、允许设置页用未保存的草稿拉取模型（拉取不写设置），并把已保存密钥的输入框改为八个黑点占位；覆盖它的单测见 `src/lib/settings/provider-form.test.ts` 与 `src/app/api/provider/models/route.test.ts`，另有 3 个新增设置页 e2e 用例与 3 个改写用例（原先「拉取模型先保存草稿」的断言已不成立）。另一轮把单次调用上限从 60s 调高到 180s（`feat-027`）并修掉了「超时被误报成无法识别的回答」，同时删除了设置页「当前生效」标签（`feat-028`）。这些改动已通过单元测试、`./init.sh` 全量基线、三浏览器 e2e 与真机探针（用户云端 Provider 上一个原本撞 60s 上限失败的 121 块文档现在返回 200）。版本决策已定为 `0.3.1`：`package.json`、锁文件、`feature_list.json` 与发布门禁都已改为 `0.3.1`（门禁测试先改到 RED，再回到 29 passed）。之后一轮（`feat-031`，2026-09-20）把 `next` 升到 16.3.5、`sharp` 升到 0.35.4，使 `npm audit --omit=dev` 不再报生产依赖公告；同时去掉页头齿轮图标、把两个转换按钮改名为「转换」、让富文本面板的转换按钮右边缘与上方粘贴框对齐，并在已保存密钥时把密钥输入框设为只读。最后一轮（`feat-032`，2026-09-20）去掉绿色「MD」方块并把品牌字改为 Michroma，字体与 OFL 许可证随仓库放在 `public/fonts/`，用 `next/font/local` 加载；`tests/brand-font.test.ts` 守住这两个文件，e2e 的品牌用例按 SHA-256 比对页面实际加载的 woff2 与仓库文件，并在拒绝全部网络（`sandbox-exec … (deny network*) npm run build`，exit 0）的条件下重跑构建以证明不再访问 Google。下文记录的产物是修复**前**的 `0.3.0` 构建（保留为历史）；`feat-024` 之后的所有改动依次包含在 `0.3.1`–`0.3.6` 产物中。
 
-## 通过门禁的产物（0.3.5）
+## 通过门禁的产物（0.3.6）
+
+- 路径：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.6.zip`
+- 大小：`235,956,668` bytes
+- SHA-256：`9b89d55c5c3cbf63519d56136f63e14170de26489623ea149c0a1daf0569f351`
+- 包：版本 `0.3.6`、arm64、macOS 12.0+
+- 自动证据：68 files / 999 tests、statements 95.28%（branches 86.64%、functions 98.34%）、三引擎 E2E 239 passed / 4 skipped、live 2/2
+- 包内范围：asar 为 **10 条 / `35,261` bytes**，此前为 253 条 / `2,670,300` bytes —— 只留 `package.json` 加八个 `electron/` 运行时模块。`tests/forge-package-scope.test.ts` 对保留清单做双向守卫。
+- 包内默认目录功能：归档中含两个 IPC 通道（`md-convertor:output:select-directory`、`md-convertor:output:save-file`），追包出的服务端含设置页说明文案、「使用默认目录」标签与「已保存到」结果文案。
+- 打包冒烟：preload 桥与运行时密钥往返均通过；用户的 `settings.json` / `secrets.json` 跑前跑后逐字节一致
+- 已发布：[GitHub Release `v0.3.6`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.6)
+- 签名：未做 Developer ID 签名与 notarization，产物仅适合个人测试
+
+## 历史产物（0.3.5）
 
 - 路径：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.5.zip`
 - 大小：`237,335,837` bytes
@@ -178,6 +193,15 @@ ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1 \
 
 - `ELECTRON_SMOKE_TEST=1`：检查 `window.mdConvertor.secrets` 存在且 `safeStorage` 报告加密可用。
 - `ELECTRON_SMOKE_TEST_SECRETS=1`：额外验证密钥链路——无密钥的 Provider 返回 409 `TRANSLATE_NOT_CONFIGURED`；保存密钥后无需重启即可让运行中的服务访问该端点（对测试地址为 502 `TRANSLATE_PROVIDER_ERROR`）；删除密钥后回到 409。冒烟结束前会删除该密钥并还原设置。已经不能再用环境变量提供 Provider 密钥，因此冒烟只通过 preload 桥写入。
+
+对真实安装跑冒烟之前，先备份 `settings.json` 与 `secrets.json`（默认在 `~/Library/Application Support/MD-Convertor/`）并记录 md5；冒烟应当让这两个文件保持逐字节不变，md5 不一致就是「它没做到」的信号。
+
+### 从 agent shell 启动冒烟时的两个坑
+
+两者均在 2026-09-22（`feat-041` 的 T3.4）踩到，且都不是产物缺陷：
+
+- **`ELECTRON_RUN_AS_NODE` 会被继承。** 由 Electron 宿主（WorkBuddy、VS Code 等）启动的 shell 会导出 `ELECTRON_RUN_AS_NODE=1`，Electron 二进制读到它就会以纯 Node.js 启动而不是启动应用。症状不是报错：日志里是 `Welcome to Node.js v24.x` 和一个 `>` 提示符，进程一直等 stdin，看起来像卡死。用 `env -u ELECTRON_RUN_AS_NODE …` 启动冒烟（并加 `NODE_OPTIONS=` 清掉宿主注入的 `--require`）。
+- **Chromium 无法在外层沙箱里给自己套沙箱。** 若 shell 本身已运行在 macOS seatbelt 下（WorkBuddy 的 Bash 工具就是），Chromium 的辅助进程会报 `sandbox initialization failed: Operation not permitted`，GPU 进程以 `exit_code=6` 退出，最终停在 `FATAL: GPU process isn't usable. Goodbye.`（exit 133）。这与让 Playwright 的 Firefox 在该环境里跑不动是同一个根因。这是执行环境的产物，不是构建产物的问题：同一个 bundle 从 Finder 启动一切正常。在这种 shell 里加 `--no-sandbox --disable-gpu` 仍能拿到功能证据（`exit 0`，且 `Preload bridge smoke passed` 与 `Runtime secret smoke passed` 两条都真跑）；但要做**规范的那一次**（Chromium 沙箱开启，与用户实际启动一致），请打开 Terminal 执行上面的命令，那里没有外层沙箱。
 
 ## 核验包内内容
 

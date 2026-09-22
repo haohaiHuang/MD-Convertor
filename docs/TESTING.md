@@ -64,11 +64,11 @@ The specs that convert fulfil `**/api/convert` or `**/api/convert-paste` inside 
 
 `npm run desktop:release` requires:
 
-- package version exactly `0.3.5`
+- package version exactly `0.3.6`
 - Node.js 24.x, but not 24.16.0: that patch stalls inside `yauzl` while unpacking the Electron archive, so `electron-forge make` never produces a ZIP. Node 24.14.1 and 24.15.0 both pass the full gate
 - the historical archive set: every manifest ZIP that still exists must keep its fixed SHA-256, and no unlisted release ZIP may appear in `~/Downloads/MD-Convertor-archive/releases/`
 - a ZIP created during the current run
-- packaged version `0.3.5`
+- packaged version `0.3.6`
 - an arm64 executable and complete application bundle
 
 The guard rechecks historical artifacts on both success and failure. A Forge command that exits without a new ZIP is a failure.
@@ -85,11 +85,26 @@ The `0.3.2` gate, also on 2026-09-20, added one small fix: the packaged app star
 
 The `0.3.5` gate ran on 2026-09-21 and passed end to end. It carries the visual refresh (`feat-039`, CSS only): the accent tokens moved from green to navy (`#176b5d` → `#2a395c`), the ten hand-tuned interface weights collapsed into one `--weight-ui` token, and `-webkit-font-smoothing: antialiased` was switched on. `tests/palette.test.ts` fails on any colour literal outside the token whitelist, and `e2e/theme.spec.ts` reads the computed styles on both pages, so a stale palette or a stray weight cannot pass silently.
 
+The `0.3.6` gate ran on 2026-09-22 and passed end to end. It carries `feat-041`: a default folder for downloaded Markdown (the Output card in Settings, and a `write through the desktop bridge / fall back to the browser download` fork on 下载), plus that feature's T3.0 packaging narrowing (the archive keeps only `package.json` and `electron/`, 253 entries → 10). Counts: `./init.sh` 68 files / 999 tests, three-engine E2E 239 passed / 4 skipped, live 2 passed. See [`features/default-save-path/S3-release.md`](features/default-save-path/S3-release.md).
+
 The `0.3.4` gate ran on 2026-09-21 and passed end to end. It carries `feat-036` (a "use paste instead" hint under a failed link fetch), `feat-037` (the cloud card's「清除」resets the whole card) and the application icon: `assets/icon.icns` now replaces Electron's default icon and `assets/` is excluded from the asar. `tests/app-icon.test.ts` guards the icon (1024px transparent master, required icns types, the `forge.config.cjs` wiring trap, and the exclusion) and `electron.icns` inside the bundle was compared with the repository file by SHA-256.
 
-A later fix for long-article translation timeouts (`feat-024`, 2026-09-18) changed the task budget to scale with the batch count. A later round (`feat-029`, 2026-09-18) made a cloud provider's four fields mandatory to save, let the settings page pull models from an unsaved draft without writing anything, and replaced the saved key in its input box with an eight-dot placeholder. It is covered by unit tests for the form rules and the draft model route (`src/lib/settings/provider-form.test.ts`, `src/app/api/provider/models/route.test.ts`) plus three new settings E2E cases and three rewritten ones (the old「拉取模型先保存草稿」expectations no longer hold). Another round raised the per-call ceiling from 60s to 180s (`feat-027`) and fixed a timeout that was reported as an unreadable answer, and it removed the「当前生效」mode badge (`feat-028`). All of it was verified by unit tests, a full `./init.sh` baseline, a three-engine E2E run, and a real-machine probe against the user's cloud provider (a 121-block document that used to fail at the 60s ceiling now returns 200). The version decision landed on `0.3.1`: `package.json`, the lock file, `feature_list.json` and the release guard all read `0.3.1` (the guard test moved to RED first, then to 29 passing). A further round (`feat-031`, 2026-09-20) raised `next` to 16.3.5 and `sharp` to 0.35.4 so `npm audit --omit=dev` reports no production advisories, dropped the gear glyph from the header, renamed both convert buttons to 「转换」, aligned the rich-text convert button's right edge with the paste box above it, and made the key box read-only while a key is stored. The last round (`feat-032`, 2026-09-20) dropped the green「MD」square and set the wordmark in Michroma, vendoring the font and its OFL licence under `public/fonts/` and loading it with `next/font/local`; `tests/brand-font.test.ts` guards the two files, the E2E brand case compares the served woff2 with the repository file by SHA-256, and the build was re-run with all network access denied (`sandbox-exec … (deny network*) npm run build`, exit 0) to prove it no longer reaches Google. The artifact recorded below is the pre-fix `0.3.0` build, kept as history; everything from `feat-024` onwards shipped in the `0.3.1`–`0.3.5` artifacts.
+A later fix for long-article translation timeouts (`feat-024`, 2026-09-18) changed the task budget to scale with the batch count. A later round (`feat-029`, 2026-09-18) made a cloud provider's four fields mandatory to save, let the settings page pull models from an unsaved draft without writing anything, and replaced the saved key in its input box with an eight-dot placeholder. It is covered by unit tests for the form rules and the draft model route (`src/lib/settings/provider-form.test.ts`, `src/app/api/provider/models/route.test.ts`) plus three new settings E2E cases and three rewritten ones (the old「拉取模型先保存草稿」expectations no longer hold). Another round raised the per-call ceiling from 60s to 180s (`feat-027`) and fixed a timeout that was reported as an unreadable answer, and it removed the「当前生效」mode badge (`feat-028`). All of it was verified by unit tests, a full `./init.sh` baseline, a three-engine E2E run, and a real-machine probe against the user's cloud provider (a 121-block document that used to fail at the 60s ceiling now returns 200). The version decision landed on `0.3.1`: `package.json`, the lock file, `feature_list.json` and the release guard all read `0.3.1` (the guard test moved to RED first, then to 29 passing). A further round (`feat-031`, 2026-09-20) raised `next` to 16.3.5 and `sharp` to 0.35.4 so `npm audit --omit=dev` reports no production advisories, dropped the gear glyph from the header, renamed both convert buttons to 「转换」, aligned the rich-text convert button's right edge with the paste box above it, and made the key box read-only while a key is stored. The last round (`feat-032`, 2026-09-20) dropped the green「MD」square and set the wordmark in Michroma, vendoring the font and its OFL licence under `public/fonts/` and loading it with `next/font/local`; `tests/brand-font.test.ts` guards the two files, the E2E brand case compares the served woff2 with the repository file by SHA-256, and the build was re-run with all network access denied (`sandbox-exec … (deny network*) npm run build`, exit 0) to prove it no longer reaches Google. The artifact recorded below is the pre-fix `0.3.0` build, kept as history; everything from `feat-024` onwards shipped in the `0.3.1`–`0.3.6` artifacts.
 
-## Gated Artifact (0.3.5)
+## Gated Artifact (0.3.6)
+
+- Path: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.6.zip`
+- Size: `235,956,668` bytes
+- SHA-256: `9b89d55c5c3cbf63519d56136f63e14170de26489623ea149c0a1daf0569f351`
+- Package: version `0.3.6`, arm64, macOS 12.0+
+- Automated evidence: 68 files / 999 tests, 95.28% statements (86.64% branches, 98.34% functions), three-engine E2E 239 passed / 4 skipped, live 2/2
+- Archive scope: the asar holds **10 entries / `35,261` bytes**, down from 253 entries / `2,670,300` bytes — `package.json` plus the eight `electron/` runtime modules. `tests/forge-package-scope.test.ts` guards the allowlist in both directions.
+- Default-folder feature in the bundle: the archive carries both IPC channels (`md-convertor:output:select-directory`, `md-convertor:output:save-file`), and the traced server carries the settings-page copy, the 使用默认目录 label and the 已保存到 result string.
+- Packaged smoke: preload bridge and runtime secret round trip passed; the user's `settings.json` / `secrets.json` were byte-identical before and after
+- Published: [GitHub Release `v0.3.6`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.6)
+- Signing: not Developer ID signed or notarized, so the artifact is suitable for personal testing only
+
+## Historical Artifact (0.3.5)
 
 - Path: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.5.zip`
 - Size: `237,335,837` bytes
@@ -178,6 +193,15 @@ ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1 \
 
 - `ELECTRON_SMOKE_TEST=1` checks that `window.mdConvertor.secrets` exists and that `safeStorage` reports encryption as available.
 - `ELECTRON_SMOKE_TEST_SECRETS=1` additionally proves the key path: a provider without any key returns 409 `TRANSLATE_NOT_CONFIGURED`, saving a key makes the running server reach the endpoint (502 `TRANSLATE_PROVIDER_ERROR` against the test address) without a restart, and removing the key returns to 409. The smoke removes the key and restores settings before exiting. No environment variable can supply a provider key any more, so the smoke sets one through the bridge only.
+
+Back up `settings.json` and `secrets.json` (default `~/Library/Application Support/MD-Convertor/`) and record their md5 before running the smoke against a real installation; the smoke is supposed to leave them byte-identical, and an md5 mismatch is the signal that it did not.
+
+### Two traps when the smoke is launched from an agent shell
+
+Both were hit on 2026-09-22 (T3.4 of `feat-041`) and neither is a defect in the artifact:
+
+- **`ELECTRON_RUN_AS_NODE` is inherited.** A shell started from an Electron host (WorkBuddy, VS Code, and others) exports `ELECTRON_RUN_AS_NODE=1`, and an Electron binary that sees it starts as plain Node.js instead of as an app. The symptom is not an error: the log holds `Welcome to Node.js v24.x` and a `>` prompt, the process waits on stdin forever, and it looks like a hang. Launch the smoke through `env -u ELECTRON_RUN_AS_NODE …` (and `NODE_OPTIONS=` to drop any host-injected `--require`).
+- **Chromium cannot sandbox itself inside another sandbox.** Where the shell already runs under macOS seatbelt — the WorkBuddy Bash tool does — Chromium's helper processes fail with `sandbox initialization failed: Operation not permitted`, the GPU process dies (`exit_code=6`), and the run ends on `FATAL: GPU process isn't usable. Goodbye.` (exit 133). This is the same root cause that makes Playwright's Firefox unable to run there. It is an artifact of the executing environment, not of the build: the same bundle runs normally when launched from Finder. Inside such a shell the smoke can still produce its functional evidence with `--no-sandbox --disable-gpu`, which yields `exit 0` and both `Preload bridge smoke passed` and `Runtime secret smoke passed`; for the canonical run — Chromium's sandbox on, exactly as a user gets it — open Terminal and run the command above there, where no outer sandbox exists.
 
 ## Verifying Package Contents
 

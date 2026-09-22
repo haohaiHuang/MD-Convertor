@@ -4,7 +4,7 @@
 
 This project follows the principles of [Keep a Changelog](https://keepachangelog.com/). User-facing changes that have not yet been released belong under `Unreleased`.
 
-## [Unreleased]
+## [0.3.6] - 2026-09-22
 
 ### Added
 
