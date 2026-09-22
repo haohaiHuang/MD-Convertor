@@ -19,6 +19,7 @@
 - **被带红并修好的既有回归**：`tests/app-icon.test.ts` 原本断言 `forge.config.cjs` 的**源文本**匹配 `/^\/assets($|\/)/` —— 它测的是配置措辞而非契约，所以换个写法就误报。已改成行为断言 `isPackaged("assets/icon.icns") === false`。**教训**：grep 配置文件文本的测试是在测措辞，不是在测契约。
 - **结果与验证**：asar **253 → 10 条目**、**2670300 → 35261 字节**，剩下正好是 `/package.json`、`/electron` 与 8 个运行时模块。`./init.sh` exit 0 → **68 files / 999 tests**、statements 95.28%；双引擎 e2e exit 0 → **160 passed / 2 skipped**（与 S2 基线一致，且是在新守卫落地**之后**复现的）；`desktop:package` exit 0；**打包冒烟 exit 0 且两个断言都真跑了**（`Preload bridge smoke passed: secrets.set function, encryptionAvailable true`、`Runtime secret smoke passed: TRANSLATE_NOT_CONFIGURED → TRANSLATE_PROVIDER_ERROR → TRANSLATE_NOT_CONFIGURED`）；用户的 `settings.json` / `secrets.json` 跑前备份、跑后 md5 逐字节一致；重启后 `/` 与指纹 chunk 均 200，T2.9 的反馈修复仍在包里。
 - **e2e 途中两个操作陷阱**（已记入 `feature_list.json`）：① 首次三引擎运行 7m23s 未结束、被停掉后遗留一个 e2e 服务占着 3000 端口，重试 4 秒就报 `http://127.0.0.1:3000/health is already used` —— 先用 `lsof -p 42508 -a -d txt,cwd` 核实该进程 cwd 是 `.next/standalone` 才 kill，**不能按模式盲杀**；② `scripts/run-e2e.mjs` 会把多余 argv 透传给 Playwright，所以用 `--project=chromium --project=webkit` 选引擎时，build 与 tracked-file 守卫仍在。
+- **已提交**：`7cf1111`（`feat(feat-041): 打包只装运行时会读的东西 —— asar 253 → 10 条目（0.3.6）`），11 个文件、210 insertions / 28 deletions；提交后工作区干净（前一个 HEAD 是 `900e108`）。
 - 证据日志：`/tmp/t3.0-red.log`、`/tmp/t30-init.log`、`/tmp/t30-e2e.log`、`/tmp/t30-package.log`、`/tmp/t30-smoke.log`。
 
 ## 用户验收签字（2026-09-22 22:17）

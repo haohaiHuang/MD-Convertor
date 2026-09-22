@@ -2,7 +2,7 @@
 
 - 上游：`docs/features/default-save-path/FSD.md`
 - 前置：S1 + S2 已完成且各自提交；用户真机两态验收已签字（2026-09-22）
-- 状态：**进行中（T3.0）**
+- 状态：**进行中（T3.0 已完成，剩 T3.1–T3.7）**
 - feature_list id：`feat-041`
 
 ## Spec
@@ -39,11 +39,11 @@
 
 | id | 任务 | 说明 | 验证 |
 | --- | --- | --- | --- |
-| T3.0 | asar 收窄 | `forge.config.cjs` 的 `packagerConfig.ignore` 改为**保留清单**：应用运行时只读 `process.resourcesPath/server`（`extraResource`，不在 asar 内）与 `import.meta.dirname` 下的 `electron/` 模块，因此 asar 只保留 `package.json` 与 `electron/`（含 `main.mjs`、`preload.cjs`、`preload-contract.cjs` 及其同级的 `env.mjs` / `output.mjs` / `runtime-secrets.mjs` / `server-binary.mjs` / `secrets.mjs`）。原先的 11 条黑名单换成一条反向正则 + 一条排除 Electron 侧测试文件的正则。**动机**：见下「T3.0 背景」，首要一条是私有工作文档会随发布物公开 | `tests/forge-package-scope.test.ts` 守卫通过（调用真实 Packager 过滤器，且必需模块清单从 `electron/main.mjs` 的 import 反推）；收窄后 `npx asar list` 由 253 条降到 10 条；**打包冒烟必须 exit 0**（见下） |
+| T3.0 | asar 收窄 ✅ **已完成**（2026-09-22，提交 `7cf1111`） | `forge.config.cjs` 的 `packagerConfig.ignore` 改为**保留清单**：应用运行时只读 `process.resourcesPath/server`（`extraResource`，不在 asar 内）与 `import.meta.dirname` 下的 `electron/` 模块，因此 asar 只保留 `package.json` 与 `electron/`（含 `main.mjs`、`preload.cjs`、`preload-contract.cjs` 及其同级的 `env.mjs` / `output.mjs` / `runtime-secrets.mjs` / `server-binary.mjs` / `secrets.mjs`）。原先的 11 条黑名单换成一条反向正则 + 一条排除 Electron 侧测试文件的正则。**动机**：见下「T3.0 背景」，首要一条是私有工作文档会随发布物公开 | 三项全过：① `tests/forge-package-scope.test.ts` GREEN 44 passed（RED 26 failed / 18 passed）；② `npx asar list` **253 → 10 条目**、2670300 → 35261 字节；③ **打包冒烟 exit 0** 且两个断言都真跑。附带：`./init.sh` exit 0 → 68 files / 999 tests；双引擎 e2e exit 0 → 160 passed / 2 skipped |
 | T3.1 | 全量验证 | `./init.sh`（lint/typecheck/coverage/build）+ `npm run test:e2e` 三引擎 + `npm run test:live` | 全部 exit 0，计数记入 PROGRESS |
 | T3.2 | 发布门禁 | `npm run desktop:release`（Node 24.14.1/24.15.0） | exit 0；记录 ZIP bytes 与 SHA-256 |
 | T3.3 | 独立复核 | `unzip -t`、`CFBundleShortVersionString`、Mach-O arm64、包结构、asar 检查 | 与 `docs/TESTING.md` 口径一致 |
-| T3.4 | 安装本机 | 退出旧应用 → 备份 → `rm -rf` 旧包 → `ditto` 新包 → 清隔离属性 | `defaults read` 版本正确；`ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1` exit 0 |
+| T3.4 | 安装本机 | 退出旧应用（**必须由用户 Cmd+Q**：本沙箱 `osascript quit` 报 -10004）→ 备份现有 `settings.json` / `secrets.json` 并记 md5 → 移除旧安装 → `ditto` 新包 → 清隔离属性（`xattr -dr com.apple.quarantine`）。**不要用 `rm -rf` 删构建输出**：本沙箱里它会让整条链式命令静默中止且不产出日志，而 Forge 本来就会替换 `out/MD-Convertor-darwin-arm64`；旧安装也应先移到废纸篓或临时目录 | `defaults read` 版本正确；`ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1` exit 0；用户 `settings.json` / `secrets.json` md5 与备份一致 |
 | T3.5 | 真机验收 | 用户两态走查：开默认目录（不弹框、文件落盘）+ 关默认目录（弹框） | 用户确认 |
 | T3.6 | 提交与发布 | 提交（含版本与文档）→ `git push` → `gh release create v0.3.6 <zip>`（notes 写明未签名） | tag 指向发布提交、资产 uploaded |
 | T3.7 | 文档收口 | `CHANGELOG.md`(+zh) `[Unreleased]` → `[0.3.6]`；`docs/TESTING.md`(+zh) 门禁计数与产物段；`README`(+zh) 如有行为差异；`docs/ARCHITECTURE.md`(+zh) 增补 IPC 通道与安全边界（filename 校验、日志纪律）；`docs/QUALITY-AUDIT.md` 归档本轮；`AGENTS.md` 版本行 → `0.3.6`；`PROGRESS.md` / `session-handoff.md` 重写；`feature_list.json` `feat-041` → done | 下一会话可按 Startup Workflow 无歧义恢复 |
