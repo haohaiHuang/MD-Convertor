@@ -3,9 +3,9 @@
 ## Resume Here
 
 - Current version: `0.3.6`（源码与门禁均为 0.3.6，**尚未发布**；`v0.3.5` 仍是最新已发布版本，tag `5f98307`）。S1 与 S2 的逐任务 RED/GREEN 证据在 `feature_list.json` 的 `feat-041.verification`
-- Active feature: **`feat-041` 默认 MD 保存路径——S1、S2 已完成并提交；S2 真机缺陷修复已完成待复测；S3 待开工**。文档链：`docs/features/default-save-path/FSD.md` + `S1-settings-and-ipc.md`（已完成）+ `S2-download-flow.md`（已完成，含决策记录）+ `S3-release.md`（下一步）
-- **唯一推荐下一步**：① 用户在自己终端过一遍真机两态验收 —— **包已经重新打好了**（`out/MD-Convertor-darwin-arm64/MD-Convertor.app` 为 20:37:51 构建，已确认含修复），开关当前是**关**的、`defaultPath` 已指向 iCloud 的 `Note/未归档`，所以只需开开关 → 点下载，再关开关 → 点下载；② 用户补跑 firefox e2e；③ 两项都过再开 S3 发布收口
-- Pending: ① 用户真机两态复测签字 + firefox e2e（包已就绪，见上）；② `npm run desktop:release`（Node **24.14.1 / 24.15.0**，v24.16.0 静默卡死）；③ `0.3.1`–`0.3.5` 的产物与 tag 一律不动；④ 真机小点（等用户清单）；⑤ 云端 Provider 端到端实测（用户真实文章走一遍）；⑥ 打包 asar 目前把整个仓库根（含 `.workbuddy/`、`PROGRESS.md`、`session-handoff.md`、`feature_list.json`、`docs/`）一起装进包，S3 发布前必须收窄 `forge.config.cjs` 的 ignore —— 实证：修复后 grep 新包的 `app.asar`，剩下的 6 处 `value.includes("~")` 全来自这些文档文件，而非代码；⑦ UI 评审结论勿重提（全部不整改）；⑧ 签名/notarization 不做（QA-008 accepted）；⑨ stash@{0} 是 2026-09-21 拉取前的文档备份、与 feat-041 无关
+- Active feature: **`feat-041` 默认 MD 保存路径——S1、S2 已完成并提交；S2 真机缺陷 + 反馈缺失修复均已提交（`867aa2a`）并重新打包；S3 待开工**。文档链：`docs/features/default-save-path/FSD.md` + `S1-settings-and-ipc.md`（已完成）+ `S2-download-flow.md`（已完成，含决策记录）+ `S3-release.md`（下一步）
+- **唯一推荐下一步**：① **用户先 Cmd+Q 关掉当前窗口**（本沙箱关不掉已运行的应用：`osascript quit` 报 `权限违例 (-10004)`，`open` 只会激活旧实例、不换构建），再打开 `out/MD-Convertor-darwin-arm64/MD-Convertor.app`（**21:12 构建**，已确认含反馈修复），过一遍真机两态验收 —— **口径已变**：开关开时应看到「下载」按钮短暂变**「已保存」**+ 结果区出现**带 ✓ 的确认卡片**（这就是「以为没下载成功」的修复）；开关关时仍应弹保存框；② 用户补跑 firefox e2e；③ 两项都过再开 S3 发布收口
+- Pending: ① 用户真机两态复测签字（**必须先重启才能看到本轮修复**）+ firefox e2e；② `npm run desktop:release`（Node **24.14.1 / 24.15.0**，v24.16.0 静默卡死）；③ `0.3.1`–`0.3.5` 的产物与 tag 一律不动；④ 真机小点（等用户清单）；⑤ 云端 Provider 端到端实测（用户真实文章走一遍）；⑥ 打包 asar 目前把整个仓库根（含 `.workbuddy/`、`PROGRESS.md`、`session-handoff.md`、`feature_list.json`、`docs/`）一起装进包，S3 发布前必须收窄 `forge.config.cjs` 的 ignore —— 实证：修复后 grep 新包的 `app.asar`，剩下的 6 处 `value.includes("~")` 全来自这些文档文件，而非代码；⑦ UI 评审结论勿重提（全部不整改）；⑧ 签名/notarization 不做（QA-008 accepted）；⑨ stash@{0} 是 2026-09-21 拉取前的文档备份、与 feat-041 无关
 - Branch: `main`；发布历史：`v0.3.5` = `5f98307`（feat-039 + 清空按钮归位）、`v0.3.4` = `e251267`（图标 v2）、`v0.3.3` = `3897cd1`（feat-034）、`v0.3.2` = `1c3ed80`（feat-033）、`v0.3.1` = `af7f6db`（feat-031/032）
 
 ## 新会话开工提示词（复制即用）
@@ -26,17 +26,23 @@ S2 交付的真实行为（S3 只需发不重做）：
 - OUTPUT_CODE_MESSAGES 现已含 EACCES / EPERM / ENOENT / ENOTDIR / ENOSPC / EROFS 六个真实 fs 码。
 - 页面用 settingsState 留住整份 Settings；按钮是 onClick={() => void downloadMarkdown()}。
 
-**真机缺陷（已修复、已重新打包、已真机复验通过；只剩用户自己签字）**：用户在真机上撞到「配好 iCloud 目录 +
-开关打开 → 点下载毫无反应」，两个叠加原因都已修：① `isAbsoluteDirPath` 把路径里任何 `~` 都当家目录简写拒掉，
+**真机缺陷（已修复、已重新打包、已真机复验通过）+ 反馈缺失（已修复、已打包；只剩用户自己签字）**：用户在真机上撞到
+「配好 iCloud 目录 + 开关打开 → 点下载毫无反应」，两个叠加原因都已修：① `isAbsoluteDirPath` 把路径里任何 `~` 都当家目录简写拒掉，
 而 iCloud 云盘落在 `com~apple~CloudDocs` 下（现在 `~` 只在路径段开头才算简写）；② preload 的校验是**抛异常**
 而非 resolve `{ ok: false }`，`page.tsx` 里裸 `await bridge.saveFile(...)` 没有 `.catch()`，异常被
 `onClick={() => void downloadMarkdown()}` 吞掉（现在拒绝并入既有失败分支，仍降级浏览器下载）。
-**`out/MD-Convertor-darwin-arm64/MD-Convertor.app` 已是 20:37:51 构建的修复版**，并且已用 CDP 驱动真实渲染层
-复验：开关能持久化（`useDefaultPath` 真的翻成 `true`）；开关开 + 目录为真实的 iCloud `…/未归档` 时，
+修完用户复测：「能下载」了，但**没有任何可感知的确认**，会误以为没下载成功 —— 同样已修：
+「下载」按钮直写成功后变**「已保存」**1800ms，结果区给出**带 ✓ 的成功卡片**（失败改用警告色，与成功明确区分）。
+**`out/MD-Convertor-darwin-arm64/MD-Convertor.app` 已是 21:12 构建**（`867aa2a` 之后的重新打包，指纹 chunk
+`/_next/static/chunks/2-_s5mj5mt1x0.js` 含 `data-tone` 与 `已保存`），并且已用 CDP 驱动真实渲染层
+复验过 20:37 那一版：开关能持久化（`useDefaultPath` 真的翻成 `true`）；开关开 + 目录为真实的 iCloud `…/未归档` 时，
 点下载 → 反馈「已保存到 …」、零 download 事件、文件真的落盘（134 B）。
+**注意：重新打包只换磁盘文件，不换已运行的进程。** 沙箱内关不掉旧实例（`osascript quit` → `-10004` 权限违例），
+所以「重启应用」这一步必须由用户 Cmd+Q。安全列实例：`lsof -nP -iTCP -sTCP:LISTEN | awk '$1 ~ /^MD-Conv/'`。
 
 S3 开工前必须由用户做掉的两件事：
-- 亲手过一遍真机两态：开开关 → 下载不弹框且文件落进 iCloud 目标目录；关开关 → 弹框。
+- 亲手过一遍真机两态：**重启应用后**，开开关 → 下载不弹框、文件落进 iCloud 目标目录，且「下载」按钮变「已保存」+
+  结果区出现带 ✓ 的确认卡片；关开关 → 弹保存框。
   （开关当前是关的，`defaultPath` 已指向 iCloud 的 `Note/未归档`，开开关即可测。）
 - firefox 引擎 e2e 从未跑过：Playwright Firefox 在本 agent 环境**完全无法启动**
   （`Sandbox error: sandbox_init() failed with error "Operation not permitted"`，每个用例 30s 超时）。
@@ -63,11 +69,20 @@ S3 要求：
 - Playwright 会继承 `HTTP_PROXY`，跑任何 Playwright/Bash 网络命令前建议
   `unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy` + `NO_PROXY=127.0.0.1,localhost`。
 - zsh 下 `rm -f dir/*` 在无匹配时会报错并中断整条 `&&` 链，用 `find dir -type f -delete`。
+- 本沙箱**关不掉已运行的应用**：`osascript -e 'quit app "MD-Convertor"'` 报
+  `execution error: … 发生权限违例。 (-10004)`；`open <路径>` 对已运行实例只做激活，不会换成新构建；
+  `open -n` 会让两个实例共用同一 userData 目录。所以「重新打包 → 重启复测」必须由用户 Cmd+Q。
+  列实例的安全写法：`lsof -nP -iTCP -sTCP:LISTEN | awk '$1 ~ /^MD-Conv/'`（只读，永远安全）；
+  **绝不要** `lsof | grep … | awk '{print $2}' | xargs kill` —— 会命中宿主 WorkBuddy 进程并把自己杀掉。
+- `rm -rf out/MD-Convertor-darwin-arm64` 会让整条链式命令直接中止（后续步骤看不到任何输出）；
+  Forge 自己会替换该目录，打包前**不需要**先删。
 ```
 
 ## Latest Change
 
 **本轮（feat-041 S2 反馈缺失修复：成功提示不可辨识，2026-09-22）**：用户真机复测后报障 —— 直写已经能下载了（iCloud 缺陷确认修复），但**没有任何可感知的确认**，会误以为没下载成功。**先查事实再动手**：提示并非没渲染（e2e 的 `已保存到` 断言一直绿，且直写分支是唯一会写文件的路径，`setSaveNotice` 在用户那次必然执行），是**呈现缺陷**，三个成因：① 成功提示是裸说明文字（`var(--muted)`、14px、无背景无边框无标记），与正文说明同貌；② **成功与失败共用同一套样式**，连警告都像成功；③ 注意力所在的「下载」按钮毫无反馈 —— 旁边「复制」会变「已复制」，而默认目录这套功能**故意不弹保存框**，等于同时关掉两条反馈渠道。RED：`e2e/home.spec.ts` 加「直写成功时给出醒目确认」+ 既有失败用例加 tone 断言 ⇒ chromium 2 failed / 4 passed（失败输出打印出当时的裸 `<p role="status" class="…saveNotice">`，无 tone，也没有「已保存」按钮）。GREEN：`saveNotice` 改为 `{ tone, text }` 并以 `data-tone` + `aria-live="polite"` 渲染；「下载」成功后就地显示「已保存」1800ms（照搬「已复制」做法，ref 持有计时器保证新闪烁胜过旧，`runConversion()` 同时清两者）；`.saveNotice` 从说明文字改为填充卡片（成功 `accent-soft` + ✓；失败 `warning-soft`），只复用本页既有语汇与已白名单字面量。验证：chromium 21 passed；`NODE_OPTIONS= ./init.sh` exit 0 → 67 files / 955 tests、95.28%；双引擎 e2e exit 0 → **160 passed / 2 skipped**（+2 = 新用例 × 2 引擎）；`git status` 无额外 tracked-file 漂移。
+
+**本轮收尾（提交 + 重新打包 + 指纹校验，2026-09-22）**：修复提交 `867aa2a`（8 个文件：`page.tsx`、`page.module.css`、`e2e/home.spec.ts`、`CHANGELOG.md`、`CHANGELOG.zh.md`、`PROGRESS.md`、`session-handoff.md`、`feature_list.json`），提交后工作区干净。`NODE_OPTIONS= npm run desktop:package`（Node 24.14.1）**exit 0**（日志 `/tmp/s2-t29-package.log`）→ 新包 `out/MD-Convertor-darwin-arm64/MD-Convertor.app` **21:12 构建**、`CFBundleShortVersionString` 0.3.6、`Mach-O 64-bit executable arm64`、566 MB。指纹逐项校验通过：客户端 chunk `2-_s5mj5mt1x0.js` 同时含 `data-tone` 与 `已保存`；`24e5_kwf_p1ai.css` 含 `✓`；`.next/static/**` 里 `includes("~")` 已消失；`asar extract-file app.asar electron/preload.cjs` 仍能 grep 到 `segment.startsWith("~")`（说明 T2.7 的路径修复也还在）。**唯一卡点是重启**：旧实例（pid 38187，T2.8 构建，仍在 51812 监听）在沙箱内关不掉 —— `osascript quit` 报 `权限违例 (-10004)`，`open` 只激活不换构建，所以必须由用户 Cmd+Q。附带记了一条踩坑：`rm -rf out/MD-Convertor-darwin-arm64` 会让整条链式命令中止且不产出任何日志，而 Forge 自己会替换目录，本来就不必删。
 
 **（接上一轮）**：用户真机实测报障——设置页「输出」卡片的勾选能力正常，但**配好 iCloud 目录 + 打开开关后点「下载」完全没有反应**（不直写、不浏览器下载、不报错）。定位到**两个叠加缺陷**，全程 TDD 修复。① **根因 1**：`isAbsoluteDirPath`（`electron/preload-contract.cjs` 及其在 `electron/preload.cjs` 的等价副本）原实现 `value.includes("~") → false`，即路径里出现任何 `~` 都判非法；而用户选的目录是 `/Users/huanghaohai/Library/Mobile Documents/com~apple~CloudDocs/Note/未归档` —— 于是**所有 iCloud 云盘目录都不可用**。这是 S1 T1.2 的设计被字面执行的结果：`~` 只在**路径段开头**才是家目录简写。改为 `!value.split("/").some((s) => s === ".." || s.startsWith("~"))`，并把 iCloud 场景写进注释防止被收紧回去。② **根因 2**：preload 的 `assert*` 是**抛 `TypeError`** 而不是 resolve `{ ok: false }`，`page.tsx` 里是裸 `await bridge.saveFile(...)`，异常冒泡后被 `onClick={() => void downloadMarkdown()}` 吞掉 → 无声；浏览器 e2e 抓不到，因为桩永远 resolve。修法是把拒绝并入既有失败分支（`.catch(() => null)` + `result?.ok` + 三元取原因），失败仍降级浏览器下载。③ **RED→GREEN**：`preload-contract.test.cjs` +2 accept（真实 iCloud 路径、`/Users/someone/My~Backup`）/+1 reject（`/Users/someone/~/notes`），`preload.test.cjs` 同步 dirCases，`output.test.mjs` 加同名拒绝用例 + 一条真的写进 `com~apple~CloudDocs/Note` 的测试，`e2e/home.spec.ts` 加「桥接层拒绝时给出反馈并降级为浏览器下载」（桩改为可抛异常）。RED 模块 4 failed / 86 passed、e2e chromium 3 failed / 16 passed ⇒ GREEN 模块 89 passed（1 条为既有环境噪声 `CODEBUDDY_BROKER_DENY`，干净版代码同样复现）、e2e chromium+webkit **158 passed / 2 skipped** 且 tracked-file 守卫干净、`tsc --noEmit` + `eslint .` 全绿。④ **文档与状态**：`CHANGELOG.md`(+zh) `[Unreleased]` 增 `Fixed`；`feature_list.json` 增 T2.7 证据与一条 open observation；PROGRESS.md 新增本轮小节并补三条硬约束（`~` 语义 / preload 抛异常必须 `.catch()` / 探针必须包含真实用户路径形态）。⑤ **仍未签字**：真机两态验收，且 `out/` 里的包是修复前构建的，**必须先重新打包**。
 

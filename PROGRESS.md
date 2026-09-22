@@ -4,8 +4,8 @@
 
 - Last updated: 2026-09-22
 - Current version: `0.3.6`（`package.json`、`package-lock.json`、`feature_list.json`、发布门禁 `scripts/release-desktop.mjs` 均为 `0.3.6`；尚未发布——`v0.3.5` 仍是最新已发布版本，tag `5f98307`）。S1 与 S2 的全部验证证据在 `feature_list.json` 的 `feat-041.verification`
-- Active feature: `feat-041` 默认 MD 保存路径（**S1、S2 已完成并提交；真机缺陷与反馈缺失均已修复；S3 待开工**）
-- Next step: ① 用户在自己终端过一遍真机两态验收 —— **口径已变**：开关开时除了文件落盘，还应看到「下载」按钮短暂变「已保存」+ 带 ✓ 的反馈卡片（这就是上一轮「以为没下载成功」的修复）；② 用户补跑 `npm run test:e2e` 的 **firefox** 引擎（本环境跑不了，见下）；③ 两者都过了再按 `docs/features/default-save-path/S3-release.md` 收口发布（发布前先收窄 `forge.config.cjs` 的 asar ignore）
+- Active feature: `feat-041` 默认 MD 保存路径（**S1、S2 已完成并提交（修复提交 `867aa2a`）；真机缺陷与反馈缺失均已修复；S3 待开工**）
+- Next step: ① **用户先 Cmd+Q 关掉当前窗口**（沙箱内无法代劳：`osascript quit` 报 -10004 权限违例；`open` 对已运行实例只激活、不换构建），再打开 `out/MD-Convertor-darwin-arm64/MD-Convertor.app`（21:12 构建，已含反馈修复，指纹 chunk `2-_s5mj5mt1x0.js`），过一遍真机两态验收 —— **口径已变**：开关开时除了文件落盘，还应看到「下载」按钮短暂变「已保存」+ 带 ✓ 的反馈卡片（这就是上一轮「以为没下载成功」的修复）；② 用户补跑 `npm run test:e2e` 的 **firefox** 引擎（本环境跑不了，见下）；③ 两者都过了再按 `docs/features/default-save-path/S3-release.md` 收口发布（发布前先收窄 `forge.config.cjs` 的 asar ignore）
 - Branch: `main`；stash@{0} 是 2026-09-21 拉取前的文档备份、与 feat-041 无关
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+
 
@@ -16,7 +16,9 @@
 - **RED**：`e2e/home.spec.ts` 新增「直写成功时给出醒目确认」，并给既有失败用例加 tone 断言 ⇒ chromium **2 failed / 4 passed**；失败输出把当时的 DOM 原文打了出来（裸 `<p role="status" class="…saveNotice">`，无 tone 属性；也没有「已保存」按钮）。
 - **GREEN**：`saveNotice` 改为 `{ tone: "success" | "warning"; text: string }`，渲染带 `data-tone` + `aria-live="polite"`；「下载」按钮在直写成功后显示「已保存」1800ms（**照搬旁边「已复制」的既有做法**，用 ref 持有计时器保证新的闪烁永远赢过旧的，`runConversion()` 同时清掉两者）；`.saveNotice` 从说明文字改为填充卡片 —— 成功用 `accent-soft` + ✓ 标记，失败用 `warning-soft`，全部复用本页既有的 status/warning 语汇，字面量只用已白名单内的 `#eed79c`。
 - **验证**：chromium `home.spec.ts` **21 passed**；`NODE_OPTIONS= ./init.sh` exit 0 → 67 files / **955 tests**、statements 95.28%；双引擎 e2e exit 0 → **160 passed / 2 skipped**（比 158 多的正是新用例 × 2 引擎）；`git status` 确认除三个预期文件外无 tracked-file 漂移。
-- 唯一推荐下一步：重新打包 + 重启后，用户再看一遍「开关开 → 点下载」 —— 这次应当能看到按钮变「已保存」以及带 ✓ 的卡片。
+- **已提交并重新打包**：提交 `867aa2a`（8 个文件）；`NODE_OPTIONS= npm run desktop:package`（Node 24.14.1）exit 0 → `out/MD-Convertor-darwin-arm64/MD-Convertor.app` 21:12 构建、0.3.6、arm64、566 MB；指纹校验全过（chunk `2-_s5mj5mt1x0.js` 含 `data-tone` + `已保存`；CSS 含 `✓`；客户端无 `includes("~")`；`app.asar` 的 preload 仍含 `startsWith("~")`）。
+- **环境发现**：本沙箱**无法用程序关闭已运行的应用** —— `osascript -e 'quit app "MD-Convertor"'` 报 `权限违例 (-10004)`；`open <路径>` 对已运行实例只做激活、不会换成新构建。所以「重新打包 → 重启复测」这一步必须由用户 Cmd+Q。安全列实例：`lsof -nP -iTCP -sTCP:LISTEN | awk '$1 ~ /^MD-Conv/'`。
+- 唯一推荐下一步：用户 Cmd+Q 后重新打开新包，再看一遍「开关开 → 点下载」 —— 这次应当能看到按钮变「已保存」以及带 ✓ 的卡片。
 
 ## 上一轮（feat-041 S2 真机缺陷修复，2026-09-22）
 
