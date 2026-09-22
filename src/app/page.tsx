@@ -141,8 +141,16 @@ export default function Home() {
   const [linkFetchFailed, setLinkFetchFailed] = useState(false);
   /** The settings snapshot of this session; the download branch reads `output` from it. */
   const [settingsState, setSettingsState] = useState<Settings | null>(null);
-  /** Outcome of the last download; cleared when a new conversion starts. */
-  const [saveNotice, setSaveNotice] = useState<string | null>(null);
+  /**
+   * Outcome of the last download; cleared when a new conversion starts. The tone matters
+   * as much as the sentence: a refused write used to render exactly like a success, and a
+   * success used to render like any other grey caption, so a file that really landed read
+   * as "nothing happened".
+   */
+  const [saveNotice, setSaveNotice] = useState<{ tone: "success" | "warning"; text: string } | null>(null);
+  /** Transient confirmation on the 下载 button itself, mirroring 复制 -> 已复制. */
+  const [downloadSaved, setDownloadSaved] = useState(false);
+  const downloadFlashRef = useRef<number | null>(null);
   const [resultTab, setResultTab] = useState<ResultTab>("original");
   const controllerRef = useRef<AbortController | null>(null);
   const translationControllerRef = useRef<AbortController | null>(null);
@@ -277,6 +285,11 @@ export default function Home() {
     setLinkFetchFailed(false);
     // The notice belongs to the previous result's download; a new conversion invalidates it.
     setSaveNotice(null);
+    if (downloadFlashRef.current !== null) {
+      window.clearTimeout(downloadFlashRef.current);
+      downloadFlashRef.current = null;
+    }
+    setDownloadSaved(false);
     setClientState((previous) => ({
       ...previous,
       output: {
@@ -562,12 +575,23 @@ export default function Home() {
         .saveFile(configured.defaultPath, filename, activeMarkdown)
         .catch(() => null);
       if (result?.ok) {
-        setSaveNotice(`已保存到 ${result.path ?? `${configured.defaultPath}/${filename}`}`);
+        setSaveNotice({
+          tone: "success",
+          text: `已保存到 ${result.path ?? `${configured.defaultPath}/${filename}`}`,
+        });
+        // With no save dialog the user is looking at the button, so confirm right there.
+        // A newer flash always wins over an older timer.
+        if (downloadFlashRef.current !== null) window.clearTimeout(downloadFlashRef.current);
+        setDownloadSaved(true);
+        downloadFlashRef.current = window.setTimeout(() => {
+          downloadFlashRef.current = null;
+          setDownloadSaved(false);
+        }, 1800);
         return;
       }
       // Never swallow the failure: name the reason, then still hand the user a file.
       const reason = result ? outputCodeMessage(result.code, "文件写入失败。") : "默认保存设置不可用。";
-      setSaveNotice(`直接保存失败：${reason}已改为浏览器下载。`);
+      setSaveNotice({ tone: "warning", text: `直接保存失败：${reason}已改为浏览器下载。` });
     }
     const blob = new Blob([activeMarkdown], { type: "text/markdown;charset=utf-8" });
     const objectUrl = URL.createObjectURL(blob);
@@ -815,13 +839,15 @@ export default function Home() {
                   {copied ? "已复制" : "复制"}
                 </button>
                 <button className={`${styles.action} ${styles.actionPrimary}`} type="button" onClick={() => void downloadMarkdown()}>
-                  下载
+                  {downloadSaved ? "已保存" : "下载"}
                 </button>
               </div>
             </div>
 
             {saveNotice && (
-              <p className={styles.saveNotice} role="status">{saveNotice}</p>
+              <p className={styles.saveNotice} data-tone={saveNotice.tone} role="status" aria-live="polite">
+                {saveNotice.text}
+              </p>
             )}
 
             <dl className={styles.stats} aria-label="转换结果统计">

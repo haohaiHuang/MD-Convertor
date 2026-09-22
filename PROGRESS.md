@@ -4,12 +4,21 @@
 
 - Last updated: 2026-09-22
 - Current version: `0.3.6`（`package.json`、`package-lock.json`、`feature_list.json`、发布门禁 `scripts/release-desktop.mjs` 均为 `0.3.6`；尚未发布——`v0.3.5` 仍是最新已发布版本，tag `5f98307`）。S1 与 S2 的全部验证证据在 `feature_list.json` 的 `feat-041.verification`
-- Active feature: `feat-041` 默认 MD 保存路径（**S1、S2 已完成并提交；S2 真机缺陷已修复、已重新打包并通过真机复验；S3 待开工**）
-- Next step: ① 用户在自己终端过一遍真机两态验收（包已重新打好，`out/MD-Convertor-darwin-arm64/MD-Convertor.app` 已是修复版；开关当前是关的，`defaultPath` 已指向 iCloud 的 `Note/未归档`，只需开开关 → 点下载）；② 用户补跑 `npm run test:e2e` 的 **firefox** 引擎（本环境跑不了，见下）；③ 两者都过了再按 `docs/features/default-save-path/S3-release.md` 收口发布（发布前先收窄 `forge.config.cjs` 的 asar ignore）
+- Active feature: `feat-041` 默认 MD 保存路径（**S1、S2 已完成并提交；真机缺陷与反馈缺失均已修复；S3 待开工**）
+- Next step: ① 用户在自己终端过一遍真机两态验收 —— **口径已变**：开关开时除了文件落盘，还应看到「下载」按钮短暂变「已保存」+ 带 ✓ 的反馈卡片（这就是上一轮「以为没下载成功」的修复）；② 用户补跑 `npm run test:e2e` 的 **firefox** 引擎（本环境跑不了，见下）；③ 两者都过了再按 `docs/features/default-save-path/S3-release.md` 收口发布（发布前先收窄 `forge.config.cjs` 的 asar ignore）
 - Branch: `main`；stash@{0} 是 2026-09-21 拉取前的文档备份、与 feat-041 无关
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+
 
-## 最近一轮（feat-041 S2 真机缺陷修复，2026-09-22）
+## 最近一轮（feat-041 S2 反馈缺失修复，2026-09-22）
+
+- **用户真机复测后报障**：直写已经**能下载**了（iCloud 缺陷确认修复），但**没有任何可感知的确认**，导致「会误以为没有下载成功」。
+- **先查事实再动手**：提示**不是没渲染** —— e2e 里 `已保存到` 的断言一直绿，而直写分支是唯一会写文件的代码路径，所以 `setSaveNotice` 在用户那次必然执行了。这是**呈现缺陷**，三个成因：① 成功提示是裸的说明文字（`color: var(--muted)`、14px、无背景无边框无标记），跟正文说明一个长相；② **成功与失败共用同一个样式**，连警告都长得像成功；③ 注意力所在的位置（「下载」按钮）毫无反馈 —— 旁边的「复制」会变「已复制」，而默认目录这套功能**故意不弹保存框**，等于把两条反馈渠道同时关掉了。
+- **RED**：`e2e/home.spec.ts` 新增「直写成功时给出醒目确认」，并给既有失败用例加 tone 断言 ⇒ chromium **2 failed / 4 passed**；失败输出把当时的 DOM 原文打了出来（裸 `<p role="status" class="…saveNotice">`，无 tone 属性；也没有「已保存」按钮）。
+- **GREEN**：`saveNotice` 改为 `{ tone: "success" | "warning"; text: string }`，渲染带 `data-tone` + `aria-live="polite"`；「下载」按钮在直写成功后显示「已保存」1800ms（**照搬旁边「已复制」的既有做法**，用 ref 持有计时器保证新的闪烁永远赢过旧的，`runConversion()` 同时清掉两者）；`.saveNotice` 从说明文字改为填充卡片 —— 成功用 `accent-soft` + ✓ 标记，失败用 `warning-soft`，全部复用本页既有的 status/warning 语汇，字面量只用已白名单内的 `#eed79c`。
+- **验证**：chromium `home.spec.ts` **21 passed**；`NODE_OPTIONS= ./init.sh` exit 0 → 67 files / **955 tests**、statements 95.28%；双引擎 e2e exit 0 → **160 passed / 2 skipped**（比 158 多的正是新用例 × 2 引擎）；`git status` 确认除三个预期文件外无 tracked-file 漂移。
+- 唯一推荐下一步：重新打包 + 重启后，用户再看一遍「开关开 → 点下载」 —— 这次应当能看到按钮变「已保存」以及带 ✓ 的卡片。
+
+## 上一轮（feat-041 S2 真机缺陷修复，2026-09-22）
 
 - **用户真机实测报障**：设置页「输出」卡片的勾选能力正常，但**配好 iCloud 目录 + 打开开关后，点「下载」完全没有反应** —— 既不直写、也不走浏览器下载、也不报错。
 - **根因 1：iCloud 路径被路径校验拒掉**。`isAbsoluteDirPath`（`electron/preload-contract.cjs` 与其在 `electron/preload.cjs` 里的等价副本）原实现是 `value.includes("~") → false`，即**路径里出现任何 `~` 都判非法**，而用户选的目录正是 `/Users/huanghaohai/Library/Mobile Documents/com~apple~CloudDocs/Note/未归档`。这是 S1 T1.2 的设计（`leading /, no ~, no .. segment`）被字面执行的结果：`~` 只在**位于路径段开头**时才是家目录简写，`com~apple~CloudDocs` 里的波浪号只是普通字符。改为 `!value.split("/").some((s) => s === ".." || s.startsWith("~"))`，并把 iCloud 场景写进函数注释，防止以后又被收紧回去。

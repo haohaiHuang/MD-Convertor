@@ -20,6 +20,8 @@ This project follows the principles of [Keep a Changelog](https://keepachangelog
 
 - A folder inside iCloud Drive can now be used as the default save folder. The path check on the desktop bridge treated every `~` in a path as home shorthand, and iCloud Drive keeps its data under `com~apple~CloudDocs` — so picking a folder there produced a directory the app then refused, and the refusal was thrown as a rejected promise that nothing caught, leaving the 下载 button looking dead: no file written, no browser download, no message. A `~` is now shorthand only when it starts a path segment, and any remaining refusal is reported in the result area and falls back to the browser download instead of disappearing.
 
+- A successful direct save is now unmistakable. Because the whole point of the default folder is that no save dialog appears, there was nothing to confirm the download: the file landed and the page looked unchanged, the one line of confirmation being grey caption text that reads like ordinary page copy. 下载 now confirms on the spot by briefly reading 已保存 — the same way the neighbouring 复制 button reads 已复制 — and the confirmation in the result area is a proper status card with a ✓ mark rather than plain text. A refused write no longer looks like a success either: it is shown in the warning colour, while a successful save uses the accent tint.
+
 ## [0.3.5] - 2026-09-21
 
 ### Changed

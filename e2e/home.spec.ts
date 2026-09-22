@@ -433,7 +433,38 @@ test.describe("下载分叉（默认保存目录）", () => {
     expect(download.suggestedFilename()).toBe("跨浏览器测试文章.md");
     const notice = page.getByRole("status").filter({ hasText: "已改为浏览器下载" });
     await expect(notice).toContainText("没有写入权限");
+    // A refused write must never look like a success: the two tones are distinguishable.
+    await expect(notice).toHaveAttribute("data-tone", "warning");
     expect(await page.evaluate(() => (window as typeof window & { objectUrlCount?: number }).objectUrlCount)).toBe(1);
+  });
+
+  test("直写成功时给出醒目确认：失败态之外的成功卡片 +「下载」按钮自证", async ({ page }) => {
+    await installOutputBridge(page, { ok: true });
+    await routeSettingsOutput(page, { defaultPath: OUTPUT_DIRECTORY, useDefaultPath: true });
+    await gotoWithSettings(page);
+
+    await page.getByLabel("网页链接").fill("https://example.com/article");
+    await page.getByRole("button", { name: "转换", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toBeVisible();
+
+    await page.getByRole("button", { name: "下载", exact: true }).click();
+
+    // The button confirms on the spot, the way 复制 turns into 已复制: with no save dialog
+    // the user is looking at the button, and a bare grey caption reads as "nothing happened".
+    await expect(page.getByRole("button", { name: "已保存", exact: true })).toBeVisible();
+
+    const notice = page.getByRole("status").filter({ hasText: "已保存到" });
+    await expect(notice).toHaveAttribute("data-tone", "success");
+    const look = await notice.evaluate((node) => ({
+      background: getComputedStyle(node).backgroundColor,
+      mark: getComputedStyle(node, "::before").content,
+    }));
+    // A success card, not plain caption text: it carries a mark and a filled background.
+    expect(look.mark).toContain("✓");
+    expect(look.background).not.toMatch(/rgba?\([^)]*,\s*0\)$/);
+
+    // The button confirmation is transient, like 已复制.
+    await expect(page.getByRole("button", { name: "下载", exact: true })).toBeVisible({ timeout: 5000 });
   });
 
   test("没有桥接时忽略默认目录设置，仍走浏览器下载", async ({ page }) => {
