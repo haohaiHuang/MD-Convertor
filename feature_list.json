@@ -676,18 +676,25 @@
     },
     {
       "id": "feat-040",
-      "name": "Browser Extension Direction",
-      "title": "Browser Extension Direction",
+      "name": "Browser Extension (B)",
+      "title": "Browser Extension (B)",
       "status": "planned",
-      "dependencies": [],
-      "scope": "Direction only, deliberately without stage documents: `docs/features/browser-extension/FSD.md` records the known scenario (convert the current page from the browser using the session the user already has, preview locally, download `.md`) and the three unresolved questions that each change the whole plan - where the extension lives and how it is built, where the provider key is stored now that `safeStorage` cannot be reused, and whether the Readability/Turndown pipeline is shared or reimplemented. No code, no build config and no manifest exist.",
+      "dependencies": [
+        "feat-042"
+      ],
+      "scope": "Second block (B) of the browser-extension line, delivered after the desktop-side capability. The line's direction, hand-off contract and shared boundaries live in `docs/PLAN-browser-extension.md`; this block's product requirements live in `docs/PRD-browser-extension.md`. A Chromium MV3 extension that reads the current page DOM only (never cookies or credentials), extracts the article body, converts it to Markdown with the same Node-free extract+convert module the desktop app uses so both sides agree, saves images next to the Markdown as `<title>.images/` with relative references, and writes the pair into the Downloads directory root. Images that cannot be fetched keep their original URL and are visibly marked. No translation and no keys inside the extension. Non-goals: Firefox/Safari, crawling, accounts or cloud sync, store publishing. No manifest, no build config, no code and no stage documents exist yet.",
       "acceptance": [
-        "The three questions are answered through requirement analysis before any stage document or code is written",
-        "`AGENTS.md` platform boundaries are revised only once the first question is settled",
-        "Independent version line: the void documents' v0.5.0/v0.6.0/v0.7.0 numbering is not adopted"
+        "Implementation planning (stage documents under `docs/features/browser-extension/`) starts only after the four rule conflicts in `docs/PLAN-browser-extension.md` §6 are settled",
+        "One click on the current page produces `<title>.md` plus `<title>.images/` in the Downloads directory root, with relative image references, and with no desktop app running",
+        "Images the browser session can reach are saved locally; ones it cannot keep their original URL and are marked rather than silently dropped",
+        "The extension reads only the current page DOM and writes only under the Downloads directory (absolute paths are rejected by the platform)",
+        "The open items in `docs/PRD-browser-extension.md` §3 are confirmed with the user before stage documents are written"
       ],
       "verification": [
-        "Not started: the direction is recorded in the roadmap (section 6.1) and the FSD only"
+        "2026-09-22 direction assessment complete: all three questions answered (same repo so one extract+convert module keeps both outputs identical; the key question is dissolved because the plugin does no translation; share a Node-free module)",
+        "2026-09-22 feasibility probe (Playwright loading a temporary MV3 extension; artifacts under /tmp only, not committed): 10 download-mechanism checks and 8 extraction-pipeline checks all passed",
+        "2026-09-22 probe facts: the extension can only write relative paths under the Downloads directory (absolute path rejected with 'Invalid filename'); chrome.downloads.download() carries the host cookies for HTTP(S) URLs, so images need neither fetch nor host_permissions; data URL write works up to 2 MiB; Readability+Turndown+GFM+DOMPurify bundle is 76 KB with zero domino/jsdom residue; all downloads reported danger 'safe'",
+        "2026-09-22 documentation restructured to the project's PLAN/PRD layering: the misplaced `docs/features/browser-extension/FSD.md` was deleted (its content was product-level, not a technical plan), `docs/PLAN-browser-extension.md` was created as the line plan (with the probe results as Appendix A), `docs/PRD-browser-extension.md` now holds this block's product requirements, the desktop-side block was split out as `feat-042`, and `docs/PLAN-next-phase.md` was marked completed and archived with a pointer to the line plan"
       ]
     },
     {
@@ -753,6 +760,26 @@
         "S3 T3.5 (2026-09-22): signed off by the user, with one scope caveat recorded honestly. The user walked both states on the real machine (toggle on: no dialog, file lands in the iCloud directory, the download button turns into 已保存 and a ✓ card appears; toggle off: the save dialog appears) and replied 两态都过了 at 22:17. `git log` shows the asar narrowing landed at 22:40 (commit 7cf1111), so the build the user signed off was the PRE-narrowing one. The narrowing only removes files the runtime never reads, so behaviour should be identical, and this round supplied the missing evidence in its place (in-package fingerprints plus a passing packaged smoke). It is recorded rather than glossed over because a sign-off should be attributed to the artifact it actually covered.",
         "S3 T3.6 (2026-09-22): committed, pushed and PUBLISHED. The documentation and state changes of this round went into a single commit, 3578822 (17 files, +283 / -220), pushed to origin/main. `gh release create v0.3.6 <zip> --title \"MD-Convertor 0.3.6\" --notes-file ... --target main` created GitHub Release v0.3.6 on that commit (verified: `git rev-list -n1 v0.3.6` = 35788229df53d3ee3699db2a2d019bb4cec1254c) and uploaded the asset: name MD-Convertor-darwin-arm64-0.3.6.zip, size 235956668, state `uploaded`, and - the strongest available check - the digest the API reports server-side is `sha256:9b89d55c5c3cbf63519d56136f63e14170de26489623ea149c0a1daf0569f351`, byte-for-byte the local ZIP that passed the gate. The release is marked Latest (`repos/.../releases/latest` returns v0.3.6, with v0.3.5 and v0.3.4 now reporting latest:false), isDraft false, isPrerelease false, and the release notes state plainly that the build is unsigned and for personal testing. One trap worth recording: `--target <short SHA>` is rejected by the API with `Release.target_commitish is invalid`, so the branch name is used instead - and the rejected attempt left no half-created tag behind (checked with `git tag -l` and `git ls-remote --tags` before retrying). The tag naming a documentation commit is defensible rather than sloppy: after 7cf1111 the only commits are documentation, e2e specs, playwright.config.ts and feature_list.json, NONE of which enter the package (the narrowed asar holds only package.json and electron/, and the front end ships through the extraResource at Contents/Resources/server), so every file inside the released ZIP is byte-identical to the tree the tag points at.",
         "S3 T3.7 (2026-09-22): documentation and state artifacts closed out for 0.3.6 and the feature closed. CHANGELOG.md and CHANGELOG.zh.md moved [Unreleased] to [0.3.6] - 2026-09-22; docs/TESTING.md(+zh) moved the release guard, the gate counts and the artifact section to 0.3.6 and demoted the 0.3.5 block to Historical, plus a new subsection covering the two smoke-launch traps; README.md and README.zh.md were brought from 0.3.4 (they had missed 0.3.5 entirely) to 0.3.6 with the new highlight, the current release block, the artifact hash and the release-workflow version; docs/ARCHITECTURE.md(+zh) gained a Desktop bridge (IPC) section (both channel names, the return codes, the deliberately duplicated validation in preload and main, filename rules, the ~-segment semantics, the no-throw-across-the-bridge rule, the code-only log discipline) and one more line in the local security boundary; docs/PRODUCT.md(+zh) rewrote user flow 6 to describe the download fork; AGENTS.md now states 0.3.6 is shipped and that the next code change needs a bump to 0.3.7; docs/QUALITY-AUDIT.md gained a Verified Release (0.3.6) table, a re-verification checklist and this round's archived log entry; PROGRESS.md and session-handoff.md were rewritten to the clean state (0.3.6 released, no in-progress feature); S3-release.md and FSD.md are marked complete; feature_list.json sets feat-041 to done and activeFeature to null. One measured correction was folded into QUALITY-AUDIT.md: an earlier draft claimed the unpacked app grew about 7 MB (539 -> 546 MB), while `du -sm` actually reports 549 MB (0.3.5) versus 547 MB (0.3.6) - within rounding, essentially unchanged, because the ZIP is only 1,379,169 bytes smaller."
+      ]
+    },
+    {
+      "id": "feat-042",
+      "name": "Desktop Document Processing (A)",
+      "title": "Desktop Document Processing (A)",
+      "status": "planned",
+      "dependencies": [],
+      "scope": "First block (A) of the browser-extension line, delivered before the extension. Product requirements live in `docs/PRD-app-document-processing.md`; the line plan (hand-off contract, shared boundaries, order, line-level decisions) is `docs/PLAN-browser-extension.md`. Adds a desktop-side capability that processes a batch of local Markdown files: pick an input directory, list its `.md` files with their processing state, tick the ones to process, embed their images (both local relative paths and remote URLs), optionally translate through the existing provider configuration, write the results to a chosen output directory, and skip files already processed (dedup keyed on path + content hash + mtime). It is a general capability rather than a plugin accessory - any directory of Markdown can be processed, so it can be validated with existing files before the extension exists. Non-goals: no batch downloading of web pages, no change to the existing single-article flow, no new provider or translation engine, no scheduled or background processing. The PRD's requirements are direction-level and carry an explicit list of items still to be agreed.",
+      "acceptance": [
+        "The open items in `docs/PRD-app-document-processing.md` §3 are confirmed with the user before any stage document is written",
+        "A directory of `.md` files can be selected, listed with their state, ticked and processed as a batch",
+        "Images end up local so the result opens offline, and translation reuses the existing provider configuration unchanged",
+        "Files already processed are not processed again, keyed the way the line plan records",
+        "The existing single-article conversion flow is unchanged"
+      ],
+      "verification": [
+        "2026-09-22 split out of `feat-040`: the line plan and both product requirement documents were written, and the desktop-side block was given its own feature id so the single-`in-progress` constraint keeps A and B strictly serial",
+        "2026-09-22 scope basis: the pieces this block composes already exist in the desktop app - single-article conversion, image embedding via sharp, and the translation engine - so the work is composition rather than new infrastructure; what remains undecided is listed in the PRD's open items",
+        "2026-09-22 no code, no tests and no stage documents were produced by this round; `init.sh` passes unchanged (68 files / 999 tests)"
       ]
     }
   ],

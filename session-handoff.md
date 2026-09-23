@@ -3,8 +3,8 @@
 ## Resume Here
 
 - Current version: `0.3.6`，**已发布为 GitHub Release `v0.3.6`（2026-09-22）**，已装到 `/Applications/MD-Convertor.app`。未签名、未 notarize，产物定位是个人测试用。全部 RED/GREEN 与门禁证据在 `feature_list.json` 的 `feat-041.verification`
-- Active feature: **无**。`feat-041`（默认 MD 保存路径）**已完成、已发布、已关闭（`done`）**。文档链：`docs/features/default-save-path/`（`FSD.md` + `S1-settings-and-ipc.md` + `S2-download-flow.md` + `S3-release.md`，四份均已标完成）
-- **唯一推荐下一步**：没有必须做的事。要么由用户指定新目标，要么按 `docs/PLAN-next-phase.md` 从在册方向里挑（未开工的只有 `docs/features/browser-extension/`，三问未决、刻意无阶段文档）。**若下一轮要改代码，第一步是 bump 到 `0.3.7`**（版本面所有出现处必须同步，清单见下方开工提示词）
+- Active feature: **无**。`feat-041`（默认 MD 保存路径）**已完成、已发布、已关闭（`done`）**，文档链 `docs/features/default-save-path/`（四份均已标完成）；插件线的两个块**都已定稿但未开工**：`feat-042`（桌面端文档处理，A，先）与 `feat-040`（浏览器插件，B，依赖 `feat-042`），均为 `planned`
+- **唯一推荐下一步**：插件线的方向与需求**已定稿**（2026-09-22）—— 统领层 `docs/PLAN-browser-extension.md`、A 的需求 `docs/PRD-app-document-processing.md`、B 的需求 `docs/PRD-browser-extension.md`。下一步是**另行安排实施规划**（写阶段文档），而不是直接写码；开工前先解掉统领层 §6 的四组规则冲突，且**先 A（`feat-042`）后 B（`feat-040`）**。其余没有必须做的事。**若下一轮要改代码，第一步是 bump 到 `0.3.7`**（版本面所有出现处必须同步，清单见下方开工提示词）
 - Pending（无一是阻塞项）：① 云端 Provider 端到端实测（用户真实文章走一遍「拉取模型 → 选模型 → 翻译」）；② 真机小点清单（等用户给）；③ `0.3.1`–`0.3.6` 的产物与 tag 一律不动，缺失项按退役处理；④ 签名/notarization 不做（QA-008 accepted）；⑤ UI 评审结论勿重提（全部不整改）；⑥ `stash@{0}` 是 2026-09-21 拉取前的文档备份、与 feat-041 无关；⑦ 可选：在 Terminal 里跑一次**规范**的打包冒烟（Chromium 沙箱开启）—— 本 agent 沙箱内只能以 `--no-sandbox --disable-gpu` 取证，属环境限制
 - Branch: `main`；发布历史：`v0.3.6` = `3578822`（feat-041 默认 MD 保存路径，asar 253 → 10 条目，Latest）、`v0.3.5` = `5f98307`（feat-039 + 清空按钮归位）、`v0.3.4` = `e251267`（图标 v2）、`v0.3.3` = `3897cd1`（feat-034）、`v0.3.2` = `1c3ed80`（feat-033）、`v0.3.1` = `af7f6db`（feat-031/032）；`v0.1.3` = `ce041c9`（不可变历史锚点）
 
@@ -14,14 +14,16 @@
 继续 MD-Convertor 的下一轮工作。
 
 先按 Startup Workflow 读 AGENTS.md、PROGRESS.md、feature_list.json、session-handoff.md（本文件），
-再读 docs/PLAN-next-phase.md 确认方向与顺序，然后跑 ./init.sh 建立基线。
+再读 docs/PLAN-browser-extension.md（统领层）确认方向与顺序，然后跑 ./init.sh 建立基线。
 
 当前状态（2026-09-22 收尾后；本文件 `## Resume Here` 是权威）：
 - 版本 0.3.6，已发布为 GitHub Release `v0.3.6`，已装到 /Applications；未签名，个人测试用。
 - **没有 in-progress feature**：feat-041（默认 MD 保存路径）已完成、已发布、已关闭。
   feature_list.json 的 activeFeature 应已清空；若仍指向 feat-041，说明收尾没做完。
 - 已完成的入口：docs/features/default-save-path/（FSD + S1/S2/S3，三阶段均已标完成）；
-  在册未开工：docs/features/browser-extension/（三问未决，刻意无阶段文档）。
+  在册未开工：feat-042（A 桌面端文档处理，先）/ feat-040（B 浏览器插件，后），
+  方向与需求在 docs/PLAN-browser-extension.md + docs/PRD-app-document-processing.md +
+  docs/PRD-browser-extension.md；两者都刻意还没有阶段文档。
 
 开工前要知道的硬约束（都是踩过的）：
 - 再改代码前先 bump 到 0.3.7：scripts/release-desktop.mjs 的 Release Guard、package.json、
@@ -48,6 +50,16 @@
 ```
 
 ## Latest Change
+
+**本轮（浏览器插件线：方向定稿 + 文档分层重整，2026-09-22）**：用户先定「**目前只做方向评估**」—— 不写文档，先把技术探查做扎实；方向定稿后又指出这其实是**一条新线、两个产品**（插件 + 桌面端），共用一个仓库也必须按项目既有分层做事，于是按分层重建了这套文档。**未写阶段文档、未动代码，`feat-042`（A）与 `feat-040`（B）仍为 `planned`。**
+
+- **三问结论**：① **同仓库** —— 理由不是共享整条管线（那条管线插件大部分用不上），而是共享「提取正文 + 转 Markdown」这一小段，否则同一篇文章在插件与桌面端导出结果会不一致；② **密钥问题消失** —— 插件不做翻译，所有需要密钥/模型的处理留在桌面端；③ **抽一段无 Node 依赖的共享模块**。
+- **探针实测**（Playwright `channel: "chromium"` 加载临时 MV3 扩展，产物只在 `/tmp`、未入库）：写盘机制 10 项、提取管线 8 项全部通过。关键事实：扩展**只能写下载目录下的相对路径**（绝对路径报 `Invalid filename`）；`chrome.downloads.download()` 对 HTTP(S) URL 会带上该 host 的 cookie，所以**图片不需要 fetch、不需要 `host_permissions` 绕 CORS**；Markdown 用 data URL 写盘，2 MiB 无问题；Readability + Turndown + GFM + DOMPurify 打包仅 **76 KB**，domino/jsdom 残留为 0；全部下载 `danger: "safe"`（不触发危险文件警告）；中文文件名与 UTF-8 内容均正确。
+- **由此确认的简化与两处用法更正**：不需要常驻服务、不需要 offscreen document、不需要 `host_permissions`；MV3 里 `import DOMPurify` 得到的已是初始化好的实例（**不需要** `createDOMPurify(window)`）；正文里的相对路径图片由 Readability 自动绝对化，插件不必自己写。
+- **交付切分为两块、串行推进**：A 桌面端「文档处理」能力（选目录 → 列 md → 勾选 → 内嵌图片/翻译 → 输出 → 去重；可用现成 `.md` 独立验收，**先做**）、B 浏览器插件（后做，没有 A 则输出无处可去）。切分原因之一是避免重演上一轮的**范围蔓延**教训。
+- **文档分层重整**：原 `docs/features/browser-extension/FSD.md` 被**删除** —— 它装的内容是产品决策（产物落哪、抓不到的图怎么办、去重规则、触发方式、非目标），该进 PRD 而不是技术方案，等于「装错了柜子」。重建为三层：`docs/PLAN-browser-extension.md`（**统领层**，唯一写「两个产品怎么配合」的地方：交接契约、顺序依赖、共同边界、线上工程决定、四组待解规则冲突；探针结论作附录 A）、`docs/PRD-app-document-processing.md`（A）、`docs/PRD-browser-extension.md`（B）。两份 PRD 不重复交接契约，避免三份文件互相打架；`docs/PLAN-next-phase.md` 实际是 0.3.5 那一阶段的路线图、整份过期，已标「已完成、已归档」。
+- **实施前必须先处理的四组规则冲突**（已写进统领层 §6）：`AGENTS.md` 平台边界（现写「只构建和验收 `darwin/arm64`」对扩展不适用）、TDD 如何落到 MV3（`chrome.*` 打桩 + Playwright 集成底盘）、`init.sh` 门禁是否纳入扩展构建、`feature_list.json` 单 `in-progress` 约束意味着 A/B 必须串行。
+- **未验证项**（见统领层 §7）：真实 Chrome 中是否静默写盘（取决于用户浏览器「下载前询问保存位置」设置，非代码可控）、N 张图 = N 个下载条目、MV3 后台休眠打断批量下载、超大页面性能、特权页无法注入。
 
 **本轮（feat-041 S3 发布收口，0.3.6 发布并关闭 feature，2026-09-22 深夜）**：`feat-041`「默认 MD 保存路径」整条链路走完，**0.3.6 已发布为 GitHub Release `v0.3.6`、已装到 `/Applications`、`feature_list.json` 里已置 `done`、`activeFeature` 清空**。
 
@@ -377,7 +389,7 @@
 ## Next Stage Entry
 
 - S1 → S6 全部完成；`feat-024` – `feat-041` 均 done；当前 `activeFeature` = **无**（干净态）。`feat-041`（默认 MD 保存路径）S1/S2/S3 三阶段全部完成，随 `0.3.6` 发布并关闭。
-- 下一轮没有既定入口：由用户指定新目标，或按 `docs/PLAN-next-phase.md` 挑方向（在册未开工的只有 `docs/features/browser-extension/`，三问未决、刻意无阶段文档）。**若下一轮要改代码，第一件事是 bump 到 `0.3.7`** —— 当前 `desktop:release` 只接受 `0.3.6`，再改代码就必须先升版本并同步版本面（清单见本文件顶部开工提示词）。
+- 下一轮入口：**插件线方向与需求已定稿（2026-09-22）** —— 统领层 `docs/PLAN-browser-extension.md`（含三问结论、实测事实、交接契约、交付切分与四条待处理的规则冲突）、A 的 `docs/PRD-app-document-processing.md`、B 的 `docs/PRD-browser-extension.md`；**两者都刻意无阶段文档** —— 下一步是另行安排实施规划。除此之外由用户指定新目标。**若下一轮要改代码，第一件事是 bump 到 `0.3.7`** —— 当前 `desktop:release` 只接受 `0.3.6`，再改代码就必须先升版本并同步版本面（清单见本文件顶部开工提示词）。
 - 每轮开头固定读：`PROGRESS.md` → `session-handoff.md` → `feature_list.json` → 相关 `docs/`（涉及翻译行为时先读 `docs/PRD-translation.md`），然后跑 `./init.sh` 建立基线。
 - 全部阶段文档（已完成入口）：`docs/features/translation/S1-settings-infra.md` 至 `S6-release-and-docs.md`；各文档的 Handoff 已写入下一阶段所需的真实接口与边界。
 
@@ -424,7 +436,7 @@
 
 **B. 要动代码的话（先 bump 到 `0.3.7`）**
 4. 版本面同步清单见本文件顶部开工提示词；漏一处 `desktop:release` 就拒跑。
-5. `docs/features/browser-extension/` 是唯一在册未开工方向，但它的三问未决、刻意没有阶段文档 —— **先跟用户把方向谈定，不要直接写码**。
+5. 插件线是唯一在册未开工方向，分两块且**串行**：A = `feat-042`（桌面端文档处理，**先**）、B = `feat-040`（浏览器插件，依赖 A）。方向与需求已定稿（2026-09-22）：统领层 `docs/PLAN-browser-extension.md`、A 的 `docs/PRD-app-document-processing.md`、B 的 `docs/PRD-browser-extension.md`。两者都刻意没有阶段文档 —— 下一步是**另行安排实施规划**（写 `S1-*.md` …），开工前先解掉统领层 §6 的四组规则冲突，在这之前**不要直接写码**。
 6. 签名/notarization 用户 2026-09-20 已决定不做（QA-008 accepted）；要恢复需要 Developer ID Application 证书 + notarytool 凭据，且签名后必须重跑门禁更新哈希。
 7. UI 评审结论勿重提：`docs/UI-REVIEW-2026-09-20.md` 的 P0×6 + P1×10 用户已决定全部不改。主页像素级断言（转换按钮右边缘与粘贴框右边缘差值 < 4px、且与「来源 URL」输入框同行）是刻意锁定的效果，要改先改断言。
 

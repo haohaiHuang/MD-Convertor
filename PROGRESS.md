@@ -4,12 +4,24 @@
 
 - Last updated: 2026-09-22
 - Current version: `0.3.6`，**已发布**为 GitHub Release `v0.3.6`（`package.json`、`package-lock.json`、`feature_list.json`、`scripts/release-desktop.mjs` 均为 `0.3.6`；产物 235,956,668 bytes / SHA-256 `9b89d55c…f351`；已装到本机 `/Applications`）
-- Active feature: **无**（`feat-041` 默认 MD 保存路径已完成、已发布、已关闭）
-- Next step: **无待办**。下一轮开工前先按 `AGENTS.md` 把版本 bump 到 `0.3.7` 并同步该行，再按 Startup Workflow 建新 feature
+- Active feature: **无**（`feat-041` 已完成、已发布、已关闭；`feat-040` 浏览器插件（B）与 `feat-042` 桌面端文档处理（A）均为 `planned`，未进 `in-progress`）
+- Next step: **浏览器插件线的方向与需求已定稿，实施规划另行安排**（统领层：`docs/PLAN-browser-extension.md`；A 的需求：`docs/PRD-app-document-processing.md`；B 的需求：`docs/PRD-browser-extension.md`）。开工前先按 `AGENTS.md` 把版本 bump 到 `0.3.7` 并同步该行，再解掉统领层 §6 的四组规则冲突，然后按 Startup Workflow 建新 feature（A 先、B 后）
 - Branch: `main`；stash@{0} 是 2026-09-21 拉取前的文档备份、与 feat-041 无关
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+
 
-## 本轮（0.3.6 / feat-041 默认 MD 保存路径）已完成
+## 本轮（浏览器插件线：方向定稿 + 文档分层重整）已完成
+
+用户先定「目前只做方向评估，不写文档，先把技术探查做扎实」；方向定稿后又指出这其实是**一条新线、两个产品**（插件 + 桌面端），共用一个仓库也必须按项目既有分层做事，于是做了一次文档重整。**未写阶段文档、未动代码，`feat-042`（A）与 `feat-040`（B）均为 `planned`。**
+
+- **三问全部有结论**：① 同仓库（理由是共享「提取 + 转 md」以保证两边输出一致，不是为了共享整条管线）；② 密钥问题消失（插件不做翻译，翻译留在桌面端）；③ 抽一段无 Node 依赖的共享模块。
+- **探针实测**（Playwright 加载临时 MV3 扩展，产物只在 `/tmp`、未入库）：写盘机制 10 项、提取管线 8 项全部通过。关键发现：扩展**只能写下载目录下的相对路径**（绝对路径报 `Invalid filename`）；`chrome.downloads.download()` 对 HTTP(S) 会带上该 host 的 cookie，所以图片**不需要 fetch、不需要跨域权限**；Markdown 用 data URL 写盘，2 MiB 无问题；Readability + Turndown + GFM + DOMPurify 打包仅 **76 KB**，domino/jsdom 残留为 0；批量下载与危险文件判定均正常。
+- **由此确认的简化**：不需要常驻服务、不需要 offscreen document、不需要 `host_permissions`。
+- **文档分层重整**：原 `docs/features/browser-extension/FSD.md` 被**删除**——它装的内容是产品决策（产物落哪、抓不到的图怎么办、去重规则、触发方式、非目标），该进 PRD 而不是技术方案，等于「装错了柜子」。改为三层：`docs/PLAN-browser-extension.md`（**统领层**，唯一写「两个产品怎么配合」的地方：交接契约、顺序依赖、共同边界、线上工程决定、四组待解规则冲突；探针结论作附录 A）+ `docs/PRD-app-document-processing.md`（A）+ `docs/PRD-browser-extension.md`（B）。两份 PRD 不重复交接契约，避免三份文件互相打架。
+- **交付切分为两块，串行推进**：A 桌面端「文档处理」能力（`feat-042`，先，可用现成 `.md` 独立验收）、B 浏览器插件（`feat-040`，依赖 `feat-042`，后）。串行是硬约束——单 `feature_list.json` + `init.sh` 只允许一个 `in-progress`。
+- **`docs/PLAN-next-phase.md` 已归档**：它实际是 0.3.5 视觉刷新那一阶段的路线图（0.3.5 / 0.3.6 均已发布），整份过期，不能当统领层；已标注「已完成、已归档」并把文档地图指到 `PLAN-browser-extension.md`。
+- 未验证项与已知风险见 `docs/PLAN-browser-extension.md` §7，实施前必须先解掉的四组规则冲突见 §6，探针结论见附录 A。
+
+## 上一轮（0.3.6 / feat-041 默认 MD 保存路径）已完成
 
 用户原话：「我想在设置里面增加一个默认的MD保存路径管理……如果选择默认目录，则不需要弹出保存位置选择」。设置页新增「输出」卡片（选目录 + 「使用默认目录」开关），主页面「下载」按三重条件（开关 && 目录 && 桥接）分叉为「桥接直写」或「浏览器下载」，直写被拒时说明原因并降级。
 
@@ -19,7 +31,7 @@
 - **用户验收**：2026-09-22 22:17 签字「两态都过了」（开默认目录：不弹框、文件落盘、看得到「已保存」；关默认目录：弹框）。
 - 逐条证据见 `feature_list.json` 的 `feat-041.verification`（39 条）；本轮归档见 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log` 2026-09-22 条；测试口径与产物哈希见 `docs/TESTING.md`。
 
-## 本轮的三条教训（都已写进约束清单）
+## 上一轮的三条教训（都已写进约束清单）
 
 - **范围蔓延**：用户的需求只是「加一个默认下载目录」，我却顺手把打包收窄、firefox 解锁、既有 flake 修复、自建 skill 都塞进了同一轮收尾，被用户明确指出「我只是搞一个文档下载路径，你为什么要搞这么多有的没的」。**后续遇到范围外问题（发现缺陷、flaky 用例、基建改进），先单独提出来问，不要顺手做。**
 - **「私有文档」的定性是错的**：T3.0 最初的理由写成「私有工作文档会随发布物公开」。核实后发现仓库是 public，`PROGRESS.md` / `session-handoff.md` / `feature_list.json` / `AGENTS.md` / `docs/**` 早已在 `origin/main` 上公开，打包不构成新增暴露；唯一真正非公开的是 `.workbuddy/memory/*.md`。收窄仍然正确，理由已就地更正。

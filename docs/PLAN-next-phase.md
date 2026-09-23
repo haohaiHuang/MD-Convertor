@@ -1,6 +1,6 @@
 # MD-Convertor 下一阶段规划（路线图）
 
-**状态**：已定（原 §6 的 5 个旋钮已全部拍板，见 §2）
+**状态**：**已完成、已归档** —— 本文件描述的是 `0.3.5` 视觉刷新那一阶段（2026-09-21 发布，tag `5f98307`），该阶段已结束。`0.3.6` 之后的方向见 **`docs/PLAN-browser-extension.md`**
 **创建**：2026-09-21
 **取代**：`docs/PRD-upgrade-v2.md`、`docs/UI-DESIGN-SPEC.md`（已于 2026-09-21 删除，原因见 §7）
 
@@ -88,25 +88,22 @@
 | `docs/features/ui-refresh/S2-weight.md` | 阶段 2：字重收敛（逐处替换表 + 预览区守卫） |
 | `docs/features/ui-refresh/S3-release.md` | 阶段 3：版本 `0.3.5`、门禁、文档同步 |
 | `docs/features/ui-refresh/design/ui-refresh.html` | 设计稿（可交互预演：旧/新皮肤切换、界面字重 400/300 切换） |
-| `docs/features/browser-extension/FSD.md` | 浏览器插件方向，**独立规划**，见 §6；三个前置问题未决，刻意不写阶段文档 |
+| `docs/PLAN-browser-extension.md` | 浏览器插件**线路**的方向、两个产品的分工配合与交接契约（2026-09-22 定稿，见 §6） |
+| `docs/PRD-app-document-processing.md`、`docs/PRD-browser-extension.md` | 该线路下的两份产品需求 |
 
 `feature_list.json` 是状态事实源，一次只推进一个 `in-progress`。
 
 ---
 
-## 6. 后续方向（不属本期）
+## 6. 后续方向（本阶段之外）
 
-### 6.1 浏览器插件（Chromium 内核，MV3）
+### 6.1 浏览器插件线路（Chromium 内核，MV3）
 
-**场景**：在浏览器里看到好文章时一键转换当前页面 DOM，利用当前已登录会话，简单预览，下载 `.md`，可选翻译；只读当前页面 DOM，不读 Cookie，不上传内容。
+**已立项，成为下一阶段的路线图 → `docs/PLAN-browser-extension.md`**（2026-09-22 定稿）。
 
-**开工前必须先补齐三个未决问题**（作废的原 PRD 完全没写）：
+该文件是这条线路的统领：两个产品（A 桌面端「文档处理」、B 浏览器插件）的分工与文件交接契约、顺序（A 先 B 后，因单 `in-progress` 约束必须串行）、共同口径、线路级工程决策、开工前必须处理的规则冲突、未验证风险，以及附录里的可行性探针实测结论。产品需求见 `docs/PRD-app-document-processing.md` 与 `docs/PRD-browser-extension.md`。
 
-1. **放哪、怎么构建**：仓库现在是 Next.js + Electron 单产物；扩展是**新的交付物**，需要自己的构建与打包流程，`AGENTS.md` 的平台边界（现写「只构建和验收 darwin/arm64」）也要同步修订。
-2. **密钥放哪**：桌面端密钥在 `safeStorage` 加密的 `secrets.json` 里，**扩展无法复用**。扩展侧 Provider 密钥存哪、怎么加密，必须解决。
-3. **代码如何共享**：现有 Readability / Turndown 管线是服务端模块。扩展是复用同一套代码还是重写一套，决定工作量差一个量级。
-
-**版本节奏**：作废文档写的 `v0.5.0 / v0.6.0 / v0.7.0` 未采纳 —— 发布门禁硬校验唯一目标版本，且当前在 `0.3.x` 线上，跳号没有收益。建议 `0.3.5`（本期）→ 插件另起独立版本线。
+**本节只留指针，不重复内容。** 唯一要在此记下的是：作废文档写的 `v0.5.0 / v0.6.0 / v0.7.0` 那套版本节奏未采纳 —— 插件由扩展自身 manifest 的 `version` 管理，不进 `desktop:release` 门禁。
 
 ### 6.2 未纳入本期、但已被识别为下一杠杆的项
 
