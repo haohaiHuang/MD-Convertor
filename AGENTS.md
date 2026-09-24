@@ -1,6 +1,11 @@
 # MD-Convertor Project Instructions
 
-本文件继承并补充全局指令 `~/.codex/AGENTS.md`。开始工作前必须先完整阅读全局指令，再阅读本文件；若两者冲突，以本项目指令为准，但不得违反更高优先级的系统或用户指令。
+本文件继承并补充**全局指令**。全局指令按代理不同存放在两份文件里，内容并不完全相同（pi 版多「证据先于断言」「本机环境已知问题」「工作流」三段）：
+
+- `~/.codex/AGENTS.md` —— Codex 会话加载
+- `~/.pi/agent/AGENTS.md` —— pi 会话加载
+
+同一项目可能被不同代理开发，所以**两份都点名**；开始工作前先完整阅读本运行时代理实际加载的那一份，再阅读本文件。若与本文件冲突，以本项目指令为准，但不得违反更高优先级的系统或用户指令。
 
 ## Project Purpose
 
@@ -15,7 +20,7 @@
 开始修改前，依次执行：
 
 1. 用 `pwd` 确认位于项目根目录。
-2. 阅读 `~/.codex/AGENTS.md` 与本文件。
+2. 阅读本运行时代理实际加载的全局指令（`~/.codex/AGENTS.md` 或 `~/.pi/agent/AGENTS.md`）与本文件。
 3. 阅读 `PROGRESS.md`、`feature_list.json` 和 `session-handoff.md`。
 4. 涉及产品行为时阅读 `docs/PRODUCT.md`；涉及抓取、安全或部署时阅读 `docs/ARCHITECTURE.md`；涉及验证、打包或发布时阅读 `docs/TESTING.md`；涉及质检、安全整改或发布放行时同时阅读 `docs/QUALITY-AUDIT.md`。
 5. 运行 `./init.sh` 建立基线。
@@ -42,7 +47,7 @@
 
 - `feature_list.json`：事项、依赖、状态、完成条件与验证证据的结构化事实源。
 - `PROGRESS.md`：当前状态、决定、风险和下一步。
-- `session-handoff.md`：跨会话交接；短会话也应保证其关键内容不过期。
+- `session-handoff.md`：跨会话交接，**只写现役状态**（目标 ≤150 行 / ≤25KB）。阶段之间的交接写对应阶段文档的 `## Handoff`；轮次历史压进 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`（每条 ≤10 行），不再留在本文件（2026-09-24 起）。
 - `CHANGELOG.md`：面向用户的重要变更记录。
 - `init.sh`：统一、可重复、失败即退出的基线验证入口。
 - `docs/QUALITY-AUDIT.md`：整体质检结论、问题等级、整改顺序与复验清单；安全整改和发布放行前读取。
@@ -70,7 +75,7 @@
 1. 重新运行与本次改动相称的验证。
 2. 更新 `feature_list.json` 的状态与证据。
 3. 更新 `PROGRESS.md` 的已完成项、风险和唯一推荐下一步。
-4. 更新 `session-handoff.md`；有用户可见变化时同步更新 `CHANGELOG.md`。
+4. 更新 `session-handoff.md` 的现役段（Resume Here / 开工提示词 / Latest Change / Boundaries / Next Stage Entry / Environment Notes / Recommended Next Action），把本轮结论压一条 ≤10 行的条目进 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`；有用户可见变化时同步更新 `CHANGELOG.md`。
 5. 检查改动范围；只有在用户要求且仓库已启用 Git 时才提交。
 
 结束时必须留下 clean、restartable state，使下一会话可直接按 Startup Workflow 恢复。

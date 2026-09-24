@@ -2,14 +2,26 @@
 
 ## Current State
 
-- Last updated: 2026-09-24
+- Last updated: 2026-09-24（第二轮：文档结构收口）
 - Current version: `0.3.6`，**已发布**为 GitHub Release `v0.3.6`（`package.json`、`package-lock.json`、`feature_list.json`、`scripts/release-desktop.mjs` 均为 `0.3.6`；产物 235,956,668 bytes / SHA-256 `9b89d55c…f351`；已装到本机 `/Applications`）。**本轮不改桌面代码，所以不 bump 到 `0.3.7`**（AGENTS.md 的 bump 要求只针对桌面代码改动）
 - Active feature: **`feat-040` 浏览器插件（B）—— 状态 `planned`，实施规划已完成，待开工**（`feat-042` 桌面端文档处理（A）仍为 `planned`，已与本块解耦，无顺序与代码依赖；`feat-041` 已完成已发布已关闭）
 - Next step: **按 `docs/features/browser-extension/FSD.md` + `S1-convert-core.md` 开工 S1**（TDD RED 先行，纯函数，不碰桌面端、不 bump 版本）；S2 的第一个任务是事实探针（S2 文档「探针结果」表未填前不得写 SW 编排）
 - Branch: `main`；stash@{0} 是 2026-09-21 拉取前的文档备份、与当前工作无关
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+（桌面产物）；浏览器插件另行验收于 Chromium，不进桌面发布门禁
 
-## 本轮（2026-09-24 浏览器插件线 B：实施规划定稿）已完成
+## 本轮（2026-09-24 第二轮：文档结构收口）已完成
+
+用户先问「只改文档是不是只需要过 neat-freak 这一道门」，随后指出两处规范问题（项目 AGENTS.md 只点名一份全局指令；`session-handoff.md` 单文档持续膨胀），批准「方案 A」。**本轮零应用代码、零测试改动、未 bump 版本。**
+
+- **上一轮已提交 `ab1d653`**（`docs(browser-extension): 定稿 B 插件实施规划，A/B 顺序反转为 B 先做`）；本轮在此基础上做文档结构收口。
+- **提交门按变更性质收窄**：纯文档轮里 ponytail（审代码）与 code-review（审实现）**不适用**，只跑 neat-freak —— 这个判断在上一轮已向用户报备。
+- **全局指令改为点名两处**：项目 `AGENTS.md` 原先只写 `~/.codex/AGENTS.md`，但 pi 会话加载的是 `~/.pi/agent/AGENTS.md`，两份内容不同（pi 版多「证据先于断言」「本机环境已知问题」「工作流」），一个项目可能被多个代理开发 → 已改为**两份都点名**并注明加载方，Startup Workflow 第 2 步同步。
+- **handoff 膨胀治理（方案 A，用户批准）**：`session-handoff.md` **457 行 / 139KB → 122 行 / 21.7KB**（−73% 行数 / −84% 体积），删掉 `Previous Change`、`Archived Change Log ×4`、`Release Evidence` 与 `Next Stage Entry` 下的 S6/S5 要点。删除依据是实测：83% 体积是历史；21 份阶段文档全部已有 `## Handoff`，handoff 里 142 行的「S1–S6 实际交付接口/偏差」逐条比对确认是它们的压缩副本；`Release Evidence` 与 `docs/TESTING.md` + `## Verified Release` 表重复。**零新文件、零改名**（21 处引用与 `init.sh` 的 `required_files` 不动）。
+- **新规则已入约**：`AGENTS.md` 的 Required State Artifacts 与 End of Session 两步都写明 —— handoff 只写现役、目标 ≤150 行 / ≤25KB；阶段间交接写阶段文档的 `## Handoff`；**轮次历史压一条 ≤10 行条目进 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`**。并在该表顶部回填本轮两条（09-24 两轮），在末尾补一条「2026-09-21 及更早」的退役指针（原文用 `git show ab1d653:session-handoff.md` 取回）。
+- **未做（刻意）**：未改任何代码与测试、未碰 `extension/`、未重写历史轮次叙述（只给指针）、未新建归档目录。
+- **验证**：`./init.sh` **exit 0**（Node 24.14.1，68 files / 999 tests，statements 95.28%）—— 本轮同样零代码改动。
+
+## 上一轮（2026-09-24 第一轮：浏览器插件线 B 实施规划定稿）已完成
 
 用户先明确「**先把插件（B）做掉，A 拆开**」，再把待对齐项一次性拍板（原话「明白了，那都按照你的意见来」）。**本轮只写文档，零应用代码、零测试、未 bump 版本、未跑 `desktop:release`。**
 
@@ -53,6 +65,7 @@
 
 ## 仍然生效的约束
 
+- **`session-handoff.md` 只写现役（≤150 行 / ≤25KB）**：阶段间交接写对应阶段文档的 `## Handoff`，轮次历史每条 ≤10 行进 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`；需要旧叙述时用 `git show ab1d653:session-handoff.md`，不把历史搬回本文件。
 - 跑门禁必须用 Node **24.14.1 或 24.15.0**——本机默认 v24.16.0 解压 electron zip 时静默卡死，`electron-forge make` 空跑却 exit 0。
 - 所有代码开发遵循 TDD（RED → GREEN → REFACTOR），证据写入 `feature_list.json`。
 - `output` 缺失宽容读入是严格校验的唯一放宽点（仅新增字段、仅缺失时）；不得扩散到其他字段。

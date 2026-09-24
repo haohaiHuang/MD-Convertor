@@ -280,6 +280,21 @@ Approved for personal testing. Not approved for frictionless public distribution
 
 ## Archived Round Log
 
+### 2026-09-24（第二轮）— 文档结构收口：handoff 退役历史、全局指令点名两处
+
+- 项目 `AGENTS.md` 原先只点名 `~/.codex/AGENTS.md`，而 pi 会话加载的是 `~/.pi/agent/AGENTS.md`（两份内容不同：pi 版多「证据先于断言」「本机环境已知问题」「工作流」）。已改为**两份都点名**并注明各自由谁加载；Startup Workflow 第 2 步同步。
+- `session-handoff.md` **457 行 / 139KB → 122 行 / 21.7KB**（−73% 行数、−84% 体积）：删掉 `Previous Change`、`Archived Change Log ×4`、`Release Evidence` 与 `Next Stage Entry` 下的 S6/S5 要点。删除依据（实测）：83% 体积是历史；21 份阶段文档**全部已有 `## Handoff`**，handoff 内 142 行的「S1–S6 实际交付接口 / 与文档的偏差」逐条比对确认是它们的压缩副本；`Release Evidence` 与 `docs/TESTING.md` + `## Verified Release` 表重复。**零新文件、零改名**（21 处引用与 `init.sh` 的 `required_files` 不动）。
+- 新规则写进 `AGENTS.md` 的 Required State Artifacts 与 End of Session：handoff 只写现役（≤150 行 / ≤25KB）；阶段间交接写阶段文档的 `## Handoff`；轮次历史每条 ≤10 行进本表。
+- 纯文档轮，未动 `src/` / `electron/` / 打包配置 / `extension/`；`./init.sh` exit 0（68 files / 999 tests，95.28%）。
+
+### 2026-09-24（第一轮）— 浏览器插件（B / feat-040）实施规划定稿，A/B 顺序反转
+
+- 用户裁定顺序反转：**B（插件，`feat-040`）先做**；A（桌面端文档处理，`feat-042`）改为独立另案（无顺序、无代码依赖）。理由：这条线里只有 B 需要「当前浏览器会话」，A 能吃任意现成 `.md`。
+- 用户裁定 **B 自带转换核心**（`extension/src/convert/`，纯函数 + 注入环境依赖），**不改桌面端任何文件**；代价是两端可能漂移，对冲是「将来统一只是搬家，不是重写」。连带把 `PLAN` §4.4 从「两端输出必须一致」更正为「提取正文与文本转换规则一致」。
+- PRD §3 六条全部裁定（仅工具栏按钮 / 不做预览 / 同名覆盖 / 标题净化照抄 `src/lib/markdown.ts:46` / 不允许改文件名 / 图片全失败仍写 md），另加失败图保留原 URL + `<!-- 图片未下载：<url> -->`、角标 `✓`/`!` 反馈、不做 popup/通知/整页兜底。
+- 新增施工文档 `docs/features/browser-extension/`（`FSD.md` + `S1-convert-core.md` + `S2-extension-shell-and-writes.md` + `S3-e2e-and-acceptance.md`）；四组规则冲突就地解掉；提交 `ab1d653`。
+- 纯文档轮，未 bump 版本（0.3.6 不动）、未跑 `desktop:release`；`./init.sh` exit 0。
+
 ### 2026-09-22 — feat-041 默认 MD 保存路径 + 0.3.6 发布（本轮收尾归档）
 
 - S1（设置契约 + IPC）：`Settings` 新增 `output: { defaultPath, useDefaultPath }`，旧 `settings.json` 缺该字段时按默认值补齐而不判为损坏；Electron 新增 `md-convertor:output:select-directory` 与 `md-convertor:output:save-file` 两个通道，`electron/output.mjs` 写成可注入纯模块（`ipcMain` / `dialog` 注入），`dirPath` 与 `filename` 在沙箱化 preload 与主进程各校验一次。提交 `ac8f91a`。
@@ -300,3 +315,8 @@ Approved for personal testing. Not approved for frictionless public distribution
 - 富文本「清空」按钮归位（不属 feat-039）：`page.tsx` 把按钮移进 `.sourceRow`、删除 `.pasteActions`；e2e 先红（y 差 58px）后绿。提交 `a03b175`。
 - S3（发布）：版本升级 TDD（release-guards fixture 先 5 failed → 29 passed）；`npm run desktop:release` exit 0（Node 24.15.0）—— 64 files / 866 tests、95.28%、三引擎 e2e 206 passed / 4 skipped、live 2/2；产物 `MD-Convertor-darwin-arm64-0.3.5.zip` 237,335,837 bytes、SHA-256 `313bbbc341c94da0a5ca92f668f2df06cea9f734e47d7af65880500aa192d45f`；安装 `/Applications`；GitHub Release `v0.3.5`（tag 指向 `5f98307`）。首跑门禁的 `E2E modified tracked files` 为并行编辑文档导致的误报，冻结编辑后重跑即绿。提交 `5f98307`。
 - 真机目视（CDP）：首页/设置页 computed 全为新色板、字重 400、antialiased；包内旧墨绿零命中。
+
+### 2026-09-21 及更早（feat-024 – feat-038，0.3.1 – 0.3.4 线）— 叙述退役指针
+
+- 这一段的逐轮叙述原先只存在于 `session-handoff.md`，2026-09-24 随该文件瘦身退役，**不再单独回填**：完整原文见 `git show ab1d653:session-handoff.md`（4 个 `## Archived Change Log` 段 + `## Release Evidence`），逐 feature 的完成条件与验证证据见 `feature_list.json` 的 `verification`，产物字节数 / SHA-256 / 门禁计数见 `docs/TESTING.md` 与上文 `## Verified Release (0.3.x)` 各表，实现细节以 git 历史为准。
+- 仍然有效的操作约束（Firefox 沙箱开关、代理污染 Playwright、同帧几何断言、`ELECTRON_RUN_AS_NODE`、`MD_CONVERTOR_USER_DATA` 不能隔离打包应用、安装源用发布 ZIP）已留在 `session-handoff.md` 的 `## Environment Notes` 与仓库根 `PROGRESS.md` 的约束清单里，**没有随历史段一起删掉**。
