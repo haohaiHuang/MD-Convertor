@@ -2,21 +2,22 @@
 
 ## Current State
 
-- Last updated: 2026-09-24（第四轮：PROGRESS 瘦身 + S2 扩展外壳，进行中）
+- Last updated: 2026-09-24（第四轮：PROGRESS 瘦身 + S2 扩展外壳；T2.0 探针已完成）
 - Current version: `0.3.6`，**已发布**为 GitHub Release `v0.3.6`（`package.json`、`package-lock.json`、`feature_list.json`、`scripts/release-desktop.mjs` 均为 `0.3.6`；产物 235,956,668 bytes / SHA-256 `9b89d55c…f351`；已装到本机 `/Applications`）。**本轮不动桌面代码，所以不 bump 到 `0.3.7`**（bump 只由桌面代码改动触发；插件版本自管）
-- Active feature: **`feat-040` 浏览器插件（B）—— 状态 `in-progress`，S1（转换核心）已完成并提交（本地，未 push），下一步 S2**（`feat-042` 桌面端文档处理（A）仍为 `planned`，无顺序与代码依赖；`feat-041` 已完成已发布已关闭）
-- Next step: **S2（扩展外壳与写盘）的第一个任务是事实探针**（无手势注入、`downloads` 是否补扩展名、`overwrite` 行为；`S2-extension-shell-and-writes.md` 的「探针结果」表未填前不得写 SW 编排）——探针结论出来后再写 `extension/manifest.json` 与 service worker。文档瘦身已于本轮完成（四段「上一轮…已完成」历史压进 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`，并补上 2026-09-22 插件线方向定稿那一条）
+- Active feature: **`feat-040` 浏览器插件（B）—— 状态 `in-progress`，S1（转换核心）已完成，S2 进行中（T2.0 探针已完成，T2.1 起待做），提交均在本地未 push**（`feat-042` 桌面端文档处理（A）仍为 `planned`，无顺序与代码依赖；`feat-041` 已完成已发布已关闭）
+- Next step: **S2 继续 —— T2.0 事实探针已出结论并入库**（四条设计关键事实 + 一条「绝对路径被拒」见 `S2-extension-shell-and-writes.md` 的「探针结果」表，机器化证据 `extension/tests/probe.spec.ts`）；**接着写 T2.1 起**：`extension/manifest.json`（v0.1.0；只有 `activeTab`+`scripting`+`downloads`、`host_permissions` 空、不声明静态 `content_scripts`）→ 消息契约 → content script → service worker 编排（命名/下载/引用回写/写 md/角标）→ `chrome.*` 打桩单测
 - Branch: `main`；stash@{0} 是 2026-09-21 拉取前的文档备份、与当前工作无关
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+（桌面产物）；浏览器插件另行验收于 Chromium，不进桌面发布门禁
 
-## 本轮（2026-09-24 第三轮：S1 转换核心落地）已完成
+## 本轮（2026-09-24 第四轮：PROGRESS 瘦身 + S2 扩展外壳）进行中
 
-用户指令：继续推进 B 插件线、开工 S1，**只写 `extension/` 与文档、零桌面改动**。**本轮不 bump 版本、不跑 `desktop:release`、不跑 `test:e2e`。**
+用户先批准「单独一次 doc 清理」，再指示继续 S2；**只写 `extension/` 与文档、零桌面改动，不 bump 版本、不跑 `desktop:release`、不跑 `test:e2e`。**
 
-- **交付**：`extension/src/convert/{index,extract,markdown,images,naming,sanitize}.ts`（纯函数，输入是 DOM，无 Node 依赖）+ `scripts/build-extension.mjs`（esbuild 精确锁定 `0.28.1`，IIFE 全局 `mdConvertorCore` → `extension/dist-test/core.js`，50.0 KB，无 `require("node:`/jsdom/domino 残留）+ `extension/tests/fixtures/{article,wechat,no-article}.html` + `playwright.extension.config.ts` + `extension/tests/core-smoke.spec.ts`；`package.json` 新增 `build:extension`/`test:extension`，`vitest.config.ts` 收进扩展单测并给四个核心文件加覆盖率阈值。
-- **TDD 证据**：每个任务都留有 RED（T1.1 `Cannot find module './markdown'`、T1.2 模块缺失 + 两条真失败、T1.3 模块缺失、T1.4 模块缺失、T1.5 `buildArticle` 未导出），逐条写进 `feature_list.json` 的 `feat-040.verification`。
-- **门禁**：`NODE_OPTIONS= ./init.sh` **exit 0**（Node 24.15.0，**75 files / 1035 tests**，statements 95.48% —— 上一轮是 68 / 999 与 95.28%）；`npm run test:extension` **1 passed**（chromium，沙箱内用 `MD_CONVERTOR_EXTENSION_CHROMIUM_ARGS=--no-sandbox,--disable-gpu`），它是「产物真的没有 Node 依赖」的唯一证据。
-- **四处偏离已就地记录**（`S1-convert-core.md` 的 Result 与 FSD §3.2）：`htmlToArticleMarkdown` 收 `HTMLElement` 而非 HTML 字符串；惰性图在**常规分支也先提升**（Readability 丢 `data-*`，否则下到的是占位图）；常规分支也设 50 字符下限（Readability 会把导航栏当正文）；无法解析的 `href` 摘掉属性。
+- **Step 0 文档瘦身已完成**（提交 `934e979`）：四段「上一轮…已完成」历史压进 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`，并先补上 2026-09-22 插件线方向定稿那一条；`PROGRESS.md` −51/+3。
+- **S2 / T2.0 事实探针已完成并发绿**：新增 `extension/tests/probe.spec.ts`（5 条用例，`npm run test:extension -- -g probe` 5 passed / 3.2s）。它在 `os.tmpdir()` 里现搭一个一次性 MV3 扩展 + 本地 HTTP 页，`afterAll` 全清，不入库任何产物。四条设计关键事实与一条附带事实已填进 `S2-extension-shell-and-writes.md` 的「探针结果」表：① SW **无手势注入不可用**（两个 tab 都报 `Cannot access contents of the page…must request permission`）→ 集成测试要用测试专用 manifest 变体，「工具栏点击 → activeTab 授权」只能人工验收；② 请求的 `filename` 无扩展名时**不补扩展名**（`text/markdown` 与 `image/png` 都原样落盘）→ 引用必须以 `search()` 的真实 basename 为准；③ `search()` 返回**含子目录的绝对路径** → 「父目录名 == `dirName`」核对成立；④ `overwrite` 是**真覆盖**（同一路径、单文件、无 ` (1)` 分身）→ 保留 `overwrite`；⑤ 绝对 `filename` 被拒 `Invalid filename` → 写盘一律相对路径。
+- **探针顺手挖出一个装置坑（S3 必须照抄修法）**：Playwright 对 persistent context 一律发 CDP `Browser.setDownloadBehavior{allowAndName}`，于是每次下载都被写成 `<guid>`（无扩展名）且丢掉请求的子目录 —— 第一次跑探针就撞上（期望 `md-convertor-probe-noext`、收到 GUID），②③④ 在这个装置下**根本测不出来**。修法两步缺一不可：profile 里预写 `Default/Preferences` 的 `download.default_directory`，启动后再自己补发 `Browser.setDownloadBehavior{behavior:"default"}`；`downloadsPath` 不能碰（它就是 `allowAndName` 的入口）。
+- **又一条事实**：TypeScript 6 **不再自动把 `node_modules/@types` 下所有包拉进 program**（项目的 `@types/node` 其实是被 `next-env.d.ts` → `next` 间接带进来的）。所以 `@types/chrome` 装好也不生效，必须显式引用 —— 新增 `extension/src/chrome-types.d.ts`（一行 `/// <reference types="chrome" />`，零 import），后续 worker/content script 共用这两行。
+- **门禁**：`NODE_OPTIONS= ./init.sh` **exit 0**（Node 24.15.0，**75 files / 1035 tests**，statements 95.48%；扩展的浏览器内探针**不进** `init.sh`，按分层只走 `npm run test:extension`）。
 - **仍未做**：没有 `manifest.json`、service worker、content script、任何 `chrome.*` 调用、`extension/dist/`；`CHANGELOG.md` 不加条目（无用户可见变化）。
 
 ## 三条已固化的教训（都已写进约束清单）
@@ -58,6 +59,8 @@
 - **`esbuild` 必须精确锁 `0.28.1`**：写 `^0.28.1` 会解析到 0.28.2 并重写约 215 行 lock（本轮已踩过）。
 - **`npm run test:extension` 会先跑 `build:extension`**；沙箱内需 `MD_CONVERTOR_EXTENSION_CHROMIUM_ARGS=--no-sandbox,--disable-gpu`（与桌面 Playwright 同源限制），没有外层沙箱时不要传。
 - **插件与桌面端的引用口径**：md 里先写 `md-convertor-image-<n>` 占位符（纯词，不含 `:` `/`，Turndown 不会改写），落盘后用 `chrome.downloads.search()` 的**真实 basename** 回写引用（浏览器可能自己补扩展名）；真实父目录名 ≠ 请求的 `<标题>.images` 时按失败处理，退回原 URL，不写指向找不到的文件的引用。
+- **Playwright 跑扩展时下载会被改名（S2 探针实测）**：Playwright 对 persistent context 一律先发 CDP `Browser.setDownloadBehavior{behavior:"allowAndName"}`，每个下载都被写成 `<guid>`（无扩展名、丢掉请求的子目录）——不修装置就测不出「文件名是否被补扩展名」「相对子目录路径」「同名覆盖」这三条。修法两步：profile 里预写 `Default/Preferences` 的 `download.default_directory`，启动后自己再发一次 `behavior:"default"`；**`downloadsPath` 选项不能碰**（它就是 `allowAndName` 的入口），`acceptDownloads` 传什么都被归一成 `accept`。
+- **TS 6 不再自动收 `@types`**：`node_modules/@types/*` 不会自动进 program（本项目的 `@types/node` 是被 `next-env.d.ts` → `next` 间接带进来的），所以 `@types/chrome` 必须显式引用 —— 靠 `extension/src/chrome-types.d.ts` 里一行 `/// <reference types="chrome" />`（零 import）覆盖扩展全部文件；新增用 `chrome.*` 的文件不要再逐个加指令。
 - **同名用 `overwrite` 而不是 `uniquify`**：`uniquify` 只改 md 名（`标题 (1).md`）、目录名不变，一次重复导出就把文件对拆散；这也是不加时间戳的理由。
 - 签名/notarization 不做（QA-008 accepted，2026-09-20 用户决定）；UI 评审结论勿重提（2026-09-20 全部不整改）。
 - 云端 Provider 端到端实测仍待用户用真实文章走一遍（与 feat-041 无关的遗留项）。

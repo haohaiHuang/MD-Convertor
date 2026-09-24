@@ -2,7 +2,7 @@
 
 - 上游：`docs/features/browser-extension/FSD.md`（架构决定 §3.1、§3.3、§3.5）
 - 前置：S1 完成（`extension/src/convert/**` 纯函数已绿、`npm run build:extension` 可用）
-- 状态：**待实施**；**T2.0 的事实探针未出结论前不要写 T2.1 之后的代码**
+- 状态：**实施中 —— T2.0（事实探针）已完成**，T2.1 起待做（四条结论见文末「探针结果」）
 - feature_list id：`feat-040`
 
 ## Spec
@@ -102,16 +102,19 @@ export async function run(tabId: number, deps: ChromeDeps): Promise<RunResult>
 | T2.7 | 打桩单测矩阵收口 | 覆盖 `INJECT_FAILED` / `TIMEOUT` / `DOWNLOAD_FAILED` / 特权页 / 提取失败五条失败路径 ⇒ 先 failed | 五条全绿，`coverage` 中 `worker-run.ts`、`references.ts`、`write.ts` 达阈值 | `npm run test:coverage` |
 | T2.8 | 阶段收尾 | — | `./init.sh` 全绿；`extension/dist/` 恰含 `manifest.json` / `content.js` / `worker.js` 且无 Node 内置模块；探针结论已落本文档 | `./init.sh` |
 
-## 探针结果（T2.0 填写，未填前不得开工 T2.1）
+## 探针结果（T2.0，2026-09-24 实测；机器化证据 = `extension/tests/probe.spec.ts` 5 条用例）
 
 | # | 问题 | 实测结论 | 对设计的影响 |
 | --- | --- | --- | --- |
-| 1 | SW 无手势 `executeScript` 是否可用 | _待填_ | 不可用 → 集成测试用测试专用 manifest 变体（加 `host_permissions`），并把「工具栏点击 → activeTab 授权」标为只能人工验收 |
-| 2 | 请求的 `filename` 无扩展名时是否被补 | _待填_ | 决定引用是否必须走 `search()` 的真实 basename（当前设计已默认走） |
-| 3 | `search()` 返回的路径形态 | _待填_ | 决定「父目录名 == dirName」这条核对规则是否成立 |
-| 4 | `conflictAction: "overwrite"` 的实际行为 | _待填_ | 若不覆盖（而是又生成新名），改为「先 `search` 找同名 → 删掉再下载」 |
+| 1 | SW 无手势 `executeScript` 是否可用 | **不可用**。SW 用 `chrome.tabs.query({})` 拿到 tabId 后注入普通 http 页，两个 tab 全部报 `Cannot access contents of the page. Extension manifest must request permission to access the respective host.` | 集成测试须用测试专用 manifest 变体（补 `host_permissions`）；「工具栏点击 → activeTab 授权」这一段只能人工验收（S3） |
+| 2 | 请求的 `filename` 无扩展名时是否被补 | **不补，原样落盘**：`标题.images/note`（MIME `text/markdown`）与 `标题.images/photo`（MIME `image/png`）都保持无扩展名，浏览器不从 MIME 反推 `.md`/`.png` | 引用必须走 `search()` 返回的真实 basename（设计已如此）；扩展名只能由我们自己按 URL 后缀决定 |
+| 3 | `search()` 返回的路径形态 | **绝对路径，且包含请求的相对子目录**：`<下载目录>/<dirName>/1-image.png`，与磁盘逐项一致 | 「父目录名 == `dirName`」这条核对规则成立，保留 |
+| 4 | `conflictAction: "overwrite"` 的实际行为 | **真覆盖**：第二次下载返回同一路径，磁盘上只有一个文件、内容是第二次的，没有 `dup (1).md` 之类的分身 | 保留 `overwrite`（`uniquify` 会拆散 md 与 `.images/` 的文件对） |
+| 5 | `filename` 给绝对路径会怎样 | **被拒**：`Invalid filename`（与 2026-09-22 探针一致） | 写盘一律相对路径；这条现在有机器化证据 |
+
+**测试装置坑（S3 集成测试必须照抄这一套）**：Playwright 对 persistent context 一律发 CDP `Browser.setDownloadBehavior { behavior: "allowAndName" }`，于是每次下载都被写成 `<guid>`（无扩展名）并**丢掉请求的子目录** —— 实测在这一装置下第 2、3、4 条都测不出来（第一次跑 probe 时收到的就是 GUID）。修法两步，缺一不可：① 在 profile 里预写 `Default/Preferences` 的 `download.default_directory` 指向临时目录；② 启动后自己补发一次 `Browser.setDownloadBehavior { behavior: "default" }` 覆盖 Playwright 的设置。**`launchPersistentContext` 的 `downloadsPath` 选项不能用**（它正是 `allowAndName` 的入口），`acceptDownloads: "internal-browser-default"` 也无效（Playwright 客户端把任何真值都归一成 `accept`）。
 
 ## Handoff
 
-- 结束时必须写清：消息契约的确切字段；`run(tabId, deps)` 的注入形状；角标语义（`…` 进行中 / `✓` 成功 / `!` 失败）与 4s 清空；`overwrite` 的理由（`uniquify` 会拆散 md 与 `.images/` 的文件对）；四条探针结论。
+- 结束时必须写清：消息契约的确切字段；`run(tabId, deps)` 的注入形状；角标语义（`…` 进行中 / `✓` 成功 / `!` 失败）与 4s 清空；`overwrite` 的理由（`uniquify` 会拆散 md 与 `.images/` 的文件对）；探针五条结论 + Playwright 下载装置坑的修法。
 - 已知限制：无图标；无保活；不做 popup；工具栏点击 → `activeTab` 授权这一段只能人工验收（S3）。

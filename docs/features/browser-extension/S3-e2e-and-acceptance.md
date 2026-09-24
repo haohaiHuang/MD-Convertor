@@ -1,7 +1,7 @@
 # S3 — 端到端集成、真机验收与文档收口（Spec / Plan / Tasks）
 
 - 上游：`docs/features/browser-extension/FSD.md`（验收标准 §5、风险 §6）
-- 前置：S1 + S2 完成（`extension/dist/` 可加载），四条探针结论已落到 S2 文档
+- 前置：S1 + S2 完成（`extension/dist/` 可加载），五条探针结论与 Playwright 下载装置修法已落到 S2 文档
 - 状态：**待实施**
 - feature_list id：`feat-040`
 
@@ -13,7 +13,7 @@
 
 1. **测试配置独立**：新增 `playwright.extension.config.ts`（`testDir: "./extension/tests"`、只 chromium、`workers: 1`、无 `webServer`）。**不动** `playwright.config.ts` 的既有三个项目，也不改 `scripts/run-e2e.mjs`——扩展测试不能拖慢或影响桌面 e2e 门禁。
 2. **fixture 站**用 `node:http` 现搭（`extension/tests/fixtures/server.mjs`）：静态 HTML + 图片；**一个需要 cookie 才返回 200 的图片路径**（用真实浏览器会话证明 PLAN 附录 A.3.1 的 cookie 结论），**一个永远 404 的图片路径**（证明失败标记），一篇中文长标题、一篇含 `/` `:` 的标题。
-3. **写盘落点**用 Playwright `launchPersistentContext(userDataDir, { downloadsPath, acceptDownloads: true })` 指定到临时目录，断言**真实文件**（不只看 `downloads.search`）。
+3. **写盘落点**：**不要用 `launchPersistentContext` 的 `downloadsPath`**（它正是 Playwright 把下载改成 `<guid>` 的 `allowAndName` 入口，会同时丢掉扩展名与请求的子目录 —— S2 T2.0 实测）。按 S2「探针结果」下的修法：① profile 里预写 `Default/Preferences` 的 `download.default_directory` 指向临时目录；② 启动后发一次 CDP `Browser.setDownloadBehavior { behavior: "default" }`。然后断言**真实文件**（不只看 `downloads.search`）。
 4. **规范的那一次在 Terminal 里跑**（沙箱内 Chromium 需要 `--no-sandbox --disable-gpu`，见 `MD_CONVERTOR_EXTENSION_CHROMIUM_ARGS`）；沙箱内跑出来的只能当功能证据，不能当规范证据。
 5. **人工验收由用户签字**：工具栏点击与 `activeTab` 授权是自动化点不到的（Playwright 无法点浏览器工具栏），这一段只能人工。
 
@@ -27,7 +27,8 @@
 
 ### 2. `extension/tests/integration.spec.ts`
 
-- 用 `chromium.launchPersistentContext` + `--disable-extensions-except` / `--load-extension` 加载 `extension/dist`；`downloadsPath` 指向临时目录。
+- 用 `chromium.launchPersistentContext` + `--disable-extensions-except` / `--load-extension` 加载 `extension/dist`；下载目录按上文 §Spec 3 的修法指向临时目录（**不传 `downloadsPath`**）。
+- **必须用测试专用的 manifest 变体**：把 `extension/dist` 拷进临时目录后给 `manifest.json` 补 `host_permissions: ["http://127.0.0.1/*"]`（把 fixture 站的实际 origin 写进去）。原因（S2 T2.0 探针 1 实测）：SW **无手势** 调 `chrome.scripting.executeScript` 会被拒（`… must request permission to access the respective host.`），而 Playwright 点不了工具栏、拿不到 `activeTab` 授权。改的是临时目录里的副本，`extension/dist/` 与产品语义不变。
 - 通过 `context.serviceWorkers()`（或 `waitForEvent("serviceworker")`）拿 SW，`sw.evaluate((id) => globalThis.__mdConvertorRun(id), tabId)` —— S2 的 `worker.ts` 需为此暴露一个测试用途的内部函数名（**只在 SW 里挂 `globalThis`，不影响生产语义**）。
 - 断言矩阵：
   1. `<标题>.md` 与 `<标题>.images/*` 真实出现在 `downloadsPath`；md 内的相对引用与实际文件名逐一对应（朴素正则提取 `](...)` 后逐个 `existsSync`）。
