@@ -4,8 +4,8 @@
 
 - Last updated: 2026-09-24（第三轮：S1 转换核心落地）
 - Current version: `0.3.6`，**已发布**为 GitHub Release `v0.3.6`（`package.json`、`package-lock.json`、`feature_list.json`、`scripts/release-desktop.mjs` 均为 `0.3.6`；产物 235,956,668 bytes / SHA-256 `9b89d55c…f351`；已装到本机 `/Applications`）。**本轮不动桌面代码，所以不 bump 到 `0.3.7`**（bump 只由桌面代码改动触发；插件版本自管）
-- Active feature: **`feat-040` 浏览器插件（B）—— 状态 `in-progress`，S1（转换核心）已完成，下一步 S2**（`feat-042` 桌面端文档处理（A）仍为 `planned`，无顺序与代码依赖；`feat-041` 已完成已发布已关闭）
-- Next step: **S2 的第一个任务是事实探针**（无手势注入、`downloads` 是否补扩展名、`overwrite` 行为；`S2-extension-shell-and-writes.md` 的「探针结果」表未填前不得写 SW 编排）——探针结论出来后再写 `extension/manifest.json` 与 service worker
+- Active feature: **`feat-040` 浏览器插件（B）—— 状态 `in-progress`，S1（转换核心）已完成并提交（本地，未 push），下一步 S2**（`feat-042` 桌面端文档处理（A）仍为 `planned`，无顺序与代码依赖；`feat-041` 已完成已发布已关闭）
+- Next step: ① **先做一次 doc 清理**（用户已批准）：本文件四段「上一轮…已完成」历史压进 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`（**删前先给 2026-09-22 那轮补条目**），单独提交；② 然后 **S2 的第一个任务是事实探针**（无手势注入、`downloads` 是否补扩展名、`overwrite` 行为；`S2-extension-shell-and-writes.md` 的「探针结果」表未填前不得写 SW 编排）——探针结论出来后再写 `extension/manifest.json` 与 service worker
 - Branch: `main`；stash@{0} 是 2026-09-21 拉取前的文档备份、与当前工作无关
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+（桌面产物）；浏览器插件另行验收于 Chromium，不进桌面发布门禁
 
