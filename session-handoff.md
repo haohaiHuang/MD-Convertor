@@ -3,8 +3,8 @@
 ## Resume Here
 
 - Current version: `0.3.6`，**已发布为 GitHub Release `v0.3.6`（2026-09-22）**，已装到 `/Applications/MD-Convertor.app`。未签名、未 notarize，产物定位是个人测试用。全部 RED/GREEN 与门禁证据在 `feature_list.json` 的 `feat-041.verification`。**插件线路的轮次不碰桌面代码，因此不需要把版本 bump 到 `0.3.7`**（仅改动 `src/` / `electron/` / 打包配置时才需要，清单见下方开工提示词）
-- Active feature: **`feat-040` 浏览器插件（B）—— `in-progress`，S1（转换核心）、S2（扩展外壳与写盘，T2.0–T2.8）、S3（端到端集成与文档收口，T3.0–T3.3 / T3.5 / T3.6）均已完成（2026-09-24）；**T3.4 人工验收进行中：第 1/2/4 条已回报正常、第 6 条为关闭，第 3、5 条未测**。已交付：`extension/src/convert/` 六个纯函数模块 + `extension/src/{messages,content,write,worker-run,worker,references}.ts` + `extension/manifest.json` + `extension/tests/fixtures/{server.ts,server.test.ts}` + `extension/tests/integration.spec.ts`（5 条，读磁盘真实文件），`npm run build:extension` 产出 `extension/dist/` 恰好三份（`manifest.json` / `content.js` / `worker.js`），`npm run test:extension` 15 passed。阶段文档在册：`docs/features/browser-extension/`（`FSD.md` + `S1`/`S2`/`S3`）。`feat-042`（A 桌面端文档处理）仍为 `planned`，**已与本块解耦：无顺序依赖、无代码依赖**
-- **唯一推荐下一步**：**用户跑 T3.4 剩下的两条** —— 第 3 条（登录后才可见、图片带会话的文章）与第 5 条（**≥30 图长文会不会被 MV3 休眠打断下载**）。清单在 `docs/TESTING.md` 的「Browser Extension」一节（第 1/2/4/6 条已于第八轮通过；真机 Chrome → `chrome://extensions` → 开发者模式 →「加载已解压的扩展程序」指向 `extension/dist`）。用户回报后把结论写进 `feature_list.json` 的 `feat-040` 与 S3 文档，即可标 `done`；若真被打断，按 FSD §6 在 `worker-run.ts` 的下载等待处加 20s 心跳保活再复验。RED/GREEN 与门禁证据在 `feature_list.json` 的 `feat-040.verification`（已 35 条，T3.4 条已更新为部分通过）。**不要**顺手改桌面端、**不要** bump 版本、**不要**跑 `desktop:release`、**不要** push
+- Active feature: **`feat-040` 浏览器插件（B）—— `in-progress`，S1（转换核心）、S2（扩展外壳与写盘，T2.0–T2.8）、S3（端到端集成与文档收口，T3.0–T3.3 / T3.5 / T3.6）均已完成（2026-09-24）；**T3.4 人工验收进行中：第 1/2/3/4 条已回报正常、第 6 条为关闭，仅第 5 条未测**。已交付：`extension/src/convert/` 六个纯函数模块 + `extension/src/{messages,content,write,worker-run,worker,references}.ts` + `extension/manifest.json` + `extension/tests/fixtures/{server.ts,server.test.ts}` + `extension/tests/integration.spec.ts`（5 条，读磁盘真实文件），`npm run build:extension` 产出 `extension/dist/` 恰好三份（`manifest.json` / `content.js` / `worker.js`），`npm run test:extension` 15 passed。阶段文档在册：`docs/features/browser-extension/`（`FSD.md` + `S1`/`S2`/`S3`）。`feat-042`（A 桌面端文档处理）仍为 `planned`，**已与本块解耦：无顺序依赖、无代码依赖**
+- **唯一推荐下一步**：**用户跑 T3.4 的最后一条** —— 第 5 条（**≥30 图长文会不会被 MV3 休眠打断下载**），本阶段唯一未验证的风险。清单在 `docs/TESTING.md` 的「Browser Extension」一节（第 1/2/3/4/6 条已通过；真机 Chrome → `chrome://extensions` → 开发者模式 →「加载已解压的扩展程序」指向 `extension/dist`）。用户回报后把结论写进 `feature_list.json` 的 `feat-040` 与 S3 文档，即可标 `done`；若真被打断，按 FSD §6 在 `worker-run.ts` 的下载等待处加 20s 心跳保活再复验。RED/GREEN 与门禁证据在 `feature_list.json` 的 `feat-040.verification`（已 35 条，T3.4 条已更新为部分通过）。**不要**顺手改桌面端、**不要** bump 版本、**不要**跑 `desktop:release`、**不要** push
 - Pending（无一是阻塞项）：① 云端 Provider 端到端实测（用户真实文章走一遍「拉取模型 → 选模型 → 翻译」）；② 真机小点清单（等用户给）；③ `0.3.1`–`0.3.6` 的产物与 tag 一律不动，缺失项按退役处理；④ 签名/notarization 不做（QA-008 accepted）；⑤ UI 评审结论勿重提（全部不整改）；⑥ `stash@{0}` 是 2026-09-21 拉取前的文档备份、与当前工作无关；⑦ 可选：在 Terminal 里跑一次**规范**的打包冒烟（Chromium 沙箱开启）—— 本 agent 沙箱内只能以 `--no-sandbox --disable-gpu` 取证，属环境限制；⑧ ~~PROGRESS.md 瘦身~~ **已完成（2026-09-24，提交 `934e979`）**
 - Branch: `main`；**本地提交后不 push** —— 用户明确要求 GitHub 等大阶段完成再推（S1 提交止于本地）；发布历史：`v0.3.6` = `3578822`（feat-041 默认 MD 保存路径，asar 253 → 10 条目，Latest）、`v0.3.5` = `5f98307`（feat-039 + 清空按钮归位）、`v0.3.4` = `e251267`（图标 v2）、`v0.3.3` = `3897cd1`（feat-034）、`v0.3.2` = `1c3ed80`（feat-033）、`v0.3.1` = `af7f6db`（feat-031/032）；`v0.1.3` = `ce041c9`（不可变历史锚点）
 
@@ -13,7 +13,7 @@
 ## 新会话开工提示词（复制即用）
 
 ```
-继续 MD-Convertor 的下一轮工作：收尾浏览器插件（B，feat-040）—— T3.4 人工验收已过第 1/2/4/6 条，只剩第 3 条（登录会话图）与第 5 条（≥30 图长文 / MV3 休眠）；用户回报后本块即可关闭。
+继续 MD-Convertor 的下一轮工作：收尾浏览器插件（B，feat-040）—— T3.4 人工验收已过第 1/2/3/4/6 条，只剩第 5 条（≥30 图长文 / MV3 休眠）；用户回报后本块即可关闭。
 
 先按 Startup Workflow 读 AGENTS.md、PROGRESS.md、feature_list.json、session-handoff.md（本文件），
 再读 docs/features/browser-extension/FSD.md 与 S3-e2e-and-acceptance.md 的 ## Result / ## Handoff，
@@ -22,7 +22,7 @@
 当前状态（2026-09-24 第七轮末；本文件 `## Resume Here` 是权威）：
 - 版本 0.3.6，已发布为 GitHub Release v0.3.6，已装到 /Applications；未签名，个人测试用。
 - activeFeature = feat-040（B 浏览器插件，in-progress）；S1 转换核心、S2 扩展外壳、S3 端到端集成
-  （T3.0–T3.3 / T3.5 / T3.6）均已完成；**T3.4 人工验收进行中（第 1/2/4 条正常、第 6 条为关闭；第 3、5 条未测）**。
+  （T3.0–T3.3 / T3.5 / T3.6）均已完成；**T3.4 人工验收进行中（第 1/2/3/4 条正常、第 6 条为关闭；仅第 5 条未测）**。
 - S3 产物：extension/tests/fixtures/server.ts（+ server.test.ts，8 条，进 init.sh）、
   integration.spec.ts 5 条（真实 MV3 扩展 + 真实落盘；npm run test:extension 共 15 条）、
   harness.ts 的 waitForDownloadComplete()（downloads.download() 在下载「开始」时就 resolve）。
@@ -32,9 +32,9 @@
 
 T3.4 怎么做（第八轮已跑掉一半）：真机 Chrome（Terminal，不要受限沙箱）→ chrome://extensions
 → 开发者模式 →「加载已解压的扩展程序」指向 extension/dist（已构建、被 gitignore）→ 跑
-docs/TESTING.md「Browser Extension」一节的 6 条 → 回报。**已过 1/2/4/6（载入、普通文章落盘、
-覆盖不拆对、「下载前询问保存位置」为关闭）；待跑第 3 条（登录会话图）与第 5 条（≥30 图长文
-是否被 MV3 休眠打断）。** 回报后写进 feature_list.json 与 S3 文档的「人工验收记录」再标 done；
+docs/TESTING.md「Browser Extension」一节的 6 条 → 回报。**已过 1/2/3/4/6（载入、普通文章落盘、
+登录会话图、覆盖不拆对、「下载前询问保存位置」为关闭）；待跑第 5 条（≥30 图长文是否被 MV3
+休眠打断）。** 回报后写进 feature_list.json 与 S3 文档的「人工验收记录」再标 done；
 若第 5 条真被打断，按 FSD §6 在 worker-run.ts 的下载等待处加 20s 心跳保活再复验。
 
 这一轮的硬约束（与桌面轮次不同，别弄混）：
@@ -97,8 +97,8 @@ S2「决策记录」与 FSD「安全边界」）：isAbsoluteDirPath 不要收�
 
 ## Next Stage Entry
 
-- S1 → S6 全部完成；`feat-024` – `feat-041` 均 done；当前 `activeFeature` = **`feat-040`**（B 浏览器插件，`in-progress`），**S1、S2、S3（T3.0–T3.3 / T3.5 / T3.6）均已完成（2026-09-24），**T3.4 人工验收进行中（第 1/2/4/6 条已过，第 3、5 条待测）**。`feat-041`（默认 MD 保存路径）三阶段全部完成，随 `0.3.6` 发布并关闭。
-- 下一轮入口：**T3.4 剩下两条**（第 3 条登录会话图、第 5 条 ≥30 图长文 / MV3 休眠）—— 真机 Chrome 加载 `extension/dist` 按 `docs/TESTING.md` 清单跑并回报；1/2/4/6 条已于 2026-09-24 第八轮通过（现场观察：重复导出时下载列表条目增、目录文件数不变，属 overwrite 预期行为）。结论写回 `feature_list.json` 与 `S3-e2e-and-acceptance.md` 后即可标 `done`。实施细节与六处落地偏差见 `S3-e2e-and-acceptance.md` 的 `## Result`，给下一阶段的事实清单见其 `## Handoff`。`feat-042`（A 桌面端文档处理）已解耦、另案（其 PRD 的待对齐项仍未动，要开工得先走一轮规划）。**只动 `extension/` 的轮次不 bump 版本**；只有改动 `src/` / `electron/` / 打包配置时才需要把 `0.3.6` 升到 `0.3.7` 并同步版本面（清单见本文件顶部开工提示词），否则 `desktop:release` 会拒跑。
+- S1 → S6 全部完成；`feat-024` – `feat-041` 均 done；当前 `activeFeature` = **`feat-040`**（B 浏览器插件，`in-progress`），**S1、S2、S3（T3.0–T3.3 / T3.5 / T3.6）均已完成（2026-09-24），**T3.4 人工验收进行中（第 1/2/3/4/6 条已过，仅第 5 条待测）**。`feat-041`（默认 MD 保存路径）三阶段全部完成，随 `0.3.6` 发布并关闭。
+- 下一轮入口：**T3.4 最后一条**（第 5 条 ≥30 图长文 / MV3 休眠，唯一未验证的风险）—— 真机 Chrome 加载 `extension/dist` 按 `docs/TESTING.md` 清单跑并回报；1/2/3/4/6 条已于 2026-09-24 第八轮通过（现场观察：重复导出时下载列表条目增、目录文件数不变，属 overwrite 预期行为）。结论写回 `feature_list.json` 与 `S3-e2e-and-acceptance.md` 后即可标 `done`。实施细节与六处落地偏差见 `S3-e2e-and-acceptance.md` 的 `## Result`，给下一阶段的事实清单见其 `## Handoff`。`feat-042`（A 桌面端文档处理）已解耦、另案（其 PRD 的待对齐项仍未动，要开工得先走一轮规划）。**只动 `extension/` 的轮次不 bump 版本**；只有改动 `src/` / `electron/` / 打包配置时才需要把 `0.3.6` 升到 `0.3.7` 并同步版本面（清单见本文件顶部开工提示词），否则 `desktop:release` 会拒跑。
 - 每轮开头固定读：`PROGRESS.md` → `session-handoff.md` → `feature_list.json` → 相关 `docs/`（涉及翻译行为时先读 `docs/PRD-translation.md`），然后跑 `./init.sh` 建立基线。
 - 全部阶段文档（已完成入口）：`docs/features/translation/S1-settings-infra.md` 至 `S6-release-and-docs.md`；各文档的 Handoff 已写入下一阶段所需的真实接口与边界。
 ## Environment Notes
@@ -117,7 +117,7 @@ S2「决策记录」与 FSD「安全边界」）：isAbsoluteDirPath 不要收�
 
 `feat-041` 已收口：**0.3.6 已过门禁、已装本机、已发布为 GitHub Release `v0.3.6`，`feature_list.json` 已置 `done`。** 当前 `activeFeature` = `feat-040`（B 浏览器插件，**`in-progress`，S1/S2/S3 的代码与文档均已完成，T3.4 人工验收进行中**）。
 
-**唯一推荐下一步：用户跑 T3.4 剩下的两条** —— 真机 Chrome 加载 `extension/dist`（已构建），按 `docs/TESTING.md` 的「Browser Extension」清单验收：第 3 条（登录后才可见、图片带会话的文章）与第 5 条（≥30 图长文会不会被 MV3 休眠打断下载；1/2/4/6 条已过）。回报后我把结论写进 `feature_list.json` 与 S3 文档并把 `feat-040` 标 `done`；若被打断，按 FSD §6 加 20s 心跳保活再复验。
+**唯一推荐下一步：用户跑 T3.4 的最后一条** —— 真机 Chrome 加载 `extension/dist`（已构建），按 `docs/TESTING.md` 的「Browser Extension」清单验收第 5 条（≥30 图长文会不会被 MV3 休眠打断下载；1/2/3/4/6 条已过）。回报后我把结论写进 `feature_list.json` 与 S3 文档并把 `feat-040` 标 `done`；若被打断，按 FSD §6 加 20s 心跳保活再复验。
 
 下面按「要不要动代码」分两类，都不要自作主张扩大范围 —— 用户两轮都明确要求过不要顺手搞无关的东西（「我只是搞一个文档下载路径，你为什么要搞这么多有的没的」）：
 
@@ -127,7 +127,7 @@ S2「决策记录」与 FSD「安全边界」）：isAbsoluteDirPath 不要收�
 3. **真机小点清单**：等用户给清单后再评估是否单开一轮。
 
 **B. 要动代码的话**
-4. **插件 B（`feat-040`，本轮推荐）**：S1、S2、S3 的代码与文档均已完成，**T3.4 人工验收进行中（1/2/4/6 过，3、5 待测）**（只能由用户跑，机器点不到工具栏）；只动 `extension/` 的轮次**不 bump 版本**、不跑 `desktop:release`、不动桌面 e2e。
+4. **插件 B（`feat-040`，本轮推荐）**：S1、S2、S3 的代码与文档均已完成，**T3.4 人工验收进行中（1/2/3/4/6 过，仅第 5 条待测）**（只能由用户跑，机器点不到工具栏）；只动 `extension/` 的轮次**不 bump 版本**、不跑 `desktop:release`、不动桌面 e2e。
 5. **插件 A（`feat-042`）是另案**：与 B 无顺序、无代码依赖；要开工得先自己走一轮规划（它的 PRD §3 还有待对齐项），不要因为「顺手」把它拉进 B 的轮次。
 6. **若确实要改桌面代码（`src/` / `electron/` / 打包配置）**：先 bump 到 `0.3.7` 并同步版本面（清单见本文件顶部开工提示词），漏一处 `desktop:release` 就拒跑。
 7. 签名/notarization 用户 2026-09-20 已决定不做（QA-008 accepted）；要恢复需要 Developer ID Application 证书 + notarytool 凭据，且签名后必须重跑门禁更新哈希。
