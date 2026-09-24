@@ -2,14 +2,22 @@
 
 ## Current State
 
-- Last updated: 2026-09-24（第七轮：S3 端到端集成 —— T3.0 fixture 站、T3.1–T3.3 真实扩展集成 5 条、下载完成竞态修复、T3.5 文档收口、T3.6 收尾；**S3 除 T3.4 人工验收外全部完成**）
+- Last updated: 2026-09-24（第八轮：T3.4 人工验收**部分通过** —— 第 1/2/4 条正常、第 6 条为关闭；**第 3、5 条未测**，`feat-040` 保持 in-progress）
 - Current version: `0.3.6`，**已发布**为 GitHub Release `v0.3.6`（`package.json`、`package-lock.json`、`feature_list.json`、`scripts/release-desktop.mjs` 均为 `0.3.6`；产物 235,956,668 bytes / SHA-256 `9b89d55c…f351`；已装到本机 `/Applications`）。**本轮不动桌面代码，所以不 bump 到 `0.3.7`**（bump 只由桌面代码改动触发；插件版本自管，`extension/manifest.json` 仍是 `0.1.0`）
-- Active feature: **`feat-040` 浏览器插件（B）—— 状态 `in-progress`**：S1/S2/S3 的代码与文档均已完成，**只剩 T3.4 真机人工验收待用户签字**（工具点不到工具栏）；提交均在本地未 push。（`feat-042` 桌面端文档处理（A）仍为 `planned`，无顺序与代码依赖；`feat-041` 已完成已发布已关闭）
-- Next step: **只剩一件事：用户跑 T3.4 人工验收**（先看 `docs/features/browser-extension/S3-e2e-and-acceptance.md` §3 与 `docs/TESTING.md` 的「Browser Extension」清单）——真机 Chrome → `chrome://extensions` → 开发者模式 →「加载已解压的扩展程序」指向 `extension/dist`（已构建，目录被 gitignore），跑 6 条，**重点是第 5 条：≥ 30 图的长文会不会被 MV3 休眠打断下载**。用户回报后把结论写进 `feature_list.json` 的 T3.4 条与 S3 文档，即可把 `feat-040` 标为 `done`；若真被打断，按 FSD §6 在 `worker-run.ts` 的下载等待处加 20s 心跳保活并复验。之后下一阶段是 A（`feat-042`，需先走一轮规划）。
+- Active feature: **`feat-040` 浏览器插件（B）—— 状态 `in-progress`**：S1/S2/S3 的代码与文档均已完成，**T3.4 真机人工验收进行中：第 1/2/4/6 条已通过，第 3、5 条未测**（工具点不到工具栏）；提交均在本地未 push。（`feat-042` 桌面端文档处理（A）仍为 `planned`，无顺序与代码依赖；`feat-041` 已完成已发布已关闭）
+- Next step: **只剩一件事：用户跑 T3.4 的剩下两条**——第 3 条（登录后才可见、图片带会话的文章）与第 5 条（**≥30 图长文会不会被 MV3 休眠打断下载**，本阶段唯一未验证的风险）。清单见 `docs/TESTING.md` 的「Browser Extension」一节（第 1/2/4/6 条已于第八轮通过）。用户回报后把结论写进 `feature_list.json` 的 T3.4 条与 S3 文档的「人工验收记录」，即可把 `feat-040` 标为 `done`；若第 5 条真被打断，按 FSD §6 在 `worker-run.ts` 的下载等待处加 20s 心跳保活并复验。之后下一阶段是 A（`feat-042`，需先走一轮规划）。
 - Branch: `main`；stash@{0} 是 2026-09-21 拉取前的文档备份、与当前工作无关
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+（桌面产物）；浏览器插件另行验收于 Chromium，不进桌面发布门禁
 
-## 本轮（2026-09-24 第七轮：S3 端到端集成与文档收口，T3.0–T3.3 / T3.5 / T3.6）已完成
+## 本轮（2026-09-24 第八轮：T3.4 人工验收部分通过）已完成
+
+用户在真机 Chrome 载入 `extension/dist`（未打包扩展），回报清单第 1（载入成功）、2（普通文章：桌面端未运行也出现 `<标题>.md` + `<标题>.images/`）、4（同一篇连点两次：覆盖、不出现 `(1)`、md 与图目录仍成对）条正常；第 6 条「下载前询问保存位置」为**关闭**（因此不逐图弹框，符合预期，该项开启时每图一框亦属预期）。**第 3 条（登录后才可见、图片带会话的文章）与第 5 条（≥30 图长文是否被 MV3 休眠打断）仍未测。**
+
+一条现场观察按**预期行为**记录、不当缺陷：同一篇重复导出时 Chrome 下载列表每次多出一条记账，而下载目录里的文件数量不变 —— `conflictAction: "overwrite"` 的语义就是「替换文件、照记下载」，可读证据是工具栏角标（`✓ 已存出「<标题>.md」（含 N 张图）`）与文件 mtime。已写进 `S3-e2e-and-acceptance.md` 的「人工验收记录（T3.4，进行中）」与 FSD §6（顺带修正 §6 里把验收条目编号写成「第 7 条」的过期引用）。
+
+零代码改动、零版本变动（0.3.6 不动、插件 0.1.0 不动）。本轮只更新文档与 `feature_list.json` 的 T3.4 证据。
+
+## 上一轮（2026-09-24 第七轮：S3 端到端集成与文档收口，T3.0–T3.3 / T3.5 / T3.6）已完成
 
 用户指令：继续 S3。**只写 `extension/` 与文档、零桌面改动，不 bump 版本、不跑 `desktop:release`、不跑 `test:e2e`。**
 

@@ -2,7 +2,7 @@
 
 - 上游：`docs/features/browser-extension/FSD.md`（验收标准 §5、风险 §6）
 - 前置：S1 + S2 完成（`extension/dist/` 可加载），五条探针结论与 Playwright 下载装置修法已落到 S2 文档
-- 状态：**T3.0–T3.3、T3.5、T3.6 已完成（2026-09-24）；T3.4 人工验收待用户签字**
+- 状态：**T3.0–T3.3、T3.5、T3.6 已完成（2026-09-24）；T3.4 人工验收进行中（第 1/2/4/6 条已通过，第 3、5 条未测）**
 - feature_list id：`feat-040`
 
 ## Spec
@@ -64,7 +64,7 @@
 | T3.1 | 真实扩展 + 真实写盘断言 | `integration.spec.ts` 用例①②：md 与图片文件真的落进下载目录；md 引用与实际文件名逐一对应 ⇒ 先 failed ⚠️**部分不成立**：首跑确实红了（引用 4 条 vs 期望 3 等），但三处都是**测试自身**的解析/断言缺陷（源链接 `<…>` 形式被算成图片引用等），扩展行为自 S2 起就是对的 —— 属**补证**（见 §Result「RED 诚实记录」） | chromium 全绿（5 passed，整体 15 passed） | `npm run test:extension`（实测 15 passed；迭代时用 `npx playwright test --config=playwright.extension.config.ts -g <用例名>`） |
 | T3.2 | cookie 图与 404 图的差别路径 | 用例③：cookie 图成功、404 图退回原 URL + `<!-- 图片未下载：… -->` ⇒ 先 failed ⚠️**不成立**：实现来自 S2，用例首跑即绿，属**补证** | 全绿 | `npm run test:extension`（15 passed） |
 | T3.3 | 重复导出与文件名净化 | 用例④⑤：覆盖、无 `(1)`、中文与 `/` `:` 标题文件名干净 ⇒ 先 failed ⚠️**不成立**：同上，属**补证**；中途红的那次是断言把净化后的 H1 当成了原始标题，按实测改正 | 全绿 | `npm run test:extension`（15 passed） |
-| T3.4 | 人工验收执行与签字 | — | 用户按 §3 清单跑完 6 条并签字（含 ≥30 图那篇的结论）；结论写进 `feature_list.json` 的 verification | **待用户执行**（Playwright 点不到工具栏，无法自动化）；证据为用户回复 + 本文件记录 |
+| T3.4 | 人工验收执行与签字 | — | 用户按 §3 清单跑完 6 条并签字（含 ≥30 图那篇的结论）；结论写进 `feature_list.json` 的 verification | **进行中**：第 1/2/4/6 条已通过（见「人工验收记录」），第 3、5 条待用户执行（Playwright 点不到工具栏，无法自动化） |
 | T3.5 | 文档收口 | — | `AGENTS.md` / `docs/TESTING.md` / `CHANGELOG.md` / `PROGRESS.md` / `session-handoff.md` / `feature_list.json` 与事实一致；`init.sh` 与 `test:extension` 均绿 | `NODE_OPTIONS= ./init.sh`（79 files / 1067 tests）+ `npm run test:extension`（15 passed） |
 | T3.6 | 阶段收尾 | — | 临时 Downloads / profile / 扩展副本目录已由 spec 的 `afterAll` 删除（`rmSync`），`extension/dist-test/` 与 `extension/dist/` 在 gitignore 内；`git status --short` 只含预期改动 | `git status --short` |
 
@@ -104,6 +104,23 @@ T3.0 是真 RED（模块不存在）。T3.1–T3.3 的红**不是产品缺陷**�
 ### 一处产品行为发现（不修，记录）
 
 整篇文章的图片**全部**失败时，磁盘上会留下一个空的 `<标题>.images/` 目录：Chrome 在发请求前就把目标目录建好了，中断的下载会删掉半成品文件但不会删目录，而 `chrome.downloads` API 根本没有删目录的能力（`removeFile` 只删文件）。这不影响正确性（md 里那些图退回原 URL），且代价是一个空目录。测试按「目录不存在**或**为空」断言，不把它当成缺陷；若将来要清，只能在下次导出时顺手 `removeFile` 掉自己写的文件，成本大于收益。
+
+## 人工验收记录（T3.4，进行中 — 2026-09-24）
+
+用户按 `docs/TESTING.md` 的「Browser Extension」清单在真机 Chrome（`extension/dist` 以「加载已解压的扩展程序」载入）执行：
+
+| # | 检查 | 结果 |
+| --- | --- | --- |
+| 1 | 扩展载入 | ✅ 正常 |
+| 2 | 普通文章点工具栏图标 → `<标题>.md` + `<标题>.images/`，桌面端未运行 | ✅ 用户回报正常 |
+| 3 | 登录后才可见、图片带会话的文章 | ⏳ **未测**（用户尚未找到合适的页面） |
+| 4 | 同一篇连点两次 → 覆盖、不出现 `(1)`、md 与图目录仍成对 | ✅ 用户回报正常 |
+| 5 | ≥30 张图的文章 → 观察 MV3 休眠是否打断下载 | ⏳ **未测**（本阶段唯一未验证的风险） |
+| 6 | 「下载前询问保存位置」是否开启 | ✅ **关闭**（因此逐图弹框不发生，符合预期；该设置为开启时每图一框亦属预期） |
+
+**观察记录（不是缺陷）**：同一篇文章重复导出时，Chrome 的下载列表每次都会多出条目，而下载目录里的**文件数量不变** —— 这正是 `conflictAction: "overwrite"` 的语义：每条下载都会被记账，文件被原地替换而不是新增。用户可读的证据是工具栏角标（`✓ 已存出「<标题>.md」（含 N 张图）`）与文件 mtime 的变化。本项已记入 FSD §6，供将来做 UI 文案时参考（若要让「覆盖」更显眼，可在角标文案里点明）。
+
+T3.4 在**第 3、5 条**跑完并回报前不算签字；`feat-040` 保持 `in-progress`。第 5 条若真被打断，按 FSD §6 在 `worker-run.ts` 的下载等待处加 20s 心跳保活后复验。
 
 ## Handoff（S3 完成态，2026-09-24）
 

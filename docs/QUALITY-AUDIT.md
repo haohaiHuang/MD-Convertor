@@ -280,6 +280,15 @@ Approved for personal testing. Not approved for frictionless public distribution
 
 ## Archived Round Log
 
+### 2026-09-24（第八轮）— T3.4 人工验收部分通过（文档与证据更新，零代码改动）
+
+- **用户回报（真机 Chrome 载入 `extension/dist`）**：第 1 条载入成功、第 2 条普通文章落盘（桌面端未运行也出现 `<标题>.md` + `<标题>.images/`）、第 4 条同一篇连点两次覆盖且不出现 `(1)`（md 与图目录仍成对）均正常；第 6 条「下载前询问保存位置」为**关闭**（故不逐图弹框，符合预期；该项开启时每图一框亦属预期）。
+- **仍未测**：第 3 条（登录后才可见、图片带会话的文章）与第 5 条（**≥30 图长文会不会被 MV3 休眠打断下载**）—— 第 5 条是本阶段唯一未验证的风险，`feat-040` 因此保持 `in-progress`。
+- **现场观察（按预期行为记录，不是缺陷）**：同一篇重复导出时 Chrome 下载列表每次多出一条记账，而下载目录里的文件数量不变 —— `conflictAction: "overwrite"` 的语义就是「替换文件、照记下载」。可读证据是工具栏角标（`✓ 已存出「<标题>.md」（含 N 张图）`）与文件 mtime；若将来要让「覆盖」更显眼，改角标文案即可。
+- **落地**：`S3-e2e-and-acceptance.md` 新增「人工验收记录（T3.4，进行中）」表；FSD §6 新增该观察一行，并修正 §6 里把验收条目编号写成「第 7 条」的过期引用（实际是第 5 条）；`feature_list.json` 的 T3.4 证据改写为「部分通过 + 剩余两条」；`PROGRESS.md` / `session-handoff.md` / 本文件同步。
+- **范围与门禁**：本轮零代码改动、零版本变动（桌面仍 `0.3.6`、插件 `extension/manifest.json` 仍 `0.1.0`），未跑 `desktop:release`、未跑 `test:e2e`、未 push；`NODE_OPTIONS= ./init.sh` 仍 exit 0。
+
+
 ### 2026-09-24（第七轮）— S3 端到端集成：fixture 站、真实扩展落盘、下载竞态、文档收口
 - **T3.0 fixture 站（真 RED）**：`extension/tests/fixtures/server.ts` + `server.test.ts` 8 passed（首跑 `Cannot find module './server'`）。`node:http`、临时端口（不是计划里的固定 43117，避免并行撞端口）、把 `origin` 交回调用方；路由 `/article`（重复图 + 相对路径图）、`/article-cookie`（图需 `md-session` cookie，无 cookie 403）、`/article-missing`（404 图）、`/article-special`（标题含 `/` `:`）、`/no-article`、`/img/*`。fixture 写成 `.ts` 而非计划里的 `.mjs`（`.mjs` 导入在 TS program 里是 `TS7016`）。
 - **T3.1–T3.3 真实扩展集成**：`extension/tests/integration.spec.ts` 5 条，断言读磁盘真实文件（不是 `downloads.search`）—— `示例文章标题.images/00{1,2}-photo-*.png` 各 70 B、`会话图片文章.images/001-secret.png` 70 B（cookie 真的跟着走了）、`缺图文章.images/` 空目录、md 里 3 处引用落到 2 个真实的文件（重复图去重）、`发布说明-第 1 期- 中文标题.md` 且 H1 保留原始标题、重复导出后仍只有一对文件且 md 除 `> 转换时间` 行外逐字节相同。`npm run test:extension` 15 passed。
