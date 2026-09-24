@@ -280,6 +280,16 @@ Approved for personal testing. Not approved for frictionless public distribution
 
 ## Archived Round Log
 
+### 2026-09-24（第十轮）— A 桌面端「文档处理」（feat-042）规划定稿：PRD §3 六条裁定 + 两条新需求（纯文档，零代码）
+
+- **对齐结果（用户逐条裁定）**：① 图片走 **base64 内嵌**（不产 `<标题>.images/`）；② 设置页新增「输入目录」设置项，**默认系统下载目录**，带「恢复默认」；③ 命中去重 **跳过并提示**；④ 反馈为 **逐条状态列表 + 收尾汇总**；⑤ **不自动打开**输出目录，展示路径 + 「打开目录」按钮；⑥ 源目录 = 输出目录时 **拒绝** 并一键改用 `<输入目录>/processed/`。
+- **新增需求**：R8 首页顶部模式选择器（「转换既有文档」/「粘贴 · 链接转换」，前者自动扫默认目录、可多选/全选、一键转化、翻译开关沿用现有逻辑不新增设置项、可另选目录并自动重扫）；R9 选择器下方插件下载按钮（下载含使用说明的 ZIP）。
+- **产出**：`docs/features/app-document-processing/`（`FSD.md` + `S1-directory-and-settings.md` / `S2-document-pipeline.md` / `S3-home-modes-and-batch.md` / `S4-extension-package-and-acceptance.md`）—— 阶段划分 S1→S4 串行、逐任务 RED 列、验收标准、7 条「替用户落的默认（可否决）」、2 条需点头的既有文件改动（A1 `images.ts` 提为导出、A2 `buildServerEnv` 传下载目录）。关键取舍：Markdown 级图片内联器（否掉 md→HTML→Turndown 回环，避免新依赖与全文重排）；去重标记 = 输出 md 首行 HTML 注释里的 JSON（不建索引文件）；插件 ZIP 由现有 `build:extension` 追加产出到 `public/`，加 `prebuild` 钩子。
+- **同步**：`docs/PRD-app-document-processing.md`（§3 改裁定表 + 补 R1/R3/R5–R7 结论 + 新增 §3.1 R8/R9 + §4 三条非目标）；`docs/PLAN-browser-extension.md`（§2 两行状态、A 现况段、§3 加一条图片表示契约、§6.4）；`AGENTS.md`（当前阶段段 + features 在册列表）；`feature_list.json`（feat-042 置 `in-progress`、`activeFeature = "feat-042"`、scope/acceptance/verification 补本轮事实）。
+- **范围与门禁**：零桌面代码改动、零版本变动（`currentVersion` 仍是 `0.3.6`；bump 是 S1 T1.0 的第一件事），未跑 `desktop:release`、未跑 `test:e2e`；`NODE_OPTIONS= ./init.sh` exit 0（79 files / 1067 tests）。全部改动提交为**一个本地提交**（12 files, +859/-114），**未 push**。
+- **提交门（Ponytail / Code-review 两轴 / Neat-freak）三处修正**：S1 T1.0 的「共 8 处」改为准确的 **6 个文件**并核对与 0.3.6 bump 提交 `ac8f91a` 逐字一致、补一列「发布 0.3.7 时才同步」的字面量；T1.0 的 RED 由「新建 `scripts/version-consistency.test.mjs`」改为在既有 `scripts/release-guards.test.mjs` 加断言；FSD §0.3 的「三处硬编码」改为两处。
+- **未验证/风险**：本地图片的根目录口径（相对路径以源 md 所在目录为根、根外绝对路径默认拒绝）留到 S2 T2.2 定稿；引用式图片语法 `![alt][id]` 不处理；`0.3.7` 的发布未获授权。
+
 ### 2026-09-24（第九轮）— T3.4 第 5 条通过，feat-040 关闭（文档收口，零代码改动）
 
 - **用户回报第 5 条通过**：用本机 40 图页跑（`node /tmp/md-check5.mjs`，127.0.0.1 上临时起、从未进仓库——公开 fixture 站只有两张图），40 张全部落盘、无中断 ⇒ **T3.4 6 条全过**（1 载入、2 普通文章落盘、3 登录会话图、4 重复导出覆盖、5 40 图长文不中断、6「下载前询问保存位置」为关闭）。

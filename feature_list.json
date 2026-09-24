@@ -2,7 +2,7 @@
   "project": "MD-Convertor",
   "currentVersion": "0.3.6",
   "updatedAt": "2026-09-24",
-  "activeFeature": null,
+  "activeFeature": "feat-042",
   "features": [
     {
       "id": "feat-018",
@@ -796,21 +796,24 @@
       "id": "feat-042",
       "name": "Desktop Document Processing (A)",
       "title": "Desktop Document Processing (A)",
-      "status": "planned",
+      "status": "in-progress",
       "dependencies": [],
-      "scope": "Block (A) of the browser-extension line, an independent case since 2026-09-24 (the order was reversed: the browser extension `feat-040` goes first, and nothing here is a prerequisite for it or vice versa). Product requirements live in `docs/PRD-app-document-processing.md`; the line plan (hand-off contract, shared boundaries, order, line-level decisions) is `docs/PLAN-browser-extension.md`. Adds a desktop-side capability that processes a batch of local Markdown files: pick an input directory, list its `.md` files with their processing state, tick the ones to process, embed their images (both local relative paths and remote URLs), optionally translate through the existing provider configuration, write the results to a chosen output directory, and skip files already processed (dedup keyed on path + content hash + mtime). It is a general capability rather than a plugin accessory - any directory of Markdown can be processed, so it can be validated with existing files before the extension exists. Non-goals: no batch downloading of web pages, no change to the existing single-article flow, no new provider or translation engine, no scheduled or background processing. The PRD's requirements are direction-level and carry an explicit list of items still to be agreed.",
+      "scope": "Block (A) of the browser-extension line, an independent case since 2026-09-24 (the order was reversed: the browser extension `feat-040` goes first, and nothing here is a prerequisite for it or vice versa). Product requirements live in `docs/PRD-app-document-processing.md`; the line plan (hand-off contract, shared boundaries, order, line-level decisions) is `docs/PLAN-browser-extension.md`. Adds a desktop-side capability that processes a batch of local Markdown files: pick an input directory, list its `.md` files with their processing state, tick the ones to process, embed their images (both local relative paths and remote URLs), optionally translate through the existing provider configuration, write the results to a chosen output directory, and skip files already processed (dedup keyed on path + content hash + mtime). It is a general capability rather than a plugin accessory - any directory of Markdown can be processed, so it can be validated with existing files before the extension exists. Non-goals: no batch downloading of web pages, no change to the existing single-article flow, no new provider or translation engine, no scheduled or background processing. The PRD's requirements are direction-level and carry an explicit list of items still to be agreed. 2026-09-24: that list is now agreed (base64 image inlining, input-directory setting defaulting to the system Downloads folder, skip-and-notify dedup, per-file status list plus end-of-run summary, no auto-open, refuse output-directory-equals-input with a one-click `<input>/processed` subdirectory), and the round added two new requirements (R8 a home-screen mode selector, R9 a button that downloads the packaged extension ZIP with usage notes). The same round wrote the stage documents `docs/features/app-document-processing/{FSD.md,S1-directory-and-settings.md,S2-document-pipeline.md,S3-home-modes-and-batch.md,S4-extension-package-and-acceptance.md}` (stage split, task tables with RED-first columns, acceptance criteria and the defaults the assistant chose, all flagged as vetoable). No application code was written: `src/`, `electron/` and the packaging config are untouched and the desktop version is still 0.3.6, so S1 T1.0 is a version bump to 0.3.7 before anything else.",
       "acceptance": [
         "The open items in `docs/PRD-app-document-processing.md` §3 are confirmed with the user before any stage document is written",
         "A directory of `.md` files can be selected, listed with their state, ticked and processed as a batch",
         "Images end up local so the result opens offline, and translation reuses the existing provider configuration unchanged",
         "Files already processed are not processed again, keyed the way the line plan records",
-        "The existing single-article conversion flow is unchanged"
+        "The existing single-article conversion flow is unchanged (the new home-screen mode selector defaults to the existing mode, and the pixel-lock e2e assertions for it must stay green)",
+        "The home screen offers the two modes and the extension ZIP download button, and the batch panel lists `.md` files from the configured input directory with per-file state",
+        "The stage documents in `docs/features/app-document-processing/` are complete enough that implementation can start without re-deciding anything"
       ],
       "verification": [
         "2026-09-22 split out of `feat-040`: the line plan and both product requirement documents were written, and the desktop-side block was given its own feature id so the single-`in-progress` constraint keeps A and B strictly serial",
         "2026-09-22 scope basis: the pieces this block composes already exist in the desktop app - single-article conversion, image embedding via sharp, and the translation engine - so the work is composition rather than new infrastructure; what remains undecided is listed in the PRD's open items",
         "2026-09-22 no code, no tests and no stage documents were produced by this round; `init.sh` passes unchanged (68 files / 999 tests)",
-        "2026-09-24 decoupled rather than rescheduled: `docs/PLAN-browser-extension.md` §2 now records A as a separate case with no ordering dependency on `feat-040` and no shared code (each side proves itself against the agreed rules), while its PRD open items and stage documents stay untouched until A's own planning round starts"
+        "2026-09-24 decoupled rather than rescheduled: `docs/PLAN-browser-extension.md` §2 now records A as a separate case with no ordering dependency on `feat-040` and no shared code (each side proves itself against the agreed rules), while its PRD open items and stage documents stay untouched until A's own planning round starts",
+        "2026-09-24 planning round (docs only, zero application code): the six open items in the PRD were agreed one by one with the user and the two new requirements were written down; the stage documents were produced; `AGENTS.md`, `docs/PRD-app-document-processing.md` and `docs/PLAN-browser-extension.md` were synced; the version stays 0.3.6 and no test or build artifact changed" 
       ]
     }
   ],
