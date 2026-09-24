@@ -2,10 +2,10 @@
 
 ## Current State
 
-- Last updated: 2026-09-24（第三轮：S1 转换核心落地）
+- Last updated: 2026-09-24（第四轮：PROGRESS 瘦身 + S2 扩展外壳，进行中）
 - Current version: `0.3.6`，**已发布**为 GitHub Release `v0.3.6`（`package.json`、`package-lock.json`、`feature_list.json`、`scripts/release-desktop.mjs` 均为 `0.3.6`；产物 235,956,668 bytes / SHA-256 `9b89d55c…f351`；已装到本机 `/Applications`）。**本轮不动桌面代码，所以不 bump 到 `0.3.7`**（bump 只由桌面代码改动触发；插件版本自管）
 - Active feature: **`feat-040` 浏览器插件（B）—— 状态 `in-progress`，S1（转换核心）已完成并提交（本地，未 push），下一步 S2**（`feat-042` 桌面端文档处理（A）仍为 `planned`，无顺序与代码依赖；`feat-041` 已完成已发布已关闭）
-- Next step: ① **先做一次 doc 清理**（用户已批准）：本文件四段「上一轮…已完成」历史压进 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`（**删前先给 2026-09-22 那轮补条目**），单独提交；② 然后 **S2 的第一个任务是事实探针**（无手势注入、`downloads` 是否补扩展名、`overwrite` 行为；`S2-extension-shell-and-writes.md` 的「探针结果」表未填前不得写 SW 编排）——探针结论出来后再写 `extension/manifest.json` 与 service worker
+- Next step: **S2（扩展外壳与写盘）的第一个任务是事实探针**（无手势注入、`downloads` 是否补扩展名、`overwrite` 行为；`S2-extension-shell-and-writes.md` 的「探针结果」表未填前不得写 SW 编排）——探针结论出来后再写 `extension/manifest.json` 与 service worker。文档瘦身已于本轮完成（四段「上一轮…已完成」历史压进 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`，并补上 2026-09-22 插件线方向定稿那一条）
 - Branch: `main`；stash@{0} 是 2026-09-21 拉取前的文档备份、与当前工作无关
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+（桌面产物）；浏览器插件另行验收于 Chromium，不进桌面发布门禁
 
@@ -19,55 +19,7 @@
 - **四处偏离已就地记录**（`S1-convert-core.md` 的 Result 与 FSD §3.2）：`htmlToArticleMarkdown` 收 `HTMLElement` 而非 HTML 字符串；惰性图在**常规分支也先提升**（Readability 丢 `data-*`，否则下到的是占位图）；常规分支也设 50 字符下限（Readability 会把导航栏当正文）；无法解析的 `href` 摘掉属性。
 - **仍未做**：没有 `manifest.json`、service worker、content script、任何 `chrome.*` 调用、`extension/dist/`；`CHANGELOG.md` 不加条目（无用户可见变化）。
 
-## 上一轮（2026-09-24 第二轮：文档结构收口）已完成
-
-用户先问「只改文档是不是只需要过 neat-freak 这一道门」，随后指出两处规范问题（项目 AGENTS.md 只点名一份全局指令；`session-handoff.md` 单文档持续膨胀），批准「方案 A」。**本轮零应用代码、零测试改动、未 bump 版本。**
-
-- **上一轮已提交 `ab1d653`**（`docs(browser-extension): 定稿 B 插件实施规划，A/B 顺序反转为 B 先做`）；本轮在此基础上做文档结构收口。
-- **提交门按变更性质收窄**：纯文档轮里 ponytail（审代码）与 code-review（审实现）**不适用**，只跑 neat-freak —— 这个判断在上一轮已向用户报备。
-- **全局指令改为点名两处**：项目 `AGENTS.md` 原先只写 `~/.codex/AGENTS.md`，但 pi 会话加载的是 `~/.pi/agent/AGENTS.md`，两份内容不同（pi 版多「证据先于断言」「本机环境已知问题」「工作流」），一个项目可能被多个代理开发 → 已改为**两份都点名**并注明加载方，Startup Workflow 第 2 步同步。
-- **handoff 膨胀治理（方案 A，用户批准）**：`session-handoff.md` **457 行 / 139KB → 122 行 / 21.7KB**（−73% 行数 / −84% 体积），删掉 `Previous Change`、`Archived Change Log ×4`、`Release Evidence` 与 `Next Stage Entry` 下的 S6/S5 要点。删除依据是实测：83% 体积是历史；21 份阶段文档全部已有 `## Handoff`，handoff 里 142 行的「S1–S6 实际交付接口/偏差」逐条比对确认是它们的压缩副本；`Release Evidence` 与 `docs/TESTING.md` + `## Verified Release` 表重复。**零新文件、零改名**（21 处引用与 `init.sh` 的 `required_files` 不动）。
-- **新规则已入约**：`AGENTS.md` 的 Required State Artifacts 与 End of Session 两步都写明 —— handoff 只写现役、目标 ≤150 行 / ≤25KB；阶段间交接写阶段文档的 `## Handoff`；**轮次历史压一条 ≤10 行条目进 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`**。并在该表顶部回填本轮两条（09-24 两轮），在末尾补一条「2026-09-21 及更早」的退役指针（原文用 `git show ab1d653:session-handoff.md` 取回）。
-- **未做（刻意）**：未改任何代码与测试、未碰 `extension/`、未重写历史轮次叙述（只给指针）、未新建归档目录。
-- **验证**：`./init.sh` **exit 0**（Node 24.14.1，68 files / 999 tests，statements 95.28%）—— 本轮同样零代码改动。
-
-## 上一轮（2026-09-24 第一轮：浏览器插件线 B 实施规划定稿）已完成
-
-用户先明确「**先把插件（B）做掉，A 拆开**」，再把待对齐项一次性拍板（原话「明白了，那都按照你的意见来」）。**本轮只写文档，零应用代码、零测试、未 bump 版本、未跑 `desktop:release`。**
-
-- **用户裁定**：① 顺序反转为 **B 先做**，A（`feat-042`）变另案（无顺序、无代码依赖）；② **不共享代码**——B 自带转换核心 `extension/src/convert/`，不改桌面端任何文件（将来统一只是搬家，不是重写）；③ PRD §3 六条全部裁定：仅工具栏按钮 / 不做预览 / 同名**覆盖**（`uniquify` 会把 `标题 (1).md` 与 `标题.images/` 拆散）/ 标题净化照抄 `src/lib/markdown.ts:46` / 不允许改文件名 / 图片全失败仍写 md；④ 新增裁定：抓不到的图保留原 URL + 下一行 `<!-- 图片未下载：<url> -->`，角标 `✓`/`!` 反馈，不做 popup/通知/整页兜底。
-- **新增施工文档**：`docs/features/browser-extension/`——`FSD.md`（三个前提、架构决定、五层测试、验收与风险）+ 三份阶段文档（`S1-convert-core.md` / `S2-extension-shell-and-writes.md` / `S3-e2e-and-acceptance.md`，每份 Spec / Plan / Tasks 含 RED 列 / Handoff）。
-- **关键设计（已写进 FSD）**：权限只有 `activeTab`+`scripting`+`downloads`、零 `host_permissions`；点击时 `chrome.scripting.executeScript` 注入（不声明静态 `content_scripts`）；转换在 content script（SW 无 `DOMParser`）；SW 负责命名/下载编排/引用回写/写 md；md 里写 `md-convertor-image-<n>` 占位符，落盘后用 `chrome.downloads.search()` 的真实 basename 回写引用；`overwrite` + 不做时间戳；不做保活（并发上限 4 + 60s 超时，真被打断再加）。
-- **测试分层定案**：① 纯函数单测（vitest + jsdom）② `chrome.*` 打桩编排单测（依赖注入，不装 sinon）→ 这两层**进 `init.sh`**；③ 浏览器内冒烟 ④ 真实 MV3 扩展 + 本地 fixture 站集成（自带 `playwright.extension.config.ts`，不动桌面 e2e）⑤ 真机人工验收 → **不进 `init.sh`**，走 `npm run test:extension`。
-- **规则冲突已就地解掉**（PLAN §6 四条）：`AGENTS.md` 平台边界限定为桌面产物 + 版本 bump 只由桌面代码触发 + Verification 段加入扩展测试两层；单 `in-progress` 约束保留且次序反转。
-- **验证**：`./init.sh` **exit 0**（Node 24.14.1，68 files / 999 tests，statements 95.28%）—— 本轮零代码改动，用它只证明文档与状态回写没弄坏基线。
-- **未做（刻意）**：未 bump 版本、未碰 `src/` `electron/` `forge.config.cjs` `playwright.config.ts`、未写 `extension/` 任何代码（本轮当时未提交，后由 `ab1d653` 一次提交）。
-
-## 上一轮（2026-09-22 浏览器插件线：方向定稿 + 文档分层重整）
-
-> 本节的「A 先、B 后」与「抽一段共享模块」两条已被 2026-09-24 推翻（B 先做、A 另案；B 自带核心不共享代码），保留原因：探针事实与文档分层结论仍然有效。
-
-用户先定「目前只做方向评估，不写文档，先把技术探查做扎实」；方向定稿后又指出这其实是**一条新线、两个产品**（插件 + 桌面端），共用一个仓库也必须按项目既有分层做事，于是做了一次文档重整。**未写阶段文档、未动代码，`feat-042`（A）与 `feat-040`（B）均为 `planned`。**
-
-- **三问全部有结论**：① 同仓库（理由是共享「提取 + 转 md」以保证两边输出一致，不是为了共享整条管线）；② 密钥问题消失（插件不做翻译，翻译留在桌面端）；③ 抽一段无 Node 依赖的共享模块。
-- **探针实测**（Playwright 加载临时 MV3 扩展，产物只在 `/tmp`、未入库）：写盘机制 10 项、提取管线 8 项全部通过。关键发现：扩展**只能写下载目录下的相对路径**（绝对路径报 `Invalid filename`）；`chrome.downloads.download()` 对 HTTP(S) 会带上该 host 的 cookie，所以图片**不需要 fetch、不需要跨域权限**；Markdown 用 data URL 写盘，2 MiB 无问题；Readability + Turndown + GFM + DOMPurify 打包仅 **76 KB**，domino/jsdom 残留为 0；批量下载与危险文件判定均正常。
-- **由此确认的简化**：不需要常驻服务、不需要 offscreen document、不需要 `host_permissions`。
-- **文档分层重整**：原 `docs/features/browser-extension/FSD.md` 被**删除**——它装的内容是产品决策（产物落哪、抓不到的图怎么办、去重规则、触发方式、非目标），该进 PRD 而不是技术方案，等于「装错了柜子」。改为三层：`docs/PLAN-browser-extension.md`（**统领层**，唯一写「两个产品怎么配合」的地方：交接契约、顺序依赖、共同边界、线上工程决定、四组待解规则冲突；探针结论作附录 A）+ `docs/PRD-app-document-processing.md`（A）+ `docs/PRD-browser-extension.md`（B）。两份 PRD 不重复交接契约，避免三份文件互相打架。
-- **交付切分为两块，串行推进**：A 桌面端「文档处理」能力（`feat-042`，先，可用现成 `.md` 独立验收）、B 浏览器插件（`feat-040`，依赖 `feat-042`，后）。串行是硬约束——单 `feature_list.json` + `init.sh` 只允许一个 `in-progress`。
-- **`docs/PLAN-next-phase.md` 已归档**：它实际是 0.3.5 视觉刷新那一阶段的路线图（0.3.5 / 0.3.6 均已发布），整份过期，不能当统领层；已标注「已完成、已归档」并把文档地图指到 `PLAN-browser-extension.md`。
-- 未验证项与已知风险见 `docs/PLAN-browser-extension.md` §7，实施前必须先解掉的四组规则冲突见 §6，探针结论见附录 A。
-
-## 上一轮（0.3.6 / feat-041 默认 MD 保存路径）已完成
-
-用户原话：「我想在设置里面增加一个默认的MD保存路径管理……如果选择默认目录，则不需要弹出保存位置选择」。设置页新增「输出」卡片（选目录 + 「使用默认目录」开关），主页面「下载」按三重条件（开关 && 目录 && 桥接）分叉为「桥接直写」或「浏览器下载」，直写被拒时说明原因并降级。
-
-- **S1**（`ac8f91a`）设置契约 `output: { defaultPath, useDefaultPath }` + 两个 IPC 通道；**S2**（`f9b7534`）下载分叉与 fs 错误码映射；真机缺陷修复（`dde369e`，iCloud 路径里的 `~` 被误判 + preload 拒绝被吞）；反馈修复（`867aa2a`，直写成功改为按钮「已保存」+ 带 ✓ 状态卡片）；**S3/T3.0**（`7cf1111`）asar 收窄 253 → 10 条目；既有 e2e flake 修复（`14e9684`，几何断言改单帧读取 + firefox 沙箱开关固化）；证据提交 `4dc9cd6` / `5fce96c` / `9fb8c6b`。
-- **门禁**：`npm run desktop:release` exit 0（Node 24.14.1，2m54s）—— `init.sh` 68 files / 999 tests、statements 95.28%、三引擎 e2e 239 passed / 4 skipped、live 2 passed；独立复核 `unzip -t` 3511 条目、包内版本 0.3.6、Mach-O arm64、asar 恰 10 条目。
-- **本机安装与冒烟**：旧 `0.3.5` 移入 `~/Downloads/MD-Convertor-archive/installed-apps/`；安装源用发布 ZIP 本身解压；冒烟 exit 0 且两条断言都真跑；用户 `settings.json` / `secrets.json` md5 前后逐字节一致。
-- **用户验收**：2026-09-22 22:17 签字「两态都过了」（开默认目录：不弹框、文件落盘、看得到「已保存」；关默认目录：弹框）。
-- 逐条证据见 `feature_list.json` 的 `feat-041.verification`（39 条）；本轮归档见 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log` 2026-09-22 条；测试口径与产物哈希见 `docs/TESTING.md`。
-
-## 上一轮的三条教训（都已写进约束清单）
+## 三条已固化的教训（都已写进约束清单）
 
 - **范围蔓延**：用户的需求只是「加一个默认下载目录」，我却顺手把打包收窄、firefox 解锁、既有 flake 修复、自建 skill 都塞进了同一轮收尾，被用户明确指出「我只是搞一个文档下载路径，你为什么要搞这么多有的没的」。**后续遇到范围外问题（发现缺陷、flaky 用例、基建改进），先单独提出来问，不要顺手做。**
 - **「私有文档」的定性是错的**：T3.0 最初的理由写成「私有工作文档会随发布物公开」。核实后发现仓库是 public，`PROGRESS.md` / `session-handoff.md` / `feature_list.json` / `AGENTS.md` / `docs/**` 早已在 `origin/main` 上公开，打包不构成新增暴露；唯一真正非公开的是 `.workbuddy/memory/*.md`。收窄仍然正确，理由已就地更正。

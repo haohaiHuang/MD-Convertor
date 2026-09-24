@@ -305,6 +305,16 @@ Approved for personal testing. Not approved for frictionless public distribution
 - 新增施工文档 `docs/features/browser-extension/`（`FSD.md` + `S1-convert-core.md` + `S2-extension-shell-and-writes.md` + `S3-e2e-and-acceptance.md`）；四组规则冲突就地解掉；提交 `ab1d653`。
 - 纯文档轮，未 bump 版本（0.3.6 不动）、未跑 `desktop:release`；`./init.sh` exit 0。
 
+### 2026-09-22 — 浏览器插件线路：方向定稿 + 文档分层重整
+
+- 三问定论：同仓库（为了共享「提取 + 转 md」以保证两端输出一致，不是为了共享整条管线）；密钥问题消失（插件不做翻译）；抽一段无 Node 依赖的共享模块。**后一条与「A 先 B 后」的顺序均于 2026-09-24 被推翻**（B 先做、A 另案；B 自带核心不共享代码）。
+- 探针实测（Playwright 加载临时 MV3 扩展，产物只在 `/tmp`、未入库）：写盘机制 10 项、提取管线 8 项全部通过。关键事实：扩展**只能写下载目录下的相对路径**（绝对路径报 `Invalid filename`）；`chrome.downloads.download()` 对 HTTP(S) 会带上该 host 的 cookie，所以图片**不需要 fetch、不需要 `host_permissions`**；data URL 写盘 2 MiB 通过；Readability+Turndown+GFM+DOMPurify 打包仅 76 KB、domino/jsdom 残留 0。**结论全部保留，详见 `docs/PLAN-browser-extension.md` 附录 A。**
+- 由此确认的简化：不需要常驻服务、不需要 offscreen document、不需要 `host_permissions`。
+- 文档分层重整：原 `docs/features/browser-extension/FSD.md` 被删除（它装的是产品决策，该进 PRD 而不是技术方案）；改为 `docs/PLAN-browser-extension.md`（统领层，唯一写「两个产品怎么配合」的地方）+ `docs/PRD-app-document-processing.md`（A）+ `docs/PRD-browser-extension.md`（B），两份 PRD 不重复交接契约。
+- 交付切分为两块、串行推进：A 桌面端「文档处理」（`feat-042`）、B 浏览器插件（`feat-040`）——串行是硬约束（单 `feature_list.json` + `init.sh` 只允许一个 `in-progress`）。
+- `docs/PLAN-next-phase.md` 归档：它实际是 0.3.5 视觉刷新那一阶段的路线图（0.3.5 / 0.3.6 均已发布），整份过期，已标注「已完成、已归档」并把文档地图指到 `PLAN-browser-extension.md`。
+- 本轮未写阶段文档、未动代码（`feat-042` 与 `feat-040` 当时均为 `planned`）；该线的阶段文档于 2026-09-24 补齐（见上文「第一轮」条）。提交 `24bf00f`。
+
 ### 2026-09-22 — feat-041 默认 MD 保存路径 + 0.3.6 发布（本轮收尾归档）
 
 - S1（设置契约 + IPC）：`Settings` 新增 `output: { defaultPath, useDefaultPath }`，旧 `settings.json` 缺该字段时按默认值补齐而不判为损坏；Electron 新增 `md-convertor:output:select-directory` 与 `md-convertor:output:save-file` 两个通道，`electron/output.mjs` 写成可注入纯模块（`ipcMain` / `dialog` 注入），`dirPath` 与 `filename` 在沙箱化 preload 与主进程各校验一次。提交 `ac8f91a`。
