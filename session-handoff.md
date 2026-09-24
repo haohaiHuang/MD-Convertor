@@ -2,56 +2,66 @@
 
 ## Resume Here
 
-- Current version: `0.3.6`，**已发布为 GitHub Release `v0.3.6`（2026-09-22）**，已装到 `/Applications/MD-Convertor.app`。未签名、未 notarize，产物定位是个人测试用。全部 RED/GREEN 与门禁证据在 `feature_list.json` 的 `feat-041.verification`
-- Active feature: **无**。`feat-041`（默认 MD 保存路径）**已完成、已发布、已关闭（`done`）**，文档链 `docs/features/default-save-path/`（四份均已标完成）；插件线的两个块**都已定稿但未开工**：`feat-042`（桌面端文档处理，A，先）与 `feat-040`（浏览器插件，B，依赖 `feat-042`），均为 `planned`
-- **唯一推荐下一步**：插件线的方向与需求**已定稿**（2026-09-22）—— 统领层 `docs/PLAN-browser-extension.md`、A 的需求 `docs/PRD-app-document-processing.md`、B 的需求 `docs/PRD-browser-extension.md`。下一步是**另行安排实施规划**（写阶段文档），而不是直接写码；开工前先解掉统领层 §6 的四组规则冲突，且**先 A（`feat-042`）后 B（`feat-040`）**。其余没有必须做的事。**若下一轮要改代码，第一步是 bump 到 `0.3.7`**（版本面所有出现处必须同步，清单见下方开工提示词）
-- Pending（无一是阻塞项）：① 云端 Provider 端到端实测（用户真实文章走一遍「拉取模型 → 选模型 → 翻译」）；② 真机小点清单（等用户给）；③ `0.3.1`–`0.3.6` 的产物与 tag 一律不动，缺失项按退役处理；④ 签名/notarization 不做（QA-008 accepted）；⑤ UI 评审结论勿重提（全部不整改）；⑥ `stash@{0}` 是 2026-09-21 拉取前的文档备份、与 feat-041 无关；⑦ 可选：在 Terminal 里跑一次**规范**的打包冒烟（Chromium 沙箱开启）—— 本 agent 沙箱内只能以 `--no-sandbox --disable-gpu` 取证，属环境限制
+- Current version: `0.3.6`，**已发布为 GitHub Release `v0.3.6`（2026-09-22）**，已装到 `/Applications/MD-Convertor.app`。未签名、未 notarize，产物定位是个人测试用。全部 RED/GREEN 与门禁证据在 `feature_list.json` 的 `feat-041.verification`。**插件线路的轮次不碰桌面代码，因此不需要把版本 bump 到 `0.3.7`**（仅改动 `src/` / `electron/` / 打包配置时才需要，清单见下方开工提示词）
+- Active feature: **`feat-040` 浏览器插件（B）—— `planned`，实施规划已完成（2026-09-24）、待开工（S1 未开始）**。阶段文档已在册：`docs/features/browser-extension/`（`FSD.md` + `S1-convert-core.md` + `S2-extension-shell-and-writes.md` + `S3-e2e-and-acceptance.md`）。`feat-042`（A 桌面端文档处理）仍为 `planned`，**已与本块解耦：无顺序依赖、无代码依赖**，其 PRD 的待对齐项与阶段文档都还没动
+- **唯一推荐下一步**：**开工 S1（转换核心）** —— 读 `docs/features/browser-extension/FSD.md` 与 `S1-convert-core.md`，按 TDD 先写失败测试（`extension/src/convert/*.test.ts`），目录与命令按 S1 的 Tasks 表。**不要**顺手改桌面端、**不要** bump 版本、**不要**跑 `desktop:release`。S2 的第一个任务是事实探针（S2 文档的「探针结果」表未填前不得写 SW 编排）。其余没有必须做的事
+- Pending（无一是阻塞项）：① 云端 Provider 端到端实测（用户真实文章走一遍「拉取模型 → 选模型 → 翻译」）；② 真机小点清单（等用户给）；③ `0.3.1`–`0.3.6` 的产物与 tag 一律不动，缺失项按退役处理；④ 签名/notarization 不做（QA-008 accepted）；⑤ UI 评审结论勿重提（全部不整改）；⑥ `stash@{0}` 是 2026-09-21 拉取前的文档备份、与当前工作无关；⑦ 可选：在 Terminal 里跑一次**规范**的打包冒烟（Chromium 沙箱开启）—— 本 agent 沙箱内只能以 `--no-sandbox --disable-gpu` 取证，属环境限制
 - Branch: `main`；发布历史：`v0.3.6` = `3578822`（feat-041 默认 MD 保存路径，asar 253 → 10 条目，Latest）、`v0.3.5` = `5f98307`（feat-039 + 清空按钮归位）、`v0.3.4` = `e251267`（图标 v2）、`v0.3.3` = `3897cd1`（feat-034）、`v0.3.2` = `1c3ed80`（feat-033）、`v0.3.1` = `af7f6db`（feat-031/032）；`v0.1.3` = `ce041c9`（不可变历史锚点）
 
 ## 新会话开工提示词（复制即用）
 
 ```
-继续 MD-Convertor 的下一轮工作。
+继续 MD-Convertor 的下一轮工作：开工浏览器插件（B，feat-040）。
 
 先按 Startup Workflow 读 AGENTS.md、PROGRESS.md、feature_list.json、session-handoff.md（本文件），
-再读 docs/PLAN-browser-extension.md（统领层）确认方向与顺序，然后跑 ./init.sh 建立基线。
+再读 docs/features/browser-extension/FSD.md 与 S1-convert-core.md，然后跑 ./init.sh 建立基线。
 
-当前状态（2026-09-22 收尾后；本文件 `## Resume Here` 是权威）：
-- 版本 0.3.6，已发布为 GitHub Release `v0.3.6`，已装到 /Applications；未签名，个人测试用。
-- **没有 in-progress feature**：feat-041（默认 MD 保存路径）已完成、已发布、已关闭。
-  feature_list.json 的 activeFeature 应已清空；若仍指向 feat-041，说明收尾没做完。
-- 已完成的入口：docs/features/default-save-path/（FSD + S1/S2/S3，三阶段均已标完成）；
-  在册未开工：feat-042（A 桌面端文档处理，先）/ feat-040（B 浏览器插件，后），
-  方向与需求在 docs/PLAN-browser-extension.md + docs/PRD-app-document-processing.md +
-  docs/PRD-browser-extension.md；两者都刻意还没有阶段文档。
+当前状态（2026-09-24 规划定稿后；本文件 `## Resume Here` 是权威）：
+- 版本 0.3.6，已发布为 GitHub Release v0.3.6，已装到 /Applications；未签名，个人测试用。
+- activeFeature = feat-040（B 浏览器插件，planned）；实施规划已完成，S1/S2/S3 均未开工。
+- feat-042（A 桌面端文档处理）已解耦：无顺序依赖、无代码依赖，不必读它的 PRD。
+- 本轮只写文档、零应用代码：extension/ 目录都还不存在（S1 T1.0 才建）。
 
-开工前要知道的硬约束（都是踩过的）：
-- 再改代码前先 bump 到 0.3.7：scripts/release-desktop.mjs 的 Release Guard、package.json、
-  package-lock.json（两处）、docs/TESTING.md(+zh) 的门禁版本行、AGENTS.md 版本行必须同步，
-  否则 npm run desktop:release 直接拒跑。
-- 跑门禁必须用 Node 24.14.1 或 24.15.0：本机默认 v24.16.0 在解压 electron zip 时静默卡死，
-  electron-forge make 空跑却仍 exit 0。
-- 三引擎 e2e 在本环境自足可跑（firefox 的 MOZ_DISABLE_CONTENT_SANDBOX=1 已固化进
-  playwright.config.ts）。它约两分钟、workers: 1，是门禁而非内循环；
-  迭代用 npx playwright test + --project=chromium + -g。跑期间不要编辑任何 tracked 文件
-  （tracked-file 守卫会报假失败）。
-- 断言真实 errno 的测试要用 NODE_OPTIONS= ./init.sh 跑：宿主通过 NODE_OPTIONS 注入
-  brokered-fs shim，会把 ENOTDIR/EPERM 变成 CODEBUDDY_BROKER_DENY。
-- 本机装/跑打包应用：必须 env -u ELECTRON_RUN_AS_NODE（否则 Electron 以纯 Node 启动并卡在 stdin），
-  且在本沙箱内要加 --no-sandbox --disable-gpu（外层 seatbelt 禁止嵌套沙箱，exit 133），
-  规范的那一次应在 Terminal 里跑。安装源用发布 ZIP 解压（ditto -x -k）而不是 out/ 的 bundle；
-  旧安装先 mv 到 ~/Downloads/MD-Convertor-archive/installed-apps/，不要 rm -rf。
+这一轮的硬约束（与桌面轮次不同，别弄混）：
+- **不改桌面代码就不 bump 版本**：只动 extension/ 的轮次不碰 src/、electron/、forge.config.cjs、
+  playwright.config.ts，不跑 npm run desktop:release，0.3.6 保持不动；插件版本由
+  extension/manifest.json 自管。
+- **测试分层**：纯函数单测 + chrome.* 打桩编排单测进 ./init.sh；浏览器内冒烟与真实 MV3 扩展集成
+  走 npm run test:extension（自带 playwright.extension.config.ts），不进 init.sh，也不动桌面 e2e。
+- **扩展核心只收 DOM 不收 HTML 字符串**（turndown 的 browser 字段把 domino 映射为 false，喂字符串
+  会拿到空 stub）；净化实例和时间戳一律注入。引用回写用 chrome.downloads.search() 的真实 basename。
+- **S2 先做事实探针**（无手势注入、downloads 补扩展名、overwrite 行为）：探针结果未填进 S2 文档前
+  不要写 service worker 编排。
+- 跑门禁必须用 Node 24.14.1 或 24.15.0；断言真实 errno 的测试用 NODE_OPTIONS= ./init.sh 跑。
+- npm run test:e2e 是桌面端门禁（约两分钟、workers: 1），扩展轮次不需要它；真要跑时先清代理变量，
+  跑期间不要编辑任何 tracked 文件（tracked-file 守卫会报假失败）。
 - 0.1.3–0.3.6 的 tag 与仍然存在的受保护 ZIP 一律不动，缺失项按退役处理。
 
-不要把已固化的实现语义改回去（默认 MD 保存路径相关，详见该 feature 的 S2 文档「决策记录」与 FSD「安全边界」）：
-  不要把 isAbsoluteDirPath 收紧回 value.includes("~")（iCloud 云盘目录会被全部拒掉，这是真机缺陷根因）；
-  不要给任何 await bridge.* 去掉 .catch()（preload 拒非法参数是抛异常，不是 resolve { ok: false }）；
-  不要把六个真实 fs 码换回笼统文案；不要把下载分叉扩成「另存为」对话框。
+不要把已固化的桌面试题语义改回去（默认 MD 保存路径相关，详见 docs/features/default-save-path/ 的
+S2「决策记录」与 FSD「安全边界」）：isAbsoluteDirPath 不要收紧回 value.includes("~")（iCloud 云盘
+目录会被全部拒掉）；不要去掉任何 await bridge.* 的 .catch()；不要把六个真实 fs 码换回笼统文案。
+插件侧同源的语义：文件名净化照抄 src/lib/markdown.ts:46（无时间戳）、同名一律 overwrite（uniquify
+会把 标题 (1).md 与 标题.images/ 拆散）、抓不到的图保留原 URL + 下一行 <!-- 图片未下载：<url> -->。
 ```
 
 ## Latest Change
 
-**本轮（浏览器插件线：方向定稿 + 文档分层重整，2026-09-22）**：用户先定「**目前只做方向评估**」—— 不写文档，先把技术探查做扎实；方向定稿后又指出这其实是**一条新线、两个产品**（插件 + 桌面端），共用一个仓库也必须按项目既有分层做事，于是按分层重建了这套文档。**未写阶段文档、未动代码，`feat-042`（A）与 `feat-040`（B）仍为 `planned`。**
+**本轮（2026-09-24 浏览器插件线 B：实施规划定稿）**：用户先明确「**先把插件（B）做掉，A 拆开**」，随后把待对齐项一次性拍板（原话「明白了，那都按照你的意见来」）。**本轮只写文档：零应用代码、零测试、未 bump 版本、未跑 `desktop:release`、未提交**（用户未要求）。
+
+- **顺序反转为 B 先做**：`docs/PLAN-browser-extension.md` §2 重写（为什么 B 先：这条线里只有 B 需要那份「当前会话」，A 能吃任意现成 `.md`）；`feature_list.json` 删掉 `feat-040 → feat-042` 的依赖，`activeFeature` 置为 `feat-040`；`feat-042` 改为**独立另案**（无顺序、无代码依赖）。
+- **不共享代码（用户裁定）**：B 自带转换核心 `extension/src/convert/`（纯函数 + 注入环境依赖 + 自带单测），**不改桌面端任何文件**；代价是两端可能漂移，对冲是「将来统一只是搬家，不是重写」。连带把 PLAN §4.4 从「两端输出必须一致」更正为「**提取正文与文本转换规则一致**」（图片表示两端本来就不同），§5.2 降级为「延后」。
+- **PRD §3 六条全部裁定**：仅工具栏按钮 / 不做预览 / 同名**覆盖**（`uniquify` 会拆散 `标题 (1).md` 与 `标题.images/`）/ 标题净化照抄 `src/lib/markdown.ts:46` / 不允许改文件名 / 图片全失败仍写 md。另加裁定：失败图上保留原 URL + 下一行 `<!-- 图片未下载：<url> -->`；角标 `✓`/`!` + `setTitle` 反馈；不做 popup/通知/整页兜底/专属图标。产物形态（含 md 头部三行、图片命名、相对引用）写进 `docs/PRD-browser-extension.md` §4。
+- **新增施工文档 `docs/features/browser-extension/`**：`FSD.md`（三个前提、架构决定与依据、五层测试、验收 8 条、风险 7 条）+ `S1-convert-core.md`（纯函数核心 + esbuild 接线）/ `S2-extension-shell-and-writes.md`（manifest + SW 编排 + content script + 下载与回写 + 反馈；T2.0 是事实探针）/ `S3-e2e-and-acceptance.md`（真实 MV3 集成 + 真机人工验收 + 文档收口）。每份都是 Spec / Plan / Tasks（含 RED 列）/ Handoff。
+- **架构关键点**（细节见 FSD §3）：权限只 `activeTab` + `scripting` + `downloads`、零 `host_permissions`；点击时 `chrome.scripting.executeScript` 注入（不声明静态 `content_scripts`）；**转换在 content script**（MV3 SW 没有 `DOMParser`），SW 只做命名/下载编排/引用回写/写 md；md 内先写 `md-convertor-image-<n>` 占位符，落盘后用 `chrome.downloads.search()` 的**真实 basename** 回写（浏览器可能自己补扩展名）；`overwrite` + 不加时间戳；并发上限 4 + 60s 超时，**先不做保活**（真被打断再加，S3 用 ≥30 图的文章压一次）。
+- **测试分层定案**：① 纯函数单测（vitest + jsdom）② `chrome.*` 打桩编排单测（**依赖注入，不装 sinon**）→ 进 `init.sh`；③ 浏览器内冒烟 ④ 真实扩展 + 本地 fixture 站（含 cookie 保护图）集成 ⑤ 真机人工验收 → 不进 `init.sh`，走 `npm run test:extension`；集成测试自带 `playwright.extension.config.ts`，**不动**既有三个项目和 `run-e2e.mjs`。
+- **规则冲突已就地解掉**：`AGENTS.md` 平台边界限定为「桌面产物」（扩展另行验收于 Chromium）、新增「只改 `extension/` 的轮次不 bump 桌面版本」条、Verification 段写入扩展测试两层、文档地图与 Purpose 段同步；PLAN §6 四条标为已裁定。
+- **验证**：`./init.sh` **exit 0**（Node 24.14.1，68 files / 999 tests，statements 95.28%）—— 本轮零代码改动，用它只证明文档与状态回写没弄坏基线。
+
+## Previous Change
+
+**上一轮（浏览器插件线：方向定稿 + 文档分层重整，2026-09-22）**：用户先定「**目前只做方向评估**」—— 不写文档，先把技术探查做扎实；方向定稿后又指出这其实是**一条新线、两个产品**（插件 + 桌面端），共用一个仓库也必须按项目既有分层做事，于是按分层重建了这套文档。**当时未写阶段文档、未动代码。**
+
+> 读本节时的过期提醒：其中「共享那段无 Node 依赖的模块」与「A 先、B 后」两条已被 2026-09-24 推翻（改为 **B 先做、A 另案**且 **B 自带核心、不共享代码**）。探针事实与文档分层的结论仍然有效。
 
 - **三问结论**：① **同仓库** —— 理由不是共享整条管线（那条管线插件大部分用不上），而是共享「提取正文 + 转 Markdown」这一小段，否则同一篇文章在插件与桌面端导出结果会不一致；② **密钥问题消失** —— 插件不做翻译，所有需要密钥/模型的处理留在桌面端；③ **抽一段无 Node 依赖的共享模块**。
 - **探针实测**（Playwright `channel: "chromium"` 加载临时 MV3 扩展，产物只在 `/tmp`、未入库）：写盘机制 10 项、提取管线 8 项全部通过。关键事实：扩展**只能写下载目录下的相对路径**（绝对路径报 `Invalid filename`）；`chrome.downloads.download()` 对 HTTP(S) URL 会带上该 host 的 cookie，所以**图片不需要 fetch、不需要 `host_permissions` 绕 CORS**；Markdown 用 data URL 写盘，2 MiB 无问题；Readability + Turndown + GFM + DOMPurify 打包仅 **76 KB**，domino/jsdom 残留为 0；全部下载 `danger: "safe"`（不触发危险文件警告）；中文文件名与 UTF-8 内容均正确。
@@ -380,6 +390,7 @@
 - The app is unsigned and not notarized, so it is a personal-test build rather than a frictionless public distribution.
 - Never store or print webpage bodies, clipboard content, cookies, tokens, or private URLs in tests or logs.
 - 0.3.0 新增边界：翻译请求的正文与密钥同样不得写入日志或落盘；Provider 端点校验（放开 loopback/私网、禁跨主机重定向）与网页抓取 SSRF 策略是两套独立实现，不得互相放宽。
+- 2026-09-24 新增边界（浏览器插件）：`darwin/arm64` 这条只限**桌面产物**，扩展验收于 Chromium；只改 `extension/` 的轮次**不 bump 桌面版本、不跑 `desktop:release`**（插件版本由 `extension/manifest.json` 自管）；扩展只读当前页 DOM、只写下载目录下的相对路径，不读 cookie/凭据、不把页面内容或 URL 写进日志。
 - S2 新增边界：四个新路由的日志仅 `{requestId,status,code,durationMs}`；`/api/runtime/secrets` 请求体一律不持久化、不记录；本地 CLI 子进程环境必须剔除 `MD_CONVERTOR_*`（含 `MD_CONVERTOR_SESSION_TOKEN`、`MD_CONVERTOR_SECRETS`）。
 - S3 新增边界：两个翻译端点的请求体（正文、analysis）与模型输出都不落盘、不记日志；发往模型的 prompt 只含待翻译块（`skip` 段与元信息行不进入 prompt）；CLI 的 stdout/stderr 永不回显（非零退出只报状态码与退出码）；错误消息不回显正文、密钥或 URL query；翻译任务全程只允许一个在跑。
 - S4 新增边界：页面只把用户勾选后的正文发给 `/api/translate/*`，不自动上传、不写历史；译文只存在于页面状态与下载/复制结果中，不落盘；错误提示只回显服务端 `error.message` 或内置文案，绝不显示正文、密钥、CLI 输出；e2e 不得把真实网页正文或密钥写入仓库。
@@ -388,8 +399,8 @@
 
 ## Next Stage Entry
 
-- S1 → S6 全部完成；`feat-024` – `feat-041` 均 done；当前 `activeFeature` = **无**（干净态）。`feat-041`（默认 MD 保存路径）S1/S2/S3 三阶段全部完成，随 `0.3.6` 发布并关闭。
-- 下一轮入口：**插件线方向与需求已定稿（2026-09-22）** —— 统领层 `docs/PLAN-browser-extension.md`（含三问结论、实测事实、交接契约、交付切分与四条待处理的规则冲突）、A 的 `docs/PRD-app-document-processing.md`、B 的 `docs/PRD-browser-extension.md`；**两者都刻意无阶段文档** —— 下一步是另行安排实施规划。除此之外由用户指定新目标。**若下一轮要改代码，第一件事是 bump 到 `0.3.7`** —— 当前 `desktop:release` 只接受 `0.3.6`，再改代码就必须先升版本并同步版本面（清单见本文件顶部开工提示词）。
+- S1 → S6 全部完成；`feat-024` – `feat-041` 均 done；当前 `activeFeature` = **`feat-040`**（B 浏览器插件，`planned`，规划已完成、未开工），没有 `in-progress` 事项。`feat-041`（默认 MD 保存路径）S1/S2/S3 三阶段全部完成，随 `0.3.6` 发布并关闭。
+- 下一轮入口：**B 浏览器插件（`feat-040`）已实施规划定稿（2026-09-24），阶段文档在册** —— `docs/features/browser-extension/`（`FSD.md` + `S1-convert-core.md` + `S2-extension-shell-and-writes.md` + `S3-e2e-and-acceptance.md`）。**下一步就是开工 S1**（TDD：先 `extension/src/convert/*.test.ts` 的 RED，再建目录与构建脚本），不需要再写任何规划文档。`feat-042`（A 桌面端文档处理）已解耦、另案（其 PRD 的待对齐项仍未动，要开工得先走一轮规划）。**只动 `extension/` 的轮次不 bump 版本**；只有改动 `src/` / `electron/` / 打包配置时才需要把 `0.3.6` 升到 `0.3.7` 并同步版本面（清单见本文件顶部开工提示词），否则 `desktop:release` 会拒跑。
 - 每轮开头固定读：`PROGRESS.md` → `session-handoff.md` → `feature_list.json` → 相关 `docs/`（涉及翻译行为时先读 `docs/PRD-translation.md`），然后跑 `./init.sh` 建立基线。
 - 全部阶段文档（已完成入口）：`docs/features/translation/S1-settings-infra.md` 至 `S6-release-and-docs.md`；各文档的 Handoff 已写入下一阶段所需的真实接口与边界。
 
@@ -425,19 +436,22 @@
 
 ## Recommended Next Action
 
-`feat-041` 已收口：**0.3.6 已过门禁、已装本机、已发布为 GitHub Release `v0.3.6`，`feature_list.json` 已置 `done`、`activeFeature` 为空。没有必须做的下一步。**
+`feat-041` 已收口：**0.3.6 已过门禁、已装本机、已发布为 GitHub Release `v0.3.6`，`feature_list.json` 已置 `done`。** 当前 `activeFeature` = `feat-040`（B 浏览器插件，`planned`，**实施规划已完成、待开工**）。
 
-下面按「要不要动代码」分两类，都不要自作主张扩大范围 —— 用户本轮明确要求过「只是搞一个文档下载路径，不要搞有的没的」：
+**唯一推荐下一步：开工 `feat-040` 的 S1**（读 `docs/features/browser-extension/FSD.md` + `S1-convert-core.md`，按 TDD 先写失败测试）。
+
+下面按「要不要动代码」分两类，都不要自作主张扩大范围 —— 用户两轮都明确要求过不要顺手搞无关的东西（「我只是搞一个文档下载路径，你为什么要搞这么多有的没的」）：
 
 **A. 不改代码就能做的事**
 1. **云端 Provider 端到端实测**：让用户用真实文章在设置页走一遍「拉取模型 → 选模型 → 翻译」。这是唯一还没被真人走完的主干路径（`feat-027` 的自撰探针已绿，但那不是用户验收）。
 2. **规范的那一次打包冒烟**：在 Terminal 里跑一次 `ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1`（Chromium 沙箱开启）。本 agent 沙箱内只能以 `--no-sandbox --disable-gpu` 取证，属环境限制；不跑也不影响 0.3.6 的放行结论。
 3. **真机小点清单**：等用户给清单后再评估是否单开一轮。
 
-**B. 要动代码的话（先 bump 到 `0.3.7`）**
-4. 版本面同步清单见本文件顶部开工提示词；漏一处 `desktop:release` 就拒跑。
-5. 插件线是唯一在册未开工方向，分两块且**串行**：A = `feat-042`（桌面端文档处理，**先**）、B = `feat-040`（浏览器插件，依赖 A）。方向与需求已定稿（2026-09-22）：统领层 `docs/PLAN-browser-extension.md`、A 的 `docs/PRD-app-document-processing.md`、B 的 `docs/PRD-browser-extension.md`。两者都刻意没有阶段文档 —— 下一步是**另行安排实施规划**（写 `S1-*.md` …），开工前先解掉统领层 §6 的四组规则冲突，在这之前**不要直接写码**。
-6. 签名/notarization 用户 2026-09-20 已决定不做（QA-008 accepted）；要恢复需要 Developer ID Application 证书 + notarytool 凭据，且签名后必须重跑门禁更新哈希。
-7. UI 评审结论勿重提：`docs/UI-REVIEW-2026-09-20.md` 的 P0×6 + P1×10 用户已决定全部不改。主页像素级断言（转换按钮右边缘与粘贴框右边缘差值 < 4px、且与「来源 URL」输入框同行）是刻意锁定的效果，要改先改断言。
+**B. 要动代码的话**
+4. **插件 B（`feat-040`，本轮推荐）**：阶段文档已在册，直接开工 S1；只动 `extension/` 的轮次**不 bump 版本**、不跑 `desktop:release`、不动桌面 e2e。S2 的第一个任务是事实探针（S2 文档「探针结果」表未填前不得写 SW 编排）。
+5. **插件 A（`feat-042`）是另案**：与 B 无顺序、无代码依赖；要开工得先自己走一轮规划（它的 PRD §3 还有待对齐项），不要因为「顺手」把它拉进 B 的轮次。
+6. **若确实要改桌面代码（`src/` / `electron/` / 打包配置）**：先 bump 到 `0.3.7` 并同步版本面（清单见本文件顶部开工提示词），漏一处 `desktop:release` 就拒跑。
+7. 签名/notarization 用户 2026-09-20 已决定不做（QA-008 accepted）；要恢复需要 Developer ID Application 证书 + notarytool 凭据，且签名后必须重跑门禁更新哈希。
+8. UI 评审结论勿重提：`docs/UI-REVIEW-2026-09-20.md` 的 P0×6 + P1×10 用户已决定全部不改。主页像素级断言（转换按钮右边缘与粘贴框右边缘差值 < 4px、且与「来源 URL」输入框同行）是刻意锁定的效果，要改先改断言。
 
 不要重做 `feat-024` – `feat-041` 里任何已完成 feature。**不要移除 `feat-041` 已固化的四条实现语义**：不要把 `isAbsoluteDirPath` 收紧回 `value.includes("~")`（iCloud 云盘目录会被全部拒掉，那正是真机缺陷的根因）；不要给任何 `await bridge.*` 去掉 `.catch()`（preload 拒非法参数是**抛异常**而非 resolve `{ ok: false }`）；不要把 `OUTPUT_CODE_MESSAGES` 的六个真实 fs 码换回笼统文案；不要把下载分叉扩成「另存为」对话框（FSD 非目标：用户要的是「不再弹」）。也不要放宽端点/密钥/归档守卫，不要把已退役的历史 ZIP 条目从 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 中删除，不要动 `0.1.3` – `0.3.6` 的任何 tag 与仍然存在的受保护 ZIP。

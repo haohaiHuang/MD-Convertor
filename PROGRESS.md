@@ -2,14 +2,28 @@
 
 ## Current State
 
-- Last updated: 2026-09-22
-- Current version: `0.3.6`，**已发布**为 GitHub Release `v0.3.6`（`package.json`、`package-lock.json`、`feature_list.json`、`scripts/release-desktop.mjs` 均为 `0.3.6`；产物 235,956,668 bytes / SHA-256 `9b89d55c…f351`；已装到本机 `/Applications`）
-- Active feature: **无**（`feat-041` 已完成、已发布、已关闭；`feat-040` 浏览器插件（B）与 `feat-042` 桌面端文档处理（A）均为 `planned`，未进 `in-progress`）
-- Next step: **浏览器插件线的方向与需求已定稿，实施规划另行安排**（统领层：`docs/PLAN-browser-extension.md`；A 的需求：`docs/PRD-app-document-processing.md`；B 的需求：`docs/PRD-browser-extension.md`）。开工前先按 `AGENTS.md` 把版本 bump 到 `0.3.7` 并同步该行，再解掉统领层 §6 的四组规则冲突，然后按 Startup Workflow 建新 feature（A 先、B 后）
-- Branch: `main`；stash@{0} 是 2026-09-21 拉取前的文档备份、与 feat-041 无关
-- Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+
+- Last updated: 2026-09-24
+- Current version: `0.3.6`，**已发布**为 GitHub Release `v0.3.6`（`package.json`、`package-lock.json`、`feature_list.json`、`scripts/release-desktop.mjs` 均为 `0.3.6`；产物 235,956,668 bytes / SHA-256 `9b89d55c…f351`；已装到本机 `/Applications`）。**本轮不改桌面代码，所以不 bump 到 `0.3.7`**（AGENTS.md 的 bump 要求只针对桌面代码改动）
+- Active feature: **`feat-040` 浏览器插件（B）—— 状态 `planned`，实施规划已完成，待开工**（`feat-042` 桌面端文档处理（A）仍为 `planned`，已与本块解耦，无顺序与代码依赖；`feat-041` 已完成已发布已关闭）
+- Next step: **按 `docs/features/browser-extension/FSD.md` + `S1-convert-core.md` 开工 S1**（TDD RED 先行，纯函数，不碰桌面端、不 bump 版本）；S2 的第一个任务是事实探针（S2 文档「探针结果」表未填前不得写 SW 编排）
+- Branch: `main`；stash@{0} 是 2026-09-21 拉取前的文档备份、与当前工作无关
+- Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+（桌面产物）；浏览器插件另行验收于 Chromium，不进桌面发布门禁
 
-## 本轮（浏览器插件线：方向定稿 + 文档分层重整）已完成
+## 本轮（2026-09-24 浏览器插件线 B：实施规划定稿）已完成
+
+用户先明确「**先把插件（B）做掉，A 拆开**」，再把待对齐项一次性拍板（原话「明白了，那都按照你的意见来」）。**本轮只写文档，零应用代码、零测试、未 bump 版本、未跑 `desktop:release`。**
+
+- **用户裁定**：① 顺序反转为 **B 先做**，A（`feat-042`）变另案（无顺序、无代码依赖）；② **不共享代码**——B 自带转换核心 `extension/src/convert/`，不改桌面端任何文件（将来统一只是搬家，不是重写）；③ PRD §3 六条全部裁定：仅工具栏按钮 / 不做预览 / 同名**覆盖**（`uniquify` 会把 `标题 (1).md` 与 `标题.images/` 拆散）/ 标题净化照抄 `src/lib/markdown.ts:46` / 不允许改文件名 / 图片全失败仍写 md；④ 新增裁定：抓不到的图保留原 URL + 下一行 `<!-- 图片未下载：<url> -->`，角标 `✓`/`!` 反馈，不做 popup/通知/整页兜底。
+- **新增施工文档**：`docs/features/browser-extension/`——`FSD.md`（三个前提、架构决定、五层测试、验收与风险）+ 三份阶段文档（`S1-convert-core.md` / `S2-extension-shell-and-writes.md` / `S3-e2e-and-acceptance.md`，每份 Spec / Plan / Tasks 含 RED 列 / Handoff）。
+- **关键设计（已写进 FSD）**：权限只有 `activeTab`+`scripting`+`downloads`、零 `host_permissions`；点击时 `chrome.scripting.executeScript` 注入（不声明静态 `content_scripts`）；转换在 content script（SW 无 `DOMParser`）；SW 负责命名/下载编排/引用回写/写 md；md 里写 `md-convertor-image-<n>` 占位符，落盘后用 `chrome.downloads.search()` 的真实 basename 回写引用；`overwrite` + 不做时间戳；不做保活（并发上限 4 + 60s 超时，真被打断再加）。
+- **测试分层定案**：① 纯函数单测（vitest + jsdom）② `chrome.*` 打桩编排单测（依赖注入，不装 sinon）→ 这两层**进 `init.sh`**；③ 浏览器内冒烟 ④ 真实 MV3 扩展 + 本地 fixture 站集成（自带 `playwright.extension.config.ts`，不动桌面 e2e）⑤ 真机人工验收 → **不进 `init.sh`**，走 `npm run test:extension`。
+- **规则冲突已就地解掉**（PLAN §6 四条）：`AGENTS.md` 平台边界限定为桌面产物 + 版本 bump 只由桌面代码触发 + Verification 段加入扩展测试两层；单 `in-progress` 约束保留且次序反转。
+- **验证**：`./init.sh` **exit 0**（Node 24.14.1，68 files / 999 tests，statements 95.28%）—— 本轮零代码改动，用它只证明文档与状态回写没弄坏基线。
+- **未做（刻意）**：未 bump 版本、未碰 `src/` `electron/` `forge.config.cjs` `playwright.config.ts`、未写 `extension/` 任何代码、未提交（用户未要求）。
+
+## 上一轮（2026-09-22 浏览器插件线：方向定稿 + 文档分层重整）
+
+> 本节的「A 先、B 后」与「抽一段共享模块」两条已被 2026-09-24 推翻（B 先做、A 另案；B 自带核心不共享代码），保留原因：探针事实与文档分层结论仍然有效。
 
 用户先定「目前只做方向评估，不写文档，先把技术探查做扎实」；方向定稿后又指出这其实是**一条新线、两个产品**（插件 + 桌面端），共用一个仓库也必须按项目既有分层做事，于是做了一次文档重整。**未写阶段文档、未动代码，`feat-042`（A）与 `feat-040`（B）均为 `planned`。**
 
@@ -60,6 +74,11 @@
 - **在 agent shell 里启动打包应用要先 `env -u ELECTRON_RUN_AS_NODE`**：Electron 宿主（WorkBuddy、VS Code 等）会把 `ELECTRON_RUN_AS_NODE=1` 传给子 shell，Electron 二进制读到它会以纯 Node 启动——症状是日志里出现 `Welcome to Node.js v24.x` 与 `>` 提示符并卡在 stdin，像卡死而不像报错。同时加 `NODE_OPTIONS=` 清掉宿主注入的 `--require`。
 - **外层已有沙箱时 Chromium 无法再给自己套沙箱**（`sandbox initialization failed: Operation not permitted` → GPU 进程 exit 6 → `FATAL: GPU process isn't usable. Goodbye.`，exit 133）。这与 Playwright Firefox 是同一根因，属环境限制而非产物缺陷：同一 bundle 从 Finder 启动一切正常。沙箱内可用 `--no-sandbox --disable-gpu` 拿功能证据，但**规范的那一次必须在 Terminal 里跑**。
 - 装本机时**安装源用发布 ZIP 解压，不要用正在运行的 `out/` bundle**——既避免复制活着的 bundle，也让「装上的就是发布的那一个」可证。旧安装先 `mv` 到归档目录（可恢复），不要 `rm -rf`。
+- **扩展轮次不动桌面**：只改 `extension/` 的轮次不改 `src/` `electron/` `forge.config.cjs` `playwright.config.ts`，不跑 `desktop:release`，也不把 `0.3.6` bump 到 `0.3.7`（bump 只由桌面代码改动触发）；插件版本由 `extension/manifest.json` 自管。详见 `AGENTS.md` 的 Working Rules 与 Verification。
+- **扩展测试两层进 `./init.sh`、构建与集成不进**：① 纯函数单测（vitest + jsdom）② `chrome.*` 打桩编排单测（依赖注入，不装 sinon）随 `npm test` 进 `init.sh`；③ 浏览器内冒烟 ④ 真实 MV3 扩展集成走 `npm run test:extension`（自带 `playwright.extension.config.ts`，不碰桌面 e2e 项目与 `run-e2e.mjs`）。
+- **插件核心只收 DOM、不收 HTML 字符串**：`turndown` 的 `package.json` 有 `"browser": { "@mixmark-io/domino": false }`，esbuild 会把 domino 映射为空 stub（这正是浏览器产物零 Node 残留的机制）；喂字符串会拿到空 stub 而不是解析器。净化实例与时间戳一律**注入**（Node `createDOMPurify(window)`、浏览器 `DOMPurify` 本身）。
+- **插件与桌面端的引用口径**：md 里先写 `md-convertor-image-<n>` 占位符（纯词，不含 `:` `/`，Turndown 不会改写），落盘后用 `chrome.downloads.search()` 的**真实 basename** 回写引用（浏览器可能自己补扩展名）；真实父目录名 ≠ 请求的 `<标题>.images` 时按失败处理，退回原 URL，不写指向找不到的文件的引用。
+- **同名用 `overwrite` 而不是 `uniquify`**：`uniquify` 只改 md 名（`标题 (1).md`）、目录名不变，一次重复导出就把文件对拆散；这也是不加时间戳的理由。
 - 签名/notarization 不做（QA-008 accepted，2026-09-20 用户决定）；UI 评审结论勿重提（2026-09-20 全部不整改）。
 - 云端 Provider 端到端实测仍待用户用真实文章走一遍（与 feat-041 无关的遗留项）。
 
