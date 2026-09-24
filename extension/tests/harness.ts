@@ -1,5 +1,5 @@
 import { chromium, type BrowserContext, type Worker } from "@playwright/test";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -15,6 +15,26 @@ export const chromiumArgs = (process.env.MD_CONVERTOR_EXTENSION_CHROMIUM_ARGS ??
 
 export function tempDir(prefix: string): string {
   return mkdtempSync(path.join(tmpdir(), prefix));
+}
+
+// `chrome.downloads.download()` resolves once the download has *started*, so a file can exist with
+// its bytes still being written — and `waitForFile` only looks for the name. Skeleton and the S3
+// integration spec both read the file back, so they must first let Chrome declare it complete.
+// (Measured: reading straight after the worker resolves produced an empty or truncated markdown
+// in roughly one run out of ten.)
+export async function waitForDownloadComplete(worker: Worker, name: string, timeoutMs = 30_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const state = await worker.evaluate(async (target) => {
+      const items = await chrome.downloads.search({});
+      return items.find((item) => item.filename === target || item.filename.endsWith(`/${target}`))?.state;
+    }, name);
+    if (state === "complete") return;
+    if (Date.now() > deadline) {
+      throw new Error(`${name} never finished downloading (last state: ${state ?? "not found"})`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
 }
 
 // Quirk 1: Playwright always forces CDP `Browser.setDownloadBehavior: allowAndName` on a
@@ -59,17 +79,6 @@ export async function useRealDownloadNaming(context: BrowserContext): Promise<vo
 
 export async function serviceWorker(context: BrowserContext): Promise<Worker> {
   return context.serviceWorkers()[0] ?? (await context.waitForEvent("serviceworker"));
-}
-
-export async function waitForFile(dir: string, name: string, timeoutMs = 30_000): Promise<string> {
-  const target = path.join(dir, name);
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    if (existsSync(target)) return target;
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-  const seen = existsSync(dir) ? readdirSync(dir).join(", ") : "(directory missing)";
-  throw new Error(`${name} never appeared in ${dir}; saw: ${seen}`);
 }
 
 export type FixtureServer = { origin: string; close: () => Promise<void> };
