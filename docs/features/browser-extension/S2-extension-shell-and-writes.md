@@ -2,7 +2,7 @@
 
 - 上游：`docs/features/browser-extension/FSD.md`（架构决定 §3.1、§3.3、§3.5）
 - 前置：S1 完成（`extension/src/convert/**` 纯函数已绿、`npm run build:extension` 可用）
-- 状态：**实施中 —— T2.0（事实探针）已完成**，T2.1 起待做（四条结论见文末「探针结果」）
+- 状态：**实施中 —— T2.0（事实探针）与 T2.1（外壳骨架）已完成**，T2.2 起待做
 - feature_list id：`feat-040`
 
 ## Spec
@@ -27,6 +27,8 @@ type ConvertPayload = {
 };
 type ConvertFailure = { type: "md-convertor:failed"; code: string; message: string };
 ```
+
+**落地偏差（T2.1）**：`ConvertRequest` **未实现** —— 注入后的实际流程是 content script 单向上报，SW 不需要向它发请求（FSD §3.3 的契约里保留这个概念类型只为说明信任方向）。另：`convert` 只在 `http(s)` 页面生效，其余协议直接回 `UNSUPPORTED_PAGE`。
 
 4. **无手势注入**：SW 侧的 `run(tabId, deps)` 是唯一编排入口，`deps` 是 `chrome` 形状对象（`{ tabs, action, scripting, downloads, runtime }`）。生产 worker.ts 只做两件事：把真实 `chrome` 传进去、把结果写成角标。
 5. **注入 → 消息 → 编排**：注入 content.js 后，content 主动 `chrome.runtime.sendMessage(payload)`，SW 用 `sender.tab.id` 关联并带超时等待（10s）；content 报 `failed` 或超时 → 角标 `!` + 可读原因。
@@ -82,7 +84,7 @@ export async function run(tabId: number, deps: ChromeDeps): Promise<RunResult>
 
 ### 7. `extension/src/worker.ts`
 
-`chrome.action.onClicked.addListener((tab) => void run(tab.id!, realChromeDeps))`；`runtime.onMessage` 只接受 `ConvertPayload`/`ConvertFailure` 并交给等待中的 promise；结束时 `setBadgeText({ text: "✓" | "!" })` + `setTitle` 详情，4s 后清空。所有 `void` 调用必须有 `.catch()`（feat-041 的教训：抛出的异常被 `void` 吞掉表现为「点了没反应」）。
+`chrome.action.onClicked.addListener((tab) => void run(tab.id!, realChromeDeps))`；`runtime.onMessage` 只接受 `ConvertPayload`/`ConvertFailure` 并交给等待中的 promise；结束时 `setBadgeText({ text: "✓" | "!" })` + `setTitle` 详情，4s 后清空。所有 `void` 调用必须有 `.catch()`（feat-041 的教训：抛出的异常被 `void` 吞掉表现为「点了没反应」）。另挂一个测试钩子 `globalThis.__mdConvertorRun`（Playwright 点不了工具栏，S3 的集成测试直接调编排；扩展自身不读它）。
 
 ### 8. 打桩单测（`chrome.*` fake）
 

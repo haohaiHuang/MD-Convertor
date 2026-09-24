@@ -13,7 +13,16 @@ export default defineConfig({
         "src/app/api/translate/run/route.ts",
         "extension/src/**/*.ts",
       ],
-      exclude: ["src/**/*.test.ts", "src/types/**", "extension/src/**/*.test.ts"],
+      // `content.ts` / `worker.ts` are browser-only entry points (DOM + `chrome.*`); they are
+      // exercised by `npm run test:extension`, which produces no vitest coverage. Everything
+      // worth measuring lives behind an injected `deps` in `worker-run.ts` et al.
+      exclude: [
+        "src/**/*.test.ts",
+        "src/types/**",
+        "extension/src/**/*.test.ts",
+        "extension/src/content.ts",
+        "extension/src/worker.ts",
+      ],
       thresholds: {
         "extension/src/convert/extract.ts": { lines: 90, branches: 80, functions: 100, statements: 90 },
         "extension/src/convert/images.ts": { lines: 90, branches: 80, functions: 100, statements: 90 },

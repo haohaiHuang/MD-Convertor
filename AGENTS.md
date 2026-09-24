@@ -100,7 +100,7 @@ npm run test:e2e
 npm run test:extension
 ```
 
-注：`build:extension` 与 `test:extension`（以及 `extension/src/convert/`、`scripts/build-extension.mjs`、`playwright.extension.config.ts`）已由 S1（`docs/features/browser-extension/S1-convert-core.md` 的 T1.0）落地并可用；**仍未存在的只有 `extension/manifest.json`、service worker、content script 与 `extension/dist/`，这些属于 S2 未开工**。构建产物 `extension/dist-test/` 与 `extension/dist/` 均已 gitignore。
+注：`build:extension` 与 `test:extension`（以及 `extension/src/convert/`、`scripts/build-extension.mjs`、`playwright.extension.config.ts`）已由 S1（`docs/features/browser-extension/S1-convert-core.md` 的 T1.0）落地并可用；S2 的 T2.1 又补上 `extension/manifest.json` 与 `extension/src/{messages,content,write,worker-run,worker}.ts`，`npm run build:extension` 现在会产出 `extension/dist/` 的 `content.js` / `worker.js` / `manifest.json`（`core.js` 仍只进 `dist-test/`）。构建产物 `extension/dist-test/` 与 `extension/dist/` 均已 gitignore。
 
 真实网页对照只在发布前执行 `npm run test:live`，不得加入日常单元测试；它会联网但不得保存或输出网页正文。桌面打包、环境变量、冒烟和人工验收统一按 `docs/TESTING.md` 执行。当前正式发布门禁使用 `npm run desktop:release`，且只允许目标版本 `0.3.6`（`0.3.6` 已发布；再改代码前先 bump 到 `0.3.7` 并同步该行）；脚本必须对仍然存在的历史 ZIP 逐个校验哈希（缺失项报退役并继续），并自动验证新 ZIP 的新鲜度、版本、arm64 架构、包结构和 SHA-256，不能把 Forge 无产物退出视为成功。签名和 notarization 尚未配置时必须明确报告产物仅适合个人测试。
 

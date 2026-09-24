@@ -1,8 +1,14 @@
-import { chromium, expect, test, type BrowserContext, type CDPSession, type Worker } from "@playwright/test";
+import { expect, test, type BrowserContext, type Worker } from "@playwright/test";
 import { createServer, type Server } from "node:http";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import {
+  launchExtension,
+  prepareProfile,
+  serviceWorker,
+  useRealDownloadNaming,
+} from "./harness";
 
 // T2.0 fact probe. Loads a throwaway MV3 extension (built here in the OS temp dir — nothing is
 // committed, nothing lands in `extension/dist/`) and measures the platform facts S2's service
@@ -11,14 +17,9 @@ import path from "node:path";
 //
 // Harness trap measured while writing this: Playwright always sets CDP `Browser.setDownloadBehavior`
 // to `allowAndName` for a persistent context, which names every download `<guid>` (no extension) and
-// drops the requested subdirectory — the requested `filename` becomes unobservable. The probe
-// therefore resets the behaviour to `default` over CDP and points the profile's download directory
-// at a temp dir (the profile Preferences below); that combination reproduces real Chrome naming.
-
-const chromiumArgs = (process.env.MD_CONVERTOR_EXTENSION_CHROMIUM_ARGS ?? "")
-  .split(",")
-  .map((value) => value.trim())
-  .filter(Boolean);
+// drops the requested subdirectory — the requested `filename` becomes unobservable. `harness.ts`
+// holds the two-step fix (profile download directory + `behavior: "default"` over CDP) that
+// reproduces real Chrome naming; see S2's 「探针结果」 section.
 
 const PROBE = "md-convertor-probe";
 const IMAGE_DIR = `${PROBE}-images`;
@@ -86,11 +87,7 @@ test.beforeAll(async () => {
   profileDir = mkdtempSync(path.join(tmpdir(), "md-probe-profile-"));
   downloadDir = mkdtempSync(path.join(tmpdir(), "md-probe-downloads-"));
   writeProbeExtension(extensionDir);
-  mkdirSync(path.join(profileDir, "Default"), { recursive: true });
-  writeFileSync(
-    path.join(profileDir, "Default", "Preferences"),
-    JSON.stringify({ download: { default_directory: downloadDir, prompt_for_download: false } }),
-  );
+  prepareProfile(profileDir, downloadDir);
 
   server = createServer((_request, response) => {
     response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
@@ -101,17 +98,9 @@ test.beforeAll(async () => {
   if (address === null || typeof address === "string") throw new Error("probe server has no port");
   origin = `http://127.0.0.1:${address.port}/`;
 
-  context = await chromium.launchPersistentContext(profileDir, {
-    channel: "chromium",
-    args: [
-      ...chromiumArgs,
-      `--disable-extensions-except=${extensionDir}`,
-      `--load-extension=${extensionDir}`,
-    ],
-  });
-  const cdp: CDPSession = await context.newCDPSession(await context.newPage());
-  await cdp.send("Browser.setDownloadBehavior", { behavior: "default" });
-  worker = context.serviceWorkers()[0] ?? (await context.waitForEvent("serviceworker"));
+  context = await launchExtension(profileDir, extensionDir);
+  await useRealDownloadNaming(context);
+  worker = await serviceWorker(context);
 });
 
 test.afterAll(async () => {

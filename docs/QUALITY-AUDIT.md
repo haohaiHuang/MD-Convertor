@@ -290,6 +290,16 @@ Approved for personal testing. Not approved for frictionless public distribution
 - 未做：无 `manifest.json` / service worker / content script / 任何 `chrome.*` / `extension/dist/`（属 S2）；未 bump 版本（0.3.6 不动）、未跑 `desktop:release`、未跑 `test:e2e`。本轮按用户要求**提交到本地、未 push**（GitHub 等大阶段完成再推）。
 - 提交门（本机 `subagent` 不可用，三道路由改为就地审）：ponytail 无可删项（只余 3 条判断题：单元素 `targets` 数组、`forbidden` 名单两处重复、惰性图属性名两处知晓）；code-review 两轴只出一条 spec 差距 —— T1.5 写了「固定快照」而测试只用 `toContain`，已改为逐字符锁头部 5 行；neat-freak 死引用、相对时间、尺寸、软链四项均过（AGENTS.md 121 行 / 12.7KB，handoff 126 行 / 22.0KB）。
 
+### 2026-09-24（第四轮）— PROGRESS 瘦身 + S2 外壳：事实探针与扩展骨架
+
+- **Step 0 文档瘦身**（提交 `934e979`）：`PROGRESS.md` 四段「上一轮…已完成」历史压进本表，删前先补上同日「插件线方向定稿」那一条（下文）；`PROGRESS.md` −51/+3。
+- **S2 / T2.0 事实探针**（提交 `4d0e96e`）：`extension/tests/probe.spec.ts` 5 条用例（`npm run test:extension -g probe` → 5 passed）；结论表已填进 `S2-extension-shell-and-writes.md`：「无手势注入不可用」「请求的 `filename` 无扩展名不补」「`search()` 返回含子目录的绝对路径」「`overwrite` 真覆盖」「绝对路径被拒」。
+- **探针顺手挖出的装置坑（S3 必须照抄修法）**：Playwright 对 persistent context 强制 CDP `allowAndName`，下载被改名 `<guid>` 且丢掉请求子目录；修法 = profile 预写 `download.default_directory` + 启动后补发 `behavior:"default"`，`downloadsPath` 不可用。
+- **又一条环境事实**：TS 6 不再自动收录 `node_modules/@types`，`@types/chrome` 需靠 `extension/src/chrome-types.d.ts`（一行 reference）显式引用。
+- **S2 / T2.1 外壳骨架**：`extension/manifest.json`（0.1.0，权限恰为 `activeTab`+`scripting`+`downloads`、`host_permissions` 空、无静态 content_scripts）+ `src/messages.ts`/`content.ts`/`write.ts`/`worker-run.ts`/`worker.ts`；构建加两个入口并拷 manifest；`npm run test:extension` → 7 passed；骨架端到端把 `示例文章标题.md` 真写进下载目录。
+- **落地偏差**：FSD 的 `ConvertRequest` 不实现（content 主动上报，SW 不请求）；`extension/src/content.ts` 与 `worker.ts` 作为浏览器专用入口不进 vitest 覆盖率；全局 statements 95.48% → 93.36%（三个新模块的单测在 T2.3–T2.7 补，不是既有代码劣化）。
+- **纯扩展轮**：未动桌面代码、未 bump 版本、未跑 `desktop:release` / `test:e2e`；`NODE_OPTIONS= ./init.sh` exit 0（75 files / 1035 tests）。提交在本地未 push。
+
 ### 2026-09-24（第二轮）— 文档结构收口：handoff 退役历史、全局指令点名两处
 
 - 项目 `AGENTS.md` 原先只点名 `~/.codex/AGENTS.md`，而 pi 会话加载的是 `~/.pi/agent/AGENTS.md`（两份内容不同：pi 版多「证据先于断言」「本机环境已知问题」「工作流」）。已改为**两份都点名**并注明各自由谁加载；Startup Workflow 第 2 步同步。

@@ -2,23 +2,26 @@
 
 ## Current State
 
-- Last updated: 2026-09-24（第四轮：PROGRESS 瘦身 + S2 扩展外壳；T2.0 探针已完成）
+- Last updated: 2026-09-24（第四轮：PROGRESS 瘦身 + S2 扩展外壳；T2.0 探针、T2.1 外壳骨架已完成）
 - Current version: `0.3.6`，**已发布**为 GitHub Release `v0.3.6`（`package.json`、`package-lock.json`、`feature_list.json`、`scripts/release-desktop.mjs` 均为 `0.3.6`；产物 235,956,668 bytes / SHA-256 `9b89d55c…f351`；已装到本机 `/Applications`）。**本轮不动桌面代码，所以不 bump 到 `0.3.7`**（bump 只由桌面代码改动触发；插件版本自管）
 - Active feature: **`feat-040` 浏览器插件（B）—— 状态 `in-progress`，S1（转换核心）已完成，S2 进行中（T2.0 探针已完成，T2.1 起待做），提交均在本地未 push**（`feat-042` 桌面端文档处理（A）仍为 `planned`，无顺序与代码依赖；`feat-041` 已完成已发布已关闭）
-- Next step: **S2 继续 —— T2.0 事实探针已出结论并入库**（四条设计关键事实 + 一条「绝对路径被拒」见 `S2-extension-shell-and-writes.md` 的「探针结果」表，机器化证据 `extension/tests/probe.spec.ts`）；**接着写 T2.1 起**：`extension/manifest.json`（v0.1.0；只有 `activeTab`+`scripting`+`downloads`、`host_permissions` 空、不声明静态 `content_scripts`）→ 消息契约 → content script → service worker 编排（命名/下载/引用回写/写 md/角标）→ `chrome.*` 打桩单测
+- Active feature: **`feat-040` 浏览器插件（B）—— 状态 `in-progress`，S1（转换核心）已完成，S2 进行中（T2.0 探针、T2.1 外壳骨架已完成，T2.2 起待做），提交均在本地未 push**（`feat-042` 桌面端文档处理（A）仍为 `planned`，无顺序与代码依赖；`feat-041` 已完成已发布已关闭）
+- Next step: **S2 继续 —— T2.2 起**：content script 接入核心与失败可读化（`extension/tests/content.spec.ts`：payload 字段完整 / `no-article` → `NO_ARTICLE` / 非 http(s) → `UNSUPPORTED_PAGE`）→ T2.3 下载编排（并发 4、等待完成、真实 basename 核对）→ T2.4 引用回写 → T2.5 写盘单测 → T2.6 角标 → T2.7 失败路径矩阵与覆盖率阈值 → T2.8 收尾（`extension/dist/` 恰好三个文件 + manifest）
 - Branch: `main`；stash@{0} 是 2026-09-21 拉取前的文档备份、与当前工作无关
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+（桌面产物）；浏览器插件另行验收于 Chromium，不进桌面发布门禁
 
 ## 本轮（2026-09-24 第四轮：PROGRESS 瘦身 + S2 扩展外壳）进行中
-
 用户先批准「单独一次 doc 清理」，再指示继续 S2；**只写 `extension/` 与文档、零桌面改动，不 bump 版本、不跑 `desktop:release`、不跑 `test:e2e`。**
 
 - **Step 0 文档瘦身已完成**（提交 `934e979`）：四段「上一轮…已完成」历史压进 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`，并先补上 2026-09-22 插件线方向定稿那一条；`PROGRESS.md` −51/+3。
 - **S2 / T2.0 事实探针已完成并发绿**：新增 `extension/tests/probe.spec.ts`（5 条用例，`npm run test:extension -- -g probe` 5 passed / 3.2s）。它在 `os.tmpdir()` 里现搭一个一次性 MV3 扩展 + 本地 HTTP 页，`afterAll` 全清，不入库任何产物。四条设计关键事实与一条附带事实已填进 `S2-extension-shell-and-writes.md` 的「探针结果」表：① SW **无手势注入不可用**（两个 tab 都报 `Cannot access contents of the page…must request permission`）→ 集成测试要用测试专用 manifest 变体，「工具栏点击 → activeTab 授权」只能人工验收；② 请求的 `filename` 无扩展名时**不补扩展名**（`text/markdown` 与 `image/png` 都原样落盘）→ 引用必须以 `search()` 的真实 basename 为准；③ `search()` 返回**含子目录的绝对路径** → 「父目录名 == `dirName`」核对成立；④ `overwrite` 是**真覆盖**（同一路径、单文件、无 ` (1)` 分身）→ 保留 `overwrite`；⑤ 绝对 `filename` 被拒 `Invalid filename` → 写盘一律相对路径。
 - **探针顺手挖出一个装置坑（S3 必须照抄修法）**：Playwright 对 persistent context 一律发 CDP `Browser.setDownloadBehavior{allowAndName}`，于是每次下载都被写成 `<guid>`（无扩展名）且丢掉请求的子目录 —— 第一次跑探针就撞上（期望 `md-convertor-probe-noext`、收到 GUID），②③④ 在这个装置下**根本测不出来**。修法两步缺一不可：profile 里预写 `Default/Preferences` 的 `download.default_directory`，启动后再自己补发 `Browser.setDownloadBehavior{behavior:"default"}`；`downloadsPath` 不能碰（它就是 `allowAndName` 的入口）。
 - **又一条事实**：TypeScript 6 **不再自动把 `node_modules/@types` 下所有包拉进 program**（项目的 `@types/node` 其实是被 `next-env.d.ts` → `next` 间接带进来的）。所以 `@types/chrome` 装好也不生效，必须显式引用 —— 新增 `extension/src/chrome-types.d.ts`（一行 `/// <reference types="chrome" />`，零 import），后续 worker/content script 共用这两行。
-- **门禁**：`NODE_OPTIONS= ./init.sh` **exit 0**（Node 24.15.0，**75 files / 1035 tests**，statements 95.48%；扩展的浏览器内探针**不进** `init.sh`，按分层只走 `npm run test:extension`）。
-- **仍未做**：没有 `manifest.json`、service worker、content script、任何 `chrome.*` 调用、`extension/dist/`；`CHANGELOG.md` 不加条目（无用户可见变化）。
+- **门禁**：`NODE_OPTIONS= ./init.sh` **exit 0**（Node 24.15.0，**75 files / 1035 tests**；扩展的浏览器内探针与骨架**不进** `init.sh`，按分层只走 `npm run test:extension`）。
+- **S2 / T2.1 外壳骨架已完成**（RED 证据：`-g "worker writes"` 先报 `ENOENT … lstat 'extension/dist'`）。落地：`extension/manifest.json`（MV3 / 0.1.0 / 权限恰为 `activeTab`+`scripting`+`downloads`、`host_permissions` 空、无静态 content_scripts）、`src/messages.ts`（契约 + 两个守卫：消息来自任意页面，是校验不是信任）、`src/content.ts`（唯一有 DOM 的一侧：提取→转换→上报）、`src/write.ts`（data URL 写 md）、`src/worker-run.ts`（`run(tabId, deps)`：先挂 inbox 再注入、10s 超时、四条可读 code）、`src/worker.ts`（真实 `chrome` 适配 + `.catch()` + 测试钩子 `__mdConvertorRun`）；`scripts/build-extension.mjs` 加两个入口并拷 manifest。`npm run test:extension` → **7 passed / 5.9s**（core-smoke 1 + probe 5 + skeleton 1），骨架断言 `run()` 返回 `{ ok: true, mdName: "示例文章标题.md" }` 且下载目录里的文件含标题、正文与 `> 来源：`。
+- **两处落地偏差已就地记录**（S2 文档 §3 + `feature_list.json`）：FSD 契约里的 `ConvertRequest` **不实现**（content 主动上报，SW 不请求）；`extension/src/content.ts` 与 `src/worker.ts` 作为「只有浏览器能跑」的入口从 vitest 覆盖率里排除（它们的证据在 `npm run test:extension`）。
+- **覆盖率数字变化要说清**：全局 statements 从 95.48% 降到 **93.36%**，原因是 `worker-run.ts` / `write.ts` / `messages.ts` 刚落地还没单测（T2.3–T2.7 才补），不是既有代码劣化。
+- **仍未做**：图片下载与引用回写、角标反馈、`chrome.*` 打桩单测、失败路径矩阵（T2.2–T2.8）；`CHANGELOG.md` 不加条目（无用户可见变化）。
 
 ## 三条已固化的教训（都已写进约束清单）
 
