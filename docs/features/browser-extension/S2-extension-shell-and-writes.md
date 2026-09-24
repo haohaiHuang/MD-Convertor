@@ -2,7 +2,7 @@
 
 - 上游：`docs/features/browser-extension/FSD.md`（架构决定 §3.1、§3.3、§3.5）
 - 前置：S1 完成（`extension/src/convert/**` 纯函数已绿、`npm run build:extension` 可用）
-- 状态：**实施中 —— T2.0–T2.4 已完成（T2.4 引用回写本轮落地并接入 `run()`）**，T2.5 起待做
+- 状态：**实施中 —— T2.0–T2.6 已完成（T2.5 写盘单测、T2.6 角标反馈本轮落地）**，T2.7 起待做
 - feature_list id：`feat-040`
 
 ## Spec
@@ -41,6 +41,10 @@ type ConvertFailure = { type: "md-convertor:failed"; code: string; message: stri
 **非目标**：popup、右键菜单、预览、改文件名、翻译、图标（工具栏先显示浏览器默认拼图图标，需要专属图标时另开一轮）、`extension/dist/` 之外的产物。
 
 **落地偏差（T2.4）**：① 替换的是**占位符词本身**而不是 `](…)` 外壳（理由见 Plan §5）—— 于是「相似文本不被误替换」这条用例保护的是**占位符前缀**（`md-convertor-image-1` 不能命中 `md-convertor-image-10`），而不是 md 的链接形式。② 实现第一版把前瞻写反了（`(?![^\p{L}\p{N}])` 变成「后面必须是字母数字」），RED 首次真失败是 4 failed / 1 passed（唯一通过的是「占位符没出现 ⇒ 原样返回」），改正为 `(?![\p{L}\p{N}])` 后 5 passed。③ 接线断言（`run()` 写出的 md 里没有占位符）最初按 `![](...)` 写，但 payload 的图带 alt 文字、真实形态是 `![图](...)`；那次 RED 是真失败（失败信息里 md 仍是 `md-convertor-image-1`，正好证明接线前没有回写），随后把断言放宽为 `(...)`。
+
+**落地偏差（T2.5）**：`write.ts` 是 T2.1 为跑通骨架写的，T2.5 的用例**首跑即全绿**（4 passed），所以这一条是**补证**而不是先写的失败测试 —— RED 这一步在本任务上未成立，如实记在此处。补证仍钉住了三件此前只有口头依据的事：`filename` 只能是相对路径（探针 5 说绝对路径被拒，这里从请求侧钉住）、URL 是能被 `new URL()` 解析且 `decodeURIComponent` 后逐字节相同的 data URL（中文 / 半角括号 / 引号 / emoji）、`overwrite` + `saveAs: false` 未被动过。顺手加了 `markdownDataUrl` 的编码用例（`%`、`#`、`&`、`,` 不进正文语义 —— `#` 会被编码掉，否则 data URL 会被截断）。
+
+**落地偏差（T2.6）**：① 角标逻辑放在 `worker-run.ts`（`badgeFor` / `runWithFeedback` / `clearBadgeLater`）而不是 `worker.ts`，因为 `worker.ts` 是浏览器专用入口、不进 `init.sh`；因此 `ChromeDeps` 多了一个 `action` 成员（`setBadgeText` / `setTitle`）。② 「提取失败 → `!` + 原因」这条用例里注入被拒绝时 `run()` 回的是 `INJECT_FAILED`（不是 `TIMEOUT`）：RED 时我先把断言写成 `TIMEOUT`，实现前就发现不对并改正 —— 超时路径留给 T2.7 的矩阵。③ 失败原因用小映射表把 `INJECT_FAILED` / `TIMEOUT` / `DOWNLOAD_FAILED` 换成人话（英文原文只留在 `RunResult.message` 里给日志）；④ 清空用独立的 `clearBadgeLater` promise，`worker.ts` 里 `.then()` 串接：4 秒的等待不能吊住本次点击（也没有保活）。
 
 ## Plan
 
@@ -88,11 +92,17 @@ export async function run(tabId: number, deps: ChromeDeps): Promise<RunResult>
 
 `writeMarkdown(downloads, mdName, markdown)` → data URL（`data:text/markdown;charset=utf-8,` + `encodeURIComponent`）+ `chrome.downloads.download({ filename: <mdName>, conflictAction: "overwrite" })`；探针实测 2 MiB 通过。（T2.1 落地时写成了现在这个形状：`dirName` 不传，md 永远写下载根目录，图片才进 `<标题>.images/`。）
 
-### 7. `extension/src/worker.ts`
+### 7. 角标常量与文案（`worker-run.ts`）
 
-`chrome.action.onClicked.addListener((tab) => void run(tab.id!, realChromeDeps))`；`runtime.onMessage` 只接受 `ConvertPayload`/`ConvertFailure` 并交给等待中的 promise；结束时 `setBadgeText({ text: "✓" | "!" })` + `setTitle` 详情，4s 后清空。所有 `void` 调用必须有 `.catch()`（feat-041 的教训：抛出的异常被 `void` 吞掉表现为「点了没反应」）。另挂一个测试钩子 `globalThis.__mdConvertorRun`（Playwright 点不了工具栏，S3 的集成测试直接调编排；扩展自身不读它）。
+`BADGE_CLEAR_MS = 4_000`、`DEFAULT_TITLE = "把当前页转成 Markdown"`（与 manifest 的 `action.default_title` 同一句话，T2.8 用构建测试钉住两者相等）；`badgeFor(result)` 三态：成功 `✓` + `已存出「<md>.md」（含 N 张图）`；有失败图 `!` + `已存出「<md>.md」，N 张图未下载`；整个 run 失败 `!` + `转换失败：<原因>`。清空 = `setBadgeText("")` + `setTitle(DEFAULT_TITLE)`。
 
-### 8. 打桩单测（`chrome.*` fake）
+失败原因过一张小映射表（FSD §75 的「角标 `!` + 工具提示『这个页面不允许扩展读取』」是承诺，直接展示浏览器原文是英文且会提到 manifest）：`INJECT_FAILED` → 「这个页面不允许扩展读取」、`TIMEOUT` → 「页面在 10 秒内没有回应」、`DOWNLOAD_FAILED` → 「无法写入下载目录」；表里没有的 code（内容脚本的 `NO_ARTICLE` / `UNSUPPORTED_PAGE`，消息本来就是中文人话）原样透传。
+
+### 8. `extension/src/worker.ts`
+
+`chrome.action.onClicked.addListener` → `runWithFeedback(tab.id, deps).then(() => clearBadgeLater(deps))`（两个 promise，4s 的等待不能吊住本次点击）；`runtime.onMessage` 只接受 `ConvertPayload`/`ConvertFailure` 并交给等待中的 promise。所有 `void` 调用必须有 `.catch()`（feat-041 的教训：抛出的异常被 `void` 吞掉表现为「点了没反应」）。另挂一个测试钩子 `globalThis.__mdConvertorRun`（Playwright 点不了工具栏，S3 的集成测试直接调编排；扩展自身不读它）。
+
+### 9. 打桩单测（`chrome.*` fake）
 
 `extension/src/worker-run.test.ts`：手写 `fakeChrome()`（可控的下载失败、下载永不完结、`search` 返回补过扩展名/父目录不符的 basename），断言：`saved`/`failed` 计数、失败后 md 仍写、并发上限（同时进行的 `download` 调用数 ≤ 4）。不装 sinon，也**不用 `onChanged`** —— 编排查询 `search({ id })`，等待由注入的 `timers` 推进。
 
@@ -105,8 +115,8 @@ export async function run(tabId: number, deps: ChromeDeps): Promise<RunResult>
 | T2.2 | content script：接入核心、失败可读化 | `extension/tests/content.spec.ts`：fixture 页 → payload 字段完整；`no-article` 页 → `failed/NO_ARTICLE`；`file://` 页 → `UNSUPPORTED_PAGE`（或注入被拒可读化）⇒ 先 failed | chromium 全绿 | `npm run test:extension -- -g content` |
 | T2.3 | 下载编排（并发 4、等待、overwrite、60s 超时、真实文件名核对） | `worker-run.test.ts`：7 张图 + fake chrome ⇒ 断言并发峰值 ≤ 4；1 张失败/1 张超时 ⇒ 其余仍然完成；`search` 返回补过扩展名的 basename ⇒ 引用用真实名；父目录名不符 ⇒ 该图按失败处理 ⇒ 先 failed | 全绿 | `npx vitest run extension/src/worker-run.test.ts` |
 | T2.4 | 引用回写纯函数 | `references.test.ts`：成功/失败/未出现占位符/正文含相似文本（不被误替换）/同一占位符出现两次 ⇒ 先 failed ✅（首跑 5 条全 failed：模块不存在；修掉被写反的前瞻后 4 failed → 1 passed 是真断言失败，见 §3 偏差） | 全绿（5 passed） | `npx vitest run extension/src/references.test.ts` |
-| T2.5 | md 写盘（data URL、UTF-8、overwrite、中文文件名） | `write.test.ts`：mock `downloads` 断言 `filename` 是相对路径、URL 是可解析的 data URL、中文内容解码后逐字节相同 ⇒ 先 failed | 全绿 | `npx vitest run extension/src/write.test.ts` |
-| T2.6 | 反馈：角标与工具提示 | `worker-run.test.ts` 扩：成功 → `✓` + 标题含张数；部分失败 → `!` + 标题含「N 张图未下载」；提取失败 → `!` + 原因；4s 后清空（用注入时钟）⇒ 先 failed | 全绿 | 同上 |
+| T2.5 | md 写盘（data URL、UTF-8、overwrite、中文文件名） | `write.test.ts`：mock `downloads` 断言 `filename` 是相对路径、URL 是可解析的 data URL、中文内容解码后逐字节相同 ⇒ 先 failed ⚠️**未成立**：`write.ts` 在 T2.1 已落地，首跑即 4 passed，是**补证**（见 Spec 的「落地偏差（T2.5）」） | 全绿（4 passed） | `npx vitest run extension/src/write.test.ts` |
+| T2.6 | 反馈：角标与工具提示 | `worker-run.test.ts` 扩：成功 → `✓` + 标题含张数；部分失败 → `!` + 标题含「N 张图未下载」；失败 → `!` + 原因；4s 后清空并还原标题（用注入时钟）⇒ 先 failed ✅（4 条全 failed：`(0 , runWithFeedback) is not a function`） | 全绿（8 passed） | `npx vitest run extension/src/worker-run.test.ts` |
 | T2.7 | 打桩单测矩阵收口 | 覆盖 `INJECT_FAILED` / `TIMEOUT` / `DOWNLOAD_FAILED` / 特权页 / 提取失败五条失败路径 ⇒ 先 failed | 五条全绿，`coverage` 中 `worker-run.ts`、`references.ts`、`write.ts` 达阈值 | `npm run test:coverage` |
 | T2.8 | 阶段收尾 | — | `./init.sh` 全绿；`extension/dist/` 恰含 `manifest.json` / `content.js` / `worker.js` 且无 Node 内置模块；探针结论已落本文档 | `./init.sh` |
 

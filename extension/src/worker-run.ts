@@ -4,6 +4,10 @@ import { isConvertFailure, isConvertPayload, type ArticleImage, type ConvertPayl
 import { writeMarkdown, type DownloadedItem, type DownloadsApi } from "./write";
 
 export type ChromeDeps = {
+  action: {
+    setBadgeText(options: { text: string }): Promise<void>;
+    setTitle(options: { title: string }): Promise<void>;
+  };
   scripting: {
     executeScript(injection: { target: { tabId: number }; files: string[] }): Promise<unknown>;
   };
@@ -39,6 +43,8 @@ export const PAYLOAD_TIMEOUT_MS = 10_000;
 export const IMAGE_CONCURRENCY = 4;
 export const IMAGE_TIMEOUT_MS = 60_000;
 export const POLL_MS = 100;
+export const BADGE_CLEAR_MS = 4_000;
+export const DEFAULT_TITLE = "把当前页转成 Markdown";
 
 const realTimers: Timers = {
   now: () => Date.now(),
@@ -195,4 +201,38 @@ export async function run(tabId: number, deps: ChromeDeps, options: RunOptions =
 
   const failed = images.filter((image) => "url" in image).length;
   return { ok: true, mdName, saved: images.length - failed, failed, images };
+}
+
+// The browser's own error text is English and mentions manifests; the user gets the short version
+// (the content script's own messages are already written for humans and pass through unchanged).
+const FAILURE_REASONS: Record<string, string> = {
+  INJECT_FAILED: "这个页面不允许扩展读取",
+  TIMEOUT: "页面在 10 秒内没有回应",
+  DOWNLOAD_FAILED: "无法写入下载目录",
+};
+
+// The badge is the only feedback the user gets — there is no popup and no notification.
+export function badgeFor(result: RunResult): { text: string; title: string } {
+  if (!result.ok) return { text: "!", title: `转换失败：${FAILURE_REASONS[result.code] ?? result.message}` };
+  if (result.failed > 0) return { text: "!", title: `已存出「${result.mdName}」，${result.failed} 张图未下载` };
+  return { text: "✓", title: `已存出「${result.mdName}」（含 ${result.saved} 张图）` };
+}
+
+export async function runWithFeedback(
+  tabId: number,
+  deps: ChromeDeps,
+  options: RunOptions = {},
+): Promise<RunResult> {
+  const result = await run(tabId, deps, options);
+  const badge = badgeFor(result);
+  await deps.action.setBadgeText({ text: badge.text });
+  await deps.action.setTitle({ title: badge.title });
+  return result;
+}
+
+// Fired without `await` by the worker: the badge must not keep the click pending.
+export async function clearBadgeLater(deps: ChromeDeps, timers: Timers = realTimers): Promise<void> {
+  await timers.sleep(BADGE_CLEAR_MS);
+  await deps.action.setBadgeText({ text: "" });
+  await deps.action.setTitle({ title: DEFAULT_TITLE });
 }

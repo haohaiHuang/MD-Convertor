@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { DownloadedItem, DownloadRequest } from "./write";
 import type { ConvertPayload } from "./messages";
 import { ARTICLE_MESSAGE } from "./messages";
-import { run, type ChromeDeps } from "./worker-run";
+import { clearBadgeLater, run, runWithFeedback, type ChromeDeps } from "./worker-run";
 
 // T2.3: the download orchestration, driven by a hand-written fake `chrome` (no sinon). Every
 // branch that matters is a timing branch, so the tests own the clock instead of waiting on it.
@@ -29,6 +29,8 @@ type Fake = {
   requests: DownloadRequest[];
   stats: { peakConcurrency: number };
   markdownWrites: () => string[];
+  badgeTexts: string[];
+  badgeTitles: string[];
 };
 
 // `finish` decides what the browser reports for a given download id: `null` means "still running",
@@ -45,6 +47,8 @@ function fakeChrome(
   const requests: DownloadRequest[] = [];
   const markdownWrites: string[] = [];
   const listeners: ((message: unknown, sender: { tab?: { id?: number } }) => void)[] = [];
+  const badgeTexts: string[] = [];
+  const badgeTitles: string[] = [];
   const items = new Map<number, { request: DownloadRequest }>();
   const stats = { peakConcurrency: 0 };
   let nextId = 1;
@@ -80,6 +84,10 @@ function fakeChrome(
         return [finish(id, item.request)].filter((value): value is DownloadedItem => value !== null);
       },
     },
+    action: {
+      setBadgeText: async ({ text }) => void badgeTexts.push(text),
+      setTitle: async ({ title }) => void badgeTitles.push(title),
+    },
     runtime: {
       onMessage: {
         addListener: (listener) => listeners.push(listener),
@@ -91,7 +99,7 @@ function fakeChrome(
     },
   };
 
-  return { deps, requests, stats, markdownWrites: () => markdownWrites };
+  return { deps, requests, stats, markdownWrites: () => markdownWrites, badgeTexts, badgeTitles };
 }
 
 // The orchestration takes its clock from `run`, so a stuck download ends at the deadline instead
@@ -153,5 +161,64 @@ describe("run — image downloads", () => {
 
     expect(result).toMatchObject({ ok: true, saved: 0, failed: 1 });
     expect(result.ok && result.images[0]).toMatchObject({ url: "https://example.com/images/1.png" });
+  });
+});
+
+describe("run — badge feedback", () => {
+  it("shows a check and the image count on success", async () => {
+    const fake = fakeChrome(7, payloadFor(3));
+
+    await runWithFeedback(7, fake.deps, { timers: instantTimers, imageTimeoutMs: 1000 });
+
+    expect(fake.badgeTexts).toEqual(["✓"]);
+    expect(fake.badgeTitles[0]).toContain(MD_NAME);
+    expect(fake.badgeTitles[0]).toContain("3 张图");
+  });
+
+  it("warns and counts the images that did not download", async () => {
+    time = 0;
+    const fake = fakeChrome(
+      5,
+      payloadFor(5),
+      (id) => (id === 3 ? null : { state: "complete", filename: `${DOWNLOAD_DIR}/${DIR_NAME}/00${id}-x.png` }),
+    );
+
+    await runWithFeedback(5, fake.deps, { timers: instantTimers, imageTimeoutMs: 50 });
+
+    expect(fake.badgeTexts).toEqual(["!"]);
+    expect(fake.badgeTitles[0]).toContain(MD_NAME);
+    expect(fake.badgeTitles[0]).toContain("1 张图未下载");
+  });
+
+  it("explains a failed run in the tooltip instead of staying silent", async () => {
+    const fake = fakeChrome(1, payloadFor(1));
+    const blocked: ChromeDeps = {
+      ...fake.deps,
+      scripting: {
+        executeScript: async () => {
+          throw new Error("Cannot access contents of the page");
+        },
+      },
+    };
+
+    const result = await runWithFeedback(1, blocked, { timers: instantTimers });
+
+    expect(result).toMatchObject({ ok: false, code: "INJECT_FAILED" });
+    expect(fake.badgeTexts).toEqual(["!"]);
+    // FSD R7/promise: a page the extension may not read gets a plain-language reason, not the
+    // browser's English error text.
+    expect(fake.badgeTitles[0]).toContain("这个页面不允许扩展读取");
+  });
+
+  it("clears the badge and restores the title after four seconds", async () => {
+    time = 0;
+    const fake = fakeChrome(1, payloadFor(1));
+
+    await runWithFeedback(1, fake.deps, { timers: instantTimers, imageTimeoutMs: 1000 });
+    await clearBadgeLater(fake.deps, instantTimers);
+
+    expect(fake.badgeTexts).toEqual(["✓", ""]);
+    expect(fake.badgeTitles).toHaveLength(2);
+    expect(fake.badgeTitles[1]).toBe("把当前页转成 Markdown");
   });
 });
