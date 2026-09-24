@@ -2,14 +2,22 @@
 
 ## Current State
 
-- Last updated: 2026-09-24（第八轮：T3.4 人工验收**部分通过** —— 第 1/2/3/4 条正常、第 6 条为关闭；**仅第 5 条（≥30 图长文 / MV3 休眠）未测**，`feat-040` 保持 in-progress）
+- Last updated: 2026-09-24（第九轮：**T3.4 人工验收 6 条全部通过，`feat-040` 已置 `done` 并关闭**；PRODUCT/README 双语补上插件入口）
 - Current version: `0.3.6`，**已发布**为 GitHub Release `v0.3.6`（`package.json`、`package-lock.json`、`feature_list.json`、`scripts/release-desktop.mjs` 均为 `0.3.6`；产物 235,956,668 bytes / SHA-256 `9b89d55c…f351`；已装到本机 `/Applications`）。**本轮不动桌面代码，所以不 bump 到 `0.3.7`**（bump 只由桌面代码改动触发；插件版本自管，`extension/manifest.json` 仍是 `0.1.0`）
-- Active feature: **`feat-040` 浏览器插件（B）—— 状态 `in-progress`**：S1/S2/S3 的代码与文档均已完成，**T3.4 真机人工验收进行中：第 1/2/3/4/6 条已通过，仅第 5 条未测**（工具点不到工具栏）；提交均在本地未 push。（`feat-042` 桌面端文档处理（A）仍为 `planned`，无顺序与代码依赖；`feat-041` 已完成已发布已关闭）
-- Next step: **只剩一件事：用户跑 T3.4 的最后一条**——第 5 条（**≥30 图长文会不会被 MV3 休眠打断下载**，本阶段唯一未验证的风险）。清单见 `docs/TESTING.md` 的「Browser Extension」一节（第 1/2/3/4/6 条已通过）。用户回报后把结论写进 `feature_list.json` 的 T3.4 条与 S3 文档的「人工验收记录」，即可把 `feat-040` 标为 `done`；若第 5 条真被打断，按 FSD §6 在 `worker-run.ts` 的下载等待处加 20s 心跳保活并复验。之后下一阶段是 A（`feat-042`，需先走一轮规划）。
+- Active feature: **无** —— `feat-040` 浏览器插件（B）已于 2026-09-24 **置 `done`**（S1/S2/S3 完成，T3.4 人工验收 6 条全过）；`feature_list.json` 里已无 `in-progress` 项。下一个待办是 A 桌面端「文档处理」（`feat-042`，`planned`，需先走一轮规划）。提交均在本地未 push。（`feat-041` 已完成、已发布、已关闭）
+- Next step: **给 A 桌面端「文档处理」（`feat-042`）走一轮规划**（其 PRD 在 `docs/PRD-app-document-processing.md`，尚无阶段文档；`docs/PLAN-browser-extension.md` §6 的四组规则已于 2026-09-24 裁定，可直接引用）。另有一条陈旧待办：云端 Provider 端到端实测仍需用户用真实文章走一遍（与 feat-041 无关）。桌面端本轮**仍是 0.3.6 已发布状态**，要动 `src/` / `electron/` 前先 bump 到 `0.3.7` 并同步版本面。
 - Branch: `main`；stash@{0} 是 2026-09-21 拉取前的文档备份、与当前工作无关
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+（桌面产物）；浏览器插件另行验收于 Chromium，不进桌面发布门禁
 
-## 本轮（2026-09-24 第八轮：T3.4 人工验收部分通过）已完成
+## 本轮（2026-09-24 第九轮：T3.4 全部通过，feat-040 关闭）已完成
+
+- 用户回报 T3.4 第 5 条（≥30 图长文 / MV3 休眠）通过 —— 用本机 40 图页跑：40 张全部落盘、无中断。至此 **6 条全部通过**（1 载入、2 普通文章落盘、3 登录会话图、4 重复导出覆盖、5 40 图长文不中断、6「下载前询问保存位置」为关闭）。
+- 第 5 条没被打断 ⇒ FSD §6 预留的 20s 心跳保活**没有落地**，`worker-run.ts` 未动，并发上限仍是 4。
+- `feat-040` 在 `feature_list.json` 里置 **`done`**，`activeFeature` 置 `null`；S3 阶段文档与 FSD 的 T3.4 行改为「6 条全部通过（2026-09-24）」。
+- 补上第八轮刻意推迟的两笔手：`docs/PRODUCT.md` / `.zh.md`（支持范围各加一条插件说明 + 隐私段各加一句「只在点击图标时读当前标签页、不读取或存储 Cookie／登录态」）、`README.md` / `.zh.md`（主要能力各加一行）。
+- 零桌面代码改动、零版本变动（桌面仍 0.3.6、插件仍 0.1.0）；本轮只改文档与 `feature_list.json`。
+
+## 上一轮（2026-09-24 第八轮：T3.4 人工验收部分通过）已完成
 
 用户在真机 Chrome 载入 `extension/dist`（未打包扩展），回报清单第 1（载入成功）、2（普通文章：桌面端未运行也出现 `<标题>.md` + `<标题>.images/`）、3（登录后才可见、图片带会话的文章）、4（同一篇连点两次：覆盖、不出现 `(1)`、md 与图目录仍成对）条正常；第 6 条「下载前询问保存位置」为**关闭**（因此不逐图弹框，符合预期，该项开启时每图一框亦属预期）。**仅第 5 条（≥30 图长文是否被 MV3 休眠打断）未测。**
 
@@ -28,7 +36,7 @@
 - **一处产品行为发现（不修，记录）**：整篇图片全失败会留下空 `<标题>.images/` 目录（Chrome 先建目录再发请求，中断只删半成品文件，`chrome.downloads` 删不了目录）；测试按「不存在或为空」断言。
 - **T3.5 文档收口**：`AGENTS.md`（阶段状态 + Verification 段的 S3 事实与 `waitForDownloadComplete` 理由）、`docs/TESTING.md`（新增「Browser Extension」一节：五层与哪两层进 `init.sh`、构建产物、「Playwright 自带 Chromium 不需要沙箱开关、打包 Electron 才需要」的实测口径、四个坑、fixture 路由、`activeTab` 缺口、6 条人工清单；顺手修正一处过期数字 64 files/866 tests → 79/1067）、`CHANGELOG.md` + `CHANGELOG.zh.md`（`[Unreleased]` 加插件首个版本）、`FSD.md`（状态、§4 阶段行、§5 前四条标已验、§6 加两条风险）、`S3-*.md`（状态、逐任务 RED 结论、`## Result` 六条偏差、`## Handoff` 完成态）、`feature_list.json`（T3.0–T3.6 证据，T3.4 标 PENDING）。
 - **门禁**：`NODE_OPTIONS= ./init.sh` **exit 0**（Node 24.15.0，**79 files / 1067 tests**，statements 95.71%，`extension/src` 100% / 分支 93.1%）；`npm run test:extension` **15 passed**。
-- **仍未做**：T3.4 人工验收（只能由用户跑）；`feat-040` 仍 `in-progress`。
+- **仍未做**（当时）：T3.4 人工验收（只能由用户跑）；`feat-040` 当时仍 `in-progress` —— 已于第九轮（2026-09-24）6 条全过并关闭。
 
 ## 上一轮（2026-09-24 第六轮：S2 收尾，T2.5–T2.8）已完成
 

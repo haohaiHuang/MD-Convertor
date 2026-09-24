@@ -101,6 +101,8 @@ Manual acceptance (run in Terminal, not from a sandboxed agent shell):
 5. One article with 30 or more images: watch for interrupted downloads (MV3 service-worker suspension).
 6. Note whether "Ask where to save each file" is enabled; one prompt per image is expected behavior when it is.
 
+This checklist was run and passed on 2026-09-24 (all six items; item 5 used a throwaway 40-image page, and all 40 images landed with no MV3 interruption). The record lives in [`features/browser-extension/S3-e2e-and-acceptance.md`](features/browser-extension/S3-e2e-and-acceptance.md) under 「人工验收记录（T3.4）」. Re-run it whenever the extension's manifest, service worker, or download path changes.
+
 ## Release Guard
 
 `npm run desktop:release` requires:

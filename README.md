@@ -17,6 +17,7 @@ MD-Convertor is a local webpage-to-Markdown app for Apple Silicon Macs. Convert 
 - Keeps body text first under a 20 MiB output limit; unsupported or over-budget images fall back to alt text with warnings
 - Supports stopping a conversion, clearing either input mode, copying, downloading, result statistics, and quick return to the input area
 - Can save Markdown straight into a default folder you choose once in Settings, so the save dialog stops appearing on every download; a refused write names the reason and falls back to the normal download
+- Ships a separate Chromium extension for working in the browser itself: one toolbar click on the page you are reading saves it as `<title>.md` plus a `<title>.images/`, with no desktop app and no server running (load unpacked from `extension/dist`)
 
 - Translation uses a model you configure yourself: an agent CLI already installed on the Mac (`pi` or `claude`), or one OpenAI-compatible cloud provider you configure in Settings. Nothing is translated until you check the translation box, and no MD-Convertor key or account exists.
 

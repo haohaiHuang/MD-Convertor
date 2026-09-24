@@ -1,6 +1,6 @@
 # FSD 总纲 — 浏览器插件（Browser Extension，B）
 
-- 状态：**代码与文档完成；人工验收进行中（2026-09-24：第 1/2/3/4/6 条已通过，仅第 5 条未测）**：S1 已完成（转换核心 + 构建/门禁接线），S2 已完成（T2.0–T2.8：探针、manifest/SW/content、下载与回写、角标反馈、失败矩阵、覆盖阈值与产物收口），**S3 已完成 T3.0–T3.3 / T3.5 / T3.6（fixture 站、真实扩展集成 5 条、文档收口），唯 T3.4 真机人工验收尚未跑完（1/2/3/4/6 已过，仅第 5 条待测）**
+- 状态：**已完成（2026-09-24）：代码与文档全部落地，T3.4 人工验收 6 条全部通过并由用户签字**：S1 已完成（转换核心 + 构建/门禁接线），S2 已完成（T2.0–T2.8：探针、manifest/SW/content、下载与回写、角标反馈、失败矩阵、覆盖阈值与产物收口），**S3 已完成 T3.0–T3.3 / T3.5 / T3.6（fixture 站、真实扩展集成 5 条、文档收口），T3.4 真机人工验收 6 条全部通过（2026-09-24）**
 - 日期：2026-09-24
 - 上游：`docs/PRD-browser-extension.md`（需求已确认，§3 六条已裁定）+ `docs/PLAN-browser-extension.md`（线路方向、边界、工程决策）
 - 阶段执行文档：`S1-convert-core.md`、`S2-extension-shell-and-writes.md`、`S3-e2e-and-acceptance.md`
@@ -162,7 +162,7 @@ buildArticle(document, sourceUrl, { sanitize, now }) → { title, markdown, imag
 | --- | --- | --- |
 | **S1** | 转换核心（纯函数）+ 仓库/构建/门禁接线 | `extension/src/convert/**` + `npm run build:extension` + 浏览器内冒烟通过；`init.sh` 收进第 1 层单测 |
 | **S2** | 扩展外壳：manifest、SW 编排、content script、下载与回写、反馈 | ✅ 已交付（2026-09-24）：`extension/dist/` = `manifest.json` + `content.js` + `worker.js`（构建测试钉住范围与无 Node 残留）；第 2 层打桩单测 12 + 5 + 4 条绿；5 条探针结论落 `S2-extension-shell-and-writes.md` |
-| **S3** | 端到端集成 + 真机人工验收 + 文档收口 | ✅ 代码与文档已交付（2026-09-24）：`extension/tests/fixtures/server.ts`（+ 其单测 8 条）+ `integration.spec.ts` 5 条绿（第 4 层至此真有证据）；`AGENTS.md` / `docs/TESTING.md` / `CHANGELOG.md` / `PROGRESS.md` / `session-handoff.md` / `feature_list.json` 已同步。**唯 T3.4 人工验收尚未跑完（1/2/3/4/6 已过，仅第 5 条待测）** |
+| **S3** | 端到端集成 + 真机人工验收 + 文档收口 | ✅ 完成（2026-09-24）：`extension/tests/fixtures/server.ts`（+ 其单测 8 条）+ `integration.spec.ts` 5 条绿（第 4 层至此真有证据）；`AGENTS.md` / `docs/TESTING.md` / `CHANGELOG.md` / `PROGRESS.md` / `session-handoff.md` / `feature_list.json` 已同步。T3.4 人工验收 6 条全部通过（2026-09-24）——含第 5 条：40 图长文未被 MV3 休眠打断，预留的心跳保活未落地 |
 
 S1 是纯逻辑（可完全 CI 验证）；S2 是外壳与平台交互（事实探针先行）；S3 是真实环境证据与收口。三阶段各自独立提交。
 
@@ -177,7 +177,7 @@ S1 是纯逻辑（可完全 CI 验证）；S2 是外壳与平台交互（事实�
 3. `npm run test:extension` 两项目绿：真实扩展在 Playwright 中可以加载、转换、并把 `<标题>.md` + `<标题>.images/*` 真正写进下载目录。→ **已验证 2026-09-24**：15 passed（含 `integration.spec.ts` 5 条）；断言读的是磁盘上的真实文件与字节数。
 4. fixture 站里受 cookie 保护的图片被成功下载（证明「带会话」这条不是空话）；404 图退回原 URL 且带 `<!-- 图片未下载：… -->` 标记。→ **已验证 2026-09-24**：`会话图片文章.images/001-secret.png` 70 bytes 落盘；缺图文章的 md 保留原 URL + 注释行。
 
-产品验收（人工清单，S3 执行并签字；**状态：进行中 —— 第 1/2/3/4/6 条已通过，仅第 5 条待用户执行**）：
+产品验收（人工清单，S3 执行并签字；**状态：✅ 6 条全部通过（2026-09-24）**）：
 
 5. 真机 Chrome「加载已解压的扩展程序」指向 `extension/dist`，点图标 → 下载目录根出现文件对；桌面端未运行。
 6. 同一篇文章导出两次 → 第二次覆盖，文件对仍然成对（不出现 `标题 (1).md` 配 `标题.images/`）。
@@ -192,7 +192,7 @@ S1 是纯逻辑（可完全 CI 验证）；S2 是外壳与平台交互（事实�
 | --- | --- | --- |
 | 无手势注入是否可用（集成测试） | **已实测：不可用**（探针 1：SW 无手势注入报 `Cannot access contents of the page…`，因为 `activeTab` 的授权来自用户点击） | 集成测试改用测试专用 manifest 变体补 `host_permissions`；「工具栏点击 → 授权」这段只能人工验收（S3 第 5 条） |
 | `chrome.downloads` 是否给无扩展名文件补扩展名 | **已实测：不补，原样落盘**（探针 2） | 引用一律以 `search()` 返回的真实 basename 为准；扩展名只由我们自己按 URL 后缀决定 |
-| MV3 后台休眠打断批量下载 | 未压测 | 先不做保活；验收第 **5** 条压一次（≥30 图长文），真被打断再按 `ponytail:` 注释处加 20s 心跳保活（并发上限已降到 4） |
+| ~~MV3 后台休眠打断批量下载~~ | **已实测：不打断**（2026-09-24 验收第 **5** 条，40 图页 40 张一次性全部落盘） | 已消解：预留的 20s 心跳保活**未落地**（`worker-run.ts` 未动，并发上限仍是 4）；若将来图量级再涨，仍按该处 `ponytail:` 注释加保活 |
 | 编排返回时 md 未必写完 | **已实测：`downloads.download()` 在下载开始时就 resolve** | 别把「`run()` resolve」当成「文件已完整」；要读文件就先等 `downloads.search()` 里该文件 `state === "complete"`（`extension/tests/harness.ts` 的 `waitForDownloadComplete()`）。图片不受影响：`waitForImage` 在 `run()` 返回前就等完了 |
 | 整篇图片全失败会留下空 `<标题>.images/` 目录 | **已实测**：Chrome 先建目录再发请求，中断的下载只删半成品文件；`chrome.downloads` 无删目录能力 | 不修：不影响 md 正确性，代价仅一个空目录；集成测试按「目录不存在或为空」断言 |
 | 超大页面（DOM 克隆 + Readability） | 只测过小页面 | 识别到耗时 >3s 时不阻断（转换在 content script，慢就是慢）；必要时先记 `ponytail:` 再说 |

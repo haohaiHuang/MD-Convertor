@@ -2,7 +2,7 @@
 
 - 上游：`docs/features/browser-extension/FSD.md`（验收标准 §5、风险 §6）
 - 前置：S1 + S2 完成（`extension/dist/` 可加载），五条探针结论与 Playwright 下载装置修法已落到 S2 文档
-- 状态：**T3.0–T3.3、T3.5、T3.6 已完成（2026-09-24）；T3.4 人工验收进行中（第 1/2/3/4/6 条已通过，第 5 条未测）**
+- 状态：**全部完成（2026-09-24）**：T3.0–T3.3、T3.5、T3.6 已完成，T3.4 人工验收 6 条全部通过并由用户签字
 - feature_list id：`feat-040`
 
 ## Spec
@@ -64,7 +64,7 @@
 | T3.1 | 真实扩展 + 真实写盘断言 | `integration.spec.ts` 用例①②：md 与图片文件真的落进下载目录；md 引用与实际文件名逐一对应 ⇒ 先 failed ⚠️**部分不成立**：首跑确实红了（引用 4 条 vs 期望 3 等），但三处都是**测试自身**的解析/断言缺陷（源链接 `<…>` 形式被算成图片引用等），扩展行为自 S2 起就是对的 —— 属**补证**（见 §Result「RED 诚实记录」） | chromium 全绿（5 passed，整体 15 passed） | `npm run test:extension`（实测 15 passed；迭代时用 `npx playwright test --config=playwright.extension.config.ts -g <用例名>`） |
 | T3.2 | cookie 图与 404 图的差别路径 | 用例③：cookie 图成功、404 图退回原 URL + `<!-- 图片未下载：… -->` ⇒ 先 failed ⚠️**不成立**：实现来自 S2，用例首跑即绿，属**补证** | 全绿 | `npm run test:extension`（15 passed） |
 | T3.3 | 重复导出与文件名净化 | 用例④⑤：覆盖、无 `(1)`、中文与 `/` `:` 标题文件名干净 ⇒ 先 failed ⚠️**不成立**：同上，属**补证**；中途红的那次是断言把净化后的 H1 当成了原始标题，按实测改正 | 全绿 | `npm run test:extension`（15 passed） |
-| T3.4 | 人工验收执行与签字 | — | 用户按 §3 清单跑完 6 条并签字（含 ≥30 图那篇的结论）；结论写进 `feature_list.json` 的 verification | **进行中**：第 1/2/3/4/6 条已通过（见「人工验收记录」），仅第 5 条待用户执行（Playwright 点不到工具栏，无法自动化） |
+| T3.4 | 人工验收执行与签字 | — | 用户按 §3 清单跑完 6 条并签字（含 ≥30 图那篇的结论）；结论写进 `feature_list.json` 的 verification | **✅ 通过（2026-09-24）**：6 条全部通过（见「人工验收记录」）；Playwright 点不到工具栏，无法自动化 |
 | T3.5 | 文档收口 | — | `AGENTS.md` / `docs/TESTING.md` / `CHANGELOG.md` / `PROGRESS.md` / `session-handoff.md` / `feature_list.json` 与事实一致；`init.sh` 与 `test:extension` 均绿 | `NODE_OPTIONS= ./init.sh`（79 files / 1067 tests）+ `npm run test:extension`（15 passed） |
 | T3.6 | 阶段收尾 | — | 临时 Downloads / profile / 扩展副本目录已由 spec 的 `afterAll` 删除（`rmSync`），`extension/dist-test/` 与 `extension/dist/` 在 gitignore 内；`git status --short` 只含预期改动 | `git status --short` |
 
@@ -105,7 +105,7 @@ T3.0 是真 RED（模块不存在）。T3.1–T3.3 的红**不是产品缺陷**�
 
 整篇文章的图片**全部**失败时，磁盘上会留下一个空的 `<标题>.images/` 目录：Chrome 在发请求前就把目标目录建好了，中断的下载会删掉半成品文件但不会删目录，而 `chrome.downloads` API 根本没有删目录的能力（`removeFile` 只删文件）。这不影响正确性（md 里那些图退回原 URL），且代价是一个空目录。测试按「目录不存在**或**为空」断言，不把它当成缺陷；若将来要清，只能在下次导出时顺手 `removeFile` 掉自己写的文件，成本大于收益。
 
-## 人工验收记录（T3.4，进行中 — 2026-09-24）
+## 人工验收记录（T3.4，2026-09-24 全部通过）
 
 用户按 `docs/TESTING.md` 的「Browser Extension」清单在真机 Chrome（`extension/dist` 以「加载已解压的扩展程序」载入）执行：
 
@@ -115,17 +115,17 @@ T3.0 是真 RED（模块不存在）。T3.1–T3.3 的红**不是产品缺陷**�
 | 2 | 普通文章点工具栏图标 → `<标题>.md` + `<标题>.images/`，桌面端未运行 | ✅ 用户回报正常 |
 | 3 | 登录后才可见、图片带会话的文章 | ✅ 用户回报正常（2026-09-24） |
 | 4 | 同一篇连点两次 → 覆盖、不出现 `(1)`、md 与图目录仍成对 | ✅ 用户回报正常 |
-| 5 | ≥30 张图的文章 → 观察 MV3 休眠是否打断下载 | ⏳ **未测**（本阶段唯一未验证的风险） |
+| 5 | ≥30 张图的文章 → 观察 MV3 休眠是否打断下载 | ✅ 用户回报正常（2026-09-24，用本地 40 图页：全部 40 张落盘、无中断） |
 | 6 | 「下载前询问保存位置」是否开启 | ✅ **关闭**（因此逐图弹框不发生，符合预期；该设置为开启时每图一框亦属预期） |
 
 **观察记录（不是缺陷）**：同一篇文章重复导出时，Chrome 的下载列表每次都会多出条目，而下载目录里的**文件数量不变** —— 这正是 `conflictAction: "overwrite"` 的语义：每条下载都会被记账，文件被原地替换而不是新增。用户可读的证据是工具栏角标（`✓ 已存出「<标题>.md」（含 N 张图）`）与文件 mtime 的变化。本项已记入 FSD §6，供将来做 UI 文案时参考（若要让「覆盖」更显眼，可在角标文案里点明）。
 
-T3.4 在**第 5 条**跑完并回报前不算签字；`feat-040` 保持 `in-progress`。第 5 条若真被打断，按 FSD §6 在 `worker-run.ts` 的下载等待处加 20s 心跳保活后复验。
+**T3.4 签字于 2026-09-24 完成：6 条全部通过**，`feat-040` 据此关闭。第 5 条（≥30 图长文）**没有**被 MV3 休眠打断，因此 FSD §6 里预留的 20s 心跳保活**没有落地**（并发上限仍是 4，代码未动）。
 
 ## Handoff（S3 完成态，2026-09-24）
 
 1. **规范运行环境**：`npm run test:extension`（内部先跑 `build:extension`）—— 在 **Terminal 里跑的那一次才算规范证据**；本机 agent shell 里跑同样绿（不需要 `--no-sandbox`），但外层已有沙箱时的绿色只当功能证据。
 2. **`activeTab` 授权仍是缺口**：Playwright 点不到浏览器工具栏。集成测试靠 `harness.ts` 的 `copyExtensionWithHostPermission()` 把 `extension/dist` 拷到临时目录并给副本补 `host_permissions`，再从 SW 调 `globalThis.__mdConvertorRun(tabId)`；「点图标 → 拿授权 → 导出」这一段**只能**人工验收（T3.4）。
-3. **T3.4 结论待填**：真机 Chrome「加载已解压的扩展程序」指向 `extension/dist`（本地已构建，目录被 gitignore），按 `docs/TESTING.md` 的人验收清单跑 6 条 —— 重点是第 5 条：**≥30 图的长文章会不会被 MV3 休眠打断下载**。真被打断就按 FSD §6 加保活（`worker-run.ts` 的下载等待处 20s 心跳），并在本文件追加结果。
+3. **T3.4 已结论（2026-09-24）**：真机 Chrome「加载已解压的扩展程序」指向 `extension/dist`，6 条全过 —— 第 5 条用本机 40 图页实测 **40 张一次性全部落盘、未被 MV3 休眠打断**，故 FSD §6 预留的保活（`worker-run.ts` 下载等待处 20s 心跳）**没有落地**，代码未动。若将来图量级再涨，仍按该处 `ponytail:` 注释加保活。
 4. **版本面互不影响**：`extension/manifest.json` 是 `0.1.0`（插件自管）；`package.json` 仍是 `0.3.6`，`desktop:release` 只认桌面版本。本阶段零桌面改动（`src/` / `electron/` / `forge.config.cjs` / `playwright.config.ts` 未动），所以没有 bump。
-5. **下一阶段**：B（`feat-040`）等 T3.4 签字后即可关；关的时候补两笔手：一是把结论写进 `feature_list.json` 的 `feat-040` 与本文件第 3 条，二是在 `docs/PRODUCT.md` 与 `README.md` 各加一行插件入口（本轮刻意没加：插件尚未经用户验收，且 T3.5 的范围只列了 AGENTS/TESTING/CHANGELOG/PROGRESS/handoff/feature_list/QUALITY-AUDIT）。A 桌面端「文档处理」（`feat-042`）另案起计划，与本阶段无代码依赖。
+5. **下一阶段**：B（`feat-040`）已于 2026-09-24 全部通过并关闭；关闭时补的两笔手已做：结论写进 `feature_list.json` 的 `feat-040` 与本文件「人工验收记录」，`docs/PRODUCT.md`（及 `.zh.md`）与 `README.md`（及 `.zh.md`）各加了一行插件入口（中英成对）。A 桌面端「文档处理」（`feat-042`）另案起计划，与本阶段无代码依赖。

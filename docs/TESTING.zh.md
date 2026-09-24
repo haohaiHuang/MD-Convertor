@@ -101,6 +101,8 @@ fixture 站是 `extension/tests/fixtures/server.ts`（由 `server.test.ts` 做�
 5. 一篇 ≥30 张图的文章：观察是否有下载中断（MV3 服务工作线程休眠）。
 6. 记录「下载前询问保存位置」是否开启；开着时每张图弹一次框属预期行为。
 
+这份清单已于 2026-09-24 跑完并通过（6 条全过；第 5 条用的是临时 40 图页，40 张全部落盘、未被 MV3 休眠打断）。记录在 [`features/browser-extension/S3-e2e-and-acceptance.md`](features/browser-extension/S3-e2e-and-acceptance.md) 的「人工验收记录（T3.4）」。插件的 manifest、service worker 或下载路径改动后请重跑。
+
 ## 发布保护
 
 `npm run desktop:release` 要求：
