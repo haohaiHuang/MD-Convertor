@@ -22,6 +22,8 @@ Use `npm ci` to restore dependencies after a clean checkout.
 | `npm run desktop:package` | Build unpacked arm64 app | No |
 | `npm run desktop:make` | Build unsigned ZIP | No |
 | `npm run desktop:release` | Run the complete gate and build a fresh verified ZIP | Yes |
+| `npm run build:extension` | Bundle the browser extension into `extension/dist/` | No |
+| `npm run test:extension` | Extension browser smoke + real-extension integration (builds first) | No |
 
 Live comparisons do not save or print webpage bodies. Override live fixtures only through the documented environment variables in the test sources; never commit private or copyrighted page content.
 
@@ -54,11 +56,50 @@ The baseline covers:
 - the translation task budget: `translateTaskTimeoutMs(batchCount)` returns `max(120s, batches × 180s + 30s)`, and both endpoints size their deadline from the real batch count (a long article of many short paragraphs is not cut off at a fixed 120s)
 - the translation checkbox, 原文 / 译文 tabs, copy and download per tab, progress, cancel, retry, and the ratio dialog
 
-`vitest.config.ts` limits coverage to `src/lib/**/*.ts` plus the convert and translate routes, excludes test files and `src/types/**`, and sets per-file thresholds. Every `src/lib/translate/**` module has its own threshold (95/90/100/95, or 90/75/100/90 for `segment.ts`). Coverage is currently 95.28% statements over 64 files / 866 tests.
+`vitest.config.ts` limits coverage to `src/lib/**/*.ts` plus the convert and translate routes, excludes test files and `src/types/**`, and sets per-file thresholds. Every `src/lib/translate/**` module has its own threshold (95/90/100/95, or 90/75/100/90 for `segment.ts`). Coverage is currently 95.71% statements over 79 files / 1067 tests (includes the extension layers 1–2; the desktop-only figure was 95.28% over 64 files / 866 tests).
 
 E2E runs against the production standalone service and fails if tracked files change. `playwright.config.ts` sets `workers: 1` because the translation engine holds one process-wide task slot; parallel workers would collide with 429 `TRANSLATE_BUSY`.
 
 The specs that convert fulfil `**/api/convert` or `**/api/convert-paste` inside the browser, so `e2e/convert-api.spec.ts` is the only place that reaches the real route handlers: it posts a loopback link and expects 403 `PRIVATE_TARGET` (offline, but only reachable once the route has loaded its Playwright import) and extracts real pasted content through the paste route. `next.config.ts` keeps that import loadable by tracing `node_modules/playwright-core/browsers.json`, the data file Next.js otherwise omits; without it a standalone server answers 500 for every link, which packaging used to hide by re-copying the whole package.
+
+## Browser Extension
+
+The browser extension (`extension/`, Chromium MV3) is a separate product from the desktop app. The desktop artifact is still only built and accepted for `darwin/arm64`; the extension is accepted in Chromium and produces no desktop artifact, so it stays out of `desktop:release`. Editing only `extension/` does not bump the version in `package.json` either - the extension version is its own, in `extension/manifest.json`.
+
+Five layers, and only the first two are part of `./init.sh`:
+
+| Layer | What it proves | Command | In `init.sh` |
+|---|---|---|---|
+| 1 pure unit | extraction, sanitizing, filenames, image planning, reference rewriting (vitest + jsdom) | `npm test` | Yes |
+| 2 stubbed orchestration | service-worker `run(tabId)` against a hand-written fake `chrome.*` | `npm test` | Yes |
+| 3 in-browser smoke | the esbuild bundle converts a real article in a real page (proves no Node-only dependency survived bundling) | `npm run test:extension` | No |
+| 4 real extension integration | a real MV3 extension loaded in Chromium writes real files to disk through a local fixture site | `npm run test:extension` | No |
+| 5 manual acceptance | toolbar click and `activeTab` consent in real Chrome (below) | human checklist | No |
+
+`npm run test:extension` runs `build:extension` first. `build:extension` writes the gitignored `extension/dist/` (exactly `manifest.json`, `content.js`, `worker.js`) plus `extension/dist-test/core.js` for the smoke layer. Run the suite with proxy variables unset, as with `test:e2e` - it drives a real browser, and the fixture site is loopback-only. Layers 3 and 4 use their own `playwright.extension.config.ts` (`testDir: ./extension/tests`, Chromium only, `workers: 1`, no `webServer`); the desktop `playwright.config.ts` and `scripts/run-e2e.mjs` are not involved.
+
+Measured 2026-09-24: 15 passed in about four seconds in an agent shell with no sandbox flags. `MD_CONVERTOR_EXTENSION_CHROMIUM_ARGS` (comma-separated) still exists as an escape hatch - `--no-sandbox,--disable-gpu` is needed by the *packaged Electron app* when it runs inside a process-level sandbox, not by Playwright's own Chromium.
+
+Traps worth knowing before changing this suite:
+
+- **Never pass `downloadsPath` to the extension context.** Playwright always sends CDP `Browser.setDownloadBehavior { behavior: "allowAndName" }`, which saves every download as a bare `<guid>` and drops the requested subdirectory. The harness works around it by pre-writing `download.default_directory` into the profile's `Default/Preferences` and sending `behavior: "default"` itself once the context is up (see `extension/tests/harness.ts`). Assertions read the real files, not `chrome.downloads.search`.
+- **`chrome.downloads.download()` resolves when the download starts, not when it finishes**, and `run()` does not wait for the markdown. Reading the file as soon as its name appears has produced empty or truncated content roughly once in ten runs. Use `waitForDownloadComplete(worker, name)`, which polls `search({})` until `state === "complete"`. Images are safe: `waitForImage` resolves before `run()` returns.
+- **`playwright.extension.config.ts` keeps `testMatch: "**/*.spec.ts"`** because vitest files (for example `extension-build.test.mjs`) live in the same directory; a looser pattern hands them to Playwright, which then fails with `Vitest failed to access its internal state`.
+- **Fixture paths inside a spec resolve from the spec's directory**, not the repository root: use `path.resolve(__dirname, "../..")`.
+- **A fully failed article leaves an empty `<title>.images/` directory.** Chrome creates the target directory before the request, an interrupted download removes only the partial file, and `chrome.downloads` cannot delete a directory. The integration spec accepts "absent or empty" rather than calling it a defect.
+
+The fixture site is `extension/tests/fixtures/server.ts` (unit-tested by `server.test.ts`, which layer 1 collects): `/article` (repeated image plus a relative-path image), `/article-cookie` (its image needs the `md-session` cookie), `/article-missing` (a 404 image), `/article-special` (title containing `/` and `:`), `/no-article`, and `/img/*` plus `/protected/secret.png`, which answers 403 without the cookie. It listens on an ephemeral port and hands the origin back to the spec.
+
+Toolbar click and `activeTab` consent cannot be automated - Playwright cannot click browser chrome. Layer 4 therefore copies the built extension to a temporary directory and adds `host_permissions` to that copy only (`copyExtensionWithHostPermission`), then calls the service worker directly. That leaves the manual checklist below as the only evidence for the real click path.
+
+Manual acceptance (run in Terminal, not from a sandboxed agent shell):
+
+1. Open `chrome://extensions`, enable developer mode, choose "Load unpacked", and select `extension/dist`.
+2. On an ordinary article, click the toolbar icon: a `<title>.md` plus `<title>.images/` appear in the download directory with the desktop app not running, and the images render in Typora or Obsidian.
+3. Repeat on an article that only appears when signed in and whose images need the session: the images should still download.
+4. Click the same article twice: the second export overwrites (no `(1)` suffix) and the markdown and its image directory stay paired.
+5. One article with 30 or more images: watch for interrupted downloads (MV3 service-worker suspension).
+6. Note whether "Ask where to save each file" is enabled; one prompt per image is expected behavior when it is.
 
 ## Release Guard
 

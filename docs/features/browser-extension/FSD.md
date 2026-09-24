@@ -1,6 +1,6 @@
 # FSD 总纲 — 浏览器插件（Browser Extension，B）
 
-- 状态：**实施中（2026-09-24）**：S1 已完成（转换核心 + 构建/门禁接线），**S2 已完成（T2.0–T2.8：探针、manifest/SW/content、下载与回写、角标反馈、失败矩阵、覆盖阈值与产物收口）**，S3 未开工
+- 状态：**代码与文档完成，待人工验收（2026-09-24）**：S1 已完成（转换核心 + 构建/门禁接线），S2 已完成（T2.0–T2.8：探针、manifest/SW/content、下载与回写、角标反馈、失败矩阵、覆盖阈值与产物收口），**S3 已完成 T3.0–T3.3 / T3.5 / T3.6（fixture 站、真实扩展集成 5 条、文档收口），唯 T3.4 真机人工验收待用户签字**
 - 日期：2026-09-24
 - 上游：`docs/PRD-browser-extension.md`（需求已确认，§3 六条已裁定）+ `docs/PLAN-browser-extension.md`（线路方向、边界、工程决策）
 - 阶段执行文档：`S1-convert-core.md`、`S2-extension-shell-and-writes.md`、`S3-e2e-and-acceptance.md`
@@ -139,13 +139,14 @@ buildArticle(document, sourceUrl, { sanitize, now }) → { title, markdown, imag
 | 1 纯函数单测 | 提取 / 净化 / 标题与文件名 / 图片占位符与清单 / 引用回写 / md 生成（vitest，`environment: "node"`，用 jsdom 造 DOM） | `npm test` | **是** |
 | 2 编排单测（`chrome.*` 打桩） | SW 的 `run(tabId)`：消息关联、并发上限、成功/失败/超时矩阵、md 文本、角标 | `npm test` | **是** |
 | 3 浏览器内冒烟 | esbuild 产物在真实页面上下文里跑核心，断言 md 片段与图片清单（证明「无 Node 依赖」不是嘴上说） | `npm run test:extension` | 否 |
-| 4 扩展集成 | Playwright 加载**真实** MV3 扩展 + 本地 fixture 站（含 cookie 保护的图片），断言真实落盘 | 同上 | 否 |
+| 4 扩展集成 | Playwright 加载**真实** MV3 扩展 + 本地 fixture 站（`extension/tests/fixtures/server.ts`，含 cookie 保护的图片与 404 图），断言真实落盘（`integration.spec.ts`，5 条） | 同上 | 否 |
 | 5 人工验收 | 真机 Chrome 加载未打包扩展，跑两篇真实文章 + 一次重复导出 | 人工清单（S3） | 否 |
 
 - **构建不进 `init.sh`**：`build:extension` 只在第 3/4/5 层前跑（每次门禁多跑一次 esbuild 收益小于成本）。
 - **第 3/4 层自带一份 Playwright 配置**（`playwright.extension.config.ts`，`testDir: extension/tests`，只 chromium，`workers: 1`）：既有 `playwright.config.ts` 的三个项目与 `scripts/run-e2e.mjs`（桌面 e2e 门禁）**一律不动**，扩展测试不能拖慢或影响桌面门禁。
 - **打桩方式**：SW 编排函数把 `chrome` 形状的依赖**当参数注入**（`run(tabId, { downloads, tabs, action, scripting, runtime })`），测试传手写 fake。不引入 sinon/proxyquire。
-- **集成测试的已知缺口**：Playwright 点不到浏览器工具栏图标，`activeTab` 授权需要真实手势 → 第 4 层从 SW 侧直接调 `run(tabId)`。若届时实测无手势注入被拒，就用**测试专用 manifest 变体**（构建开关加 `host_permissions`，生产 manifest 不变），并把「工具栏点击 → activeTab 授权」这一段明确标为**只能人工验收**（第 5 层）。
+- **读文件前先等下载真完成**：`chrome.downloads.download()` 在下载**开始**时就 resolve，文件名先出现、字节后写完，而 `run()` 不等 md。早期用「文件名一出现就读」的写法偶发读到空/截断内容（本机实测约十次一遇）；`harness.ts` 的 `waitForDownloadComplete()` 轮询 `search({})` 到 `state === "complete"` 再读。
+- **集成测试的已知缺口**：Playwright 点不到浏览器工具栏图标，`activeTab` 授权需要真实手势 → 第 4 层从 SW 侧直接调 `run(tabId)`。无手势注入实测被拒（探针 1：`Cannot access contents of the page. Extension manifest must request permission to access the respective host.`），因此第 4 层用**测试专用 manifest 变体**（把 `extension/dist` 拷到临时目录再补 `host_permissions`，生产 manifest 不变，见 `harness.ts` 的 `copyExtensionWithHostPermission()`），而「工具栏点击 → activeTab 授权」这一段明确标为**只能人工验收**（第 5 层）。
 
 ### 3.8 与桌面端的关系（为什么这次不共享代码）
 
@@ -161,7 +162,7 @@ buildArticle(document, sourceUrl, { sanitize, now }) → { title, markdown, imag
 | --- | --- | --- |
 | **S1** | 转换核心（纯函数）+ 仓库/构建/门禁接线 | `extension/src/convert/**` + `npm run build:extension` + 浏览器内冒烟通过；`init.sh` 收进第 1 层单测 |
 | **S2** | 扩展外壳：manifest、SW 编排、content script、下载与回写、反馈 | ✅ 已交付（2026-09-24）：`extension/dist/` = `manifest.json` + `content.js` + `worker.js`（构建测试钉住范围与无 Node 残留）；第 2 层打桩单测 12 + 5 + 4 条绿；5 条探针结论落 `S2-extension-shell-and-writes.md` |
-| **S3** | 端到端集成 + 真机人工验收 + 文档收口 | 第 3/4 层绿；用户签字；`PROGRESS.md` / `CHANGELOG.md` / `feature_list.json` / `AGENTS.md` / `docs/TESTING.md` 同步 |
+| **S3** | 端到端集成 + 真机人工验收 + 文档收口 | ✅ 代码与文档已交付（2026-09-24）：`extension/tests/fixtures/server.ts`（+ 其单测 8 条）+ `integration.spec.ts` 5 条绿（第 4 层至此真有证据）；`AGENTS.md` / `docs/TESTING.md` / `CHANGELOG.md` / `PROGRESS.md` / `session-handoff.md` / `feature_list.json` 已同步。**唯 T3.4 人工验收待用户签字** |
 
 S1 是纯逻辑（可完全 CI 验证）；S2 是外壳与平台交互（事实探针先行）；S3 是真实环境证据与收口。三阶段各自独立提交。
 
@@ -171,12 +172,12 @@ S1 是纯逻辑（可完全 CI 验证）；S2 是外壳与平台交互（事实�
 
 实现验收（可机器验证）：
 
-1. `./init.sh` 全绿（含第 1、2 层扩展单测；桌面既有 999 用例不红）。
+1. `./init.sh` 全绿（含第 1、2 层扩展单测；桌面既有 999 用例不红）。→ **已验证 2026-09-24**：exit 0，79 files / 1067 tests（statements 95.71%，`extension/src` 100%）。
 2. `npm run build:extension` 产出 `extension/dist/` 的三个必需项（`manifest.json` / `content.js` / `worker.js`，由 `extension/tests/extension-build.test.mjs` 逐项断言范围）；产物中**不含** `node:` 内置模块、`jsdom`、domino 的引用。
-3. `npm run test:extension` 两项目绿：真实扩展在 Playwright 中可以加载、转换、并把 `<标题>.md` + `<标题>.images/*` 真正写进 `downloadsPath`。
-4. fixture 站里受 cookie 保护的图片被成功下载（证明「带会话」这条不是空话）；404 图退回原 URL 且带 `<!-- 图片未下载：… -->` 标记。
+3. `npm run test:extension` 两项目绿：真实扩展在 Playwright 中可以加载、转换、并把 `<标题>.md` + `<标题>.images/*` 真正写进下载目录。→ **已验证 2026-09-24**：15 passed（含 `integration.spec.ts` 5 条）；断言读的是磁盘上的真实文件与字节数。
+4. fixture 站里受 cookie 保护的图片被成功下载（证明「带会话」这条不是空话）；404 图退回原 URL 且带 `<!-- 图片未下载：… -->` 标记。→ **已验证 2026-09-24**：`会话图片文章.images/001-secret.png` 70 bytes 落盘；缺图文章的 md 保留原 URL + 注释行。
 
-产品验收（人工清单，S3 执行并签字）：
+产品验收（人工清单，S3 执行并签字；**状态：待用户执行**）：
 
 5. 真机 Chrome「加载已解压的扩展程序」指向 `extension/dist`，点图标 → 下载目录根出现文件对；桌面端未运行。
 6. 同一篇文章导出两次 → 第二次覆盖，文件对仍然成对（不出现 `标题 (1).md` 配 `标题.images/`）。
@@ -192,6 +193,8 @@ S1 是纯逻辑（可完全 CI 验证）；S2 是外壳与平台交互（事实�
 | 无手势注入是否可用（集成测试） | **已实测：不可用**（探针 1：SW 无手势注入报 `Cannot access contents of the page…`，因为 `activeTab` 的授权来自用户点击） | 集成测试改用测试专用 manifest 变体补 `host_permissions`；「工具栏点击 → 授权」这段只能人工验收（S3 第 5 条） |
 | `chrome.downloads` 是否给无扩展名文件补扩展名 | **已实测：不补，原样落盘**（探针 2） | 引用一律以 `search()` 返回的真实 basename 为准；扩展名只由我们自己按 URL 后缀决定 |
 | MV3 后台休眠打断批量下载 | 未压测 | 先不做保活；验收第 7 条压一次，真被打断再按 `ponytail:` 注释处加保活（并发上限已降到 4） |
+| 编排返回时 md 未必写完 | **已实测：`downloads.download()` 在下载开始时就 resolve** | 别把「`run()` resolve」当成「文件已完整」；要读文件就先等 `downloads.search()` 里该文件 `state === "complete"`（`extension/tests/harness.ts` 的 `waitForDownloadComplete()`）。图片不受影响：`waitForImage` 在 `run()` 返回前就等完了 |
+| 整篇图片全失败会留下空 `<标题>.images/` 目录 | **已实测**：Chrome 先建目录再发请求，中断的下载只删半成品文件；`chrome.downloads` 无删目录能力 | 不修：不影响 md 正确性，代价仅一个空目录；集成测试按「目录不存在或为空」断言 |
 | 超大页面（DOM 克隆 + Readability） | 只测过小页面 | 识别到耗时 >3s 时不阻断（转换在 content script，慢就是慢）；必要时先记 `ponytail:` 再说 |
 | md 体积超过 data URL 上限 | 探针实测 2 MiB 通过 | 超过约 4 MiB 罕见；失败会被角标暴露，不静默 |
 | 「下载前询问保存位置」设置 | 非代码可控 | 写进人工验收说明：该项开着会逐张弹框 |

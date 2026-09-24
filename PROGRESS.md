@@ -2,14 +2,27 @@
 
 ## Current State
 
-- Last updated: 2026-09-24（第六轮：S2 收尾 —— T2.5 写盘单测、T2.6 角标反馈、T2.7 失败路径矩阵与覆盖率阈值、T2.8 产物范围收口；**S2 已完成**）
+- Last updated: 2026-09-24（第七轮：S3 端到端集成 —— T3.0 fixture 站、T3.1–T3.3 真实扩展集成 5 条、下载完成竞态修复、T3.5 文档收口、T3.6 收尾；**S3 除 T3.4 人工验收外全部完成**）
 - Current version: `0.3.6`，**已发布**为 GitHub Release `v0.3.6`（`package.json`、`package-lock.json`、`feature_list.json`、`scripts/release-desktop.mjs` 均为 `0.3.6`；产物 235,956,668 bytes / SHA-256 `9b89d55c…f351`；已装到本机 `/Applications`）。**本轮不动桌面代码，所以不 bump 到 `0.3.7`**（bump 只由桌面代码改动触发；插件版本自管，`extension/manifest.json` 仍是 `0.1.0`）
-- Active feature: **`feat-040` 浏览器插件（B）—— 状态 `in-progress`，S1（转换核心）与 S2（扩展外壳与写盘）均已完成，下一步 S3（端到端集成 + 真机人工验收），提交均在本地未 push**（`feat-042` 桌面端文档处理（A）仍为 `planned`，无顺序与代码依赖；`feat-041` 已完成已发布已关闭）
-- Next step: **S3 起（先读 `docs/features/browser-extension/S3-e2e-and-acceptance.md`）**：① T3.0 端到端集成 —— 加载真实 MV3 扩展打 fixture 站，证明「带 cookie 的图片能下」「404 图退回原 URL 且带 `<!-- 图片未下载：… -->`」「同篇文章导出两次覆盖成对」；**必须照抄 S2 文档里那段 Playwright 下载装置修法**（预写 profile `Default/Preferences` 的 `download.default_directory` + 启动后补发 CDP `Browser.setDownloadBehavior {behavior:"default"}`），否则收到的文件名是 GUID、子目录也丢；② 真机 Chrome「加载已解压的扩展程序」指向 `extension/dist` 跑人工验收清单（含工具栏点击这一段 —— `activeTab` 授权只在真实点击时存在）；③ 收口 `docs/TESTING.md`（补扩展测试两层与产物范围）与 `CHANGELOG.md`（插件发布前仍不加条目）。
+- Active feature: **`feat-040` 浏览器插件（B）—— 状态 `in-progress`**：S1/S2/S3 的代码与文档均已完成，**只剩 T3.4 真机人工验收待用户签字**（工具点不到工具栏）；提交均在本地未 push。（`feat-042` 桌面端文档处理（A）仍为 `planned`，无顺序与代码依赖；`feat-041` 已完成已发布已关闭）
+- Next step: **只剩一件事：用户跑 T3.4 人工验收**（先看 `docs/features/browser-extension/S3-e2e-and-acceptance.md` §3 与 `docs/TESTING.md` 的「Browser Extension」清单）——真机 Chrome → `chrome://extensions` → 开发者模式 →「加载已解压的扩展程序」指向 `extension/dist`（已构建，目录被 gitignore），跑 6 条，**重点是第 5 条：≥ 30 图的长文会不会被 MV3 休眠打断下载**。用户回报后把结论写进 `feature_list.json` 的 T3.4 条与 S3 文档，即可把 `feat-040` 标为 `done`；若真被打断，按 FSD §6 在 `worker-run.ts` 的下载等待处加 20s 心跳保活并复验。之后下一阶段是 A（`feat-042`，需先走一轮规划）。
 - Branch: `main`；stash@{0} 是 2026-09-21 拉取前的文档备份、与当前工作无关
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+（桌面产物）；浏览器插件另行验收于 Chromium，不进桌面发布门禁
 
-## 本轮（2026-09-24 第六轮：S2 收尾，T2.5–T2.8）已完成
+## 本轮（2026-09-24 第七轮：S3 端到端集成与文档收口，T3.0–T3.3 / T3.5 / T3.6）已完成
+
+用户指令：继续 S3。**只写 `extension/` 与文档、零桌面改动，不 bump 版本、不跑 `desktop:release`、不跑 `test:e2e`。**
+
+- **T3.0 fixture 站（真 RED）**：`extension/tests/fixtures/server.ts` + `server.test.ts`（8 passed，首跑 `Cannot find module './server'`）。`node:http`、临时端口、返回 `origin`：`/article`（重复图 + 相对路径图）、`/article-cookie`（图在 `/protected/secret.png`，无 `md-session` cookie 就 403，页面负责设置）、`/article-missing`（404 图）、`/article-special`（标题含 `/` `:`）、`/no-article`、`/img/*`。
+- **T3.1–T3.3 真实扩展集成**：`extension/tests/integration.spec.ts` 5 条，读的是磁盘上的真实文件（不是 `downloads.search`）—— `示例文章标题.images/001-photo-one.png` + `002-photo-two.png`（各 70 B）、`会话图片文章.images/001-secret.png`（70 B，带 cookie 才下得来）、`缺图文章.images/` 空目录、md 里 3 处引用落到 2 个真实文件、`发布说明-第 1 期- 中文标题.md`（H1 保留原始标题）、重复导出后仍只有一对文件且 md 除 `> 转换时间` 行外逐字节相同。`npm run test:extension` → **15 passed**（16.0s；不带沙箱开关也是 15 passed / 4.2s）。
+- **RED 诚实记录**：T3.0 是真 RED；T3.1–T3.3 首跑的三处红**都不是产品缺陷**（`relativeRefs()` 把源链接 `<url>` 当图片引用、404 标记断言写成 URL 包含、T3.3 误以为 H1 会被净化），扩展行为自 S2 起就是对的 —— 按 S2 先例标为**补证**。
+- **下载完成竞态（读代码定位，已修）**：`writeMarkdown()` 的 `downloads.download()` 在下载**开始**时就 resolve，`run()` 随即返回 —— 文件名已存在、字节还在写，而测试只等文件名（`waitForFile`）就读。harness 新增 `waitForDownloadComplete()`（轮询 `search({})` 到 `state === "complete"`），integration 与 skeleton 都改用它，死掉的 `waitForFile` 删除。复验：两条可疑用例 40/40 绿，随后 5 轮全量 15 passed / 4.0–4.4s。
+- **一处产品行为发现（不修，记录）**：整篇图片全失败会留下空 `<标题>.images/` 目录（Chrome 先建目录再发请求，中断只删半成品文件，`chrome.downloads` 删不了目录）；测试按「不存在或为空」断言。
+- **T3.5 文档收口**：`AGENTS.md`（阶段状态 + Verification 段的 S3 事实与 `waitForDownloadComplete` 理由）、`docs/TESTING.md`（新增「Browser Extension」一节：五层与哪两层进 `init.sh`、构建产物、「Playwright 自带 Chromium 不需要沙箱开关、打包 Electron 才需要」的实测口径、四个坑、fixture 路由、`activeTab` 缺口、6 条人工清单；顺手修正一处过期数字 64 files/866 tests → 79/1067）、`CHANGELOG.md` + `CHANGELOG.zh.md`（`[Unreleased]` 加插件首个版本）、`FSD.md`（状态、§4 阶段行、§5 前四条标已验、§6 加两条风险）、`S3-*.md`（状态、逐任务 RED 结论、`## Result` 六条偏差、`## Handoff` 完成态）、`feature_list.json`（T3.0–T3.6 证据，T3.4 标 PENDING）。
+- **门禁**：`NODE_OPTIONS= ./init.sh` **exit 0**（Node 24.15.0，**79 files / 1067 tests**，statements 95.71%，`extension/src` 100% / 分支 93.1%）；`npm run test:extension` **15 passed**。
+- **仍未做**：T3.4 人工验收（只能由用户跑）；`feat-040` 仍 `in-progress`。
+
+## 上一轮（2026-09-24 第六轮：S2 收尾，T2.5–T2.8）已完成
 
 用户指令：继续 S2。**只写 `extension/` 与文档、零桌面改动，不 bump 版本、不跑 `desktop:release`、不跑 `test:e2e`。**
 
@@ -59,7 +72,7 @@
 - **外层已有沙箱时 Chromium 无法再给自己套沙箱**（`sandbox initialization failed: Operation not permitted` → GPU 进程 exit 6 → `FATAL: GPU process isn't usable. Goodbye.`，exit 133）。这与 Playwright Firefox 是同一根因，属环境限制而非产物缺陷：同一 bundle 从 Finder 启动一切正常。沙箱内可用 `--no-sandbox --disable-gpu` 拿功能证据，但**规范的那一次必须在 Terminal 里跑**。
 - 装本机时**安装源用发布 ZIP 解压，不要用正在运行的 `out/` bundle**——既避免复制活着的 bundle，也让「装上的就是发布的那一个」可证。旧安装先 `mv` 到归档目录（可恢复），不要 `rm -rf`。
 - **扩展轮次不动桌面**：只改 `extension/` 的轮次不改 `src/` `electron/` `forge.config.cjs` `playwright.config.ts`，不跑 `desktop:release`，也不把 `0.3.6` bump 到 `0.3.7`（bump 只由桌面代码改动触发）；插件版本由 `extension/manifest.json` 自管。详见 `AGENTS.md` 的 Working Rules 与 Verification。
-- **扩展测试两层进 `./init.sh`、构建与集成不进**：① 纯函数单测（vitest + jsdom）② `chrome.*` 打桩编排单测（依赖注入，不装 sinon）随 `npm test` 进 `init.sh`；③ 浏览器内冒烟 ④ 真实 MV3 扩展集成走 `npm run test:extension`（自带 `playwright.extension.config.ts`，不碰桌面 e2e 项目与 `run-e2e.mjs`）。
+- **扩展测试两层进 `./init.sh`、构建与集成不进**：① 纯函数单测（vitest + jsdom）② `chrome.*` 打桩编排单测（依赖注入，不装 sinon）随 `npm test` 进 `init.sh`；③ 浏览器内冒烟 ④ 真实 MV3 扩展集成走 `npm run test:extension`（自带 `playwright.extension.config.ts`，不碰桌面 e2e 项目与 `run-e2e.mjs`）；⑤ 工具栏点击与 `activeTab` 授权只能人工验收。
 - **插件核心只收 DOM、不收 HTML 字符串**：`turndown` 的 `package.json` 有 `"browser": { "@mixmark-io/domino": false }`，esbuild 会把 domino 映射为空 stub（这正是浏览器产物零 Node 残留的机制）；喂字符串会拿到空 stub 而不是解析器。净化实例与时间戳一律**注入**（Node `createDOMPurify(window)`、浏览器 `DOMPurify` 本身）。因此在类型上也收 `HTMLElement`，不留一个字符串重载。
 - **Readability 会丢掉所有 `data-*`**：惰性图必须在 `cloneNode(true)` 之后、`new Readability(...)` **之前**提升 `data-src`/`data-lazy-src` 到 `src`，否则正文里留的是占位图（桌面端只有微信分支做提升，插件两条分支都做）。
 - **Readability 会把导航栏当正文返回**：两条提取分支都要跑 `MIN_TEXT_LENGTH = 50` 的字符下限，挑不出正文就返回 `null`（插件不做整页兜底，这是刻意与桌面端不同）。
@@ -68,7 +81,11 @@
 - **扩展的可测逻辑一律放 `worker-run.ts`（或更小的纯函数模块），不放 `content.ts` / `worker.ts`**：后两者是浏览器专用入口、不进 vitest 覆盖率，塞进去等于没有门禁。角标与失败原因映射就是这么放进去的（`ChromeDeps` 因此多一个 `action` 成员）。
 - **payload 等待用的是全局 `setTimeout`，不受注入的 `timers` 影响**：测 `TIMEOUT` 分支必须 `vi.useFakeTimers()` + `advanceTimersByTimeAsync(10_000)`，用完还原；`timers` 只推进图片轮询与角标清空。
 - **扩展的三处覆盖率阈值取「实测值之下一点」**（`worker-run.ts` 95/85/85/95、`references.ts` 100/90/100/100、`write.ts` 全 100）：阈值只用来拦回归，不假装已经测满；要抬阈值先补测试。
-- **`npm run test:extension` 会先跑 `build:extension`**；沙箱内需 `MD_CONVERTOR_EXTENSION_CHROMIUM_ARGS=--no-sandbox,--disable-gpu`（与桌面 Playwright 同源限制），没有外层沙箱时不要传。
+- **`npm run test:extension` 会先跑 `build:extension`；扩展套件实测不需要沙箱开关**（裸跑 15 passed / 4.2s）。`MD_CONVERTOR_EXTENSION_CHROMIUM_ARGS` 只是逃生舱；**需要 `--no-sandbox --disable-gpu` 的是打包后的 Electron，不是 Playwright 自带的 Chromium**，别把桌面那条环境限制套到扩展测试上（§ 上面的 Electron 沙箱条目另算）。
+- **`chrome.downloads.download()` 在下载「开始」时就 resolve，`run()` 不等它写完**（`worker-run.ts` 的 `writeMarkdown()` 之后直接返回）：读落盘 md 前必须等 `chrome.downloads.search()` 里 `state === "complete"`，否则约 1/10 的概率读到空/截断内容（这正是 T3.1–T3.3 那两次不可复现的 flake）。装置已固化在 `extension/tests/harness.ts` 的 `waitForDownloadComplete()`；图片不受影响（`waitForImage` 在 `run()` 返回前就等到了）。
+- **整篇图片全失败会留下一个空 `<标题>.images/` 目录**：Chrome 先建目标目录再发请求，中断只删半成品文件，而 `chrome.downloads` 删不了目录。断言按「不存在或为空」，不要去调 `removeFile` 硬删 —— 这是接受的已知行为，不是缺陷。
+- **`activeTab` 授权只能来自真实点击**，Playwright 点不到浏览器 chrome：集成测试走 `copyExtensionWithHostPermission()`（把 `extension/dist` 拷到临时目录给那一份副本加 `host_permissions`）后直接调 service worker；没有这一手，无手势注入会报 `Cannot access contents of the page…`（S2 探针 1 已实测）。
+- **fixture 站用 `node:http` + 临时端口（0），不引入框架、不用固定端口**：`extension/tests/fixtures/server.ts` 把 `origin` 交回调用方，并行/重复跑都不会撞端口；它自己的单测 `server.test.ts` 属第 1 层，随 `init.sh` 跑。fixture 写成 `.ts` 而非 `.mjs`（`.mjs` 导入在 TS program 里是 `TS7016`；vitest 收 `.test.ts`、Playwright 的 `testMatch` 只收 `*.spec.ts`，两者不会打架）。
 - **插件与桌面端的引用口径**：md 里先写 `md-convertor-image-<n>` 占位符（纯词，不含 `:` `/`，Turndown 不会改写），落盘后用 `chrome.downloads.search()` 的**真实 basename** 回写引用（浏览器可能自己补扩展名）；真实父目录名 ≠ 请求的 `<标题>.images` 时按失败处理，退回原 URL，不写指向找不到的文件的引用。
 - **Playwright 跑扩展时下载会被改名（S2 探针实测）**：Playwright 对 persistent context 一律先发 CDP `Browser.setDownloadBehavior{behavior:"allowAndName"}`，每个下载都被写成 `<guid>`（无扩展名、丢掉请求的子目录）——不修装置就测不出「文件名是否被补扩展名」「相对子目录路径」「同名覆盖」这三条。修法两步：profile 里预写 `Default/Preferences` 的 `download.default_directory`，启动后自己再发一次 `behavior:"default"`；**`downloadsPath` 选项不能碰**（它就是 `allowAndName` 的入口），`acceptDownloads` 传什么都被归一成 `accept`。
 - **TS 6 不再自动收 `@types`**：`node_modules/@types/*` 不会自动进 program（本项目的 `@types/node` 是被 `next-env.d.ts` → `next` 间接带进来的），所以 `@types/chrome` 必须显式引用 —— 靠 `extension/src/chrome-types.d.ts` 里一行 `/// <reference types="chrome" />`（零 import）覆盖扩展全部文件；新增用 `chrome.*` 的文件不要再逐个加指令。

@@ -22,6 +22,8 @@
 | `npm run desktop:package` | 构建未压缩 arm64 应用 | 否 |
 | `npm run desktop:make` | 构建未签名 ZIP | 否 |
 | `npm run desktop:release` | 完整门禁并生成全新、已校验 ZIP | 是 |
+| `npm run build:extension` | 把浏览器插件打包到 `extension/dist/` | 否 |
+| `npm run test:extension` | 插件的浏览器内冒烟 + 真实扩展集成（会先构建） | 否 |
 
 真实网页对照不保存或打印网页正文。只按测试源码中记录的环境变量替换样本，禁止提交私有或受版权保护的页面内容。
 
@@ -54,11 +56,50 @@
 - 翻译任务预算：`translateTaskTimeoutMs(batchCount)` 返回 `max(120s, 批次数 × 180s + 30s)`，两个端点都按真实批次数决定 deadline（段数多的长文不再被固定 120s 切断）
 - 翻译勾选框、原文/译文 Tab、按 Tab 分流的复制与下载、进度、取消、重试与占比弹窗
 
-`vitest.config.ts` 把覆盖率限定在 `src/lib/**/*.ts` 与 convert、translate 路由，排除测试文件与 `src/types/**`，并为每个文件设置门槛。`src/lib/translate/**` 的每个模块都有自己的门槛（95/90/100/95，`segment.ts` 为 90/75/100/90）。当前覆盖率为 64 files / 866 tests、statements 95.28%。
+`vitest.config.ts` 把覆盖率限定在 `src/lib/**/*.ts` 与 convert、translate 路由，排除测试文件与 `src/types/**`，并为每个文件设置门槛。`src/lib/translate/**` 的每个模块都有自己的门槛（95/90/100/95，`segment.ts` 为 90/75/100/90）。当前覆盖率为 79 files / 1067 tests、statements 95.71%（包含插件的第 1–2 层；只算桌面端时是 64 files / 866 tests、95.28%）。
 
 E2E 使用 production standalone 服务，并在测试后检查 tracked 文件未变化。`playwright.config.ts` 设 `workers: 1`，因为翻译引擎持有一个进程级任务槽，并行 worker 会互相撞出 429 `TRANSLATE_BUSY`。
 
 转换类的 spec 全部在浏览器里拦截 `**/api/convert` 或 `**/api/convert-paste`，因此 `e2e/convert-api.spec.ts` 是唯一触达真实路由处理器的用例：它提交一个回环链接并期待 403 `PRIVATE_TARGET`（无需联网，但只有在该路由成功加载其 Playwright 依赖后才可能返回），并通过真实的 paste 路由提取一次真实粘贴内容。`next.config.ts` 用 `outputFileTracingIncludes` 把 `node_modules/playwright-core/browsers.json`（Next.js 会遗漏的数据文件）加进追踪，使该依赖始终可加载；缺少它时 standalone 服务对任何链接都返回 500，而这正是打包流程曾经用「重新整包拷贝」掩盖掉的问题。
+
+## 浏览器插件
+
+浏览器插件（`extension/`，Chromium MV3）与桌面端是两个产品。桌面产物仍只构建/验收 `darwin/arm64`；插件在 Chromium 验收、不产出桌面产物，因此不进 `desktop:release`。只改 `extension/` 的轮次也不 bump `package.json` 的版本 —— 插件版本自管，在 `extension/manifest.json`。
+
+五层，只有前两层进 `./init.sh`：
+
+| 层 | 证明什么 | 命令 | 进 `init.sh` |
+|---|---|---|---|
+| 1 纯函数单测 | 提取、净化、文件名、图片计划、引用回写（vitest + jsdom） | `npm test` | 是 |
+| 2 打桩编排单测 | 服务工作线程 `run(tabId)` 打手写的假 `chrome.*` | `npm test` | 是 |
+| 3 浏览器内冒烟 | esbuild 产物在真实页面里转换真实文章（证明没有 Node 专用依赖被打进包） | `npm run test:extension` | 否 |
+| 4 真实扩展集成 | 真实 MV3 扩展在 Chromium 里经本地 fixture 站把真实文件写进磁盘 | `npm run test:extension` | 否 |
+| 5 人工验收 | 真机 Chrome 里的工具栏点击与 `activeTab` 授权（见下） | 人工清单 | 否 |
+
+`npm run test:extension` 会先跑 `build:extension`。`build:extension` 产出被 gitignore 的 `extension/dist/`（恰好 `manifest.json`、`content.js`、`worker.js`），以及冒烟层用的 `extension/dist-test/core.js`。与 `test:e2e` 一样要先清掉代理变量 —— 它驱动真实浏览器，而 fixture 站只在回环地址上。第 3、4 层用各自的 `playwright.extension.config.ts`（`testDir: ./extension/tests`、只 chromium、`workers: 1`、无 `webServer`），不经过桌面端的 `playwright.config.ts` 与 `scripts/run-e2e.mjs`。
+
+2026-09-24 实测：agent shell 里不传任何沙箱开关，15 passed、约四秒。`MD_CONVERTOR_EXTENSION_CHROMIUM_ARGS`（逗号分隔）作为逃生口保留 —— `--no-sandbox,--disable-gpu` 是**打包后的 Electron 应用**在进程级沙箱里需要，Playwright 自带的 Chromium 不需要。
+
+改这套测试前值得知道的坑：
+
+- **绝不要给扩展上下文传 `downloadsPath`。** Playwright 一律先发 CDP `Browser.setDownloadBehavior { behavior: "allowAndName" }`，会把每个下载存成光秃秃的 `<guid>` 并丢掉请求的子目录。harness 的绕法是往 profile 的 `Default/Preferences` 预写 `download.default_directory`，并在上下文起来后自己发一次 `behavior: "default"`（见 `extension/tests/harness.ts`）。断言读真实文件，不读 `chrome.downloads.search`。
+- **`chrome.downloads.download()` 在下载开始时 resolve，不是结束时**，而 `run()` 不等 md 写完。文件名一出现就读，约十次里有一次读到空或截断内容。用 `waitForDownloadComplete(worker, name)`（轮询 `search({})` 到 `state === "complete"`）。图片不受影响：`waitForImage` 在 `run()` 返回前就已 resolve。
+- **`playwright.extension.config.ts` 的 `testMatch` 必须保持 `"**/*.spec.ts"`**，因为 vitest 的文件（如 `extension-build.test.mjs`）住在同一目录；放宽后会被 Playwright 收走，报 `Vitest failed to access its internal state`。
+- **spec 里的 fixture 路径从 spec 所在目录解析**，不是仓库根：用 `path.resolve(__dirname, "../..")`。
+- **整篇图片全失败会留下空的 `<标题>.images/` 目录。** Chrome 在发请求前就建好目录，中断的下载只删半成品文件，而 `chrome.downloads` 删不了目录。集成测试按「不存在或为空」断言，不当作缺陷。
+
+fixture 站是 `extension/tests/fixtures/server.ts`（由 `server.test.ts` 做纯单测，属第 1 层）：`/article`（重复图 + 相对路径图）、`/article-cookie`（图片需 `md-session` cookie）、`/article-missing`（404 图）、`/article-special`（标题含 `/` 与 `:`）、`/no-article`，以及 `/img/*` 与 `/protected/secret.png`（无 cookie 返 403）。它监听临时端口并把 origin 交给 spec。
+
+工具栏点击与 `activeTab` 授权无法自动化 —— Playwright 点不到浏览器 chrome。第 4 层因此把构建产物拷进临时目录、只给这份副本补 `host_permissions`（`copyExtensionWithHostPermission`），再直接调服务工作线程。于是下面的人工清单是「真实点击」这条路的唯一证据。
+
+人工验收（在 Terminal 里跑，不要从受限的 agent shell 跑）：
+
+1. 打开 `chrome://extensions`，开启开发者模式，选「加载已解压的扩展程序」，指向 `extension/dist`。
+2. 在普通文章上点工具栏图标：下载目录出现 `<标题>.md` 与 `<标题>.images/`，且桌面端未运行；md 在 Typora 或 Obsidian 里图片能显示。
+3. 在一篇登录后才可见、图片带会话的文章上重复：图应该照样下得来。
+4. 同一篇连点两次：第二次覆盖（不出现 `(1)`），md 与图片目录仍成对。
+5. 一篇 ≥30 张图的文章：观察是否有下载中断（MV3 服务工作线程休眠）。
+6. 记录「下载前询问保存位置」是否开启；开着时每张图弹一次框属预期行为。
 
 ## 发布保护
 

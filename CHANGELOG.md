@@ -4,6 +4,12 @@
 
 This project follows the principles of [Keep a Changelog](https://keepachangelog.com/). User-facing changes that have not yet been released belong under `Unreleased`.
 
+## [Unreleased]
+
+### Added
+
+- A Chromium browser extension (`extension/`) that saves the page you are reading as `<title>.md` plus a `<title>.images/` folder from a single toolbar click. It needs neither the desktop app nor a running server, downloads images that require your signed-in session, and rewrites every Markdown image reference to the file that actually landed beside it. An image that fails to download keeps its original URL and gets a `<!-- 图片未下载：… -->` note on the next line, so the reason is visible in the document. Exporting the same page again overwrites the previous pair rather than leaving a `(1)` copy behind. The extension is not on a store yet: it is loaded unpacked from `extension/dist` for now.
+
 ## [0.3.6] - 2026-09-22
 
 ### Added

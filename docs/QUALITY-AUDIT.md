@@ -280,6 +280,16 @@ Approved for personal testing. Not approved for frictionless public distribution
 
 ## Archived Round Log
 
+### 2026-09-24（第七轮）— S3 端到端集成：fixture 站、真实扩展落盘、下载竞态、文档收口
+- **T3.0 fixture 站（真 RED）**：`extension/tests/fixtures/server.ts` + `server.test.ts` 8 passed（首跑 `Cannot find module './server'`）。`node:http`、临时端口（不是计划里的固定 43117，避免并行撞端口）、把 `origin` 交回调用方；路由 `/article`（重复图 + 相对路径图）、`/article-cookie`（图需 `md-session` cookie，无 cookie 403）、`/article-missing`（404 图）、`/article-special`（标题含 `/` `:`）、`/no-article`、`/img/*`。fixture 写成 `.ts` 而非计划里的 `.mjs`（`.mjs` 导入在 TS program 里是 `TS7016`）。
+- **T3.1–T3.3 真实扩展集成**：`extension/tests/integration.spec.ts` 5 条，断言读磁盘真实文件（不是 `downloads.search`）—— `示例文章标题.images/00{1,2}-photo-*.png` 各 70 B、`会话图片文章.images/001-secret.png` 70 B（cookie 真的跟着走了）、`缺图文章.images/` 空目录、md 里 3 处引用落到 2 个真实的文件（重复图去重）、`发布说明-第 1 期- 中文标题.md` 且 H1 保留原始标题、重复导出后仍只有一对文件且 md 除 `> 转换时间` 行外逐字节相同。`npm run test:extension` 15 passed。
+- **RED 诚实记录**：T3.0 是真 RED；T3.1–T3.3 首跑三处红**全是测试自身的 bug**（源链接 `<url>` 被当成图片引用、404 标记断言写成 URL 包含、误以为 H1 也会被净化），扩展行为自 S2 起就是对的 —— 标为**补证**，不冒称「先写失败测试」。
+- **下载完成竞态（读代码定位，已修）**：`writeMarkdown()` 的 `downloads.download()` 在下载**开始**时就 resolve，`run()` 不等写完，而测试只等文件名出现就读 ⇒ 约 1/10 概率读到空/截断（同一竞态早已在 S2 探针 2 记录，但当时只用在图片上）。修法：harness 新增 `waitForDownloadComplete()`（轮询 `search({})` 到 `state === "complete"`），integration/skeleton 改用它，无人调用的 `waitForFile` 删除。复验：可疑用例 `--repeat-each=20` 40/40 绿 + 5 轮全量 15 passed / 4.0–4.4s。
+- **一处产品行为发现（不修，记录）**：整篇图片全失败会留下空 `<标题>.images/` 目录（Chrome 先建目录再发请求，中断只删半成品文件，`chrome.downloads` 删不了目录）。测试按「不存在或为空」断言，并写进 `docs/TESTING.md`；这是接受的已知行为，不调 `removeFile` 硬删。
+- **文档收口**：`AGENTS.md`（阶段状态 + Verification 的 S3 事实与 `waitForDownloadComplete` 理由）、`docs/TESTING.md` + `docs/TESTING.zh.md`（成对新增「浏览器插件 / Browser Extension」一节：五层与哪两层进 `init.sh`、构建产物、「Playwright 自带 Chromium 不需要沙箱开关、需要的是打包 Electron」的实测口径、四个坑、fixture 路由、`activeTab` 缺口、6 条人工清单；顺手修正过期计数 64 files/866 tests → 79/1067）、`CHANGELOG.md` + `CHANGELOG.zh.md`（`[Unreleased]` 加插件首版）、`FSD.md`（状态、§4 阶段行、§5 前四条标已验、§6 加两条风险：编排返回时 md 未必写完 / 全失败留空目录）、`S3-*.md`（状态、逐任务 RED 结论、`## Result` 六条偏差、`## Handoff` 完成态）、`feature_list.json`（T3.0–T3.6 证据，T3.4 标 PENDING）。
+- **门禁**：`NODE_OPTIONS= ./init.sh` exit 0（Node 24.15.0，**79 files / 1067 tests**，statements 95.71%，`extension/src` 100% / 分支 93.1%）；`npm run test:extension` **15 passed**（裸跑，无沙箱开关）。
+- **未做 / 待办**：T3.4 真机人工验收（机器点不到工具栏，`activeTab` 授权只能来自真实点击）——`feat-040` 保持 `in-progress`；本轮**零桌面改动**（不碰 `src/`、`electron/`、`forge.config.cjs`、`playwright.config.ts`）、未 bump 版本、未跑 `desktop:release` 与 `test:e2e`；提交到本地、未 push。
+
 ### 2026-09-24（第三轮）— S1 转换核心落地（插件第一条真实代码）
 
 - 交付 `extension/src/convert/{index,extract,markdown,images,naming,sanitize}.ts`：纯函数、输入是 DOM、无 Node 依赖；`buildArticle(document, sourceUrl, { sanitize, now })` 是唯一入口，返回 `{ title, markdown, images, sourceUrl } | null`。

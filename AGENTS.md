@@ -13,7 +13,7 @@
 
 第一阶段交付 Apple Silicon Mac 单机应用。Electron 承载现有 Next.js 16 / Node.js 24 / TypeScript strict 应用，使用 Readability、Turndown、Playwright 和 Sharp 完成安全抓取、正文提取、动态渲染和图片内嵌。0.3.0 起另提供可选文档翻译：正文交给用户自行配置的模型（本机 agent CLI 或云 Provider），只翻译非目标语言部分。0.3.6 起可在设置里指定默认保存目录，让「下载」直接把 Markdown 写进该目录而不再每次弹保存框（未启用或直写被拒时仍走原保存对话框）。产品范围见 `docs/PRODUCT.md`，翻译产品需求见 `docs/PRD-translation.md`，本地安全与打包边界见 `docs/ARCHITECTURE.md`。
 
-0.3.6 之后的当前阶段是**浏览器插件线路**（两个产品，详见 `docs/PLAN-browser-extension.md`）：**B 浏览器插件（`feat-040`）先做**——点一下工具栏图标就把当前页正文与图片存成 `<标题>.md` + `<标题>.images/`（Chromium MV3，代码在 `extension/`，不影响桌面产物）；**A 桌面端「文档处理」（`feat-042`）另案后做**（批量处理本地 `.md`，无顺序与代码依赖）。B 的实施文档是 `docs/features/browser-extension/`（`FSD.md` + S1/S2/S3），**开工前先读 `FSD.md` 与该阶段文档**。
+0.3.6 之后的当前阶段是**浏览器插件线路**（两个产品，详见 `docs/PLAN-browser-extension.md`）：**B 浏览器插件（`feat-040`）先做**——点一下工具栏图标就把当前页正文与图片存成 `<标题>.md` + `<标题>.images/`（Chromium MV3，代码在 `extension/`，不影响桌面产物）；**A 桌面端「文档处理」（`feat-042`）另案后做**（批量处理本地 `.md`，无顺序与代码依赖）。B 的实施文档是 `docs/features/browser-extension/`（`FSD.md` + S1/S2/S3），**S1–S3 已全部实施，只剩 T3.4 真机人工验收待用户签字**；接手时先读 `FSD.md` 与该阶段文档。
 
 ## Startup Workflow
 
@@ -56,7 +56,7 @@
 - `docs/PLAN-browser-extension.md`：**当前阶段的路线图**（浏览器插件线路 —— 两个产品的分工、顺序、边界、已定决策；§6 的四组规则冲突已于 2026-09-24 裁定、§7 是当前未验证与风险）。2026-09-24 起顺序为 **B 先做（`feat-040`，已有阶段文档）、A 另案（`feat-042`，无顺序依赖）**。施工级细节在对应 feature 文档里。**开工前先读本文件与 `docs/features/browser-extension/FSD.md`。**
 - `docs/PLAN-next-phase.md`：`0.3.5` 视觉刷新的路线图，**已完成并归档**（2026-09-21 发布）；只在追溯那一阶段的方向与决策时读取。
 - `docs/PRD-upgrade-v2.md` 与 `docs/UI-DESIGN-SPEC.md`：**已于 2026-09-21 删除**（作废原因见路线图 §7）；不要重建，也不要把两者中的范围、色板或改造文件清单搬回来。
-- `docs/features/<feature>/**`：FSD 执行文档（`FSD.md` 总纲 + 每阶段一份 Spec/Plan/Task 一体的执行文档）。实施某阶段时只读 `FSD.md` 与该阶段文档，不必读其它阶段文档。当前在册：`docs/features/translation/`（0.3.0，已完成）、`docs/features/ui-refresh/`（0.3.5，已完成）、`docs/features/default-save-path/`（feat-041 默认 MD 保存路径，0.3.6，已完成）、`docs/features/browser-extension/`（B 浏览器插件，`feat-040`，**S1/S2 已完成、S3 未开工**）。A 桌面端「文档处理」（`feat-042`）尚无阶段文档，待其启动时自行走一轮规划（§6 的四组规则已于 2026-09-24 裁定，可直接引用）。
+- `docs/features/<feature>/**`：FSD 执行文档（`FSD.md` 总纲 + 每阶段一份 Spec/Plan/Task 一体的执行文档）。实施某阶段时只读 `FSD.md` 与该阶段文档，不必读其它阶段文档。当前在册：`docs/features/translation/`（0.3.0，已完成）、`docs/features/ui-refresh/`（0.3.5，已完成）、`docs/features/default-save-path/`（feat-041 默认 MD 保存路径，0.3.6，已完成）、`docs/features/browser-extension/`（B 浏览器插件，`feat-040`，**S1/S2/S3 已完成，唯 S3 的 T3.4 真机人工验收待用户签字**）。A 桌面端「文档处理」（`feat-042`）尚无阶段文档，待其启动时自行走一轮规划（§6 的四组规则已于 2026-09-24 裁定，可直接引用）。
 
 后续企划新增文档时，应在这里补充其用途和读取时机，而不是把详细方案堆入本文件。
 
@@ -100,7 +100,7 @@ npm run test:e2e
 npm run test:extension
 ```
 
-注：`build:extension` 与 `test:extension`（以及 `extension/src/convert/`、`scripts/build-extension.mjs`、`playwright.extension.config.ts`）已由 S1（`docs/features/browser-extension/S1-convert-core.md` 的 T1.0）落地并可用；S1 的 T1.0 另有 `extension/tests/core-smoke.spec.ts`（浏览器内冒烟）与 `extension-build.test.mjs`（S2 T2.8 扩到 4 条，钉住 `extension/dist/` 恰含 `manifest.json` / `content.js` / `worker.js` 且无 Node 残留）。S2（`S2-extension-shell-and-writes.md`，T2.0–T2.8 已完成）补上 `extension/manifest.json` 与 `extension/src/{messages,content,write,references,worker-run,worker}.ts`，`npm run build:extension` 产出 `extension/dist/` 的三份文件（`core.js` 仍只进 `dist-test/`）。构建产物 `extension/dist-test/` 与 `extension/dist/` 均已 gitignore。
+注：`build:extension` 与 `test:extension`（以及 `extension/src/convert/`、`scripts/build-extension.mjs`、`playwright.extension.config.ts`）已由 S1（`docs/features/browser-extension/S1-convert-core.md` 的 T1.0）落地并可用；S1 的 T1.0 另有 `extension/tests/core-smoke.spec.ts`（浏览器内冒烟）与 `extension-build.test.mjs`（S2 T2.8 扩到 4 条，钉住 `extension/dist/` 恰含 `manifest.json` / `content.js` / `worker.js` 且无 Node 残留）。S2（`S2-extension-shell-and-writes.md`，T2.0–T2.8 已完成）补上 `extension/manifest.json` 与 `extension/src/{messages,content,write,references,worker-run,worker}.ts`，`npm run build:extension` 产出 `extension/dist/` 的三份文件（`core.js` 仍只进 `dist-test/`）。S3（`S3-e2e-and-acceptance.md`，T3.0–T3.3/T3.5/T3.6 已完成）补上 `extension/tests/fixtures/server.ts`（fixture 站；其单测 `server.test.ts` 属第 1 层，**进** `init.sh`）与 `integration.spec.ts`（真实扩展 + 真实落盘，5 条，第 4 层），并给 `extension/tests/harness.ts` 加了 `waitForDownloadComplete()` —— `downloads.download()` 在下载**开始**时就 resolve，读 md 前必须等 `search()` 里的 `state === "complete"`，否则偶发读到空/截断内容。构建产物 `extension/dist-test/` 与 `extension/dist/` 均已 gitignore。
 
 真实网页对照只在发布前执行 `npm run test:live`，不得加入日常单元测试；它会联网但不得保存或输出网页正文。桌面打包、环境变量、冒烟和人工验收统一按 `docs/TESTING.md` 执行。当前正式发布门禁使用 `npm run desktop:release`，且只允许目标版本 `0.3.6`（`0.3.6` 已发布；再改代码前先 bump 到 `0.3.7` 并同步该行）；脚本必须对仍然存在的历史 ZIP 逐个校验哈希（缺失项报退役并继续），并自动验证新 ZIP 的新鲜度、版本、arm64 架构、包结构和 SHA-256，不能把 Forge 无产物退出视为成功。签名和 notarization 尚未配置时必须明确报告产物仅适合个人测试。
 
