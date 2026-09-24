@@ -2,7 +2,7 @@
 
 - 上游：`docs/features/browser-extension/FSD.md`
 - 前置：无（本阶段不碰桌面端、不改版本；**这不是 S0**，见 FSD §0）
-- 状态：**待实施**
+- 状态：**已完成（2026-09-24）**
 - feature_list id：`feat-040`
 
 ## Spec
@@ -60,7 +60,10 @@
 
 ### 5. `extension/src/convert/markdown.ts`
 
-`htmlToArticleMarkdown(html, { title, sourceUrl, convertedAt, images }): string`
+`htmlToArticleMarkdown(root: HTMLElement, { title, sourceUrl, convertedAt }): string`
+
+- 入参是**已挂载/游离的 `HTMLElement`，不是 HTML 字符串**（FSD §3.6：DOM-only）。Turndown 的签名只接受 `string | HTMLElement | DocumentFragment`，所以这里用 `HTMLElement`；传字符串会走 `DOMParser` 分支，在浏览器产物里拿到被 esbuild 映射为空的 `domino` stub。
+- 本阶段**不收 `images` 参数**：占位符已由 `collectImages` 写进 DOM，md 直接照抄即可，回写是 S2 的活。
 
 - h1 去重（首个 h1 文本等于标题则删掉）、链接绝对化、`normalizeMultiCodeBlocks` 的等价处理（相邻围栏块合并规则照抄桌面端口径）。
 - Turndown 配置照抄 `src/lib/markdown.ts:277`；`turndown.use(gfm)`；`turndown.remove([...])`。
@@ -94,7 +97,23 @@
 | T1.6 | 浏览器内冒烟（证明无 Node 依赖） | `extension/tests/core-smoke.spec.ts` 断言页面上下文里能产出同形 md 与图片清单 ⇒ 先 failed（产物与全局名尚不存在） | 冒烟 passed（`--project=chromium`，只跑这一个 spec） | `npm run build:extension && npx playwright test --config=playwright.extension.config.ts` |
 | T1.7 | 阶段收尾 | — | `./init.sh` 全绿（新单测已自然收进 `npm test`；桌面既有 999 用例不红）；`CHANGELOG.md` 不加条目（本阶段无用户可见变化） | `./init.sh` |
 
+T1.0–T1.7 已于 2026-09-24 全部完成，逐条 RED/GREEN 与门禁证据见 `feature_list.json` 的 `feat-040.verification`。
+
+## Result（2026-09-24）
+
+实际交付与上方 Plan 的差异，共四处，均已落到代码与单测：
+
+1. **`htmlToArticleMarkdown` 收 `HTMLElement`**（Plan §5 原写 `html` 字符串）：DOM-only 是 FSD §3.6 的硬约束，且 Turndown 只接受 `string | HTMLElement | DocumentFragment`。
+2. **惰性图在常规分支也先提升**：Readability 会丢掉所有 `data-*`，若先解析再收集，`src` 上留下的就是占位图（原生 fixture 里是 `/images/placeholder.png`），下载到的是 1px 图的替身。现在 `document.cloneNode(true)` 后先 `data-src` → `data-lazy-src` 提升，再交给 Readability。这条比桌面端更宽（桌面只有微信分支做提升），已记在 FSD §3.3 的口径上。
+3. **常规 Readability 分支也设 50 字符下限**：Readability 会把一条导航栏当作 `content` 返回（`no-article.html` 实测 6 个字符），T1.2 要求它返回 `null`，所以下限从微信分支推广到两条分支。
+4. **无法解析的 `href` 直接摘掉属性**（与桌面端 `catch` 同款），未解析失败时不再原样留一个坏链接。
+5. **T1.5 的「固定快照」收窄为「固定头部 + 正文关键断言」**：全篇快照对 fixture 的每次微调都会报红（fixture 还在长），而真正需要锁死的是读者先看到的那 5 行。`index.test.ts` 现在逐字符断言头部（标题、空行、转义后的 `来源` 行、`转换时间`、空行），正文仍用 `toContain`（表格、围栏代码、第二段正文）。
+
+另外：`esbuild` 以**精确版本 `0.28.1`** 锁定（`^0.28.1` 会解析到 0.28.2 并重写约 215 行 lock）。T1.3 的测试与实现同一次写入，其 RED 是「模块不存在」的那次运行，不是单独的断言失败。
+
 ## Handoff
 
-- 结束时必须写清：核心 API 的**输入是 DOM 不是字符串**（原因：domino 被 `browser` 字段映射为 `false`）；净化实例与 `now` 是**注入**的；图片只收 http(s) 且去重；占位符形如 `md-convertor-image-<n>`（S2 的回写函数依赖它的确切形状）；文件名/目录名同源派生。
-- 已知限制：本阶段没有任何 `chrome.*` 调用，产物 `extension/dist-test/core.js` **不是可加载的扩展**；`extension/dist/` 尚不存在；S2 的第一个任务是事实探针（无手势注入、`downloads` 补扩展名、`overwrite` 行为），未出结论前不要写 SW 编排。
+- 本阶段**已交付**（2026-09-24）：`extension/src/convert/` 六个模块 + `scripts/build-extension.mjs` + `extension/tests/fixtures/` + `playwright.extension.config.ts` + `extension/tests/core-smoke.spec.ts`；`npm run build:extension` 与 `npm run test:extension` 均已存在。
+- 下阶段（S2）可直接引用的事实：`buildArticle(document, sourceUrl, { sanitize, now })` 是**唯一入口**，返回 `{ title, markdown, images, sourceUrl } | null`；`images` 每项形如 `{ index, url, placeholder }`，`placeholder` 恒为 `md-convertor-image-<n>`（S2 的回写函数按这个形状匹配）；`md` 里已写好占位符、h1 去重、链接绝对化、`data:` 图原样保留。
+- 命名与净化细节（S2 写盘前直接复用，不要再实现一遍）：`naming.ts` 导出 `mdFileName(title)` / `imageDirName(title)` / `imageFileName(index, url)` / `fallbackName(seed)` / `cleanFilenameStem(value)`；`md` 名与 `.images` 目录名同源派生。净化实例与 `now` 都是**注入**的（浏览器侧注入 `DOMPurify` 本体），核心代码不 import 任何 Node 模块。
+- 已知限制：本阶段没有任何 `chrome.*` 调用，产物 `extension/dist-test/core.js` **不是可加载的扩展**；`extension/dist/` 尚不存在；S2 的第一个任务是事实探针（无手势注入、`downloads` 补扩展名、`overwrite` 行为），未出结论前不要写 SW 编排。`playwright.extension.config.ts` 的 `testMatch` 必须保留为 `**/*.spec.ts`，否则同目录下的 vitest 文件 `extension-build.test.mjs` 会被 Playwright 收走并因 `vitest` 导入而失败。

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <title>示例文章标题</title>
+</head>
+<body>
+  <header>
+    <nav><a href="/">首页</a><a href="/about">关于本站</a></nav>
+  </header>
+  <aside class="sidebar">侧栏广告：这里不该进入正文</aside>
+  <main>
+    <article>
+      <h1>示例文章标题</h1>
+      <p>这是第一段正文。它需要足够长，好让 Readability 能把这一段当作正文段落而不是噪声，因此这里重复一些说明性的文字。</p>
+      <p>第二段正文继续补充内容，确保整体文本量超过五十个字符的门槛，并且语句之间保持自然。</p>
+      <figure>
+        <img data-src="/images/lazy.png" src="/images/placeholder.png" srcset="/images/lazy.png 2x" alt="惰性图">
+      </figure>
+      <p>第三段正文里有一个<a href="/relative">相对链接</a>和一个<a href="javascript:alert(1)">危险链接</a>。</p>
+      <figure><img src="data:image/png;base64,AAAA" alt="内嵌图"></figure>
+      <table>
+        <tr><th>列A</th><th>列B</th></tr>
+        <tr><td>1</td><td>2</td></tr>
+      </table>
+      <pre><code>const answer = 42;</code></pre>
+      <p>结尾段落也写得长一些，方便断言正文提取的结果里包含这一段文字。</p>
+    </article>
+  </main>
+  <footer>版权所有 2026</footer>
+  <div id="comments">评论区：这里也不该进入正文</div>
+</body>
+</html>

@@ -280,6 +280,16 @@ Approved for personal testing. Not approved for frictionless public distribution
 
 ## Archived Round Log
 
+### 2026-09-24（第三轮）— S1 转换核心落地（插件第一条真实代码）
+
+- 交付 `extension/src/convert/{index,extract,markdown,images,naming,sanitize}.ts`：纯函数、输入是 DOM、无 Node 依赖；`buildArticle(document, sourceUrl, { sanitize, now })` 是唯一入口，返回 `{ title, markdown, images, sourceUrl } | null`。
+- 构建与验证接线：`scripts/build-extension.mjs`（esbuild 精确锁 `0.28.1`，IIFE 全局 `mdConvertorCore` → `extension/dist-test/core.js` 50.0 KB，自检无 `require("node:`/jsdom/domino）+ `playwright.extension.config.ts` + 浏览器冒烟；`package.json` 加 `build:extension`/`test:extension`，`vitest.config.ts` 收进扩展单测并给四个核心文件加覆盖率阈值。
+- TDD：每个任务留有 RED（缺模块 / 真断言失败），证据在 `feature_list.json` 的 `feat-040.verification`；T1.3 测试与实现同一次写入，RED 是「模块不存在」那次运行，已如实注明。
+- 四处偏离已就地记录（`S1-convert-core.md` 的 Result + FSD §3.2）：`htmlToArticleMarkdown` 收 `HTMLElement` 而非字符串；惰性图在常规分支也先提升（Readability 丢 `data-*`）；常规分支也设 50 字符下限（导航栏会被当正文）；无法解析的 `href` 摘掉属性。
+- 门禁：`NODE_OPTIONS= ./init.sh` exit 0（Node 24.15.0，**75 files / 1035 tests**，95.48%；上轮 68 / 999、95.28%）；`npm run test:extension` 1 passed（chromium；沙箱内加 `--no-sandbox,--disable-gpu`）。
+- 未做：无 `manifest.json` / service worker / content script / 任何 `chrome.*` / `extension/dist/`（属 S2）；未 bump 版本（0.3.6 不动）、未跑 `desktop:release`、未跑 `test:e2e`。本轮按用户要求**提交到本地、未 push**（GitHub 等大阶段完成再推）。
+- 提交门（本机 `subagent` 不可用，三道路由改为就地审）：ponytail 无可删项（只余 3 条判断题：单元素 `targets` 数组、`forbidden` 名单两处重复、惰性图属性名两处知晓）；code-review 两轴只出一条 spec 差距 —— T1.5 写了「固定快照」而测试只用 `toContain`，已改为逐字符锁头部 5 行；neat-freak 死引用、相对时间、尺寸、软链四项均过（AGENTS.md 121 行 / 12.7KB，handoff 126 行 / 22.0KB）。
+
 ### 2026-09-24（第二轮）— 文档结构收口：handoff 退役历史、全局指令点名两处
 
 - 项目 `AGENTS.md` 原先只点名 `~/.codex/AGENTS.md`，而 pi 会话加载的是 `~/.pi/agent/AGENTS.md`（两份内容不同：pi 版多「证据先于断言」「本机环境已知问题」「工作流」）。已改为**两份都点名**并注明各自由谁加载；Startup Workflow 第 2 步同步。

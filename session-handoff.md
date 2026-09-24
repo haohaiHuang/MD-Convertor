@@ -3,40 +3,41 @@
 ## Resume Here
 
 - Current version: `0.3.6`，**已发布为 GitHub Release `v0.3.6`（2026-09-22）**，已装到 `/Applications/MD-Convertor.app`。未签名、未 notarize，产物定位是个人测试用。全部 RED/GREEN 与门禁证据在 `feature_list.json` 的 `feat-041.verification`。**插件线路的轮次不碰桌面代码，因此不需要把版本 bump 到 `0.3.7`**（仅改动 `src/` / `electron/` / 打包配置时才需要，清单见下方开工提示词）
-- Active feature: **`feat-040` 浏览器插件（B）—— `planned`，实施规划已完成（2026-09-24）、待开工（S1 未开始）**。阶段文档已在册：`docs/features/browser-extension/`（`FSD.md` + `S1-convert-core.md` + `S2-extension-shell-and-writes.md` + `S3-e2e-and-acceptance.md`）。`feat-042`（A 桌面端文档处理）仍为 `planned`，**已与本块解耦：无顺序依赖、无代码依赖**，其 PRD 的待对齐项与阶段文档都还没动
-- **唯一推荐下一步**：**开工 S1（转换核心）** —— 读 `docs/features/browser-extension/FSD.md` 与 `S1-convert-core.md`，按 TDD 先写失败测试（`extension/src/convert/*.test.ts`），目录与命令按 S1 的 Tasks 表。**不要**顺手改桌面端、**不要** bump 版本、**不要**跑 `desktop:release`。S2 的第一个任务是事实探针（S2 文档的「探针结果」表未填前不得写 SW 编排）。其余没有必须做的事
+- Active feature: **`feat-040` 浏览器插件（B）—— `in-progress`，S1（转换核心）已完成（2026-09-24）**。已交付：`extension/src/convert/` 六个纯函数模块 + `scripts/build-extension.mjs` + `extension/tests/`（单测 + fixture + 浏览器冒烟）+ `playwright.extension.config.ts`；`npm run build:extension` / `npm run test:extension` 已可用。阶段文档在册：`docs/features/browser-extension/`（`FSD.md` + `S1`/`S2`/`S3`）。`feat-042`（A 桌面端文档处理）仍为 `planned`，**已与本块解耦：无顺序依赖、无代码依赖**
+- **唯一推荐下一步**：**开工 S2（扩展外壳与写盘）** —— 读 `docs/features/browser-extension/FSD.md` 与 `S2-extension-shell-and-writes.md`，**第一个任务是事实探针**（无手势注入、`downloads` 是否补扩展名、`overwrite` 行为），「探针结果」表未填前**不要**写 service worker 编排。S1 的 RED/GREEN 与门禁证据在 `feature_list.json` 的 `feat-040.verification`。**不要**顺手改桌面端、**不要** bump 版本、**不要**跑 `desktop:release`。其余没有必须做的事
 - Pending（无一是阻塞项）：① 云端 Provider 端到端实测（用户真实文章走一遍「拉取模型 → 选模型 → 翻译」）；② 真机小点清单（等用户给）；③ `0.3.1`–`0.3.6` 的产物与 tag 一律不动，缺失项按退役处理；④ 签名/notarization 不做（QA-008 accepted）；⑤ UI 评审结论勿重提（全部不整改）；⑥ `stash@{0}` 是 2026-09-21 拉取前的文档备份、与当前工作无关；⑦ 可选：在 Terminal 里跑一次**规范**的打包冒烟（Chromium 沙箱开启）—— 本 agent 沙箱内只能以 `--no-sandbox --disable-gpu` 取证，属环境限制
-- Branch: `main`；发布历史：`v0.3.6` = `3578822`（feat-041 默认 MD 保存路径，asar 253 → 10 条目，Latest）、`v0.3.5` = `5f98307`（feat-039 + 清空按钮归位）、`v0.3.4` = `e251267`（图标 v2）、`v0.3.3` = `3897cd1`（feat-034）、`v0.3.2` = `1c3ed80`（feat-033）、`v0.3.1` = `af7f6db`（feat-031/032）；`v0.1.3` = `ce041c9`（不可变历史锚点）
+- Branch: `main`；**本地提交后不 push** —— 用户明确要求 GitHub 等大阶段完成再推（S1 提交止于本地）；发布历史：`v0.3.6` = `3578822`（feat-041 默认 MD 保存路径，asar 253 → 10 条目，Latest）、`v0.3.5` = `5f98307`（feat-039 + 清空按钮归位）、`v0.3.4` = `e251267`（图标 v2）、`v0.3.3` = `3897cd1`（feat-034）、`v0.3.2` = `1c3ed80`（feat-033）、`v0.3.1` = `af7f6db`（feat-031/032）；`v0.1.3` = `ce041c9`（不可变历史锚点）
 
 - **本文件只写现役状态**（目标 ≤150 行 / ≤25KB，2026-09-24 起）：阶段之间的交接写对应阶段文档的 `## Handoff`（如 `docs/features/browser-extension/S1-convert-core.md`），轮次历史压进 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`，不再留在本文件。
 
 ## 新会话开工提示词（复制即用）
 
 ```
-继续 MD-Convertor 的下一轮工作：开工浏览器插件（B，feat-040）。
+继续 MD-Convertor 的下一轮工作：开工浏览器插件（B，feat-040）的 S2。
 
 先按 Startup Workflow 读 AGENTS.md、PROGRESS.md、feature_list.json、session-handoff.md（本文件），
-再读 docs/features/browser-extension/FSD.md 与 S1-convert-core.md，然后跑 ./init.sh 建立基线。
+再读 docs/features/browser-extension/FSD.md 与 S2-extension-shell-and-writes.md，然后跑 ./init.sh 建立基线。
 
-当前状态（2026-09-24 规划定稿后；本文件 `## Resume Here` 是权威）：
+当前状态（2026-09-24 第三轮后；本文件 `## Resume Here` 是权威）：
 - 版本 0.3.6，已发布为 GitHub Release v0.3.6，已装到 /Applications；未签名，个人测试用。
-- activeFeature = feat-040（B 浏览器插件，planned）；实施规划已完成，S1/S2/S3 均未开工。
+- activeFeature = feat-040（B 浏览器插件，in-progress）；S1 转换核心已完成并过门禁，S2/S3 未开工。
+- S1 产物就在 extension/src/convert/（index/extract/markdown/images/naming/sanitize，纯函数，收 DOM）。
 - feat-042（A 桌面端文档处理）已解耦：无顺序依赖、无代码依赖，不必读它的 PRD。
-- 本轮只写文档、零应用代码：extension/ 目录都还不存在（S1 T1.0 才建）。
 
 这一轮的硬约束（与桌面轮次不同，别弄混）：
 - **不改桌面代码就不 bump 版本**：只动 extension/ 的轮次不碰 src/、electron/、forge.config.cjs、
   playwright.config.ts，不跑 npm run desktop:release，0.3.6 保持不动；插件版本由
-  extension/manifest.json 自管。
+  extension/manifest.json 自管（S2 才创建它）。
 - **测试分层**：纯函数单测 + chrome.* 打桩编排单测进 ./init.sh；浏览器内冒烟与真实 MV3 扩展集成
   走 npm run test:extension（自带 playwright.extension.config.ts），不进 init.sh，也不动桌面 e2e。
-- **扩展核心只收 DOM 不收 HTML 字符串**（turndown 的 browser 字段把 domino 映射为 false，喂字符串
-  会拿到空 stub）；净化实例和时间戳一律注入。引用回写用 chrome.downloads.search() 的真实 basename。
 - **S2 先做事实探针**（无手势注入、downloads 补扩展名、overwrite 行为）：探针结果未填进 S2 文档前
   不要写 service worker 编排。
+- **扩展核心只收 DOM 不收 HTML 字符串**（turndown 的 browser 字段把 domino 映射为 false，喂字符串
+  会拿到空 stub）；净化实例和时间戳一律注入。引用回写用 chrome.downloads.search() 的真实 basename。
+- playwright.extension.config.ts 的 testMatch 必须保持 **/*.spec.ts（同目录住着 vitest 单测）。
+- esbuild 必须精确锁 0.28.1（^0.28.1 会解析到 0.28.2 并重写约 215 行 lock）。
 - 跑门禁必须用 Node 24.14.1 或 24.15.0；断言真实 errno 的测试用 NODE_OPTIONS= ./init.sh 跑。
-- npm run test:e2e 是桌面端门禁（约两分钟、workers: 1），扩展轮次不需要它；真要跑时先清代理变量，
-  跑期间不要编辑任何 tracked 文件（tracked-file 守卫会报假失败）。
+- npm run test:e2e 是桌面端门禁（约两分钟、workers: 1），扩展轮次不需要它。
 - 0.1.3–0.3.6 的 tag 与仍然存在的受保护 ZIP 一律不动，缺失项按退役处理。
 
 不要把已固化的桌面试题语义改回去（默认 MD 保存路径相关，详见 docs/features/default-save-path/ 的
@@ -49,15 +50,18 @@ S2「决策记录」与 FSD「安全边界」）：isAbsoluteDirPath 不要收�
 
 ## Latest Change
 
-**本轮（2026-09-24 第二轮：文档结构收口 —— handoff 退役历史 + 全局指令点名两处）**：用户先问「只改文档是不是只需要过 neat-freak 这一道门」，随后指出两处规范问题并批准处置方案。**本轮零应用代码、零测试改动。**
+**本轮（2026-09-24 第三轮：S1 转换核心落地 —— 插件第一条真实代码）**：用户指令「继续推进 B，开工 S1」。**只动 `extension/` 与文档，零桌面代码、零版本 bump、未跑 `desktop:release` 与 `test:e2e`。**
 
-- **上一轮已提交**：`ab1d653` —— `docs(browser-extension): 定稿 B 插件实施规划，A/B 顺序反转为 B 先做`（4 份新文档 + 6 个状态文件）。
-- **提交门按变更性质收窄**：ponytail（反过度工程，审代码）与 code-review（Standards / Spec，审实现）对纯文档轮**不适用**，只跑 neat-freak；「本轮没动桌面运行时」这条前提用 `git diff --name-only` 逐条核实过。
-- **neat-freak 修掉三处**：① `AGENTS.md` 里的 `npm run build:extension` / `test:extension` 是**尚未存在**的命令（S1 T1.0 才引入），已加注记，免得下个会话照着跑死命令；② `docs/TASKS-*.md` 是 0.2.1 随 `394cf3d` 就退役的模式（0.3.0 起任务级事实源是阶段文档的 Tasks 表），已改为退役说明；③ FSD 里的相对时间表述（原文按当天日期推断）已改为与日期无关的写法。
-- **全局指令改为点名两处**：项目 `AGENTS.md` 原先只写 `~/.codex/AGENTS.md`，但 pi 会话加载的是 `~/.pi/agent/AGENTS.md`，两份**内容并不相同**（pi 版多「证据先于断言」「本机环境已知问题」「工作流」三段；96 行 / 5.3KB vs 108 行 / 6.9KB）。同一项目可能被不同代理开发，已改为**两份都点名**并注明各自由谁加载，Startup Workflow 第 2 步同步。
-- **handoff 膨胀治理（用户批准方案 A）**：本文件 **457 行 / 139KB → 122 行 / 21.7KB**（−73% 行数、−84% 体积）：删掉 `Previous Change`、`Archived Change Log ×4`、`Release Evidence`，以及 `Next Stage Entry` 下的 S6 / S5 要点。依据是实测而非推断 —— 83% 体积是历史；21 份阶段文档**全部已有 `## Handoff`**，而 handoff 里那 142 行「S1–S6 实际交付接口 / 与文档的偏差」逐条比对后确认是它们的**压缩副本**；`Release Evidence` 与 `docs/TESTING.md` + `## Verified Release (0.3.x)` 表重复。**零新文件、零改名** —— 21 处引用 `session-handoff.md` 的文档与 `init.sh` 的 `required_files` 都不动。
-- **新规则**（写进 `AGENTS.md` 的 Required State Artifacts 与 End of Session）：本文件只写现役、**目标 ≤150 行 / ≤25KB**；阶段之间的交接写阶段文档的 `## Handoff`；**轮次历史压进 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`（每条 ≤10 行）**，不再留在本文件。需要旧叙述时用 `git show ab1d653:session-handoff.md` 取回。
-- 验证：`./init.sh` **exit 0**（Node 24.14.1，68 files / 999 tests，statements 95.28%）。
+- **交付**：`extension/src/convert/{index,extract,markdown,images,naming,sanitize}.ts`（纯函数，收 DOM，无 Node 依赖）+ `extension/src/convert/*.test.ts` + `scripts/build-extension.mjs` + `extension/tests/`（两个 fixture、构建自检、浏览器冒烟）+ `playwright.extension.config.ts`；`package.json` 加 `build:extension` / `test:extension` 与 devDep `esbuild 0.28.1`，`vitest.config.ts` 收进扩展单测并给四个核心文件加覆盖率阈值，`eslint.config.mjs` / `.gitignore` 同步。
+- **TDD**：每个任务都留有 RED（缺模块 / 真断言失败），逐条证据在 `feature_list.json` 的 `feat-040.verification`；T1.3 的测试与实现同一次写入，RED 是「模块不存在」那次运行，已在文档里如实注明。
+- **门禁**：`NODE_OPTIONS= ./init.sh` **exit 0**（Node 24.15.0，**75 files / 1035 tests**，statements 95.48%；上轮 68 / 999、95.28%）；`npm run test:extension` **1 passed**（chromium，沙箱内加 `MD_CONVERTOR_EXTENSION_CHROMIUM_ARGS=--no-sandbox,--disable-gpu`），它是「产物无 Node 依赖」的唯一证据。
+- **四处偏离已就地记录**（`S1-convert-core.md` 的 Result + FSD §3.2）：`htmlToArticleMarkdown` 收 `HTMLElement` 而非字符串；惰性图在常规分支也先提升（Readability 丢 `data-*`）；常规分支也设 50 字符下限（导航栏会被当正文）；无法解析的 `href` 摘掉属性。
+- **两个踩过的坑已入约束清单**：`playwright.extension.config.ts` 的 `testMatch` 必须是 `**/*.spec.ts`（否则同目录的 vitest 文件被 Playwright 收走并报 `Vitest failed to access its internal state`）；`esbuild` 必须精确锁 `0.28.1`。
+- **仍未做**：`manifest.json`、service worker、content script、任何 `chrome.*` 调用、`extension/dist/`（全部属于 S2）；`CHANGELOG.md` 不加条目（无用户可见变化）。
+
+- **提交状态**：上一轮 `ab1d653`（定稿 B 实施规划）已提交；本轮 S1 已按用户要求**提交到本地、未 push**（用户明说 GitHub 等大阶段完成再推）；提交门已过（见下条）。
+- **提交门已过**（ponytail / code-review 两轴 / neat-freak；本机 `subagent` 报 `--no-session` CLI 冲突不可用，三道路由改为就地审）：无可删项；唯一 spec 差距是 T1.5 写了「固定快照」而测试只用 `toContain`，已改为逐字符锁头部 5 行。
+- **上两轮的结论已归档**：`docs/QUALITY-AUDIT.md` 的 `## Archived Round Log` 2026-09-24 第一/二轮条（规划定稿、文档结构收口）。
 
 ## Important Boundaries
 
@@ -78,8 +82,8 @@ S2「决策记录」与 FSD「安全边界」）：isAbsoluteDirPath 不要收�
 
 ## Next Stage Entry
 
-- S1 → S6 全部完成；`feat-024` – `feat-041` 均 done；当前 `activeFeature` = **`feat-040`**（B 浏览器插件，`planned`，规划已完成、未开工），没有 `in-progress` 事项。`feat-041`（默认 MD 保存路径）S1/S2/S3 三阶段全部完成，随 `0.3.6` 发布并关闭。
-- 下一轮入口：**B 浏览器插件（`feat-040`）已实施规划定稿（2026-09-24），阶段文档在册** —— `docs/features/browser-extension/`（`FSD.md` + `S1-convert-core.md` + `S2-extension-shell-and-writes.md` + `S3-e2e-and-acceptance.md`）。**下一步就是开工 S1**（TDD：先 `extension/src/convert/*.test.ts` 的 RED，再建目录与构建脚本），不需要再写任何规划文档。`feat-042`（A 桌面端文档处理）已解耦、另案（其 PRD 的待对齐项仍未动，要开工得先走一轮规划）。**只动 `extension/` 的轮次不 bump 版本**；只有改动 `src/` / `electron/` / 打包配置时才需要把 `0.3.6` 升到 `0.3.7` 并同步版本面（清单见本文件顶部开工提示词），否则 `desktop:release` 会拒跑。
+- S1 → S6 全部完成；`feat-024` – `feat-041` 均 done；当前 `activeFeature` = **`feat-040`**（B 浏览器插件，`in-progress`），**S1 已完成（2026-09-24）、下一步 S2**。`feat-041`（默认 MD 保存路径）S1/S2/S3 三阶段全部完成，随 `0.3.6` 发布并关闭。
+- 下一轮入口：**S2（扩展外壳与写盘）** —— 读 `docs/features/browser-extension/S2-extension-shell-and-writes.md`，**先做事实探针**（无手势注入、`downloads` 是否补扩展名、`overwrite` 行为），结果填进该文档的「探针结果」表后再写 `manifest.json` / service worker / content script。S1 的实际接口与四处偏离见 `S1-convert-core.md` 的 `## Result` 与 `## Handoff`（那里是 S2 需要的真实签名，不用从代码反推）。`feat-042`（A 桌面端文档处理）已解耦、另案（其 PRD 的待对齐项仍未动，要开工得先走一轮规划）。**只动 `extension/` 的轮次不 bump 版本**；只有改动 `src/` / `electron/` / 打包配置时才需要把 `0.3.6` 升到 `0.3.7` 并同步版本面（清单见本文件顶部开工提示词），否则 `desktop:release` 会拒跑。
 - 每轮开头固定读：`PROGRESS.md` → `session-handoff.md` → `feature_list.json` → 相关 `docs/`（涉及翻译行为时先读 `docs/PRD-translation.md`），然后跑 `./init.sh` 建立基线。
 - 全部阶段文档（已完成入口）：`docs/features/translation/S1-settings-infra.md` 至 `S6-release-and-docs.md`；各文档的 Handoff 已写入下一阶段所需的真实接口与边界。
 ## Environment Notes
@@ -96,9 +100,9 @@ S2「决策记录」与 FSD「安全边界」）：isAbsoluteDirPath 不要收�
 
 ## Recommended Next Action
 
-`feat-041` 已收口：**0.3.6 已过门禁、已装本机、已发布为 GitHub Release `v0.3.6`，`feature_list.json` 已置 `done`。** 当前 `activeFeature` = `feat-040`（B 浏览器插件，`planned`，**实施规划已完成、待开工**）。
+`feat-041` 已收口：**0.3.6 已过门禁、已装本机、已发布为 GitHub Release `v0.3.6`，`feature_list.json` 已置 `done`。** 当前 `activeFeature` = `feat-040`（B 浏览器插件，**`in-progress`，S1 已完成**）。
 
-**唯一推荐下一步：开工 `feat-040` 的 S1**（读 `docs/features/browser-extension/FSD.md` + `S1-convert-core.md`，按 TDD 先写失败测试）。
+**唯一推荐下一步：开工 `feat-040` 的 S2**（读 `docs/features/browser-extension/FSD.md` + `S2-extension-shell-and-writes.md`，**第一个任务是事实探针**）。
 
 下面按「要不要动代码」分两类，都不要自作主张扩大范围 —— 用户两轮都明确要求过不要顺手搞无关的东西（「我只是搞一个文档下载路径，你为什么要搞这么多有的没的」）：
 
@@ -108,7 +112,7 @@ S2「决策记录」与 FSD「安全边界」）：isAbsoluteDirPath 不要收�
 3. **真机小点清单**：等用户给清单后再评估是否单开一轮。
 
 **B. 要动代码的话**
-4. **插件 B（`feat-040`，本轮推荐）**：阶段文档已在册，直接开工 S1；只动 `extension/` 的轮次**不 bump 版本**、不跑 `desktop:release`、不动桌面 e2e。S2 的第一个任务是事实探针（S2 文档「探针结果」表未填前不得写 SW 编排）。
+4. **插件 B（`feat-040`，本轮推荐）**：S1 已完成，**继续 S2**（先事实探针）；只动 `extension/` 的轮次**不 bump 版本**、不跑 `desktop:release`、不动桌面 e2e。
 5. **插件 A（`feat-042`）是另案**：与 B 无顺序、无代码依赖；要开工得先自己走一轮规划（它的 PRD §3 还有待对齐项），不要因为「顺手」把它拉进 B 的轮次。
 6. **若确实要改桌面代码（`src/` / `electron/` / 打包配置）**：先 bump 到 `0.3.7` 并同步版本面（清单见本文件顶部开工提示词），漏一处 `desktop:release` 就拒跑。
 7. 签名/notarization 用户 2026-09-20 已决定不做（QA-008 accepted）；要恢复需要 Developer ID Application 证书 + notarytool 凭据，且签名后必须重跑门禁更新哈希。
@@ -120,3 +124,4 @@ S2「决策记录」与 FSD「安全边界」）：isAbsoluteDirPath 不要收�
 ## 历史（已退役，不需要读）
 
 - 2026-09-24 之前的轮次叙述（feat-024 – feat-041、0.3.0 翻译线 S1–S6 的交接接口与偏差）已从本文件退役：原文本见 `git show ab1d653:session-handoff.md`，轮次结论见 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`，产物与门禁计数见 `docs/TESTING.md` 及其中的 `## Verified Release` 表，逐 feature 的证据见 `feature_list.json` 的 `verification`。
+- 2026-09-24 第二轮（文档结构收口）的叙述已压成一条进 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`；本文件只保留本轮（S1）与现役状态。

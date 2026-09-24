@@ -3,7 +3,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
-    exclude: ["e2e/**", "tests/live/**", "node_modules/**"],
+    exclude: ["e2e/**", "tests/live/**", "node_modules/**", "extension/tests/**/*.spec.ts"],
     coverage: {
       reporter: ["text", "html"],
       include: [
@@ -11,9 +11,14 @@ export default defineConfig({
         "src/app/api/convert/route.ts",
         "src/app/api/translate/analyze/route.ts",
         "src/app/api/translate/run/route.ts",
+        "extension/src/**/*.ts",
       ],
-      exclude: ["src/**/*.test.ts", "src/types/**"],
+      exclude: ["src/**/*.test.ts", "src/types/**", "extension/src/**/*.test.ts"],
       thresholds: {
+        "extension/src/convert/extract.ts": { lines: 90, branches: 80, functions: 100, statements: 90 },
+        "extension/src/convert/images.ts": { lines: 90, branches: 80, functions: 100, statements: 90 },
+        "extension/src/convert/markdown.ts": { lines: 90, branches: 80, functions: 100, statements: 90 },
+        "extension/src/convert/naming.ts": { lines: 90, branches: 80, functions: 100, statements: 90 },
         "src/lib/api-security.ts": { lines: 80, branches: 70, functions: 100, statements: 80 },
         "src/lib/browser.ts": { lines: 90, branches: 80, functions: 50, statements: 90 },
         "src/lib/browser-proxy.ts": { lines: 85, branches: 75, functions: 90, statements: 85 },

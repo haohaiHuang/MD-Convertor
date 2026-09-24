@@ -1,6 +1,6 @@
 # FSD 总纲 — 浏览器插件（Browser Extension，B）
 
-- 状态：**实施规划完成（2026-09-24），待实施**（S1 / S2 / S3 均未开工）
+- 状态：**实施中（2026-09-24）**：S1 已完成（转换核心 + 构建/门禁接线），S2 / S3 未开工
 - 日期：2026-09-24
 - 上游：`docs/PRD-browser-extension.md`（需求已确认，§3 六条已裁定）+ `docs/PLAN-browser-extension.md`（线路方向、边界、工程决策）
 - 阶段执行文档：`S1-convert-core.md`、`S2-extension-shell-and-writes.md`、`S3-e2e-and-acceptance.md`
@@ -79,9 +79,15 @@
 纯函数，**无 Node 依赖**，输入是「我手里已经有一个 DOM」，所以浏览器（live DOM）与 vitest（jsdom 造的 DOM）跑的是同一份代码：
 
 ```ts
-extractArticle(document, sourceUrl)      → { title, html, textLength } | null   // Readability + 净化
-htmlToArticleMarkdown(html | element, opts) → { markdown, images }            // Turndown + GFM + 占位符
+// S1 已交付的真实签名（`extension/src/convert/`）
+buildArticle(document, sourceUrl, { sanitize, now }) → { title, markdown, images, sourceUrl } | null
+  extractArticle(document, sourceUrl, { sanitize })    → { title, html, textLength } | null
+  collectImages(root: Element, baseUrl)                → { images: ImagePlan[]; html: string }
+  htmlToArticleMarkdown(root: HTMLElement, opts)       → string
+  createSanitizer(purify)                              → (html: string) => string
 ```
+
+`ImagePlan = { index, url, placeholder }`，`placeholder = "md-convertor-image-<n>"`；`opts = { title, sourceUrl, convertedAt }`。**`htmlToArticleMarkdown` 只收 `HTMLElement`，不收 HTML 字符串**（Turndown 只接受 `string | HTMLElement | DocumentFragment`，而且字符串会走 `DOMParser` 分支拿到被映射为空的 `domino` stub）。
 
 关键决定：
 
@@ -90,7 +96,7 @@ htmlToArticleMarkdown(html | element, opts) → { markdown, images }            
 3. **Turndown 配置照抄桌面端**（`atx` / `-` / `fenced` / `*` / `**` / `inlined` + `gfm`），R3「文本转换规则一致」才成立。
 4. **不做整页兜底**。桌面端有 `extractBodyFallback` 是因为它已经付了抓网页的代价，白跑一次可惜；插件失败零成本，兜底只会把导航页脚塞进正文。挑不出正文 → 报失败。
 5. **只导出 http(s) 图片**。`data:` 图片留在 md 里原样（它本来就是内嵌的、断网可看），因为给 `data:` 图起文件名要猜扩展名。这不是丢东西。
-6. **惰性图片取值顺序**：`data-src` → `data-lazy-src` → `currentSrc`/`src`（与桌面端富文本粘贴的惰性图规则同款）。
+6. **惰性图片取值顺序**：`data-src` → `data-lazy-src` → `currentSrc`/`src`（与桌面端富文本粘贴的惰性图规则同款）。**注意顺序**：Readability 会丢掉所有 `data-*`，所以常规分支要在 `document.cloneNode(true)` 之后、`new Readability(...)` 之前先做一次提升，否则正文里的 `src` 已是被替换过的占位图（桌面端只有微信分支做提升，插件两条分支都做，见 `S1-convert-core.md` 的 Result）。
 
 ### 3.3 图片落盘与引用回写
 

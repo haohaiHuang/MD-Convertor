@@ -2,14 +2,24 @@
 
 ## Current State
 
-- Last updated: 2026-09-24（第二轮：文档结构收口）
-- Current version: `0.3.6`，**已发布**为 GitHub Release `v0.3.6`（`package.json`、`package-lock.json`、`feature_list.json`、`scripts/release-desktop.mjs` 均为 `0.3.6`；产物 235,956,668 bytes / SHA-256 `9b89d55c…f351`；已装到本机 `/Applications`）。**本轮不改桌面代码，所以不 bump 到 `0.3.7`**（AGENTS.md 的 bump 要求只针对桌面代码改动）
-- Active feature: **`feat-040` 浏览器插件（B）—— 状态 `planned`，实施规划已完成，待开工**（`feat-042` 桌面端文档处理（A）仍为 `planned`，已与本块解耦，无顺序与代码依赖；`feat-041` 已完成已发布已关闭）
-- Next step: **按 `docs/features/browser-extension/FSD.md` + `S1-convert-core.md` 开工 S1**（TDD RED 先行，纯函数，不碰桌面端、不 bump 版本）；S2 的第一个任务是事实探针（S2 文档「探针结果」表未填前不得写 SW 编排）
+- Last updated: 2026-09-24（第三轮：S1 转换核心落地）
+- Current version: `0.3.6`，**已发布**为 GitHub Release `v0.3.6`（`package.json`、`package-lock.json`、`feature_list.json`、`scripts/release-desktop.mjs` 均为 `0.3.6`；产物 235,956,668 bytes / SHA-256 `9b89d55c…f351`；已装到本机 `/Applications`）。**本轮不动桌面代码，所以不 bump 到 `0.3.7`**（bump 只由桌面代码改动触发；插件版本自管）
+- Active feature: **`feat-040` 浏览器插件（B）—— 状态 `in-progress`，S1（转换核心）已完成，下一步 S2**（`feat-042` 桌面端文档处理（A）仍为 `planned`，无顺序与代码依赖；`feat-041` 已完成已发布已关闭）
+- Next step: **S2 的第一个任务是事实探针**（无手势注入、`downloads` 是否补扩展名、`overwrite` 行为；`S2-extension-shell-and-writes.md` 的「探针结果」表未填前不得写 SW 编排）——探针结论出来后再写 `extension/manifest.json` 与 service worker
 - Branch: `main`；stash@{0} 是 2026-09-21 拉取前的文档备份、与当前工作无关
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+（桌面产物）；浏览器插件另行验收于 Chromium，不进桌面发布门禁
 
-## 本轮（2026-09-24 第二轮：文档结构收口）已完成
+## 本轮（2026-09-24 第三轮：S1 转换核心落地）已完成
+
+用户指令：继续推进 B 插件线、开工 S1，**只写 `extension/` 与文档、零桌面改动**。**本轮不 bump 版本、不跑 `desktop:release`、不跑 `test:e2e`。**
+
+- **交付**：`extension/src/convert/{index,extract,markdown,images,naming,sanitize}.ts`（纯函数，输入是 DOM，无 Node 依赖）+ `scripts/build-extension.mjs`（esbuild 精确锁定 `0.28.1`，IIFE 全局 `mdConvertorCore` → `extension/dist-test/core.js`，50.0 KB，无 `require("node:`/jsdom/domino 残留）+ `extension/tests/fixtures/{article,wechat,no-article}.html` + `playwright.extension.config.ts` + `extension/tests/core-smoke.spec.ts`；`package.json` 新增 `build:extension`/`test:extension`，`vitest.config.ts` 收进扩展单测并给四个核心文件加覆盖率阈值。
+- **TDD 证据**：每个任务都留有 RED（T1.1 `Cannot find module './markdown'`、T1.2 模块缺失 + 两条真失败、T1.3 模块缺失、T1.4 模块缺失、T1.5 `buildArticle` 未导出），逐条写进 `feature_list.json` 的 `feat-040.verification`。
+- **门禁**：`NODE_OPTIONS= ./init.sh` **exit 0**（Node 24.15.0，**75 files / 1035 tests**，statements 95.48% —— 上一轮是 68 / 999 与 95.28%）；`npm run test:extension` **1 passed**（chromium，沙箱内用 `MD_CONVERTOR_EXTENSION_CHROMIUM_ARGS=--no-sandbox,--disable-gpu`），它是「产物真的没有 Node 依赖」的唯一证据。
+- **四处偏离已就地记录**（`S1-convert-core.md` 的 Result 与 FSD §3.2）：`htmlToArticleMarkdown` 收 `HTMLElement` 而非 HTML 字符串；惰性图在**常规分支也先提升**（Readability 丢 `data-*`，否则下到的是占位图）；常规分支也设 50 字符下限（Readability 会把导航栏当正文）；无法解析的 `href` 摘掉属性。
+- **仍未做**：没有 `manifest.json`、service worker、content script、任何 `chrome.*` 调用、`extension/dist/`；`CHANGELOG.md` 不加条目（无用户可见变化）。
+
+## 上一轮（2026-09-24 第二轮：文档结构收口）已完成
 
 用户先问「只改文档是不是只需要过 neat-freak 这一道门」，随后指出两处规范问题（项目 AGENTS.md 只点名一份全局指令；`session-handoff.md` 单文档持续膨胀），批准「方案 A」。**本轮零应用代码、零测试改动、未 bump 版本。**
 
@@ -31,7 +41,7 @@
 - **测试分层定案**：① 纯函数单测（vitest + jsdom）② `chrome.*` 打桩编排单测（依赖注入，不装 sinon）→ 这两层**进 `init.sh`**；③ 浏览器内冒烟 ④ 真实 MV3 扩展 + 本地 fixture 站集成（自带 `playwright.extension.config.ts`，不动桌面 e2e）⑤ 真机人工验收 → **不进 `init.sh`**，走 `npm run test:extension`。
 - **规则冲突已就地解掉**（PLAN §6 四条）：`AGENTS.md` 平台边界限定为桌面产物 + 版本 bump 只由桌面代码触发 + Verification 段加入扩展测试两层；单 `in-progress` 约束保留且次序反转。
 - **验证**：`./init.sh` **exit 0**（Node 24.14.1，68 files / 999 tests，statements 95.28%）—— 本轮零代码改动，用它只证明文档与状态回写没弄坏基线。
-- **未做（刻意）**：未 bump 版本、未碰 `src/` `electron/` `forge.config.cjs` `playwright.config.ts`、未写 `extension/` 任何代码、未提交（用户未要求）。
+- **未做（刻意）**：未 bump 版本、未碰 `src/` `electron/` `forge.config.cjs` `playwright.config.ts`、未写 `extension/` 任何代码（本轮当时未提交，后由 `ab1d653` 一次提交）。
 
 ## 上一轮（2026-09-22 浏览器插件线：方向定稿 + 文档分层重整）
 
@@ -89,7 +99,12 @@
 - 装本机时**安装源用发布 ZIP 解压，不要用正在运行的 `out/` bundle**——既避免复制活着的 bundle，也让「装上的就是发布的那一个」可证。旧安装先 `mv` 到归档目录（可恢复），不要 `rm -rf`。
 - **扩展轮次不动桌面**：只改 `extension/` 的轮次不改 `src/` `electron/` `forge.config.cjs` `playwright.config.ts`，不跑 `desktop:release`，也不把 `0.3.6` bump 到 `0.3.7`（bump 只由桌面代码改动触发）；插件版本由 `extension/manifest.json` 自管。详见 `AGENTS.md` 的 Working Rules 与 Verification。
 - **扩展测试两层进 `./init.sh`、构建与集成不进**：① 纯函数单测（vitest + jsdom）② `chrome.*` 打桩编排单测（依赖注入，不装 sinon）随 `npm test` 进 `init.sh`；③ 浏览器内冒烟 ④ 真实 MV3 扩展集成走 `npm run test:extension`（自带 `playwright.extension.config.ts`，不碰桌面 e2e 项目与 `run-e2e.mjs`）。
-- **插件核心只收 DOM、不收 HTML 字符串**：`turndown` 的 `package.json` 有 `"browser": { "@mixmark-io/domino": false }`，esbuild 会把 domino 映射为空 stub（这正是浏览器产物零 Node 残留的机制）；喂字符串会拿到空 stub 而不是解析器。净化实例与时间戳一律**注入**（Node `createDOMPurify(window)`、浏览器 `DOMPurify` 本身）。
+- **插件核心只收 DOM、不收 HTML 字符串**：`turndown` 的 `package.json` 有 `"browser": { "@mixmark-io/domino": false }`，esbuild 会把 domino 映射为空 stub（这正是浏览器产物零 Node 残留的机制）；喂字符串会拿到空 stub 而不是解析器。净化实例与时间戳一律**注入**（Node `createDOMPurify(window)`、浏览器 `DOMPurify` 本身）。因此在类型上也收 `HTMLElement`，不留一个字符串重载。
+- **Readability 会丢掉所有 `data-*`**：惰性图必须在 `cloneNode(true)` 之后、`new Readability(...)` **之前**提升 `data-src`/`data-lazy-src` 到 `src`，否则正文里留的是占位图（桌面端只有微信分支做提升，插件两条分支都做）。
+- **Readability 会把导航栏当正文返回**：两条提取分支都要跑 `MIN_TEXT_LENGTH = 50` 的字符下限，挑不出正文就返回 `null`（插件不做整页兜底，这是刻意与桌面端不同）。
+- **`playwright.extension.config.ts` 的 `testMatch` 必须是 `**/*.spec.ts`**：`extension/tests/` 里同时住着 vitest 单测（`extension-build.test.mjs`），默认匹配会被 Playwright 收走并报 `Vitest failed to access its internal state`。同理，spec 里的 fixture 路径用 `path.resolve(__dirname, "../..")`（`__dirname` 是 spec 所在目录，不是项目根）。
+- **`esbuild` 必须精确锁 `0.28.1`**：写 `^0.28.1` 会解析到 0.28.2 并重写约 215 行 lock（本轮已踩过）。
+- **`npm run test:extension` 会先跑 `build:extension`**；沙箱内需 `MD_CONVERTOR_EXTENSION_CHROMIUM_ARGS=--no-sandbox,--disable-gpu`（与桌面 Playwright 同源限制），没有外层沙箱时不要传。
 - **插件与桌面端的引用口径**：md 里先写 `md-convertor-image-<n>` 占位符（纯词，不含 `:` `/`，Turndown 不会改写），落盘后用 `chrome.downloads.search()` 的**真实 basename** 回写引用（浏览器可能自己补扩展名）；真实父目录名 ≠ 请求的 `<标题>.images` 时按失败处理，退回原 URL，不写指向找不到的文件的引用。
 - **同名用 `overwrite` 而不是 `uniquify`**：`uniquify` 只改 md 名（`标题 (1).md`）、目录名不变，一次重复导出就把文件对拆散；这也是不加时间戳的理由。
 - 签名/notarization 不做（QA-008 accepted，2026-09-20 用户决定）；UI 评审结论勿重提（2026-09-20 全部不整改）。

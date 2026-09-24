@@ -26,6 +26,8 @@
     "e2e:server": "node scripts/start-e2e-server.mjs",
     "test:live": "vitest run --config vitest.live.config.ts tests/live/mermaid-page.test.ts",
     "test:live:wechat": "vitest run --config vitest.live.config.ts tests/live/wechat-article.test.ts",
+    "build:extension": "node scripts/build-extension.mjs",
+    "test:extension": "npm run build:extension && playwright test --config=playwright.extension.config.ts",
     "desktop:release": "node scripts/release-desktop.mjs"
   },
   "dependencies": {
@@ -57,6 +59,7 @@
     "@vitest/coverage-v8": "^3.2.7",
     "concurrently": "^10.0.3",
     "electron": "^43.3.0",
+    "esbuild": "0.28.1",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.2.10",
     "typescript": "^6.0.3",
