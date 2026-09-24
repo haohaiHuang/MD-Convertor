@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DownloadedItem, DownloadRequest } from "./write";
 import type { ConvertPayload } from "./messages";
 import { ARTICLE_MESSAGE } from "./messages";
@@ -220,5 +220,69 @@ describe("run — badge feedback", () => {
     expect(fake.badgeTexts).toEqual(["✓", ""]);
     expect(fake.badgeTitles).toHaveLength(2);
     expect(fake.badgeTitles[1]).toBe("把当前页转成 Markdown");
+  });
+});
+
+// T2.7: the failure matrix. Every one of these must produce a readable code AND a badge, because a
+// click that does nothing visible is the failure mode this feature exists to avoid.
+describe("run — failure paths", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("reports a page the extension may not touch while asking for nothing", async () => {
+    const fake = fakeChrome(1, {
+      type: "md-convertor:failed",
+      code: "UNSUPPORTED_PAGE",
+      message: "这个页面不是网页（http/https），无法转换",
+    } as unknown as ConvertPayload);
+
+    const result = await runWithFeedback(1, fake.deps, { timers: instantTimers });
+
+    expect(result).toMatchObject({ ok: false, code: "UNSUPPORTED_PAGE" });
+    expect(fake.requests).toHaveLength(0);
+    expect(fake.badgeTexts).toEqual(["!"]);
+    expect(fake.badgeTitles[0]).toContain("这个页面不是网页");
+  });
+
+  it("reports a page with no readable article the same way", async () => {
+    const fake = fakeChrome(1, {
+      type: "md-convertor:failed",
+      code: "NO_ARTICLE",
+      message: "没有找到正文",
+    } as unknown as ConvertPayload);
+
+    const result = await runWithFeedback(1, fake.deps, { timers: instantTimers });
+
+    expect(result).toMatchObject({ ok: false, code: "NO_ARTICLE", message: "没有找到正文" });
+    expect(fake.requests).toHaveLength(0);
+    expect(fake.badgeTitles[0]).toContain("没有找到正文");
+  });
+
+  it("gives up after ten seconds of silence and says so", async () => {
+    vi.useFakeTimers();
+    const fake = fakeChrome(1, payloadFor(0));
+    // Injection succeeds, but the content script never answers.
+    fake.deps.scripting.executeScript = async () => undefined;
+
+    const pending = runWithFeedback(1, fake.deps, { timers: instantTimers });
+    await vi.advanceTimersByTimeAsync(10_000);
+    const result = await pending;
+
+    expect(result).toMatchObject({ ok: false, code: "TIMEOUT" });
+    expect(fake.badgeTexts).toEqual(["!"]);
+    expect(fake.badgeTitles[0]).toContain("页面在 10 秒内没有回应");
+  });
+
+  it("reports a markdown write that the browser refused", async () => {
+    const fake = fakeChrome(1, payloadFor(2), undefined, (request) => request.filename.endsWith(".md"));
+
+    const result = await runWithFeedback(1, fake.deps, { timers: instantTimers, imageTimeoutMs: 1000 });
+
+    expect(result).toMatchObject({ ok: false, code: "DOWNLOAD_FAILED" });
+    expect(result.ok === false && result.message).toContain("SERVER_ERROR");
+    expect(fake.markdownWrites()).toHaveLength(0);
+    expect(fake.badgeTexts).toEqual(["!"]);
+    expect(fake.badgeTitles[0]).toContain("无法写入下载目录");
   });
 });

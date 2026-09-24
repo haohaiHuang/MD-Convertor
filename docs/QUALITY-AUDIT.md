@@ -290,6 +290,15 @@ Approved for personal testing. Not approved for frictionless public distribution
 - 未做：无 `manifest.json` / service worker / content script / 任何 `chrome.*` / `extension/dist/`（属 S2）；未 bump 版本（0.3.6 不动）、未跑 `desktop:release`、未跑 `test:e2e`。本轮按用户要求**提交到本地、未 push**（GitHub 等大阶段完成再推）。
 - 提交门（本机 `subagent` 不可用，三道路由改为就地审）：ponytail 无可删项（只余 3 条判断题：单元素 `targets` 数组、`forbidden` 名单两处重复、惰性图属性名两处知晓）；code-review 两轴只出一条 spec 差距 —— T1.5 写了「固定快照」而测试只用 `toContain`，已改为逐字符锁头部 5 行；neat-freak 死引用、相对时间、尺寸、软链四项均过（AGENTS.md 121 行 / 12.7KB，handoff 126 行 / 22.0KB）。
 
+### 2026-09-24（第六轮）— S2 收尾：写盘单测、角标反馈、失败矩阵、产物范围
+
+- **T2.5 写盘单测（补证）**：`extension/src/write.test.ts` 4 passed —— `filename` 只能是相对路径（无前导 `/`、无盘符、无 `../`）；data URL 能被 `new URL()` 解析且 `decodeURIComponent` 后逐字节等于原文（中文/半全角括号/两种引号/emoji/空行）；`overwrite` + `saveAs:false` 未动；`markdownDataUrl` 把 `%` `#` `&` `,` 编码掉（`#` 不编码会截断 URL）。`write.ts` 是 T2.1 写的，**首跑即绿 = 补证**，已如实标注。
+- **T2.6 角标反馈（真 RED）**：4 条全 failed（`(0 , runWithFeedback) is not a function`）→ 8 passed。`badgeFor` 三态（`✓` 含张数 / `!` N 张未下载 / `!` 转换失败：人话）+ `BADGE_CLEAR_MS = 4_000` 后清空并还原 `DEFAULT_TITLE`；失败原因过小映射表，英文原文只留 `RunResult.message`。
+- **T2.7 失败路径矩阵（补证）**：`worker-run.test.ts` 12 passed —— 特权页 / 无正文 ⇒ 三个下载请求一个都不发；注入成功但无回应 ⇒ `vi.useFakeTimers()` 推进 10 秒真跑到 `TIMEOUT`（payload 等待用全局 `setTimeout`，注入时钟管不到）；md 写盘被拒 ⇒ `DOWNLOAD_FAILED` 且未写盘。覆盖率阈值入 `vitest.config.ts`：`worker-run.ts` 95/85/85/95、`references.ts` 100/90/100/100、`write.ts` 全 100，均取实测值之下一点。
+- **T2.8 阶段收尾（补证）**：`extension-build.test.mjs` 4 passed —— `extension/dist/` **恰好**三份、无 Node 残留、manifest 只有三个权限且无 `host_permissions` / 无静态 `content_scripts`、`action.default_title` 与 `DEFAULT_TITLE` 逐字相等；`buildOnce()` 让四条读同一份产物。
+- **门禁**：`NODE_OPTIONS= ./init.sh` exit 0（Node 24.15.0，**78 files / 1059 tests**，`extension/src` 语句 100% / 分支 93.1%）；`npm run test:extension` 10 passed / 10.0s。纯扩展轮：未动桌面代码、未 bump 版本、未跑 `desktop:release` / `test:e2e`，提交在本地未 push。
+- **S2 完成态已交接**：`S2-extension-shell-and-writes.md` 的状态行改为已完成，`## Handoff` 重写成给 S3 的事实清单（消息契约、`run(tabId, deps)` 形状、角标语义、`overwrite` 理由、探针五条 + Playwright 下载装置修法）；FSD 状态行与两条风险行（无手势注入、扩展名补全）按探针结论更新。
+
 ### 2026-09-24（第五轮）— S2：内容脚本可读化 + 图片下载编排
 
 - **T2.2 内容脚本可读化**：`extension/tests/content.spec.ts` 三条（`npm run test:extension -- content.spec.ts` → 3 passed）：`article.html` 的 payload 字段逐条核（含 `images` **深等价**：惰性图进下载计划、内联 `data:` 图留在 md 且不产生无谓下载）；`no-article` → `NO_ARTICLE`；`file://` 页 → `{ok:false, code:"INJECT_FAILED"}`（注入被拒不静默）。
@@ -298,7 +307,8 @@ Approved for personal testing. Not approved for frictionless public distribution
 - **T2.3 两处刻意偏离**：等结束**轮询 `search({id})` 而非监听 `onChanged`**（探针 2 证明下载可能在 `download()` resolve 前已结束，事后挂监听会漏事件，且轮询同一次调用就拿到真实路径）→ FSD「并发与等待」行与 S2 流程段已同步改口径；`run()` 成功臂多回 `images: ImageOutcome[]`，skeleton 断言由 `toEqual` 收窄为 `toMatchObject`。
 - **收尾清理（ponytail）**：删掉自加的 `pollMs` 旋钮（假时钟下无意义，纯投机可配置性）与 `waitForImage` 里一个永不成立的分支。
 - **本轮门禁**：`npm run test:extension` → **10 passed / 9.6s**（core-smoke 1 + probe 5 + content 3 + skeleton 1）；`NODE_OPTIONS= ./init.sh` exit 0（Node 24.15.0，**76 files / 1039 tests**，statements 95.27% —— 从 93.36% 回升，原因是 `worker-run.ts` 这轮有了单测）。未动桌面代码、未 bump 版本、未跑 `desktop:release` / `test:e2e`，提交在本地未 push。
-- **仍未做**：引用回写（T2.4）、写盘单测（T2.5）、角标（T2.6）、失败路径矩阵与覆盖率阈值（T2.7）、阶段收尾（T2.8）；`CHANGELOG.md` 不加条目（无用户可见变化）。
+- **T2.4 引用回写**（提交 `c0ce05f`）：`extension/src/references.ts` 的 `rewriteImageReferences(markdown, plans)` —— 成功 → `![alt](目录/真实文件名)`、失败 → 原 URL + 下一行 `<!-- 图片未下载：<url> -->`、未出现的占位符原样留；RED 首跑 5 条全 failed（模块不存在），第一版前瞻写反（`(?![^\p{L}\p{N}])`）拿到真断言失败后改正；接入 `run()` 时 `worker-run.test.ts` 2/4 failed（仍写占位符）→ 改后 9 passed。
+- **仍未做（本表写下时）**：写盘单测（T2.5）、角标（T2.6）、失败路径矩阵与覆盖率阈值（T2.7）、阶段收尾（T2.8）—— 当天随后一轮已全部落地，见下表。`CHANGELOG.md` 不加条目（无用户可见变化）。
 
 ### 2026-09-24（第四轮）— PROGRESS 瘦身 + S2 外壳：事实探针与扩展骨架
 

@@ -1,6 +1,6 @@
 # FSD 总纲 — 浏览器插件（Browser Extension，B）
 
-- 状态：**实施中（2026-09-24）**：S1 已完成（转换核心 + 构建/门禁接线），S2 / S3 未开工
+- 状态：**实施中（2026-09-24）**：S1 已完成（转换核心 + 构建/门禁接线），**S2 已完成（T2.0–T2.8：探针、manifest/SW/content、下载与回写、角标反馈、失败矩阵、覆盖阈值与产物收口）**，S3 未开工
 - 日期：2026-09-24
 - 上游：`docs/PRD-browser-extension.md`（需求已确认，§3 六条已裁定）+ `docs/PLAN-browser-extension.md`（线路方向、边界、工程决策）
 - 阶段执行文档：`S1-convert-core.md`、`S2-extension-shell-and-writes.md`、`S3-e2e-and-acceptance.md`
@@ -160,7 +160,7 @@ buildArticle(document, sourceUrl, { sanitize, now }) → { title, markdown, imag
 | 阶段 | 内容 | 交付物 |
 | --- | --- | --- |
 | **S1** | 转换核心（纯函数）+ 仓库/构建/门禁接线 | `extension/src/convert/**` + `npm run build:extension` + 浏览器内冒烟通过；`init.sh` 收进第 1 层单测 |
-| **S2** | 扩展外壳：manifest、SW 编排、content script、下载与回写、反馈 | `extension/dist/` 可加载的 MV3 扩展；第 2 层打桩单测绿；S2 首任务的事实探针结论落文档 |
+| **S2** | 扩展外壳：manifest、SW 编排、content script、下载与回写、反馈 | ✅ 已交付（2026-09-24）：`extension/dist/` = `manifest.json` + `content.js` + `worker.js`（构建测试钉住范围与无 Node 残留）；第 2 层打桩单测 12 + 5 + 4 条绿；5 条探针结论落 `S2-extension-shell-and-writes.md` |
 | **S3** | 端到端集成 + 真机人工验收 + 文档收口 | 第 3/4 层绿；用户签字；`PROGRESS.md` / `CHANGELOG.md` / `feature_list.json` / `AGENTS.md` / `docs/TESTING.md` 同步 |
 
 S1 是纯逻辑（可完全 CI 验证）；S2 是外壳与平台交互（事实探针先行）；S3 是真实环境证据与收口。三阶段各自独立提交。
@@ -172,7 +172,7 @@ S1 是纯逻辑（可完全 CI 验证）；S2 是外壳与平台交互（事实�
 实现验收（可机器验证）：
 
 1. `./init.sh` 全绿（含第 1、2 层扩展单测；桌面既有 999 用例不红）。
-2. `npm run build:extension` 产出 `extension/dist/` 四个必需项；产物中**不含** `node:` 内置模块、`jsdom`、domino 的引用。
+2. `npm run build:extension` 产出 `extension/dist/` 的三个必需项（`manifest.json` / `content.js` / `worker.js`，由 `extension/tests/extension-build.test.mjs` 逐项断言范围）；产物中**不含** `node:` 内置模块、`jsdom`、domino 的引用。
 3. `npm run test:extension` 两项目绿：真实扩展在 Playwright 中可以加载、转换、并把 `<标题>.md` + `<标题>.images/*` 真正写进 `downloadsPath`。
 4. fixture 站里受 cookie 保护的图片被成功下载（证明「带会话」这条不是空话）；404 图退回原 URL 且带 `<!-- 图片未下载：… -->` 标记。
 
@@ -189,8 +189,8 @@ S1 是纯逻辑（可完全 CI 验证）；S2 是外壳与平台交互（事实�
 
 | 项 | 现状 | 触发条件与处置 |
 | --- | --- | --- |
-| 无手势注入是否可用（集成测试） | **未验证** | S2 首任务探针；不可用则走测试专用 manifest 变体 + 人工验收 |
-| `chrome.downloads` 是否给无扩展名文件补扩展名 | **未验证** | S2 首任务探针；回写一律以 `search()` 的真实 basename 为准，本设计不依赖猜测 |
+| 无手势注入是否可用（集成测试） | **已实测：不可用**（探针 1：SW 无手势注入报 `Cannot access contents of the page…`，因为 `activeTab` 的授权来自用户点击） | 集成测试改用测试专用 manifest 变体补 `host_permissions`；「工具栏点击 → 授权」这段只能人工验收（S3 第 5 条） |
+| `chrome.downloads` 是否给无扩展名文件补扩展名 | **已实测：不补，原样落盘**（探针 2） | 引用一律以 `search()` 返回的真实 basename 为准；扩展名只由我们自己按 URL 后缀决定 |
 | MV3 后台休眠打断批量下载 | 未压测 | 先不做保活；验收第 7 条压一次，真被打断再按 `ponytail:` 注释处加保活（并发上限已降到 4） |
 | 超大页面（DOM 克隆 + Readability） | 只测过小页面 | 识别到耗时 >3s 时不阻断（转换在 content script，慢就是慢）；必要时先记 `ponytail:` 再说 |
 | md 体积超过 data URL 上限 | 探针实测 2 MiB 通过 | 超过约 4 MiB 罕见；失败会被角标暴露，不静默 |

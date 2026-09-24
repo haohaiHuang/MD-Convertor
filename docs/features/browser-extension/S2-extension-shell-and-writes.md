@@ -2,7 +2,7 @@
 
 - 上游：`docs/features/browser-extension/FSD.md`（架构决定 §3.1、§3.3、§3.5）
 - 前置：S1 完成（`extension/src/convert/**` 纯函数已绿、`npm run build:extension` 可用）
-- 状态：**实施中 —— T2.0–T2.6 已完成（T2.5 写盘单测、T2.6 角标反馈本轮落地）**，T2.7 起待做
+- 状态：**已完成（2026-09-24）—— T2.0–T2.8 全部落地**；交付物 = `extension/dist/` 可加载的 MV3 扩展（`manifest.json` + `content.js` + `worker.js`）；下一步是 S3（端到端集成 + 真机人工验收）
 - feature_list id：`feat-040`
 
 ## Spec
@@ -45,6 +45,11 @@ type ConvertFailure = { type: "md-convertor:failed"; code: string; message: stri
 **落地偏差（T2.5）**：`write.ts` 是 T2.1 为跑通骨架写的，T2.5 的用例**首跑即全绿**（4 passed），所以这一条是**补证**而不是先写的失败测试 —— RED 这一步在本任务上未成立，如实记在此处。补证仍钉住了三件此前只有口头依据的事：`filename` 只能是相对路径（探针 5 说绝对路径被拒，这里从请求侧钉住）、URL 是能被 `new URL()` 解析且 `decodeURIComponent` 后逐字节相同的 data URL（中文 / 半角括号 / 引号 / emoji）、`overwrite` + `saveAs: false` 未被动过。顺手加了 `markdownDataUrl` 的编码用例（`%`、`#`、`&`、`,` 不进正文语义 —— `#` 会被编码掉，否则 data URL 会被截断）。
 
 **落地偏差（T2.6）**：① 角标逻辑放在 `worker-run.ts`（`badgeFor` / `runWithFeedback` / `clearBadgeLater`）而不是 `worker.ts`，因为 `worker.ts` 是浏览器专用入口、不进 `init.sh`；因此 `ChromeDeps` 多了一个 `action` 成员（`setBadgeText` / `setTitle`）。② 「提取失败 → `!` + 原因」这条用例里注入被拒绝时 `run()` 回的是 `INJECT_FAILED`（不是 `TIMEOUT`）：RED 时我先把断言写成 `TIMEOUT`，实现前就发现不对并改正 —— 超时路径留给 T2.7 的矩阵。③ 失败原因用小映射表把 `INJECT_FAILED` / `TIMEOUT` / `DOWNLOAD_FAILED` 换成人话（英文原文只留在 `RunResult.message` 里给日志）；④ 清空用独立的 `clearBadgeLater` promise，`worker.ts` 里 `.then()` 串接：4 秒的等待不能吊住本次点击（也没有保活）。
+
+**落地偏差（T2.7）**：这是**补证**任务 —— 五条失败路径的行为在 T2.1–T2.6 里已经实现（`run()` 的五个返回分支 + `badgeFor`），四条新用例首跑即全绿，没有 RED 可拿。补证换来的是一处真发现：**超时路径此前只有注入路径被覆盖**（同一条 RED 断言还被我先写错成 `TIMEOUT`），现在用 `vi.useFakeTimers()` 推进 10 秒真跑到了 `TIMEOUT` 分支（`run()` 的 payload 等待用的是全局 `setTimeout`，不受注入 `timers` 影响，所以这里只能用假计时器；用完 `vi.useRealTimers()` 还原）。另两条补证点：特权页 / 无正文这两条路径 `requests` 必须为**空**（失败就该什么都没下载），md 写盘被拒时必须 `markdownWrites()` 为空且原因是浏览器原文 `SERVER_ERROR`（人话版本只出现在角标里）。
+覆盖率阈值设「当前实测值之下一点」而不是漂亮数字：`worker-run.ts` 95/85/85/95（实测 100 / 91.37 / 87.5 / 100）、`references.ts` 100/90/100/100（实测 100 / 93.75 / 100 / 100）、`write.ts` 全 100（实测全 100）—— 阈值只用来拦回归，不假装已经测满。
+
+**落地偏差（T2.8）**：同样是**补证** —— `extension/dist/` 在 T2.1 就已产出，四条新断言首跑即绿。它们值在**钉住不变量**：目录里**恰好**三个文件（多出来的 dump/临时文件会让「加载已解压扩展」带上不该有的权限面）、manifest 只有 `activeTab`/`scripting`/`downloads` 且**没有** `host_permissions` 也没有静态 `content_scripts`（「点击才注入、平时零权限」这条设计承诺，现在有机器化证据）、`action.default_title` 与 `DEFAULT_TITLE` 逐字相等（角标清空后还原的就是这句话，两边漂移过一次用户就会看到空白提示）。`buildOnce()` 在 `beforeAll` 里跑**一次**构建，四条断言读的是**同一份产物**（不是各自重新构建，否则有一条可能读到旧 bundle）。
 
 ## Plan
 
@@ -117,8 +122,8 @@ export async function run(tabId: number, deps: ChromeDeps): Promise<RunResult>
 | T2.4 | 引用回写纯函数 | `references.test.ts`：成功/失败/未出现占位符/正文含相似文本（不被误替换）/同一占位符出现两次 ⇒ 先 failed ✅（首跑 5 条全 failed：模块不存在；修掉被写反的前瞻后 4 failed → 1 passed 是真断言失败，见 §3 偏差） | 全绿（5 passed） | `npx vitest run extension/src/references.test.ts` |
 | T2.5 | md 写盘（data URL、UTF-8、overwrite、中文文件名） | `write.test.ts`：mock `downloads` 断言 `filename` 是相对路径、URL 是可解析的 data URL、中文内容解码后逐字节相同 ⇒ 先 failed ⚠️**未成立**：`write.ts` 在 T2.1 已落地，首跑即 4 passed，是**补证**（见 Spec 的「落地偏差（T2.5）」） | 全绿（4 passed） | `npx vitest run extension/src/write.test.ts` |
 | T2.6 | 反馈：角标与工具提示 | `worker-run.test.ts` 扩：成功 → `✓` + 标题含张数；部分失败 → `!` + 标题含「N 张图未下载」；失败 → `!` + 原因；4s 后清空并还原标题（用注入时钟）⇒ 先 failed ✅（4 条全 failed：`(0 , runWithFeedback) is not a function`） | 全绿（8 passed） | `npx vitest run extension/src/worker-run.test.ts` |
-| T2.7 | 打桩单测矩阵收口 | 覆盖 `INJECT_FAILED` / `TIMEOUT` / `DOWNLOAD_FAILED` / 特权页 / 提取失败五条失败路径 ⇒ 先 failed | 五条全绿，`coverage` 中 `worker-run.ts`、`references.ts`、`write.ts` 达阈值 | `npm run test:coverage` |
-| T2.8 | 阶段收尾 | — | `./init.sh` 全绿；`extension/dist/` 恰含 `manifest.json` / `content.js` / `worker.js` 且无 Node 内置模块；探针结论已落本文档 | `./init.sh` |
+| T2.7 | 打桩单测矩阵收口 | 覆盖 `INJECT_FAILED` / `TIMEOUT` / `DOWNLOAD_FAILED` / 特权页 / 提取失败五条失败路径（`INJECT_FAILED` 那条在 T2.6 的角标用例里断言，两条任务合起来才是完整矩阵）⇒ 先 failed ⚠️**未成立**：实现早就在 `run()`/`badgeFor` 里，四条用例首跑即全绿，属**补证**（见 Spec「落地偏差（T2.7）」） | 五条全绿（`worker-run.test.ts` 12 passed），`coverage` 中 `worker-run.ts`、`references.ts`、`write.ts` 达阈值 | `npm run test:coverage` |
+| T2.8 | 阶段收尾 | 扩 `extension/tests/extension-build.test.mjs`：`extension/dist/` 目录**恰好**三个文件、两个入口都非空且无 Node 残留、manifest 只有三个权限且**无** `host_permissions` / `content_scripts`、`action.default_title` 与 `worker-run.ts` 的 `DEFAULT_TITLE` 相等 ⇒ 先 failed ⚠️**未成立**：产物与 manifest 早在 T2.1 就是这个形状，四条用例首跑即全绿，属**补证**（见 Spec「落地偏差（T2.8）」） | `./init.sh` 全绿（78 files / 1059 tests）；`extension/dist/` 恰三项；探针结论已在本文档 | `NODE_OPTIONS= ./init.sh` |
 
 ## 探针结果（T2.0，2026-09-24 实测；机器化证据 = `extension/tests/probe.spec.ts` 5 条用例）
 
@@ -132,7 +137,15 @@ export async function run(tabId: number, deps: ChromeDeps): Promise<RunResult>
 
 **测试装置坑（S3 集成测试必须照抄这一套）**：Playwright 对 persistent context 一律发 CDP `Browser.setDownloadBehavior { behavior: "allowAndName" }`，于是每次下载都被写成 `<guid>`（无扩展名）并**丢掉请求的子目录** —— 实测在这一装置下第 2、3、4 条都测不出来（第一次跑 probe 时收到的就是 GUID）。修法两步，缺一不可：① 在 profile 里预写 `Default/Preferences` 的 `download.default_directory` 指向临时目录；② 启动后自己补发一次 `Browser.setDownloadBehavior { behavior: "default" }` 覆盖 Playwright 的设置。**`launchPersistentContext` 的 `downloadsPath` 选项不能用**（它正是 `allowAndName` 的入口），`acceptDownloads: "internal-browser-default"` 也无效（Playwright 客户端把任何真值都归一成 `accept`）。
 
-## Handoff
+## Handoff（S2 完成态，2026-09-24）
 
-- 结束时必须写清：消息契约的确切字段；`run(tabId, deps)` 的注入形状；角标语义（`…` 进行中 / `✓` 成功 / `!` 失败）与 4s 清空；`overwrite` 的理由（`uniquify` 会拆散 md 与 `.images/` 的文件对）；探针五条结论 + Playwright 下载装置坑的修法。
-- 已知限制：无图标；无保活；不做 popup；工具栏点击 → `activeTab` 授权这一段只能人工验收（S3）。
+交接给 S3 的事实，按「下一个人会问的问题」排：
+
+1. **消息契约**：content script 先说话。成功 = `{type: "md-convertor:article", title, markdown, images: [{placeholder, url}], sourceUrl, convertedAt}`；失败 = `{type: "md-convertor:failed", code, message}`，`code ∈ {UNSUPPORTED_PAGE, NO_ARTICLE}`。SW 侧校验函数在 `extension/src/messages.ts`（`isConvertPayload` / `isConvertFailure`），**不信任任何入站消息**。
+2. **编排入口**：`worker-run.ts` 的 `run(tabId, deps, options)` 与 `runWithFeedback(tabId, deps, options)`；`deps: ChromeDeps = { action, scripting, downloads, runtime }`，`options = { timers?, imageTimeoutMs? }`。真实 `chrome.*` 只在 `worker.ts` 里出现。Playwright 点不到工具栏，集成测试走 `serviceWorker.evaluate(() => globalThis.__mdConvertorRun(tabId))`（这个钩子只为测试存在）。
+3. **角标语义**：进行中不写（没做），成功 `✓` +「已存出「<md>.md」（含 N 张图）」，有失败图 `!` +「…N 张图未下载」，整个 run 失败 `!` +「转换失败：<人话>」；`BADGE_CLEAR_MS = 4_000` 后清空并还原 `DEFAULT_TITLE`。
+4. **同名一律 `overwrite`**：`uniquify` 只改 md 名、不改目录名，一次重复导出就把文件对拆散；md 写下载根目录，图片写 `<标题>.images/`，两者永远同进同出。
+5. **探针五条 + Playwright 下载装置坑**：见本文档上面的「探针结果」表与紧随其后的装置段落 —— S3 的集成测试**必须照抄那两步修法**，否则收到的文件名是 GUID、子目录也丢。
+6. **已知限制**：无图标；无保活（并发上限 4、单图 60s 超时，真被打断再加）；不做 popup；`activeTab` 授权只能人工验收。
+
+机器化证据入口：`NODE_OPTIONS= ./init.sh`（78 files / 1059 tests，含扩展第 1、2 层）与 `MD_CONVERTOR_EXTENSION_CHROMIUM_ARGS=--no-sandbox,--disable-gpu npm run test:extension`（10 passed，第 3、4 层）。

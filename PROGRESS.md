@@ -2,24 +2,31 @@
 
 ## Current State
 
-- Last updated: 2026-09-24（第五轮：S2 内容脚本可读化 + 图片下载编排；T2.0–T2.3 已完成，T2.4 待做）
-- Current version: `0.3.6`，**已发布**为 GitHub Release `v0.3.6`（`package.json`、`package-lock.json`、`feature_list.json`、`scripts/release-desktop.mjs` 均为 `0.3.6`；产物 235,956,668 bytes / SHA-256 `9b89d55c…f351`；已装到本机 `/Applications`）。**本轮不动桌面代码，所以不 bump 到 `0.3.7`**（bump 只由桌面代码改动触发；插件版本自管）
-- Active feature: **`feat-040` 浏览器插件（B）—— 状态 `in-progress`，S1（转换核心）已完成，S2 进行中（T2.0 探针、T2.1 外壳骨架、T2.2 内容脚本、T2.3 下载编排已完成，T2.4 起待做），提交均在本地未 push**（`feat-042` 桌面端文档处理（A）仍为 `planned`，无顺序与代码依赖；`feat-041` 已完成已发布已关闭）
-- Next step: **S2 继续 —— T2.4 起**：T2.4 引用回写纯函数（`extension/src/references.test.ts`：成功／失败／未出现占位符／正文含相似文本不被误替换／同一占位符出现两次，`npx vitest run extension/src/references.test.ts`）→ T2.5 写盘单测 → T2.6 角标与工具提示（`worker-run.test.ts` 扩，4s 清空用注入时钟）→ T2.7 失败路径矩阵（`INJECT_FAILED` / `TIMEOUT` / `DOWNLOAD_FAILED` / 特权页 / 提取失败）与覆盖率阈值 → T2.8 收尾（`extension/dist/` 恰含 `manifest.json` / `content.js` / `worker.js` 且无 Node 内置模块）。**当前 md 里的 `md-convertor-image-<n>` 占位符还没被回写** —— 这是 T2.4 的事，不是缺陷。
+- Last updated: 2026-09-24（第六轮：S2 收尾 —— T2.5 写盘单测、T2.6 角标反馈、T2.7 失败路径矩阵与覆盖率阈值、T2.8 产物范围收口；**S2 已完成**）
+- Current version: `0.3.6`，**已发布**为 GitHub Release `v0.3.6`（`package.json`、`package-lock.json`、`feature_list.json`、`scripts/release-desktop.mjs` 均为 `0.3.6`；产物 235,956,668 bytes / SHA-256 `9b89d55c…f351`；已装到本机 `/Applications`）。**本轮不动桌面代码，所以不 bump 到 `0.3.7`**（bump 只由桌面代码改动触发；插件版本自管，`extension/manifest.json` 仍是 `0.1.0`）
+- Active feature: **`feat-040` 浏览器插件（B）—— 状态 `in-progress`，S1（转换核心）与 S2（扩展外壳与写盘）均已完成，下一步 S3（端到端集成 + 真机人工验收），提交均在本地未 push**（`feat-042` 桌面端文档处理（A）仍为 `planned`，无顺序与代码依赖；`feat-041` 已完成已发布已关闭）
+- Next step: **S3 起（先读 `docs/features/browser-extension/S3-e2e-and-acceptance.md`）**：① T3.0 端到端集成 —— 加载真实 MV3 扩展打 fixture 站，证明「带 cookie 的图片能下」「404 图退回原 URL 且带 `<!-- 图片未下载：… -->`」「同篇文章导出两次覆盖成对」；**必须照抄 S2 文档里那段 Playwright 下载装置修法**（预写 profile `Default/Preferences` 的 `download.default_directory` + 启动后补发 CDP `Browser.setDownloadBehavior {behavior:"default"}`），否则收到的文件名是 GUID、子目录也丢；② 真机 Chrome「加载已解压的扩展程序」指向 `extension/dist` 跑人工验收清单（含工具栏点击这一段 —— `activeTab` 授权只在真实点击时存在）；③ 收口 `docs/TESTING.md`（补扩展测试两层与产物范围）与 `CHANGELOG.md`（插件发布前仍不加条目）。
 - Branch: `main`；stash@{0} 是 2026-09-21 拉取前的文档备份、与当前工作无关
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+（桌面产物）；浏览器插件另行验收于 Chromium，不进桌面发布门禁
 
-## 本轮（2026-09-24 第五轮：S2 内容脚本可读化 + 图片下载编排）已完成
+## 本轮（2026-09-24 第六轮：S2 收尾，T2.5–T2.8）已完成
 
 用户指令：继续 S2。**只写 `extension/` 与文档、零桌面改动，不 bump 版本、不跑 `desktop:release`、不跑 `test:e2e`。**
 
-- **T2.2 内容脚本可读化**（`extension/tests/content.spec.ts`，3 条 → `npm run test:extension -- content.spec.ts` 3 passed）：`article.html` 的 payload 逐字段核（`type`/`title`/`sourceUrl`/ISO `convertedAt`/正文与占位符，且 `images` **深等价**为唯一一条惰性图 —— 内联 `data:` 图留在 md、不产生无谓下载）；`no-article.html` → `{code:"NO_ARTICLE"}` 且消息含「正文」；`file://` 页 → `{ok:false, code:"INJECT_FAILED"}` 且消息非空（注入被拒可读化，不静默）。
-- **T2.2 的 RED 只有第三条是真的，已如实记录**：`chrome.tabs.query()` 对**无 host 权限**的标签页返回 `url: undefined`（探针 1 的同一权限事实的另一面），所以「按 URL 找 tab」的写法查不到目标；前两条因 `content.ts` 在 T2.1 一次写完而**首跑即绿**，在阶段文档里标为「补证」而非「先写的失败测试」。
-- **T2.3 下载编排**（`extension/src/worker-run.test.ts`，4 条 → 4 passed / 305ms）：手写 `fakeChrome()`（无 sinon）+ 注入时钟。断言：7 图并发峰值 **≤ 4**（在假对象里实测，不是假设）；1 张 `download()` 抛错 + 1 张 `search()` 永远 `in_progress` ⇒ 其余仍完成（`{saved:3, failed:2}`）且 **md 仍恰好写一次**（图片失败不能连累文档）；引用用浏览器**真实** basename（`001-1.jpg`，扩展名是浏览器报的，不是我们猜的）；落到别的目录 ⇒ 该图按失败处理（宁可退回原 URL，也不写指向找不到的文件的引用）。
-- **T2.3 两处刻意偏离**（已同步进 FSD 与阶段文档）：① 等结束**轮询 `search({id})` 而不是监听 `downloads.onChanged`** —— 探针 2 说明下载可能在 `download()` resolve **之前**就已结束，事后挂监听会漏掉那一次事件，轮询还顺带在同一次调用里拿到真实路径；② `run()` 成功臂多回一个 `images: ImageOutcome[]`（配 `saved`/`failed` 计数），T2.1 的 skeleton 断言相应从 `toEqual` 收窄为 `toMatchObject`。
-- **收尾清理（ponytail 门）**：删掉自加的 `pollMs` 旋钮（假时钟下毫无意义，纯投机可配置性）与 `waitForImage` 里一个永不成立的分支；`RunOptions` 只留 `{ timers?, imageTimeoutMs? }`。
-- **门禁**：`npm run test:extension` → **10 passed / 9.6s**（core-smoke 1 + probe 5 + content 3 + skeleton 1）；`NODE_OPTIONS= ./init.sh` **exit 0**（Node 24.15.0，**76 files / 1039 tests**，statements **95.27%** —— 从 93.36% 回升是因为 `worker-run.ts` 这轮有了单测，不是阈值放宽）。
-- **仍未做**：引用回写（T2.4）、写盘单测（T2.5）、角标（T2.6）、失败路径矩阵与覆盖率阈值（T2.7）、阶段收尾（T2.8）；`CHANGELOG.md` 不加条目（无用户可见变化）。
+- **T2.5 写盘单测（补证）**：`extension/src/write.test.ts` 4 passed —— `filename` 只能是相对路径（无前导 `/`、无盘符、无 `../`）；URL 能被 `new URL()` 解析且 `data:text/markdown;charset=utf-8,` 之后 `decodeURIComponent` 逐字节等于原文（中文、半/全角括号、两种引号、emoji、空行都过）；`overwrite` + `saveAs:false` 未被动过；`markdownDataUrl` 会把 `%` `#` `&` `,` 编码掉（`#` 不编码会截断 data URL）。**`write.ts` 是 T2.1 为跑通骨架写的，首跑即绿 = 补证而非先写的失败测试**，已写进阶段文档与 `feature_list.json`。
+- **T2.6 角标反馈（真 RED）**：新增 4 条全 failed（`TypeError: (0 , runWithFeedback) is not a function`）→ 实现后 8 passed。`badgeFor` 三态：成功 `✓` +「已存出「<md>.md」（含 N 张图）」；有失败图 `!` +「…N 张图未下载」；run 失败 `!` +「转换失败：<人话>」；`BADGE_CLEAR_MS = 4_000` 后清空并还原 `DEFAULT_TITLE`（用注入时钟，不真等 4 秒）。失败原因过一张小映射表（`INJECT_FAILED` →「这个页面不允许扩展读取」等），英文原文只留在 `RunResult.message` 给日志。角标逻辑刻意放 `worker-run.ts`（`worker.ts` 不进 `init.sh`），`worker.ts` 里 `.then(() => clearBadgeLater(deps)).catch(...)` 两个 promise：4 秒等待不吊住本次点击。
+- **T2.7 失败路径矩阵（补证）**：`worker-run.test.ts` 8 → **12 passed**。四条用例钉住：特权页 `UNSUPPORTED_PAGE` / 无正文 `NO_ARTICLE` ⇒ 三个下载请求**一个都不发**、角标给内容脚本自己的中文消息；注入成功但无回应 ⇒ **`vi.useFakeTimers()` 推进 10 秒**真跑到 `TIMEOUT`（payload 等待用的是全局 `setTimeout`，不受注入 `timers` 影响，所以这里只能用假计时器）；md 写盘被拒 ⇒ `DOWNLOAD_FAILED` 且 `markdownWrites()` 为空、`message` 留浏览器原文 `SERVER_ERROR` 而角标说人话。四条首跑即绿（实现在前）= 补证。覆盖率阈值已加进 `vitest.config.ts`：`worker-run.ts` 95/85/85/95（实测 100 / 91.37 / 87.5 / 100）、`references.ts` 100/90/100/100、`write.ts` 全 100 —— **阈值只用来拦回归，不假装测满**。
+- **T2.8 阶段收尾（补证）**：`extension/tests/extension-build.test.mjs` 1 → 4 passed，`extension/dist/` **恰好**三份（`manifest.json` / `content.js` / `worker.js`）、两个入口非空且无 Node 残留、manifest 只有 `activeTab`+`scripting`+`downloads` 且**没有** `host_permissions`、**没有**静态 `content_scripts`、`action.default_title` 与 `DEFAULT_TITLE` 逐字相等；`buildOnce()` 让四条断言读同一份产物。S2 文档的 `## Handoff` 已改写成完成态（消息契约、`run(tabId, deps)` 形状、角标语义、`overwrite` 理由、探针五条 + 装置坑修法）。
+- **门禁**：`NODE_OPTIONS= ./init.sh` **exit 0**（Node 24.15.0，**78 files / 1059 tests**，`extension/src` 语句 100% / 分支 93.1%）；`MD_CONVERTOR_EXTENSION_CHROMIUM_ARGS=--no-sandbox,--disable-gpu npm run test:extension` → **10 passed / 10.0s**。
+- **仍未做**：S3 的全部内容（端到端集成、真机人工验收、`docs/TESTING.md` 收口）；`CHANGELOG.md` 不加条目（插件尚未发布，无用户可见变化）。
+
+## 上一轮（2026-09-24 第五轮：S2 内容脚本可读化 + 图片下载编排，T2.2–T2.4）已完成
+
+- **T2.2** `content.spec.ts` 3 条：`article.html` payload 逐字段核（`images` 深等价 —— 惰性图进下载计划、内联 `data:` 图留在 md 不产生无谓下载）；`no-article` → `NO_ARTICLE`；`file://` 页 → `INJECT_FAILED` 可读。RED 只有第三条是真的（`tabs.query()` 对无 host 权限的标签页给 `url: undefined`），前两条是补证。
+- **T2.3** `worker-run.test.ts` 4 条：7 图并发峰值 ≤ 4（假对象里实测）；1 张抛错 + 1 张永不结束 ⇒ `{saved:3, failed:2}` 且 md 仍恰好写一次；引用用浏览器真实 basename；落到别的目录按失败处理。两处刻意偏离：**轮询 `search({id})` 而非监听 `onChanged`**（探针 2：下载可能在 `download()` resolve 前已结束）、成功臂多回 `images`（skeleton 断言收窄为 `toMatchObject`）。
+- **T2.4** `references.ts` 的 `rewriteImageReferences`：成功回写真实文件名、失败退原 URL + 下一行 HTML 注释；RED 首跑 5 条全 failed，第一版前瞻写反拿到真断言失败后改正；接入 `run()` 时 `worker-run.test.ts` 2/4 failed → 改后 9 passed。
+- **收尾清理（ponytail 门）**：删掉自加的 `pollMs` 旋钮与 `waitForImage` 里一个永不成立的分支。
+- **门禁**：`test:extension` 10 passed / 9.6s；`NODE_OPTIONS= ./init.sh` exit 0（76 files / 1039 tests，95.27%）。
 
 ## 三条已固化的教训（都已写进约束清单）
 
@@ -58,6 +65,9 @@
 - **Readability 会把导航栏当正文返回**：两条提取分支都要跑 `MIN_TEXT_LENGTH = 50` 的字符下限，挑不出正文就返回 `null`（插件不做整页兜底，这是刻意与桌面端不同）。
 - **`playwright.extension.config.ts` 的 `testMatch` 必须是 `**/*.spec.ts`**：`extension/tests/` 里同时住着 vitest 单测（`extension-build.test.mjs`），默认匹配会被 Playwright 收走并报 `Vitest failed to access its internal state`。同理，spec 里的 fixture 路径用 `path.resolve(__dirname, "../..")`（`__dirname` 是 spec 所在目录，不是项目根）。
 - **`esbuild` 必须精确锁 `0.28.1`**：写 `^0.28.1` 会解析到 0.28.2 并重写约 215 行 lock（本轮已踩过）。
+- **扩展的可测逻辑一律放 `worker-run.ts`（或更小的纯函数模块），不放 `content.ts` / `worker.ts`**：后两者是浏览器专用入口、不进 vitest 覆盖率，塞进去等于没有门禁。角标与失败原因映射就是这么放进去的（`ChromeDeps` 因此多一个 `action` 成员）。
+- **payload 等待用的是全局 `setTimeout`，不受注入的 `timers` 影响**：测 `TIMEOUT` 分支必须 `vi.useFakeTimers()` + `advanceTimersByTimeAsync(10_000)`，用完还原；`timers` 只推进图片轮询与角标清空。
+- **扩展的三处覆盖率阈值取「实测值之下一点」**（`worker-run.ts` 95/85/85/95、`references.ts` 100/90/100/100、`write.ts` 全 100）：阈值只用来拦回归，不假装已经测满；要抬阈值先补测试。
 - **`npm run test:extension` 会先跑 `build:extension`**；沙箱内需 `MD_CONVERTOR_EXTENSION_CHROMIUM_ARGS=--no-sandbox,--disable-gpu`（与桌面 Playwright 同源限制），没有外层沙箱时不要传。
 - **插件与桌面端的引用口径**：md 里先写 `md-convertor-image-<n>` 占位符（纯词，不含 `:` `/`，Turndown 不会改写），落盘后用 `chrome.downloads.search()` 的**真实 basename** 回写引用（浏览器可能自己补扩展名）；真实父目录名 ≠ 请求的 `<标题>.images` 时按失败处理，退回原 URL，不写指向找不到的文件的引用。
 - **Playwright 跑扩展时下载会被改名（S2 探针实测）**：Playwright 对 persistent context 一律先发 CDP `Browser.setDownloadBehavior{behavior:"allowAndName"}`，每个下载都被写成 `<guid>`（无扩展名、丢掉请求的子目录）——不修装置就测不出「文件名是否被补扩展名」「相对子目录路径」「同名覆盖」这三条。修法两步：profile 里预写 `Default/Preferences` 的 `download.default_directory`，启动后自己再发一次 `behavior:"default"`；**`downloadsPath` 选项不能碰**（它就是 `allowAndName` 的入口），`acceptDownloads` 传什么都被归一成 `accept`。

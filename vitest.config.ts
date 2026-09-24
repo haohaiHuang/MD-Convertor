@@ -24,6 +24,11 @@ export default defineConfig({
         "extension/src/worker.ts",
       ],
       thresholds: {
+        // The extension's testable modules landed in S2; the floors are set just under what the
+        // orchestration tests actually reach, so a regression fails the build instead of sliding by.
+        "extension/src/worker-run.ts": { lines: 95, branches: 85, functions: 85, statements: 95 },
+        "extension/src/references.ts": { lines: 100, branches: 90, functions: 100, statements: 100 },
+        "extension/src/write.ts": { lines: 100, branches: 100, functions: 100, statements: 100 },
         "extension/src/convert/extract.ts": { lines: 90, branches: 80, functions: 100, statements: 90 },
         "extension/src/convert/images.ts": { lines: 90, branches: 80, functions: 100, statements: 90 },
         "extension/src/convert/markdown.ts": { lines: 90, branches: 80, functions: 100, statements: 90 },
