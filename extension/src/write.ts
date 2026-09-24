@@ -5,8 +5,14 @@ export type DownloadRequest = {
   saveAs: false;
 };
 
+export type DownloadedItem = {
+  state: string;
+  filename: string;
+};
+
 export type DownloadsApi = {
   download(options: DownloadRequest): Promise<number>;
+  search(query: { id: number }): Promise<DownloadedItem[]>;
 };
 
 // The markdown is generated in memory, so a data URL avoids an object URL to revoke later

@@ -108,7 +108,7 @@ buildArticle(document, sourceUrl, { sanitize, now }) → { title, markdown, imag
 | 占位符 | md 里写成 `![](md-convertor-image-3)`（纯词，不含 `:` `/`，Turndown 不会改写它） |
 | 引用回写 | 纯函数 `rewriteImageReferences(markdown, plans)`：成功 → `![](dirName/实际文件名)`；失败 → `![](原始 URL)` + **下一行**独立 HTML 注释 `<!-- 图片未下载：<url> -->` |
 | 实际文件名核对 | 下载完成后用 `chrome.downloads.search({ id })` 读**真实**路径，取其 basename 作为引用（Chrome 可能自己补扩展名——所以不猜）；若真实父目录名 ≠ `dirName`，视为失败（宁可退回原 URL，也不写出指向找不到的文件的引用） |
-| 并发与等待 | 上限 4 个并发，全部用 `chrome.downloads.onChanged` 等 `complete`/`interrupted`；整体超时 60s，超时未完成的按失败处理 |
+| 并发与等待 | 上限 4 个并发。等结束**用轮询 `chrome.downloads.search({ id })` 而不是监听 `onChanged`**（实测下载可能在 `download()` resolve 前就已结束，事后挂监听会漏掉那次事件；轮询还能在同一次调用里拿到真实路径）；单张超时 60s，超时未完成的按失败处理 |
 | md 一定写 | 除非提取阶段就失败，否则**总是写 md**（部分成功好过全丢），失败的图按上面的规则标记；角标 `!` + 工具提示给出「N 张图未下载」 |
 
 `overwrite` 而不是 `uniquify`：Chrome 的 `uniquify` 只改 md 名字（`标题 (1).md`），`.images/` 目录名不变，**一次重复导出就会把文件对拆散**。覆盖才能让「一对文件」永远同步，也和桌面端已发布的同名覆盖口径一致（同时意味着**不加时间戳**）。

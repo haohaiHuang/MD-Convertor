@@ -4,7 +4,13 @@ import { run, type ChromeDeps } from "./worker-run";
 // `worker-run.ts` behind an injected `deps`.
 const deps: ChromeDeps = {
   scripting: { executeScript: (injection) => chrome.scripting.executeScript(injection) },
-  downloads: { download: (options) => chrome.downloads.download(options) },
+  downloads: {
+    download: (options) => chrome.downloads.download(options),
+    search: async (query) => {
+      const items = await chrome.downloads.search(query);
+      return items.map(({ state, filename }) => ({ state, filename: filename ?? "" }));
+    },
+  },
   runtime: {
     onMessage: {
       addListener: (listener) => chrome.runtime.onMessage.addListener(listener),

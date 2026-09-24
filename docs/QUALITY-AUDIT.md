@@ -290,6 +290,16 @@ Approved for personal testing. Not approved for frictionless public distribution
 - 未做：无 `manifest.json` / service worker / content script / 任何 `chrome.*` / `extension/dist/`（属 S2）；未 bump 版本（0.3.6 不动）、未跑 `desktop:release`、未跑 `test:e2e`。本轮按用户要求**提交到本地、未 push**（GitHub 等大阶段完成再推）。
 - 提交门（本机 `subagent` 不可用，三道路由改为就地审）：ponytail 无可删项（只余 3 条判断题：单元素 `targets` 数组、`forbidden` 名单两处重复、惰性图属性名两处知晓）；code-review 两轴只出一条 spec 差距 —— T1.5 写了「固定快照」而测试只用 `toContain`，已改为逐字符锁头部 5 行；neat-freak 死引用、相对时间、尺寸、软链四项均过（AGENTS.md 121 行 / 12.7KB，handoff 126 行 / 22.0KB）。
 
+### 2026-09-24（第五轮）— S2：内容脚本可读化 + 图片下载编排
+
+- **T2.2 内容脚本可读化**：`extension/tests/content.spec.ts` 三条（`npm run test:extension -- content.spec.ts` → 3 passed）：`article.html` 的 payload 字段逐条核（含 `images` **深等价**：惰性图进下载计划、内联 `data:` 图留在 md 且不产生无谓下载）；`no-article` → `NO_ARTICLE`；`file://` 页 → `{ok:false, code:"INJECT_FAILED"}`（注入被拒不静默）。
+- **T2.2 的 RED 只有第三条是真的**：`chrome.tabs.query()` 对无 host 权限的标签页返回 `url: undefined`，「按 URL 找 tab」查不到目标（我的用例自身缺陷）；前两条因 `content.ts` 在 T2.1 一次写完而首跑即绿，已如实写进阶段文档，标为**补证**而非先写的失败测试。
+- **T2.3 下载编排**：`extension/src/worker-run.test.ts` 四条（手写 `fakeChrome()`，无 sinon，时钟注入）——7 图并发峰值 ≤ 4（在假对象里实测）、1 张 `download()` 抛错 + 1 张永不结束 ⇒ 其余完成且 **md 仍恰好写一次**、引用用浏览器**真实** basename（`001-1.jpg`）、落到别的目录 ⇒ 该图按失败处理。
+- **T2.3 两处刻意偏离**：等结束**轮询 `search({id})` 而非监听 `onChanged`**（探针 2 证明下载可能在 `download()` resolve 前已结束，事后挂监听会漏事件，且轮询同一次调用就拿到真实路径）→ FSD「并发与等待」行与 S2 流程段已同步改口径；`run()` 成功臂多回 `images: ImageOutcome[]`，skeleton 断言由 `toEqual` 收窄为 `toMatchObject`。
+- **收尾清理（ponytail）**：删掉自加的 `pollMs` 旋钮（假时钟下无意义，纯投机可配置性）与 `waitForImage` 里一个永不成立的分支。
+- **本轮门禁**：`npm run test:extension` → **10 passed / 9.6s**（core-smoke 1 + probe 5 + content 3 + skeleton 1）；`NODE_OPTIONS= ./init.sh` exit 0（Node 24.15.0，**76 files / 1039 tests**，statements 95.27% —— 从 93.36% 回升，原因是 `worker-run.ts` 这轮有了单测）。未动桌面代码、未 bump 版本、未跑 `desktop:release` / `test:e2e`，提交在本地未 push。
+- **仍未做**：引用回写（T2.4）、写盘单测（T2.5）、角标（T2.6）、失败路径矩阵与覆盖率阈值（T2.7）、阶段收尾（T2.8）；`CHANGELOG.md` 不加条目（无用户可见变化）。
+
 ### 2026-09-24（第四轮）— PROGRESS 瘦身 + S2 外壳：事实探针与扩展骨架
 
 - **Step 0 文档瘦身**（提交 `934e979`）：`PROGRESS.md` 四段「上一轮…已完成」历史压进本表，删前先补上同日「插件线方向定稿」那一条（下文）；`PROGRESS.md` −51/+3。

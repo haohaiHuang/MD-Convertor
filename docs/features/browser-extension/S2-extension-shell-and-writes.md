@@ -2,7 +2,7 @@
 
 - 上游：`docs/features/browser-extension/FSD.md`（架构决定 §3.1、§3.3、§3.5）
 - 前置：S1 完成（`extension/src/convert/**` 纯函数已绿、`npm run build:extension` 可用）
-- 状态：**实施中 —— T2.0（事实探针）与 T2.1（外壳骨架）已完成**，T2.2 起待做
+- 状态：**实施中 —— T2.0–T2.3 已完成（T2.2 内容脚本 + T2.3 下载编排本轮落地）**，T2.4 起待做
 - feature_list id：`feat-040`
 
 ## Spec
@@ -28,7 +28,9 @@ type ConvertPayload = {
 type ConvertFailure = { type: "md-convertor:failed"; code: string; message: string };
 ```
 
-**落地偏差（T2.1）**：`ConvertRequest` **未实现** —— 注入后的实际流程是 content script 单向上报，SW 不需要向它发请求（FSD §3.3 的契约里保留这个概念类型只为说明信任方向）。另：`convert` 只在 `http(s)` 页面生效，其余协议直接回 `UNSUPPORTED_PAGE`。
+**落地偏差（T2.2）**：`extension/src/content.ts` 是在 T2.1 一次写完的（T2.1 的 RED 就是「无 content.js 产物」那次），所以 T2.2 的 `content.spec.ts` 前两条用例首次运行即绿 —— 这两条是**补证**，不是先写的失败测试。真正的 RED 只有第三条：从 SW 查 `file://` 标签页时 `chrome.tabs.query()` 回来的 `url` 是 `undefined`（无 host 权限时 URL 对扩展不可见），于是「按 URL 找 tab」的写法查不到目标，改成取最新标签页后转绿。第三条同时把「注入被拒」的可读化路径钉住了：`executeScript` 被拒 → `run()` 回 `{ ok: false, code: "INJECT_FAILED" }`，不是静默失败。
+
+**落地偏差（T2.3）**：① 等下载结束**用轮询 `search({ id })` 而不是监听 `onChanged`** —— 探针 2 说明下载可能在 `download()` resolve 之前就已结束，先挂监听再等会漏掉那一次事件；轮询顺带在同一次调用里拿到真实路径。② `run()` 成功时多回一个 `images: ImageOutcome[]`（配置 `saved`/`failed` 计数），T2.1 的 skeleton 断言由 `toEqual` 收窄为 `toMatchObject`。③ 编排的时钟与超时可注入（`RunOptions = { timers?, imageTimeoutMs? }`），否则「一张图永不结束」这条用例要真等 60 秒。④ 图片落盘路径必须是 `<原文标题>.images/<basename>`：`search()` 报的绝对路径拆出父目录名逐字比对，不符即按该图失败处理（探针 3）。
 
 4. **无手势注入**：SW 侧的 `run(tabId, deps)` 是唯一编排入口，`deps` 是 `chrome` 形状对象（`{ tabs, action, scripting, downloads, runtime }`）。生产 worker.ts 只做两件事：把真实 `chrome` 传进去、把结果写成角标。
 5. **注入 → 消息 → 编排**：注入 content.js 后，content 主动 `chrome.runtime.sendMessage(payload)`，SW 用 `sender.tab.id` 关联并带超时等待（10s）；content 报 `failed` 或超时 → 角标 `!` + 可读原因。
@@ -70,7 +72,7 @@ type ConvertFailure = { type: "md-convertor:failed"; code: string; message: stri
 export async function run(tabId: number, deps: ChromeDeps): Promise<RunResult>
 ```
 
-流程：注入 → 等 payload（10s 超时）→ `naming` 定 `dirName`/`mdName` → 图片按 4 并发下载（`conflictAction: "overwrite"`、`saveAs: false`、`filename: <dirName>/<n>-<slug>.<ext>`）→ `chrome.downloads.onChanged` 等结束 → `chrome.downloads.search({ id })` 核对真实 basename 与父目录名 → `rewriteImageReferences` → `writeMarkdown` → 返回 `{ ok, mdName, saved, failed }`。
+流程：注入 → 等 payload（10s 超时）→ `naming` 定 `dirName`/`mdName` → 图片按 4 并发下载（`conflictAction: "overwrite"`、`saveAs: false`、`filename: <dirName>/<n>-<slug>.<ext>`）→ 轮询 `chrome.downloads.search({ id })` 等结束并核对真实 basename 与父目录名 → `rewriteImageReferences` → `writeMarkdown` → 返回 `{ ok, mdName, saved, failed, images }`。
 
 错误分支一律返回**可读 code**：`UNSUPPORTED_PAGE` / `NO_ARTICLE` / `INJECT_FAILED` / `TIMEOUT` / `DOWNLOAD_FAILED`。
 
@@ -88,7 +90,7 @@ export async function run(tabId: number, deps: ChromeDeps): Promise<RunResult>
 
 ### 8. 打桩单测（`chrome.*` fake）
 
-`extension/src/worker-run.test.ts`：手写 `fakeChrome()`（可控的下载成功/失败/超时/`onChanged` 时序/`search` 返回不同 basename），断言：md 文本、失败标记、角标、并发上限（同时进行的 `download` 调用数 ≤ 4）。不装 sinon。
+`extension/src/worker-run.test.ts`：手写 `fakeChrome()`（可控的下载失败、下载永不完结、`search` 返回补过扩展名/父目录不符的 basename），断言：`saved`/`failed` 计数、失败后 md 仍写、并发上限（同时进行的 `download` 调用数 ≤ 4）。不装 sinon，也**不用 `onChanged`** —— 编排查询 `search({ id })`，等待由注入的 `timers` 推进。
 
 ## Tasks
 

@@ -56,7 +56,8 @@ test("the worker writes <title>.md for the injected page", async () => {
     );
   }, server.origin);
 
-  expect(result).toEqual({ ok: true, mdName: "示例文章标题.md" });
+  // The image in the fixture is a 404 on purpose: a failed image must not stop the markdown.
+  expect(result).toMatchObject({ ok: true, mdName: "示例文章标题.md", saved: 0, failed: 1 });
 
   const markdown = readFileSync(await waitForFile(downloadDir, "示例文章标题.md"), "utf8");
   expect(markdown).toContain("示例文章标题");
