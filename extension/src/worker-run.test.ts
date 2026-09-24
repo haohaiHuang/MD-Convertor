@@ -14,7 +14,7 @@ function payloadFor(count: number): ConvertPayload {
   return {
     type: ARTICLE_MESSAGE,
     title: "示例文章标题",
-    markdown: `正文\n\n![图](md-convertor-image-1)\n\n> 来源：https://example.com/a\n`,
+    markdown: `正文\n\n![图](md-convertor-image-1)\n\n补图 ![](md-convertor-image-2)\n\n> 来源：https://example.com/a\n`,
     images: Array.from({ length: count }, (_, index) => ({
       placeholder: `md-convertor-image-${index + 1}`,
       url: `https://example.com/images/${index + 1}.png`,
@@ -107,6 +107,10 @@ describe("run — image downloads", () => {
     expect(result).toMatchObject({ ok: true, mdName: MD_NAME, saved: 7, failed: 0 });
     expect(fake.stats.peakConcurrency).toBeLessThanOrEqual(4);
     expect(fake.requests.filter((request) => !request.url.startsWith("data:"))).toHaveLength(7);
+    // The written markdown points at the downloaded files and keeps no placeholder behind.
+    const markdown = fake.markdownWrites()[0];
+    expect(markdown).toContain(`(${DIR_NAME}/001-1.png)`);
+    expect(markdown).not.toContain("md-convertor-image-");
   });
 
   it("keeps the remaining images when one download fails and one never finishes", async () => {
@@ -122,6 +126,9 @@ describe("run — image downloads", () => {
     expect(result).toMatchObject({ ok: true, saved: 3, failed: 2 });
     // The markdown is written even when images fail — it just keeps the original URLs.
     expect(fake.markdownWrites()).toHaveLength(1);
+    const markdown = fake.markdownWrites()[0];
+    expect(markdown).toContain(`(${DIR_NAME}/001-1.png)`);
+    expect(markdown).toContain("<!-- 图片未下载：https://example.com/images/2.png -->");
   });
 
   it("uses the basename the browser actually reports, extension included", async () => {

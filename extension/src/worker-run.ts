@@ -1,4 +1,5 @@
 import { imageDirName, imageFileName, mdFileName } from "./convert/naming";
+import { rewriteImageReferences, type ImageOutcome } from "./references";
 import { isConvertFailure, isConvertPayload, type ArticleImage, type ConvertPayload } from "./messages";
 import { writeMarkdown, type DownloadedItem, type DownloadsApi } from "./write";
 
@@ -28,10 +29,6 @@ export type RunOptions = {
   timers?: Timers;
   imageTimeoutMs?: number;
 };
-
-export type ImageOutcome =
-  | { placeholder: string; path: string }
-  | { placeholder: string; url: string };
 
 export type RunResult =
   | { ok: true; mdName: string; saved: number; failed: number; images: ImageOutcome[] }
@@ -191,7 +188,7 @@ export async function run(tabId: number, deps: ChromeDeps, options: RunOptions =
 
   const mdName = mdFileName(message.title);
   try {
-    await writeMarkdown(deps.downloads, mdName, message.markdown);
+    await writeMarkdown(deps.downloads, mdName, rewriteImageReferences(message.markdown, images));
   } catch (error) {
     return { ok: false, code: "DOWNLOAD_FAILED", message: errorText(error) };
   }

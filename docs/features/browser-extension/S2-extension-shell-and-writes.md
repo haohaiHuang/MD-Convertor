@@ -2,7 +2,7 @@
 
 - 上游：`docs/features/browser-extension/FSD.md`（架构决定 §3.1、§3.3、§3.5）
 - 前置：S1 完成（`extension/src/convert/**` 纯函数已绿、`npm run build:extension` 可用）
-- 状态：**实施中 —— T2.0–T2.3 已完成（T2.2 内容脚本 + T2.3 下载编排本轮落地）**，T2.4 起待做
+- 状态：**实施中 —— T2.0–T2.4 已完成（T2.4 引用回写本轮落地并接入 `run()`）**，T2.5 起待做
 - feature_list id：`feat-040`
 
 ## Spec
@@ -39,6 +39,8 @@ type ConvertFailure = { type: "md-convertor:failed"; code: string; message: stri
 8. **不做保活**：并发上限降到 4，超时 60s；真被打断再加（FSD §6）。
 
 **非目标**：popup、右键菜单、预览、改文件名、翻译、图标（工具栏先显示浏览器默认拼图图标，需要专属图标时另开一轮）、`extension/dist/` 之外的产物。
+
+**落地偏差（T2.4）**：① 替换的是**占位符词本身**而不是 `](…)` 外壳（理由见 Plan §5）—— 于是「相似文本不被误替换」这条用例保护的是**占位符前缀**（`md-convertor-image-1` 不能命中 `md-convertor-image-10`），而不是 md 的链接形式。② 实现第一版把前瞻写反了（`(?![^\p{L}\p{N}])` 变成「后面必须是字母数字」），RED 首次真失败是 4 failed / 1 passed（唯一通过的是「占位符没出现 ⇒ 原样返回」），改正为 `(?![\p{L}\p{N}])` 后 5 passed。③ 接线断言（`run()` 写出的 md 里没有占位符）最初按 `![](...)` 写，但 payload 的图带 alt 文字、真实形态是 `![图](...)`；那次 RED 是真失败（失败信息里 md 仍是 `md-convertor-image-1`，正好证明接线前没有回写），随后把断言放宽为 `(...)`。
 
 ## Plan
 
@@ -78,11 +80,13 @@ export async function run(tabId: number, deps: ChromeDeps): Promise<RunResult>
 
 ### 5. `extension/src/references.ts`（纯函数）
 
-`rewriteImageReferences(markdown, plans: { placeholder, outcome }[])`：成功 → `![](dirName/实际文件名)`；失败 → `![](原始 URL)` + 下一行 `<!-- 图片未下载：<url> -->`；未出现的占位符原样保留（便于发现 bug）。只替换精确的 `](md-convertor-image-N)` 形式，正文里普通文本不受影响（有专门用例）。
+`rewriteImageReferences(markdown, plans: ImageOutcome[])`，`ImageOutcome = { placeholder, path } | { placeholder, url }`：成功 → `![alt](dirName/实际文件名)`；失败 → `![alt](原始 URL)` + **下一行**独立注释 `<!-- 图片未下载：<url> -->`；未出现的占位符原样保留（便于发现 bug）。
+- 替换的是**占位符词本身**（不加 `](…)` 外壳），所以 md 里形式变化也照样成立；一次替换后长占位符不会被短占位符吃掉：`md-convertor-image-1` 用 `(?!\p{L}|\p{N})` 前瞻，不会命中 `md-convertor-image-10`（有专门用例）。
+- 失败注释**按「行 × 失败占位符」各一条**：同一占位符一行出现两次只加一条注释，同一行两个不同失败图各加一条。
 
 ### 6. `extension/src/write.ts`
 
-`writeMarkdown(deps, dirName, mdName, markdown)` → data URL（`data:text/markdown;charset=utf-8,` + `encodeURIComponent`）+ `chrome.downloads.download({ filename: <mdName>, conflictAction: "overwrite" })`；探针实测 2 MiB 通过。
+`writeMarkdown(downloads, mdName, markdown)` → data URL（`data:text/markdown;charset=utf-8,` + `encodeURIComponent`）+ `chrome.downloads.download({ filename: <mdName>, conflictAction: "overwrite" })`；探针实测 2 MiB 通过。（T2.1 落地时写成了现在这个形状：`dirName` 不传，md 永远写下载根目录，图片才进 `<标题>.images/`。）
 
 ### 7. `extension/src/worker.ts`
 
@@ -100,7 +104,7 @@ export async function run(tabId: number, deps: ChromeDeps): Promise<RunResult>
 | T2.1 | manifest + 消息契约 + 注入链路骨架（happy path 写 md） | `extension/tests/skeleton.spec.ts`：加载扩展 → `serviceWorker.evaluate(() => run(tabId))` → 下载目录出现 `<标题>.md` ⇒ 先 failed（无 manifest/无产物） | 端到端最小路径通（先不要求图片与回写） | `npm run test:extension -- -g skeleton` |
 | T2.2 | content script：接入核心、失败可读化 | `extension/tests/content.spec.ts`：fixture 页 → payload 字段完整；`no-article` 页 → `failed/NO_ARTICLE`；`file://` 页 → `UNSUPPORTED_PAGE`（或注入被拒可读化）⇒ 先 failed | chromium 全绿 | `npm run test:extension -- -g content` |
 | T2.3 | 下载编排（并发 4、等待、overwrite、60s 超时、真实文件名核对） | `worker-run.test.ts`：7 张图 + fake chrome ⇒ 断言并发峰值 ≤ 4；1 张失败/1 张超时 ⇒ 其余仍然完成；`search` 返回补过扩展名的 basename ⇒ 引用用真实名；父目录名不符 ⇒ 该图按失败处理 ⇒ 先 failed | 全绿 | `npx vitest run extension/src/worker-run.test.ts` |
-| T2.4 | 引用回写纯函数 | `references.test.ts`：成功/失败/未出现占位符/正文含相似文本（不被误替换）/同一占位符出现两次 ⇒ 先 failed | 全绿 | `npx vitest run extension/src/references.test.ts` |
+| T2.4 | 引用回写纯函数 | `references.test.ts`：成功/失败/未出现占位符/正文含相似文本（不被误替换）/同一占位符出现两次 ⇒ 先 failed ✅（首跑 5 条全 failed：模块不存在；修掉被写反的前瞻后 4 failed → 1 passed 是真断言失败，见 §3 偏差） | 全绿（5 passed） | `npx vitest run extension/src/references.test.ts` |
 | T2.5 | md 写盘（data URL、UTF-8、overwrite、中文文件名） | `write.test.ts`：mock `downloads` 断言 `filename` 是相对路径、URL 是可解析的 data URL、中文内容解码后逐字节相同 ⇒ 先 failed | 全绿 | `npx vitest run extension/src/write.test.ts` |
 | T2.6 | 反馈：角标与工具提示 | `worker-run.test.ts` 扩：成功 → `✓` + 标题含张数；部分失败 → `!` + 标题含「N 张图未下载」；提取失败 → `!` + 原因；4s 后清空（用注入时钟）⇒ 先 failed | 全绿 | 同上 |
 | T2.7 | 打桩单测矩阵收口 | 覆盖 `INJECT_FAILED` / `TIMEOUT` / `DOWNLOAD_FAILED` / 特权页 / 提取失败五条失败路径 ⇒ 先 failed | 五条全绿，`coverage` 中 `worker-run.ts`、`references.ts`、`write.ts` 达阈值 | `npm run test:coverage` |
