@@ -4,9 +4,9 @@
 
 - Last updated: 2026-09-24（第九轮：**T3.4 人工验收 6 条全部通过，`feat-040` 已置 `done` 并关闭**；PRODUCT/README 双语补上插件入口）
 - Current version: `0.3.6`，**已发布**为 GitHub Release `v0.3.6`（`package.json`、`package-lock.json`、`feature_list.json`、`scripts/release-desktop.mjs` 均为 `0.3.6`；产物 235,956,668 bytes / SHA-256 `9b89d55c…f351`；已装到本机 `/Applications`）。**本轮不动桌面代码，所以不 bump 到 `0.3.7`**（bump 只由桌面代码改动触发；插件版本自管，`extension/manifest.json` 仍是 `0.1.0`）
-- Active feature: **无** —— `feat-040` 浏览器插件（B）已于 2026-09-24 **置 `done`**（S1/S2/S3 完成，T3.4 人工验收 6 条全过）；`feature_list.json` 里已无 `in-progress` 项。下一个待办是 A 桌面端「文档处理」（`feat-042`，`planned`，需先走一轮规划）。提交均在本地未 push。（`feat-041` 已完成、已发布、已关闭）
+- Active feature: **无** —— `feat-040` 浏览器插件（B）已于 2026-09-24 **置 `done`**（S1/S2/S3 完成，T3.4 人工验收 6 条全过）；`feature_list.json` 里已无 `in-progress` 项。下一个待办是 A 桌面端「文档处理」（`feat-042`，`planned`，需先走一轮规划）。插件线全部提交已推送到 GitHub（`335e0d4`）。（`feat-041` 已完成、已发布、已关闭）
 - Next step: **给 A 桌面端「文档处理」（`feat-042`）走一轮规划**（其 PRD 在 `docs/PRD-app-document-processing.md`，尚无阶段文档；`docs/PLAN-browser-extension.md` §6 的四组规则已于 2026-09-24 裁定，可直接引用）。另有一条陈旧待办：云端 Provider 端到端实测仍需用户用真实文章走一遍（与 feat-041 无关）。桌面端本轮**仍是 0.3.6 已发布状态**，要动 `src/` / `electron/` 前先 bump 到 `0.3.7` 并同步版本面。
-- Branch: `main`；stash@{0} 是 2026-09-21 拉取前的文档备份、与当前工作无关
+- Branch: `main`，**与 `origin/main` 同步（B 插件整条线路已于 2026-09-24 推送，`24bf00f` → `335e0d4`）**；stash@{0} 是 2026-09-21 拉取前的文档备份、与当前工作无关
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+（桌面产物）；浏览器插件另行验收于 Chromium，不进桌面发布门禁
 
 ## 本轮（2026-09-24 第九轮：T3.4 全部通过，feat-040 关闭）已完成

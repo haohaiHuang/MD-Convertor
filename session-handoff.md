@@ -6,7 +6,7 @@
 - Active feature: **无** —— `feat-040` 浏览器插件（B）已于 2026-09-24 **置 `done` 并关闭**：S1（转换核心）、S2（扩展外壳与写盘，T2.0–T2.8）、S3（端到端集成与文档收口，T3.0–T3.6）全部完成，**T3.4 真机人工验收 6 条全过**（含第 5 条：40 图长文未被 MV3 休眠打断，故 FSD §6 预留的 20s 心跳保活**未落地**，`worker-run.ts` 未动，并发上限仍是 4）。已交付：`extension/src/convert/` 六个纯函数模块 + `extension/src/{messages,content,write,worker-run,worker,references}.ts` + `extension/manifest.json` + `extension/tests/fixtures/{server.ts,server.test.ts}` + `extension/tests/integration.spec.ts`（5 条，读磁盘真实文件），`npm run build:extension` 产出 `extension/dist/` 恰好三份（`manifest.json` / `content.js` / `worker.js`），`npm run test:extension` 15 passed。阶段文档在册：`docs/features/browser-extension/`（`FSD.md` + `S1`/`S2`/`S3`）。`feat-042`（A 桌面端文档处理）仍为 `planned`，**已与本块解耦：无顺序依赖、无代码依赖**
 - **唯一推荐下一步**：给 A 桌面端「文档处理」（`feat-042`）**先走一轮规划**（它的 PRD 是 `docs/PRD-app-document-processing.md`，尚无阶段文档；`docs/PLAN-browser-extension.md` §6 的四组规则已于 2026-09-24 裁定，可直接引用）。插件线已关闭，除非用户明确要求，不必再碰 `extension/`。RED/GREEN 与门禁证据在 `feature_list.json` 的 `feat-040.verification`（35 条）。**不要**顺手改桌面端、**不要**把 0.3.6 bump 到 0.3.7、**不要**跑 `desktop:release`、**不要** push
 - Pending（无一是阻塞项）：① 云端 Provider 端到端实测（用户真实文章走一遍「拉取模型 → 选模型 → 翻译」）；② 真机小点清单（等用户给）；③ `0.3.1`–`0.3.6` 的产物与 tag 一律不动，缺失项按退役处理；④ 签名/notarization 不做（QA-008 accepted）；⑤ UI 评审结论勿重提（全部不整改）；⑥ `stash@{0}` 是 2026-09-21 拉取前的文档备份、与当前工作无关；⑦ 可选：在 Terminal 里跑一次**规范**的打包冒烟（Chromium 沙箱开启）—— 本 agent 沙箱内只能以 `--no-sandbox --disable-gpu` 取证，属环境限制；⑧ ~~PROGRESS.md 瘦身~~ **已完成（2026-09-24，提交 `934e979`）**
-- Branch: `main`；**本地提交后不 push** —— 用户明确要求 GitHub 等大阶段完成再推（S1 提交止于本地）；发布历史：`v0.3.6` = `3578822`（feat-041 默认 MD 保存路径，asar 253 → 10 条目，Latest）、`v0.3.5` = `5f98307`（feat-039 + 清空按钮归位）、`v0.3.4` = `e251267`（图标 v2）、`v0.3.3` = `3897cd1`（feat-034）、`v0.3.2` = `1c3ed80`（feat-033）、`v0.3.1` = `af7f6db`（feat-031/032）；`v0.1.3` = `ce041c9`（不可变历史锚点）
+- Branch: `main`，**与 `origin/main` 同步** —— B 插件整条线路（S1/S2/S3 + 验收记录）已于 2026-09-24 推送（`24bf00f` → `335e0d4`，16 个提交）；此前用户要求「GitHub 等大阶段完成再推」，这个阶段就是那个点。发布历史：`v0.3.6` = `3578822`（feat-041 默认 MD 保存路径，asar 253 → 10 条目，Latest）、`v0.3.5` = `5f98307`（feat-039 + 清空按钮归位）、`v0.3.4` = `e251267`（图标 v2）、`v0.3.3` = `3897cd1`（feat-034）、`v0.3.2` = `1c3ed80`（feat-033）、`v0.3.1` = `af7f6db`（feat-031/032）；`v0.1.3` = `ce041c9`（不可变历史锚点）
 
 - **本文件只写现役状态**（目标 ≤150 行 / ≤25KB，2026-09-24 起）：阶段之间的交接写对应阶段文档的 `## Handoff`（如 `docs/features/browser-extension/S1-convert-core.md`），轮次历史压进 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`，不再留在本文件。
 
@@ -26,10 +26,10 @@ A 桌面端「文档处理」（feat-042）**走一轮规划**——先读它的
   feat-040 本轮关闭，feat-042（A 桌面端文档处理）仍是 planned、无顺序与代码依赖。
 - 桌面端自 0.3.6 后一行未改 —— 因此一动 src/ / electron/ / 打包配置就必须先 bump 到 0.3.7
   并同步版本面（package.json、package-lock.json、feature_list.json、scripts/release-desktop.mjs）。
-- 本地有未 push 的提交（origin/main 停在 24bf00f）；用户明说 GitHub 等大阶段完成再推。
+- 工作树干净、与 origin/main 同步（B 线路已推送）；新改动照常先本地提交，推不推听用户安排（上一阶段是攒到做完才推）。
 
 硬约束：
-- **只提交到本地、不 push**。
+- **提交信息用中文**（仓库惯例）；推送到 GitHub 前先跑提交门（ponytail → code-review → neat-freak），未经用户确认不推。
 - **TDD 与诚实标注**：每个任务先 RED 再实现；先实现后补测的必须标「补证」，不许谎报 RED
   （S2、S3 都有先例，照它们的写法）。
 - **只动当前 feature 需要的文件**：用户两轮都明确要求过不要顺手做范围外的事
@@ -87,7 +87,7 @@ S2「决策记录」与 FSD「安全边界」）：isAbsoluteDirPath 不要收�
 
 ## Recommended Next Action
 
-**`feat-040`（B 浏览器插件）已关闭**：S1/S2/S3 全部完成，T3.4 真机人工验收 6 条全过（2026-09-24），`feature_list.json` 已置 `done`，`activeFeature` 现为 `null`。`feat-041` / `0.3.6` 亦已收口（已过门禁、已装本机、已发布为 GitHub Release）。
+**`feat-040`（B 浏览器插件）已关闭并推送**：S1/S2/S3 全部完成，T3.4 真机人工验收 6 条全过（2026-09-24），`feature_list.json` 已置 `done`，`activeFeature` 现为 `null`；整条线路已 push 到 `origin/main`（`335e0d4`）。没有、也不该有插件 Release —— 插件以「加载已解压」交付，不上架、不产出 ZIP。`feat-041` / `0.3.6` 亦已收口（已过门禁、已装本机、已发布为 GitHub Release）。
 
 **唯一推荐下一步：给 `feat-042`（A 桌面端「文档处理」）走一轮规划** —— 读 `docs/PRD-app-document-processing.md` 与 `docs/PLAN-browser-extension.md`，把 Spec/Plan/Tasks 定下来再开工。它与已关闭的 B 无顺序、无代码依赖。
 
