@@ -280,6 +280,15 @@ Approved for personal testing. Not approved for frictionless public distribution
 
 ## Archived Round Log
 
+### 2026-09-30（第二十四轮）—— 提交门四条「只报未改」的处置（1 条修 / 3 条判不改）
+
+- 用户问「只报不改这四条，影响大吗？要修正吗」，答复后指示「改吧」：只改第 2 条，其余三条**刻意不改**并在此留档，避免下轮评审重提。
+- ① `withoutTrailingSlash` 丢 `|| "/"`：**误报，且照改会出错**。抽取前后逐字相同（旧 `client.ts` 就是 `replace(/\/+$/, "")`），全仓 `|| "/"` 零命中；实算六个调用点，加守卫会把 `processedOutputDir("/")` 变成 `"//processed"`、`joinDocPath("/","x.md")` 变成 `"//x.md"`。判：不改。
+- ② `tests/desktop-server-scope.test.mjs` 的 `if (!prepared) return;`：**真问题，已修**。`desktop:release` 里 `init.sh` 跑在 `desktop:make` 之前，本轮又清过 `.desktop`，所以那 5 条「keeps …」什么都没查就报绿。RED：无 `.desktop` 时该文件 **17 passed / 1 skipped**；改为 `describe.skipIf(!prepared)` 后 → **13 passed / 5 skipped**（诚实），有真产物时 **18 passed**（真检查在跑）。两条「never allows」不是同义反复——裸 checkout 下它们是该文件唯一在跑的守卫——保留。
+- ③ `tests/secrets-smoke-payload.test.ts` 的文本级 `indexOf`：不改。它守的是只在真机打包冒烟里走的路径（需 Electron + 钥匙串，`init.sh` 进不去），要变强须在生产 `electron/main.mjs` 抽纯函数；已知弱点只是「变量改名误红」与「文件里先前多一个 PUT 调用会指错」，不涉安全 / 数据丢失。
+- ④ ponytail 3 处可删项：不改（`DESKTOP_SERVER_SCOPE`/`REQUIRED_FILES` 把契约放在清单旁边、删了只是搬家；`joinDocPath` 是有名字的意图；e2e 重复的 marker JSON 模板无行为影响）。
+- 门禁：`NODE_OPTIONS= ./init.sh` exit 0（95 files / 1270 tests）。**纯测试改动，不 bump 版本、不发新版**（`src/` / `electron/` / 打包配置均未动）。
+
 ### 2026-09-30（第二十三轮）—— 提交门 + `0.3.8` 提交 / 发布
 
 - 用户指令：「那就无所谓，commit、push 加提交 release 到 Github吧」——接受「下载后可能被 Gatekeeper 拦」的既有结论（QA-008），直接走提交门 + 发布。

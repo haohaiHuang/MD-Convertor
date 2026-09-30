@@ -5,7 +5,7 @@
 - Current version: **`0.3.8`（本轮发布）**——版本面（`package.json` / `package-lock.json` / `feature_list.currentVersion` / `scripts/release-desktop.mjs` / release-guards fixture）已按 TDD 推到 `0.3.8`，GitHub Release `v0.3.8` 已发布；**产物字节数与 SHA-256 见 `docs/TESTING.md` 的 `## Gated Artifact (0.3.8)`**（本文件不重复记录以免漂移）。上一个已发布版本 `0.3.7`（2026-09-30，239,472,776 bytes / `6986356b…733c`）。未签名/未 notarize（个人测试定位，QA-008 accepted）。
 - **本机 `/Applications/MD-Convertor.app` 仍是第二十一轮的本地构建**（0.3.7 的名字 + 修复）；第二十二轮收窄后的构建只在 `out/`，**本轮没有重装**——装不装由用户定。
 - Active feature: **无**。`feat-042`（A 桌面端「文档处理」）2026-09-30 置 `done` 并随 `0.3.7` 发布：S1–S4 全绿 + 12 条真机验收由用户签字（阶段文档 `docs/features/app-document-processing/`，逐任务 RED/GREEN 在 `feature_list.json` 的 `feat-042.verification`）。关键不变量：两个 `/api/local-docs/*` **只读不写盘**，**唯一写盘出口是 `outputBridge().saveFile()`**。`feat-040`（B 插件）同日关闭，两者无代码依赖。`0.3.8` 没有新增 feature，内容是第二十一轮修复 + 第二十二轮打包收窄。
-- **唯一推荐下一步：等用户裁决三件事**——① 是否把 `0.3.8` 装上本机 `/Applications`（属另一轮）；② 是否让 `extension/` 写方 percent-encode 文件名（B1 只修了读方）；③ 云端 Provider 端到端实测（需真实文章，唯一没被真人走完的主干路径）。**不要重写第二套批量编排或第二条写盘路径**；**再次发布任何版本都要用户单独授权**；**提交门的三条「只报未改」不要顺手修**（见 Recommended Next Action）。
+- **唯一推荐下一步：等用户裁决三件事**——① 是否把 `0.3.8` 装上本机 `/Applications`（属另一轮）；② 是否让 `extension/` 写方 percent-encode 文件名（B1 只修了读方）；③ 云端 Provider 端到端实测（需真实文章，唯一没被真人走完的主干路径）。**不要重写第二套批量编排或第二条写盘路径**；**再次发布任何版本都要用户单独授权**；**提交门的四条「只报未改」已在第二十四轮处置完毕**（1 修 / 3 判不改，见 Recommended Next Action）。
 - Pending（无一是阻塞项）：① 产物与 tag 一律不动，缺失项按退役处理；② 签名/notarization 不做；③ UI 评审结论勿重提；④ 打包冒烟第二十一轮已在**新装包**上实测通过，无需重验；⑤ **六条未裁决 flake**（列在 Environment Notes）；⑥ 打包镜像已收窄（第二十二轮，白名单 + 守卫测试）——**真正的价值是包的大小不再取决于工作树**，体积只小 3.24 MB。
 - Branch: `main`，本轮把第二十一、二十二轮改动连同版本面一起提交（`6e00474`）并打 tag `v0.3.8`（已 push，Release 为 latest）；tag `v0.3.7` 仍指 `9afbe36`；stash 空。发布历史见 `docs/QUALITY-AUDIT.md`；`v0.1.3` = `ce041c9` 是不可变历史锚点。
 
@@ -70,7 +70,9 @@
 
 ## Latest Change
 
-**本轮（2026-09-30 第二十三轮）**：用户「commit、push 加提交 release 到 GitHub」⇒ 先走提交门（ponytail / code-review 双轴 / neat-freak 四路只读评审，**0 硬违规**），按评审只改台账与版本面（生产代码一行未动，与第二十轮先例一致），再发布。① **版本面 bump（TDD）**：`release-guards.test.mjs` 期望改 `0.3.8` ⇒ RED（`expected 'Release version must be 0.3.7.' to contain '0.3.8'`）⇒ 改 `package.json` / `package-lock.json`(2) / `feature_list.currentVersion` / `release-desktop.mjs`(2) ⇒ 又暴出 fixture 默认版本写死（5 failed）⇒ **把 fixture 默认值改为从 `RELEASE_VERSION_ERROR` 派生**（`CURRENT_RELEASE_TARGET`）⇒ GREEN **30 passed**。② `CHANGELOG.md`/`.zh.md` 的 `[Unreleased]` 改名 `[0.3.8] - 2026-09-30`（zh 的 `### Fixed` 一并正名为 `### 修复`）并补打包收窄条目。③ `./init.sh` 95 files / 1270 tests 全绿 ⇒ 清 `out/` + `.desktop/` 后跑 `desktop:release` **exit 0**（e2e 312 passed / 6 skipped、live 2 passed、产物 236,224,675 bytes / SHA-256 `94624625…b2ea`）⇒ 提交 `6e00474` → push → tag `v0.3.8` → `gh release create … --latest`（非草稿非预发布、服务端 digest 一致）。**未**把 ZIP 拷进归档目录（release guard 会拒）。④ **提交门的三条「只报未改」**：`withoutTrailingSlash` 丢掉 `"/"` 分支（根目录 → `""`，无测试）、`tests/desktop-server-scope.test.mjs` 两条近同义反复断言 + `if (!prepared) return;`、`tests/secrets-smoke-payload.test.ts` 的文本级 `indexOf` 守卫；另有 ponytail 的 3 处装饰性可删项。
+**本轮（2026-09-30 第二十四轮）**：用户问「只报不改这四条，影响大吗？要修正吗」→ 逐条给证据后用户说「改吧」，于是**只改第 2 条**：① `withoutTrailingSlash` 丢 `|| "/"` 是**误报**（抽取前后逐字相同，全仓零命中；实算六个调用点，加守卫反而把 `processedOutputDir("/")` 变成 `"//processed"`、`joinDocPath` 变成 `"//x.md"`）——不改；② `tests/desktop-server-scope.test.mjs` 的 `if (!prepared) return;` 会**静默假绿**（`desktop:release` 里 `init.sh` 跑在 `desktop:make` 之前，那 5 条 `keeps …` 什么都没查就算通过）—— TDD 修：RED 无 `.desktop` 时 **17 passed / 1 skipped** ⇒ 产物检查收进 `describe.skipIf(!prepared)` ⇒ GREEN 无 `.desktop` **13 passed / 5 skipped**、有真产物 **18 passed**；③ 文本级 `indexOf` 守卫不改（要变强须在生产 `electron/main.mjs` 抽纯函数，为只在真机冒烟里跑的路径不划算）；④ ponytail 3 处可删项不改（纯装饰）。门禁 `./init.sh` **95 files / 1270 tests** exit 0；纯测试改动，**不 bump 版本、不发新版**。
+
+**上一轮（2026-09-30 第二十三轮）**：用户「commit、push 加提交 release 到 GitHub」⇒ 提交门（四路只读评审，0 硬违规）后只改台账与版本面，版本面按 TDD 推到 `0.3.8`（RED 5 failed → GREEN 30 passed，fixture 默认值改为从 `RELEASE_VERSION_ERROR` 派生）⇒ 清树跑 `desktop:release` exit 0 ⇒ 提交 `6e00474` → push → tag `v0.3.8` → `gh release create --latest`。逐条报告见 `docs/QUALITY-AUDIT.md` 第二十三轮条目与 `docs/TESTING.md` 的 `## Gated Artifact (0.3.8)`。
 
 **上一轮（第二十二轮）**：**打包镜像收窄为白名单** —— `scripts/prepare-desktop.mjs` 不再整目录 `cp` `.next/standalone` 那份仓库镜像，改按 `scripts/desktop-server-entries.mjs` 的白名单逐项拷贝；`tests/desktop-server-scope.test.mjs`（真产物）+ `scripts/prepare-desktop.test.mjs`（fixture）钉住。**省的是卫生与确定性，不是体积**（镜像里那批仓库目录只有 ~8 MB；真正价值＝ build 时 `out/` 829 M 在场、`.next/standalone` 镜像到 1.17 GB 而 `.desktop/server` 仍稳定 288 MiB）。可移植性已在本机实测：空 HOME / 无 playwright 缓存 / **把仓库目录改名**后冒烟仍通过。第二十一轮（全选不改已处理行、`force` 口径按实现定稿、删死分支与 3 处可删项、修打包冒烟 `defaults` 回灌）与第二十轮（0.3.7 发布）逐条见 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`。
 
@@ -94,7 +96,7 @@
 ## Next Stage Entry
 
 - 当前 `activeFeature` = **无**。`feat-042`（A 桌面端「文档处理」）2026-09-30 已 `done` 并随 `0.3.7` 发布（S1–S4 全绿 + 12 条真机验收签字）；`feat-024` – `feat-041` 均 done。版本面 `0.3.8`（**本轮已发布**）。
-- 下一轮入口：**由用户指定**。候选（均需单独授权）：把 `0.3.8` 装到本机、`extension/` 写方 percent-encode、云端 Provider 实文实测、提交门的三条「只报未改」。**没有强制项**；别再为已关闭的验收写自动化替代品。
+- 下一轮入口：**由用户指定**。候选（均需单独授权）：把 `0.3.8` 装到本机、`extension/` 写方 percent-encode、云端 Provider 实文实测。**没有强制项**；别再为已关闭的验收写自动化替代品；提交门的四条「只报未改」已处置完毕，不再作为候选项。
 - 每轮开头固定读：`PROGRESS.md` → `session-handoff.md` → `feature_list.json` → 相关 `docs/`（涉及翻译行为时先读 `docs/PRD-translation.md`），然后跑 `./init.sh` 建立基线。
 - 全部阶段文档（已完成入口）：`docs/features/translation/S1-settings-infra.md` 至 `S6-release-and-docs.md`；各文档的 Handoff 已写入下一阶段所需的真实接口与边界。
 
@@ -126,7 +128,7 @@
 
 **待用户裁决（都可以否决）**：
 
-1. **提交门的三条「只报未改」**（本轮评审提出，**不要顺手修**）：① `src/lib/local-docs/batch.ts` 的 `withoutTrailingSlash` 丢掉了 `|| "/"` 分支 ⇒ 根目录 `/` 变成 `""`（行为变化、无测试，Standards 与 Spec 两轴都提）；② `tests/desktop-server-scope.test.mjs` 有两条近同义反复的「never allows」断言 + `if (!prepared) return;` 会静默通过而不是 skip；③ `tests/secrets-smoke-payload.test.ts` 是文本级 `indexOf` 源码守卫（弱、脆）；④ ponytail 的 3 处装饰性可删项（`scripts/desktop-server-entries.mjs` 里 3 个只被测试用的导出、`client.ts:56` 的 `joinDocPath` 单调用包装、`e2e/local-docs.spec.ts` 里重复的 marker JSON 模板）。
+1. **提交门四条「只报未改」——已在第二十四轮处置完毕，不要再重开**：① `withoutTrailingSlash` 的 `|| "/"` 是**误报且修复会引入双斜杠**；② `desktop-server-scope.test.mjs` 的静默假绿**已按 TDD 修为 `describe.skipIf`**（裸 checkout 报 `13 passed / 5 skipped`）；③ 文本级 `indexOf` 守卫**已判不改**（要变强须改生产 `electron/main.mjs`，不值）；④ ponytail 3 处装饰性可删项**已判不改**。判断依据逐条在 `docs/QUALITY-AUDIT.md` 第二十四轮条目；评审再提请指向那里，**不要重开**。
 2. **`extension/` 写方 percent-encode 文件名**（B1 只修了读方，需单独授权）。
 3. **云端 Provider 端到端实测**（真实文章走一遍「拉取模型 → 选模型 → 翻译」，唯一没被真人走完的主干路径）。
 4. **在 Terminal 里跑一次规范打包冒烟**（`ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1`，沙箱开启；agent 沙箱内只能 `--no-sandbox --disable-gpu` 取证）。

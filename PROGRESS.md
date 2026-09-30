@@ -2,14 +2,23 @@
 
 ## Current State
 
-- Last updated: 2026-09-30（**第二十三轮：提交门 + 版本面推进到 `0.3.8` + 发布 + 收窄收口**——第二十一、二十二轮改动经四路只读评审后落地并提交；版本面（`package.json` / `package-lock.json` / `feature_list.currentVersion` / `release-desktop.mjs` / release-guards fixture，fixture 已改为从错误串派生）按 TDD 推到 `0.3.8`（RED 5 failed → GREEN 30 passed）；跑 `desktop:release` 后打 tag 并发布 GitHub Release。细节见下）
+- Last updated: 2026-09-30（**第二十四轮：提交门四条「只报未改」处置**——1 条真问题按 TDD 修（`desktop-server-scope` 的静默假绿 → `describe.skipIf`），3 条逐条给证据后**故意不改**并入档 QUALITY-AUDIT。纯测试改动，未 bump 版本、未发新版。上一轮见下）
 - Current version: `0.3.8`（**本轮已发布**，GitHub Release `v0.3.8`，tag 指向 `6e00474`；产物 **236,224,675 bytes** / SHA-256 `94624625…b2ea`，详表见 `docs/TESTING.md` 的 `## Gated Artifact (0.3.8)`）。上一个已发布版本 `0.3.7`（2026-09-30，239,472,776 bytes / `6986356b…733c`）；**本机 `/Applications/MD-Convertor.app` = 第二十一轮构建**（第二十二轮收窄后的构建仍只在 `out/`）
 - Active feature: **无**。`feat-042`（A 桌面端「文档处理」）已于 2026-09-30 置 `done` 并随 `v0.3.7` 发布（S1–S4 + 12 条真机验收签字）；`feat-040`（B 浏览器插件）同日关闭；`feat-041` 已完成、已发布、已关闭。**本轮的 0.3.8 没有新增 feature**，内容是第二十一轮修复 + 第二十二轮打包收窄。
 - Next step: **等用户裁决三件事**。① 是否把 `0.3.8` 装上本机 `/Applications`（第二十二轮收窄后的构建仍在 `out/`，属另一轮）；② 是否让 `extension/` 写方 percent-encode 文件名（B1 只修了读方）；③ 云端 Provider 端到端实测（需真实文章）。**不要重写第二套批量编排或第二条写盘路径**；**再次发布任何版本都要用户单独授权**。
 - Branch: `main`，本轮把第二十一、二十二轮改动连同版本面一起提交（`6e00474`）并打 tag `v0.3.8`（已 push）；tag `v0.3.7` 仍指 `9afbe36`，stash 列表为空。发布后的簿记提交记录 digest / SHA / 台账（见 `docs/TESTING.md` 与 `docs/QUALITY-AUDIT.md`）。
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+（桌面产物）；浏览器插件另行验收于 Chromium，不进桌面发布门禁
 
-## 本轮（2026-09-30 第二十三轮：提交门 + `0.3.8` 提交/发布）
+## 本轮（2026-09-30 第二十四轮：提交门四条「只报未改」的处置）
+
+- **用户问**：「只报不改这四条，影响大吗？要修正吗」→ 逐条给证据后用户指令「改吧」。**只改第 2 条**，其余三条刻意不改并写进 `docs/QUALITY-AUDIT.md` 第二十四轮条目（避免下轮评审重提）。
+- **① `withoutTrailingSlash` 丢 `|| "/"` —— 误报，照改会出错**（不改）：抽取前后逐字相同（旧 `client.ts` 就是 `replace(/\/+$/, "")`），全仓 `|| "/"` 零命中；实算六个调用点，加守卫会把 `processedOutputDir("/")` 变成 `"//processed"`、`joinDocPath("/","x.md")` 变成 `"//x.md"`。
+- **② `tests/desktop-server-scope.test.mjs` 静默假绿 —— 真问题，已修（TDD）**：`desktop:release` 里 `init.sh` 跑在 `desktop:make` 之前，本轮又清过 `.desktop`，所以那 5 条「keeps …」什么都没查就报绿。RED：无 `.desktop` 时该文件 **17 passed / 1 skipped** ⇒ 改为把产物相关检查放进 `describe.skipIf(!prepared)` ⇒ GREEN：无 `.desktop` **13 passed / 5 skipped**，有真产物 **18 passed**。两条「never allows」保留（裸 checkout 下是该文件唯一在跑的守卫）。
+- **③ `secrets-smoke-payload.test.ts` 文本级 `indexOf`（不改）**：它守的路径只在真机打包冒烟里走（需 Electron + 钥匙串，`init.sh` 进不去），要变强须在生产 `electron/main.mjs` 抽纯函数；弱点只是「变量改名误红 / 文件里先前多一个 PUT 调用会指错」，不涉安全与数据丢失。
+- **④ ponytail 3 处可删项（不改）**：`DESKTOP_SERVER_SCOPE`/`REQUIRED_FILES` 把契约放在清单旁边（删了只是搬家）、`joinDocPath` 是有名字的意图、e2e 重复 marker JSON 模板无行为影响。
+- **门禁**：`NODE_OPTIONS= ./init.sh` exit 0（**95 files / 1270 tests**）。**纯测试改动：不 bump 版本、不发新版**（`src/` / `electron/` / 打包配置均未动）；`.desktop` 已还原（`out/` 里的 0.3.8 产物未受影响）。
+
+## 上一轮（2026-09-30 第二十三轮：提交门 + `0.3.8` 提交/发布）
 
 - **用户指令**：「那就无所谓，commit、push 加提交 release 到 GitHub 吧」——即接受「下载后可能被 Gatekeeper 拦」的既有结论，直接走提交门 + 发布。
 - **提交门（4 路只读评审，0 硬违规）**：ponytail（3 处可删，均装饰性）/ code-review · Spec / code-review · Standards（无 TDD 硬违规）/ neat-freak。**必须改的只有台账与版本面**（版本面仍是已发布的 `0.3.7`，直接发布会让新包与旧包同名）；行为存疑项（`withoutTrailingSlash` 丢掉 `"/"` 分支等）**只报未改**，与第二十轮先例一致。

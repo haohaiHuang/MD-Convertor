@@ -10,21 +10,23 @@ import {
 
 const projectRoot = path.resolve(import.meta.dirname, "..");
 const serverRoot = path.join(projectRoot, ".desktop", "server");
-// `.desktop/server` only exists after `npm run desktop:prepare`; the whitelist assertions below
-// still run without it, so a plain `./init.sh` keeps guarding the design.
+// `.desktop/server` only exists after `npm run desktop:prepare`, which a bare `./init.sh` never
+// runs. The artifact checks are skipped rather than silently returning when it is absent: a
+// passing case that inspected nothing is a report that lies. The whitelist pins below always run.
 const prepared = existsSync(serverRoot);
 
-describe("prepared desktop server scope", () => {
-  it.skipIf(!prepared)("contains exactly the runtime entries and nothing from the repository", () => {
+describe.skipIf(!prepared)("prepared desktop server", () => {
+  it("contains exactly the runtime entries and nothing from the repository", () => {
     const actual = readdirSync(serverRoot).sort();
     expect(actual).toEqual([...DESKTOP_SERVER_SCOPE].sort());
   });
 
   it.each(DESKTOP_SERVER_REQUIRED_FILES)("keeps %s", (relativePath) => {
-    if (!prepared) return;
     expect(existsSync(path.join(serverRoot, relativePath)), `${relativePath} is read at runtime`).toBe(true);
   });
+});
 
+describe("desktop server whitelist", () => {
   it.each(["docs", "src", "e2e", "tests", "coverage", "out", "extension", "playwright-report"])(
     "never allows the repository's %s directory into the bundle",
     (entry) => {
