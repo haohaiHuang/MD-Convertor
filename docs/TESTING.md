@@ -39,7 +39,15 @@ The config keeps `reuseExistingServer: false` on purpose, so the run always star
 
 Compare layout rectangles with `rectsInOneFrame` from `e2e/geometry.ts`, never by calling `boundingBox()` twice. Each `boundingBox()` call is its own round trip, so anything that moves the page between the two calls is measured as a broken layout. Scrolling is the usual culprit: `fill()` scrolls its field into view, that scroll can still be landing when the call returns, and the two samples then disagree by the scroll delta. On the settings Base URL row this reproduced in 15% of firefox runs as a convincing 131px "misalignment" (`urlY` 821 via two calls, 690 via one, `scrollY` 132) even though the elements never moved relative to each other. Reading every rectangle inside one `evaluate` call closes that window, because the browser cannot run a scroll or a re-render between two `getBoundingClientRect()` calls in the same task. Waiting on `document.fonts.ready` does not help here - it runs before the `fill()` that triggers the scroll.
 
+Enter the converter through `e2e/entry.ts` rather than a bare `page.goto("/")`. The homepage is a landing screen now (two entries plus the extension download), and the mode lives in client state, so a `goto` lands on the landing screen and any click issued before hydration is silently dropped - the reason the S3 tab cases first failed on firefox only. `gotoHydrated` waits for the page's own `/api/settings` GET before navigating, which is the reliable hydration signal; `gotoConverter` and `openLocalDocs` build on it. Two cases that assert on the landing screen itself (`theme.spec.ts`, brand and antialiasing) keep the plain `goto`.
+
+Firefox on this machine drops synthesized mouse clicks in a thin band near the bottom of the 1280x720 viewport - measured at `y=672` in the landing-adjacent error layout, which is exactly where the 「改用富文本粘贴」 button's vertical centre lands. At that `y` the click reaches the page as nothing at all (deterministic 3/3 across every `x`), while `y=661` and `y=690` deliver normally and one early probe at `y=700` arrived as `clientY=652`, 48px off. `document.elementFromPoint(735, 672)` still returns the button, and a DOM `.click()` from `evaluate` switches the tab, so this is input dispatch, not page logic or a load flake; it reproduces with `page.mouse.click` too, which rules out the locator. The remedy is a positional click that aims above the band (`click({ position: { x: 30, y: 6 } })`, still a real mouse click) - a `toPass` retry wrapper does not work, because the click never lands within the retry budget. Recorded because it is an environment defect that will otherwise be diagnosed as a product bug.
+
 Translation tests need no network and no key: `scripts/start-e2e-server.mjs` sets `MD_CONVERTOR_TEST_PROVIDER=1`, which makes `/api/translate/*` use an in-process stub model. The branch does not exist when the flag is unset, so a production run still returns 409 `TRANSLATE_NOT_CONFIGURED` without a configured model. Keep the flag out of any production or release command.
+
+`vitest.config.ts` must keep `.next/**` in `test.exclude`. `next build` uses `output: "standalone"`, which mirrors the whole repository - test files included - into `.next/standalone`. Without that exclusion any vitest run that follows a build or an e2e run collects about 85 duplicate suites and fails (measured: 17 failed / 162 passed / 179 files), and because `init.sh` runs tests before build, the run that goes red is the *next* one, which reads like flake. The fix is the exclusion, never `rm -rf .next` as a workaround. `.desktop/**` and `out/**` are excluded for the same reason: `scripts/prepare-desktop.mjs` copies `.next/standalone` wholesale into `.desktop/server`, and `electron-forge`'s `extraResource` puts that into `Resources/server` of the app under `out/`, so the same mirror sits in three places once a desktop build has run (measured: 307 files collected instead of 93, 51 failed, 20s into the run). Keep all three exclusions: they are what keeps the gate green after `desktop:make`. The mirror is also a packaging defect in its own right - a clean `next build` here writes `AGENTS.md`, `docs/`, `e2e/`, `src/`, `tests/`, `feature_list.json` and friends into `.next/standalone` (401 MB, of which 389 MB is the legitimate `node_modules`), so the built `.app` ships a copy of the repository (571 MB with `out/`/`.desktop/` cleaned first, 2.3 GB when the previous bundle is still around to be mirrored again). `0.3.6`'s installed bundle has no such copy, and the mechanism behind the change is still unidentified; narrowing `prepare-desktop.mjs` to copy only `server.js`, `.next`, `node_modules`, `public` and the injected `browser/` would fix it, but that is a separate round awaiting a decision.
+
+To decide whether an e2e failure predates your change, use a clean worktree instead of memory: `git worktree add /tmp/xxx HEAD`, then `cp -Rc node_modules /tmp/xxx/` (an APFS clone, about 5s), `npm run build` and run the same case with `--repeat-each=5`. Do **not** symlink `node_modules` - the build fails with `Symlink ... is invalid` under turbopack. Clean up with `rm -rf /tmp/xxx && git worktree prune`.
 
 ## Coverage
 
@@ -56,11 +64,35 @@ The baseline covers:
 - the translation task budget: `translateTaskTimeoutMs(batchCount)` returns `max(120s, batches × 180s + 30s)`, and both endpoints size their deadline from the real batch count (a long article of many short paragraphs is not cut off at a fixed 120s)
 - the translation checkbox, 原文 / 译文 tabs, copy and download per tab, progress, cancel, retry, and the ratio dialog
 
-`vitest.config.ts` limits coverage to `src/lib/**/*.ts` plus the convert and translate routes, excludes test files and `src/types/**`, and sets per-file thresholds. Every `src/lib/translate/**` module has its own threshold (95/90/100/95, or 90/75/100/90 for `segment.ts`). Coverage is currently 95.71% statements over 79 files / 1067 tests (includes the extension layers 1–2; the desktop-only figure was 95.28% over 64 files / 866 tests).
+`vitest.config.ts` limits coverage to `src/lib/**/*.ts` plus the convert and translate routes, excludes test files and `src/types/**`, and sets per-file thresholds. Every `src/lib/translate/**` module has its own threshold (95/90/100/95, or 90/75/100/90 for `segment.ts`). Coverage is currently 96% statements (87.78% branches, 98.2% functions) over 93 files / 1252 tests, which includes the extension layers 1–2 and the S4 packaging test; the desktop-only figure was 95.28% over 64 files / 866 tests when the `0.3.6` gate ran.
 
 E2E runs against the production standalone service and fails if tracked files change. `playwright.config.ts` sets `workers: 1` because the translation engine holds one process-wide task slot; parallel workers would collide with 429 `TRANSLATE_BUSY`.
 
 The specs that convert fulfil `**/api/convert` or `**/api/convert-paste` inside the browser, so `e2e/convert-api.spec.ts` is the only place that reaches the real route handlers: it posts a loopback link and expects 403 `PRIVATE_TARGET` (offline, but only reachable once the route has loaded its Playwright import) and extracts real pasted content through the paste route. `next.config.ts` keeps that import loadable by tracing `node_modules/playwright-core/browsers.json`, the data file Next.js otherwise omits; without it a standalone server answers 500 for every link, which packaging used to hide by re-copying the whole package.
+
+## Local Document Processing (Desktop)
+
+The homepage's 「转换既有文档」 mode (S3 of `feat-042`) scans a directory for `.md` files, inlines their local images through the read-only `/api/local-docs/process` route, and writes each result with `outputBridge().saveFile()`. That last call is the only write path in the whole feature: the server routes still never touch disk.
+
+What runs where:
+
+| Layer | What it proves | Command | In `init.sh` |
+|---|---|---|---|
+| pure planning | `src/lib/local-docs/batch.test.ts` - the batch plan, the three refusal states, row transitions, summary counts | `npm test` | Yes |
+| client orchestration | `src/app/local-docs/client.test.ts` - serial order, per-row failure keeps going, `skip` sends no request, `saveFile` rejection is caught | `npm test` | Yes |
+| IPC | `electron/system.test.mjs` plus the channel/path parity in `electron/preload*.test.cjs` - `md-convertor:system:open-path` validates the directory again in the main process | `npm test` | Yes |
+| end-to-end | `e2e/local-docs.spec.ts` - real scan route, real process route, stubbed preload bridge, files written by the stub | `npm run test:e2e` | No |
+
+Rules the e2e layer must keep following:
+
+- **Never read or write the real Downloads directory.** `MD_CONVERTOR_DOWNLOADS_DIR` resolves defaults only in the route unit tests (S1), where the environment is injected. Every browser case passes explicit `dirPath`/`outputDir` values pointing at `mkdtemp` directories.
+- **Never PUT the real settings store.** The whole e2e run shares one settings file. `routeSettings` rewrites only `input`/`output` in the GET response and fulfils PUTs locally, collecting the bodies for assertions instead.
+- **The bridge stub must be able to throw.** `electron/preload.cjs` asserts its arguments and rejects rather than resolving `{ ok: false }`, and the UI has to catch that: `installBridge` supports success, a filesystem code (`EACCES`), and a thrown `TypeError`, so the "clicked, nothing happened" failure mode stays covered.
+- **Wait for hydration before clicking UI state.** The landing screen, the mode, and the converter's inner tabs all live in client state, so a click that lands on the server-rendered button is silently lost. `e2e/entry.ts`'s `gotoHydrated` waits for the page's own `/api/settings` GET first. Firefox is the engine where this bites.
+
+The homepage is a landing screen now, so the two `转换模式` tabs (「链接转换」 / 「富文本转换」) sit alone on the converter screen and the two landing entries are `role="button"`. The landing entry 「粘贴URL/富文本转换」 is not a tab, so the inner-tab assertions no longer collide with it; but Playwright matches accessible names as substrings, so anything that queries the inner 「富文本转换」 tab while a button carrying the same substring is reachable still needs `exact: true`.
+
+What is left for human acceptance is real dialogs, real disk, real translation, and opening the artifact offline: the 12-item checklist and its sign-off table live in [`features/app-document-processing/S4-extension-package-and-acceptance.md`](features/app-document-processing/S4-extension-package-and-acceptance.md) §T4.2, which is the S4 acceptance standard referenced by [`features/app-document-processing/FSD.md`](features/app-document-processing/FSD.md) §6.
 
 ## Browser Extension
 
@@ -76,7 +108,7 @@ Five layers, and only the first two are part of `./init.sh`:
 | 4 real extension integration | a real MV3 extension loaded in Chromium writes real files to disk through a local fixture site | `npm run test:extension` | No |
 | 5 manual acceptance | toolbar click and `activeTab` consent in real Chrome (below) | human checklist | No |
 
-`npm run test:extension` runs `build:extension` first. `build:extension` writes the gitignored `extension/dist/` (exactly `manifest.json`, `content.js`, `worker.js`) plus `extension/dist-test/core.js` for the smoke layer. Run the suite with proxy variables unset, as with `test:e2e` - it drives a real browser, and the fixture site is loopback-only. Layers 3 and 4 use their own `playwright.extension.config.ts` (`testDir: ./extension/tests`, Chromium only, `workers: 1`, no `webServer`); the desktop `playwright.config.ts` and `scripts/run-e2e.mjs` are not involved.
+`npm run test:extension` runs `build:extension` first. `build:extension` writes the gitignored `extension/dist/` (exactly `manifest.json`, `content.js`, `worker.js`) plus `extension/dist-test/core.js` for the smoke layer, and — since S4 — the distributable `public/md-convertor-extension.zip` (staged through the gitignored `extension/dist-package/<pid>/md-convertor-extension/`, then packed to a temp ZIP and `rename`d into place so concurrent builds in parallel vitest forks cannot corrupt it), which is what the homepage's 「下载浏览器插件」 button serves. `package.json` wires that in through `"prebuild": "npm run build:extension"`, so any `next build` (`init.sh`, the e2e rebuild, `desktop:make`) carries the ZIP and the button never 404s. Run the suite with proxy variables unset, as with `test:e2e` - it drives a real browser, and the fixture site is loopback-only. Layers 3 and 4 use their own `playwright.extension.config.ts` (`testDir: ./extension/tests`, Chromium only, `workers: 1`, no `webServer`); the desktop `playwright.config.ts` and `scripts/run-e2e.mjs` are not involved.
 
 Measured 2026-09-24: 15 passed in about four seconds in an agent shell with no sandbox flags. `MD_CONVERTOR_EXTENSION_CHROMIUM_ARGS` (comma-separated) still exists as an escape hatch - `--no-sandbox,--disable-gpu` is needed by the *packaged Electron app* when it runs inside a process-level sandbox, not by Playwright's own Chromium.
 
@@ -107,11 +139,11 @@ This checklist was run and passed on 2026-09-24 (all six items; item 5 used a th
 
 `npm run desktop:release` requires:
 
-- package version exactly `0.3.6`
+- package version exactly `0.3.7`
 - Node.js 24.x, but not 24.16.0: that patch stalls inside `yauzl` while unpacking the Electron archive, so `electron-forge make` never produces a ZIP. Node 24.14.1 and 24.15.0 both pass the full gate
 - the historical archive set: every manifest ZIP that still exists must keep its fixed SHA-256, and no unlisted release ZIP may appear in `~/Downloads/MD-Convertor-archive/releases/`
 - a ZIP created during the current run
-- packaged version `0.3.6`
+- packaged version `0.3.7`
 - an arm64 executable and complete application bundle
 
 The guard rechecks historical artifacts on both success and failure. A Forge command that exits without a new ZIP is a failure.

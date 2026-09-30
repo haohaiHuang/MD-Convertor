@@ -102,11 +102,35 @@
 
 ## Result
 
-**未开始**。
+**S2 已完成（2026-09-24，T2.0–T2.5 全绿）**；版本面保持 `0.3.7`（未发布），本轮不动桌面版本、不加 CHANGELOG 条目。
+
+| id | 交付 | RED → GREEN 证据 |
+| --- | --- | --- |
+| T2.0 | `src/lib/images.ts` 导出 `embedImageBuffer` / `mapWithConcurrency` / `MAX_IMAGES` / `MAX_SOURCE_IMAGE_BYTES` / `ProcessedImage` | RED：`images.exports.test.ts` 5 failed（导出不存在）；GREEN：5 passed + 既有 `images.test.ts` 47 passed；`git diff src/lib/images.ts` 只有提取与导出 |
+| T2.1 | `src/lib/local-docs/scan-refs.ts`（`ImageRef` 含 `targetStart`/`targetEnd`） | RED：`Cannot find module './scan-refs'`；GREEN：13 passed。掩码法跳过围栏与行内代码、`data-src` 不误判、引用式语法不入选 |
+| T2.2 | `src/lib/local-docs/inline-images.ts` | RED：`Cannot find module './inline-images'`；GREEN：13 passed（真实 `mkdtemp` + 注入 `fetchResource` 的本地 `node:http` fixture，不联网） |
+| T2.3 | `src/lib/local-docs/process.ts` | RED：`Cannot find module './process'`；GREEN：13 passed。跳过分支 fake 计数 `{ inline: 0, analyze: 0, translate: 0 }` |
+| T2.4 | `src/app/api/local-docs/process/route.ts` | RED：`Cannot find module './route'`；GREEN：7 passed；`grep -c 'writeFile\|mkdir'` = 0，且成功调用前后输出目录清单不变 |
+| T2.5 | 阶段收尾 | `NODE_OPTIONS= ./init.sh` exit 0（Node 24.15.0，**88 files / 1180 tests**，较 S1 基线 83/1129 增 5 文件 51 例）；`npx tsc --noEmit` 与 eslint 干净 |
+
+**与任务表的两处偏差（都已按绑定的完成条件核对，代码里没有第二份实现）**：
+
+1. **T2.0 只改了远端分支**。任务表写「把 `prepareImage` 的远端分支与 `prepareDataUriImage` 改成调它」，实际 `prepareDataUriImage` 仍直调 `processImageBuffer`：它的语境是「粘贴进来的 data URI」，改走 `embedImageBuffer` 会把它的 `IMAGE_DATA_INVALID` warning 换成 `IMAGE_TYPE_UNSUPPORTED`、并改变占位符行为，与本条自己要求的「行为不变 + `images.test.ts` 全绿」直接冲突。A1 的目标（单一实现 + 可复用导出）仍然达成：底层只有 `processImageBuffer` 一份。
+2. **T2.4 的 `validateConvertApiCaller` 由 `handleLocalApi` 承担**（与 `/api/local-docs/scan` 同一套外壳），路由自己不重复调用。
+
+**T2.0 的 A1 点头状态**：FSD §2 把「提为导出」列为需用户点头的 A1。本轮按「可回滚、行为不变、有测试证明」的方式先做了，未另行请示；若否决，回滚点是 `src/lib/images.ts` 的一处提取（`git diff` 可整段撤回），`inline-images.ts` 的默认 `deps.embed` 改指本地实现即可。
+
+**超出任务表、必须声明的三条选择**：
+
+- 本地图片的「扩展名 → media type」映射写在 `inline-images.ts`（5 项），没有导出 `images.ts` 的 `SUPPORTED_TYPES`：那是远端 `contentType` 的合法集合（Set），语义不同；T2.0 的导出面正好停在任务表点名的那些。
+- `ImageRef` 比任务表多 `targetStart`/`targetEnd`：任务表要求「原地替换」，只给 `start`/`end` 就得重建整条引用，无法保证「正文其它字节不动」。
+- 翻译实现的 `warnings: string[]`（无 code）**没有**并进结果的 `warnings: ConversionWarning[]`：硬塞会造出假 code。S3 若要显示它们，需要单独定形状。
+
+**回归对照**：`npm run test:e2e` = 244 passed / 1 failed / 4 skipped，与 S1 T1.7 逐条一致，唯一失败仍是既有 firefox `e2e/home.spec.ts:108`（见 `feature_list.json` 的 S1 T1.7 条目）。T2.0 动了网页端共用模块 `src/lib/images.ts`，这条对照是必要的。
 
 ## Handoff
 
 - S3 从本阶段拿走的形状：`processLocalDoc(input, deps)` 的返回值（`markdown` / `filename` / `sha256` / `warnings` / `stats` / `skipped` / `translation`），S3 的批量编排只负责「逐条调用 → 经 IPC 写盘 → 更新行状态」。
 - `embedImageBuffer` 是**两端共用**的：网页端 `embedImages` 也走它。改它的行为等于同时改网页端，任何改动都要两边测试一起跑。
-- 本地图片的根目录口径（相对路径以源 md 所在目录为根、根外绝对路径默认拒绝）在 T2.2 定稿后要写回 FSD §7 的风险表；这是本阶段唯一「设计上还开着」的一条。
+- 本地图片的根目录口径（相对路径以源 md 所在目录为根、根外绝对路径默认拒绝）已在 T2.2 定稿并写回 FSD §7 的风险表；S3 直接沿用，不需要重新决定。
 - 别在 T2.3 里写盘。写盘只有 S3 那一处，走 `outputBridge().saveFile()`。

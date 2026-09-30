@@ -4,11 +4,35 @@
 
 This project follows the principles of [Keep a Changelog](https://keepachangelog.com/). User-facing changes that have not yet been released belong under `Unreleased`.
 
-## [Unreleased]
+## [0.3.7] - 2026-09-30
 
 ### Added
 
+- The homepage now opens on a landing screen with two entries. 「粘贴URL/富文本转换」 keeps the original single-article flow and 「转换既有文档」 switches to a folder of Markdown files; each of the two screens has a 「← 返回」 button back to the landing screen. The 「下载浏览器插件」 link sits on the landing screen and points at the extension archive that ships with the release.
+
+- The landing screen shows nothing but the two entries. The heading, the lead paragraph and the small 「Web to Markdown」 line are gone, the 插件 download sits centred under a 「Chrome里直接转存网页为本地.md」 caption with an underlined link, and the local-document card's note explains that it also takes documents saved by the browser extension.
+
+- The batch panel now keeps 翻译产物 / 重新扫描 / 一键转换 together on one toolbar row; the settings page shows the same resolved input directory the panel scans, and its 返回转换 button returns to whichever screen you came from.
+
+- Batch processing for local Markdown documents. Pick a folder and its `.md` files are listed with size, modification time and whether each one was already processed; tick the ones to redo and 一键转换 inlines the images each document references and writes the result into the output folder. Every row reports its own outcome — 完成, 已处理，跳过, or 失败 with the reason — while the embedded/kept image counts are given on the summary line, which also carries the other counts and the folder written to, next to a 打开目录 button. Already-processed documents start unticked, unprocessed ones start ticked, and the source folder is only ever read: nothing is written back into it. Picking the same folder for input and output is refused with a one-click offer to write into a `processed` subfolder instead.
+
+- A directory setting for local documents. The settings page gains an 输入 card where a folder is picked with the same macOS folder picker the Output card uses, and 恢复默认 makes it follow the system Downloads folder again. Picking a folder here never touches the output directory.
+
 - A Chromium browser extension (`extension/`) that saves the page you are reading as `<title>.md` plus a `<title>.images/` folder from a single toolbar click. It needs neither the desktop app nor a running server, downloads images that require your signed-in session, and rewrites every Markdown image reference to the file that actually landed beside it. An image that fails to download keeps its original URL and gets a `<!-- 图片未下载：… -->` note on the next line, so the reason is visible in the document. Exporting the same page again overwrites the previous pair rather than leaving a `(1)` copy behind. The extension is not on a store yet: it is loaded unpacked from `extension/dist` for now.
+
+- The 「下载浏览器插件」 button now delivers a real archive. `public/md-convertor-extension.zip` holds the extension's three files plus a `使用说明.md` (load steps, the three permissions and the privacy stance, known limits, and how it fits with the desktop batch mode), and a `prebuild` hook rebuilds it on every `next build`, so the button can no longer point at a missing file. Unzipping yields a `md-convertor-extension/` folder ready for Chrome's "Load unpacked".
+
+### Changed
+
+- The batch panel no longer keeps a placeholder hint line: with nothing ticked it disappears and the list sits right under the toolbar; 翻译产物 now sits directly left of 重新扫描 (toolbar order 翻译产物 → 重新扫描 → 一键转换); and the result block puts the counts on one line, the output folder on the next, with 打开目录 on the right. The per-row 重新处理 button is gone (tick a processed row again and run 一键转换 to redo just that row), and the wording is 一键转换 throughout, and a row's status column finally holds just the status (「完成」) rather than 「内嵌 N 张、保留 M 张」 — those two numbers moved to the summary line.
+
+### Fixed
+
+- In the batch mode, a document whose image paths contain a space or a parenthesis — which is what the browser extension produces when the page title contains one — was silently left un-inlined (the row said 完成（内嵌 0 张，保留 0 张） with no warning). Those references are now recognised and embedded like any other.
+
+- The long directory path on the settings page is truncated onto a single line with 「…」 instead of pushing the action buttons onto a second row: the path box now claims the leftover width of its row instead of breaking the row with its full length, and the wordmark no longer shifts horizontally between the landing screen and the secondary screens.
+
+- Running the verification suite no longer trips over the build's own copy of the project. `next build` writes a full mirror of the repository into `.next/standalone`, test files included, and the unit suite was collecting those duplicates - roughly 85 extra suites that failed for reasons unrelated to the source. Verified output is now limited to the repository's own files (the same copies under `.desktop/` and `out/` are excluded too).
 
 ## [0.3.6] - 2026-09-22
 

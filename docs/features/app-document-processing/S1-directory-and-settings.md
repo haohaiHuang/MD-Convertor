@@ -2,7 +2,7 @@
 
 - 上游：`docs/features/app-document-processing/FSD.md`（§4.2 设置、§4.3 扫描与守卫、§4.6 去重）
 - 前置：无（本阶段是 A 的第一个阶段）
-- 状态：**未开始**（规划完成，代码未动；版本仍 `0.3.6`）
+- 状态：**已完成**（2026-09-24，T1.0–T1.7 全绿；版本面已 bump 到 `0.3.7`，**未发布**）
 - feature_list id：`feat-042`
 - 本阶段不写界面（S3 才画首页面板）；本阶段结束时：版本已 bump、设置里能存输入目录、服务端能安全地扫出一个目录里的 `.md` 并判出每一条的 `state`。
 
@@ -126,12 +126,30 @@
 
 ## Result
 
-**未开始**（规划于 2026-09-24 完成；本文件即是施工依据）。
+**S1 已完成（2026-09-24，T1.0–T1.7 全绿）**；桌面版本面已 bump 到 `0.3.7`（**未发布**，`desktop:release` 仍需用户单独授权）。
+
+| id | 结果 | RED → GREEN 证据 |
+| --- | --- | --- |
+| T1.0 | 版本面 6 处同步到 `0.3.7` | RED：`release-guards.test.mjs` 新增「目标版本 = `package.json` + lockfile 两处 + `feature_list.currentVersion`」断言（目标版本用正则从 `RELEASE_VERSION_ERROR` 取，后续 bump 自动跟随），先只改 `package.json`/`package-lock.json` ⇒ `expected '0.3.7' to be '0.3.6'`；GREEN：`npx vitest run scripts/release-guards.test.mjs` = 30 passed |
+| T1.1 | `Settings.input` + 宽容读入扩到 `output`+`input` | RED：`settings.test.ts` 新 `describe("input settings")` 6 条、5 failed（`expected undefined to deeply equal { defaultPath: null }`、`settings.input is not a known field`），其中一条是反扩散断言（删 `translation.defaultEnabled`/`local.activeCliId` 仍须抛）；GREEN：`settings.test.ts` + `route.test.ts` = 84 passed |
+| T1.2 | `buildServerEnv` 带 `MD_CONVERTOR_DOWNLOADS_DIR` | RED：`electron/env.test.mjs` 加 2 条 ⇒ `expected undefined to be '/Users/test/Downloads'`；GREEN：25 passed。缺省 `""`，服务端读到空串回退 `path.join(os.homedir(), "Downloads")` |
+| T1.3 | 服务端路径守卫 + parity | RED：`Cannot find module './paths'`；GREEN：`paths.test.ts` + `paths.parity.test.ts` = 19 passed（parity 8 条，含 `/Users/someone/Library/Mobile Documents/com~apple~CloudDocs/Docs`） |
+| T1.4 | 去重判定与产物标记（纯函数） | RED：`Cannot find module './dedup'`；GREEN：19 passed（损坏/多字段标记不抛、`stripDocMarker` 对无标记正文原样返回） |
+| T1.5 | `POST /api/local-docs/scan` | RED：`Cannot find module './route'`；GREEN：`route.test.ts` 15 passed。真实 `mkdtemp` 目录、不 mock 扫描：只列一层 `.md` 且排序、扫描前后目录清单不变（只读）、`new`/`skip`/`check` 三态、501 截断、ENOENT/ENOTDIR/EACCES 映射、省略 `dirPath` 用 `MD_CONVERTOR_DOWNLOADS_DIR`、跨源 origin 与缺 token 两条 403 |
+| T1.6 | 设置页「输入」卡片 | `npx playwright test --project=chromium -g "输入目录"` = 2 passed（未设置时回显「系统下载目录」、无桥接两按钮禁用 + 提示；stub 桥接下选择目录 → PUT body `input` 变 `{ defaultPath: … }` 且 `output` 未被顺手动过；恢复默认写回 `null`）；`-g "输出"` 5 passed 回归 |
+| T1.7 | 阶段收尾 | `NODE_OPTIONS= ./init.sh` exit 0（Node 24.15.0，**83 files / 1129 tests**）；`npm run test:e2e` 245 例中 244 passed、仅 firefox 一条既有失败（与本阶段无关，见下） |
+
+**范围外但必须声明的三件事**：
+
+1. **修掉一个既有门禁陷阱（1 行，`vitest.config.ts`）**：`next build` 会把整个仓库镜像进 `.next/standalone`（`*.test.ts` 也在内），而 `test.exclude` 里没有 `.next`，于是任何 `./init.sh` 只要跟在一次 build 或 e2e 之后就会收进 85 份重复用例并失败（实测 17 failed / 162 passed / 179 files，失败样本 `.next/standalone/src/lib/images.test.ts:573`；排除后 83 files 全绿）。**这是根因修，不是 `rm -rf .next` 绕过** —— 否则每个跑过 e2e 的会话都会撞上它。
+2. **`chooseOutputDirectory()` 补了一个 `.catch()`**：preload 的校验函数是抛异常而不是 resolve `{ ok: false }`，同文件同类调用点已按既有约定补成 `.catch((): OutputResult => ({ ok: false, code: "SELECT_DIRECTORY_FAILED" }))`。
+3. **一条既有 e2e 失败（firefox，非本阶段引入，未修）**：`home.spec.ts` 的「改用富文本粘贴」提示按钮在 firefox 上真实指针点击不生效。**证据**：在 HEAD `1a08440` 的干净 worktree 上复现（`--repeat-each=5` 5/5 失败，确定性而非 flaky）；`src/app` 与 `e2e/` 自 `v0.3.6` 起零改动。**机制**（探针实测，未修）：按钮在视口底部（中心 y≈660 / 视口高 720），该坐标下的原始鼠标事件根本到不了文档（window 捕获监听为空、`elementFromPoint` 仍返回按钮本身），而 `el.click()` 与同样方法的「模式 tab」点击都正常；把页面滚 15px 让按钮中心升到 y≈646 后同一发原始点击即生效 —— 属**环境敏感的坐标问题**（firefox 窗口 `outerHeight` 805 > 屏幕 `availHeight` 692），不是应用逻辑缺陷，且桌面端跑的是 Chromium（Electron），对用户无影响。
 
 ## Handoff
 
-- 开工第一件事是 **T1.0 的 bump**：本块只要动 `src/` 就必须先 bump（`AGENTS.md` 的版本句当前只允许 `0.3.6`，而 `0.3.6` 已发布）。
-- T1.0 完成前不要动别的文件，否则「哪次改动触发了 bump」就说不清。
-- T1.3 的 parity 测试是本阶段最有价值的一件小事：`electron/preload-contract.cjs` 与新的服务端守卫是**两套独立实现**，谁改谁都要跑它。
-- T1.4 的 `stripDocMarker` 是给 S2 的翻译用的（模型不能看到标记行）；S2 开工前先确认它在 T1.4 里已绿。
-- 判 `state` 需要读输出目录里的产物首行：T1.5 的测试要带 `outputPath`，否则只会得到全 `new`。
+- **S1 已收口，下一站是 S2**（`S2-document-pipeline.md`）：本块不再需要任何改动，S2 直接开工（S2 才动 `src/lib/images.ts`，本阶段刻意没碰）。
+- **版本面已是 `0.3.7`，不要重复 bump**；发布 `0.3.7` 未获授权。
+- T1.3 的 parity 测试是本阶段最有价值的一件小事：`electron/preload-contract.cjs` 与 `src/lib/local-docs/paths.ts` 是**两套独立实现**，谁改谁都要跑它。
+- `src/lib/local-docs/dedup.ts` 的三个函数已就绪可复用：`buildDocMarker` / `parseDocMarker` / `stripDocMarker`（S2 翻译前必须 `stripDocMarker`，模型不能看到标记行）、`decideLocalDoc` 与 `localDocFilename`。
+- `scanLocalDocs` 已能判出 `new`/`skip`/`check` 三态；S3 只需要把它接到首页面板，**不要再写第二套扫描逻辑**。
+- `defaultDownloadsDir(env = process.env)` 已导出且可注入，S3/S2 要测「默认目录」时复用它，不要在测试里读真实 `~/Downloads`。

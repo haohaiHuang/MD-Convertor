@@ -2,6 +2,8 @@
 
 ## Current Verdict
 
+Version `0.3.7` is under development and unreleased: the version face moved there with `feat-042` S1 (2026-09-29; S1-S4 and all feedback rounds are complete, and `feat-042` was closed `done` on 2026-09-30 after the user signed off the 12 manual acceptance items), it has no release gate yet, and shipping it needs explicit authorization. The verdict below therefore still describes the newest released version.
+
 Version `0.3.6` passed its own release gate on 2026-09-22 - baseline, three-browser E2E, live, packaging, and artifact verification all passed - producing `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.6.zip`, then published as GitHub Release `v0.3.6`. It carries `feat-041` (a default folder for downloaded Markdown: the Output card in Settings, and a 下载 button that writes straight into that folder or falls back to the system save dialog and names the reason) plus that feature's packaging narrowing, which cut the packaged archive from 253 entries / `2,670,300` bytes to 10 entries / `35,261` bytes. `0.3.5` passed its own gate on 2026-09-21 and stays as history. Version `0.3.4` passed its own release gate on 2026-09-21 - baseline, three-browser E2E, live, packaging, and artifact verification all passed - producing `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.4.zip`, then published as GitHub Release `v0.3.4`. It carries the `feat-036` link-failure paste hint, the `feat-037` cloud-card reset, and the application icon (`assets/icon.icns` replacing Electron's default, with `assets/` excluded from the asar). `0.3.3` passed its own gate on 2026-09-20 and stays as history (`out/` no longer holds its ZIP); `0.3.2` and `0.3.1` passed the same gate earlier that day and were published as GitHub Releases `v0.3.2` (tag `1c3ed80`) and `v0.3.1` (tag `af7f6db`). The `0.3.0` gate ran end to end on 2026-09-18 and that artifact predates `feat-024` onward; it is kept as history. The historical-archive precondition was retired for the 0.1.0-0.2.0 ZIPs and the 0.1.3 read-only copy, which were lost from this Mac and cannot be restored; every archive that still exists is hash-checked exactly as before, and `0.2.1` was re-downloaded from its GitHub release and matched its recorded SHA-256 byte for byte. The `v0.1.3` source tag remains a hard precondition. QA-012 (the advisory set found in `next` and `sharp`) is resolved: as of 2026-09-20 `next` is 16.3.5 and `sharp` is 0.35.4, and `npm audit --omit=dev` reports no production advisories. The remaining release constraint is the absence of Developer ID signing and notarization, which the user decided on 2026-09-20 not to pursue: every artifact stays personal-testing only, and the `v0.3.1`-`v0.3.6` release notes say so plainly.
 
 ## Post-0.3.0 Fix Detail (feat-024, 2026-09-18)
@@ -279,6 +281,97 @@ The package is about 4.3 MB larger than `0.3.3`; the delta comes from this build
 Approved for personal testing. Not approved for frictionless public distribution, and QA-008 is accepted rather than being worked: the user decided on 2026-09-20 not to buy a Developer ID / notarize, so signing stays out of scope until that decision changes. `0.3.6` passed its gate on 2026-09-22 and was published as GitHub Release `v0.3.6` (235,956,668 bytes, SHA-256 `9b89d55c…f351`); it adds the default Markdown save folder and narrows the packaged archive to what the app actually reads. `0.3.5` passed its gate on 2026-09-21 and was published as GitHub Release `v0.3.5` (tag `5f98307`). `0.3.4` passed its gate on 2026-09-21 and was published as GitHub Release `v0.3.4` (237,272,966 bytes, SHA-256 `6910120e…2704`); that ZIP was rebuilt after the user's second icon version was put in place and the tag was moved onto that commit, so the tag, the released ZIP and `checkout v0.3.4` agree. QA-012 no longer applies: `next` is 16.3.5 and `sharp` is 0.35.4 as of 2026-09-20 and `npm audit --omit=dev` reports no production advisories. `0.3.3` passed its gate on 2026-09-20 and was published as GitHub Release `v0.3.3`; `0.3.2` passed its gate on 2026-09-20 and was published as GitHub Release `v0.3.2` (tag `1c3ed80`); `0.3.1` passed its gate and was published as GitHub Release `v0.3.1` earlier the same day. The release notes state that the build is unsigned and intended for personal testing.
 
 ## Archived Round Log
+
+### 2026-09-30（第十九轮）— 行状态只报状态（R7）+ `feat-042` 关闭
+
+- 用户要求：某篇文档转换后，行内只显示状态（例如「完成」），不要带内嵌/保留张数。
+- 改：`src/app/local-docs/panel.tsx` 的 `statusLabel`，`done` 分支 → `"完成"`（一句）。数据层与汇总行未动，张数仍在汇总行 `内嵌图片 N 张 · 未内嵌 M 张`，失败行仍带原因。
+- TDD：RED＝`e2e/local-docs.spec.ts` 两处断言改为 `{ name: "完成", exact: true }`（**必须 `exact`**，Playwright 的 name 默认子串匹配，旧文案下会误绿）→ chromium 1 failed；GREEN＝`e2e/local-docs.spec.ts` chromium **14 passed**。注意 `src/app/**` 不在 vitest 覆盖率 include 里，本轮证据是 e2e。
+- 推翻了 FSD §4.7「每行状态」与 §4.4「已知命中」的原口径（原本要求行内写 N/M，防 ≥30 图用户以为丢图）；已同步 FSD 两处、S3 `## Result` 行、S4（§第六轮 + 两张验收表第 12 条）、CHANGELOG.md/`.zh.md`。
+- 门禁：`NODE_OPTIONS= ./init.sh` exit 0；清代理后 `npm run test:e2e` **306 passed / 6 skipped / 0 failed**（三引擎 2.5m）+ tracked-file check；`feature_list.json` 38 条 / `in-progress`。
+- 产物：清 `out/` + `.desktop` 后 `desktop:make` → `.app` **572 M**；chunk 指纹：`完成（内嵌` 已消失、`内嵌图片 ` 仍在。新构建已打开（PID 60736 / `127.0.0.1:49466`）供用户重测；未跑 `desktop:release`、未 push、未 commit。
+- **关闭**：用户在该构建上跑完 **12 条人工验收**，回「真机测试OK」⇒ `feat-042` 置 **`done`**（verification 38 → 39 条，原「ALL 12 PENDING」句改写为已签字）。本步只动台账与文档，无代码变更。
+
+### 2026-09-30（第十八轮）— 设置页长路径省略 + 验证范围收口
+
+- **报告 1 条**：设置页「输入」卡片路径过长时把右侧按钮挤到下一行。**根因**：`.providerHead` 是 `flex-wrap: wrap`，折行看 max-content 宽度，而 `.path` 只有 `min-width:0` + 省略号、没有 flex basis ⇒ 超长路径先撑断行，按钮才下移。
+- **修复**：`.providerHead .path { flex: 1 1 0 }`（输入 / 输出 / 本地代理三处共用；`.providerHead` 保留 `wrap`）。TDD：`e2e/settings.spec.ts` 新用例 RED（按钮与路径中心差 40px）→ GREEN（`settings.spec.ts` + `local-docs.spec.ts` chromium 47 passed）。
+- **修掉上一轮钉住用例自身的缺陷**：`e2e/local-docs.spec.ts:125` 导航后即结束，桩 `route.fetch()` 被 dispose ⇒ `Response has been disposed`（两次全量跑各红 1 例）；现在等两次导航各自的设置请求落地（`--repeat-each=10` 10/10 绿）。
+- **`test.exclude` 加 `.desktop/**` + `out/**`**：它们是 `.next/standalone` 仓库镜像的副本，少了会让 `desktop:make` 后的 `./init.sh` 收进 307 文件 / 51 failed。
+- **新发现（只报未修）**：`next build` 把仓库根整个镜像进 `.next/standalone`（401 M，389 M 是正牌 `node_modules`）⇒ `.app` 的 `Resources/server` 带一份仓库副本（2.3 G → 清 `out/`/`.desktop` 后 571 M）；`/Applications` 的 0.3.6 无此副本，机制未查明；收窄需改 `prepare-desktop.mjs`，待用户定。
+- **门禁**：`init.sh` exit 0；`test:e2e` **306 passed / 6 skipped / 0 failed**（三引擎 2.5m）。首跑两条 flake（webkit / firefox 各一：桩响应被 dispose、`NS_ERROR_PROXY_CONNECTION_REFUSED`），均在测试侧修掉或隔离复跑绿。
+- **未做**：12 条人工验收待签；未跑 `desktop:release`、未 push、未动 tag/ZIP。
+
+### 2026-09-30（第十七轮）— 真机第二轮 5 条：3 条布局落地，2 条不复现只钉住
+
+- **分档**：可确认的 3 条按 TDD 修（RED：`e2e/local-docs.spec.ts` 3 failed → GREEN：该文件 14 passed）；无法复现的 2 条不猜改机制，只加「钉住行为」回归用例 + 如实汇报。
+- **已修**：①删「先勾选要处理的文档。」这一支与常驻占位（`notice` 只在有真实信息时渲染、`.hint` 去 `min-height`）——推翻十六轮 L1 的「常驻占位」；②`.toolbar { justify-content: flex-end }`；③`summaryText` 拆出 `countsText`，结果区改 `.result`/`.resultText`（两行）`/`.actions`（按钮在右）。
+- **R1/R5 未复现（证据）**：浏览器探针与**真实 Electron**（真实 preload + 真实 `settings.json`，`--user-data-dir` 隔离）都正确回到面板（URL 确为 `/settings?from=local-docs`）、两端都显示解析后的 `/Users/huanghaohai/Downloads`（仅 `/api/settings` 缺 `defaults` 时才会回落成那句文字，而 GET/PUT 都带）。`/Applications/MD-Convertor.app`、`out/`、`.desktop/server/server.js` 的 mtime 全是 **9-23**，早于面板落地 ⇒ 不是所跑的那个应用；已请用户确认运行方式。
+- **新增钉住用例 2 条**（`e2e/local-docs.spec.ts`，真实路由；其中 parity 一条只跑 chromium——真实设置库跨 project 共享）：面板→设置→返回落回面板；设置页与面板显示同一解析路径。
+- **文档**：`S4`（§第四轮 + 验收表第 3/6 条 + 推翻 L1 半条的注）、`FSD` §4.7 汇总排版、`S3` 追改段、`CHANGELOG(.zh)`、`feature_list.json`、`PROGRESS.md`、`session-handoff.md`、本文件。
+- **门禁**：`NODE_OPTIONS= ./init.sh` **exit 0**；`npx vitest run` **93 files / 1252 tests**（coverage 96 / 87.78 / 98.2）；清代理后 `test:e2e` **303 passed / 6 skipped / 0 failed**（2.5m）；首跑 1 条 firefox flake（`settings.spec.ts:731` 桩路由未命中，隔离 3/3 绿），复跑即无，未修（范围外）。
+- **未做**：12 条人工验收待签；未跑 `desktop:release`、未 push、未动 tag/ZIP。
+
+### 2026-09-30（第十六轮）— 真机 16 条 + B1 全部落地（只修读方）
+
+- **授权与范围**：用户 7 条决策（删 eyebrow / 窄屏退化 / 上下居中 / 好 / 不保留只改状态 / 参考面板路径样式 / 按建议用 URL 参数）+「其他按你的意见执行」⇒ U1–U6、L1–L7、B1–B3 全部实施；路径显示统一为面板样式（单行 + 省略号 + `title`）。
+- **B1 定位与修复（TDD，只修读方）**：真机样例 `~/Downloads/X 上的 姚金刚 (@yaojingang).md`（11 图）→ `src/lib/local-docs/scan-refs.ts` 的 `INLINE_IMAGE` 用 `[^\s)]+` 取目标，路径含空格/半角括号时整条 link 不匹配、静默跳过。改为目标允许空格与配平括号、不跨行；RED 4+1 例 → 3 failed；GREEN `npx vitest run src/lib/local-docs/` = 7 files / 99 tests；真机探针 `{"embedded":11,"kept":0,"warnings":[]}`。写方（插件 percent-encode）未动。
+- **U1–U6 / L1–L7 / B2–B3**：入口画面删标题/副标题/eyebrow、卡片正方形（<761px 退化 auto）、文案与插件副标题改写并居中、链接加下划线；面板三处提示改固定占位（列表不下沉）、工具栏顺序 翻译产物→重新扫描→一键转换、删每行「重新处理」、统一「一键转换」；设置页与面板共用 `inputDirLabel()` + `defaults.inputDir`、`?from=` 记住来源画面；品牌水平位置与长路径单行截断。
+- **口径更正**：`docs/TESTING.md` 的「入口卡包含内层 tab」改为「卡片是 button、名字不再互为子串，但同屏可达的『富文本转换』仍要 exact」。文档收口：S4、FSD、PRD、S3、CHANGELOG(.zh)、`feature_list.json`（三批改「已实施」+ 新增本轮）、`PROGRESS.md`、`session-handoff.md`。
+- **门禁**：`NODE_OPTIONS= ./init.sh` exit 0（Node 24.15.0；93 files / 1252 tests；覆盖率 96% / 分支 87.78% / 函数 98.2%）；`tsc --noEmit` 与 eslint 干净；清代理后 `npm run test:e2e` **296 passed / 4 skipped / 0 failed**（三引擎，2.5m，无 flake）。
+- **未做**：12 条人工验收待签（第 9 条按修订版重跑）；未跑 `desktop:release`、未 push、未动 tag/ZIP。
+
+### 2026-09-29（第十五轮）— 真机反馈落地的首页入口画面 + 修掉一条确定性 firefox 失败
+
+- **裁定**：首页应为**入口画面**（两张入口卡 + 底部插件下载），二级画面能回入口；这是 FSD 第 51 行「一开始的选择画面」的本意，S3 的「顶部 tablist + 默认落转换画面」作废（非新增需求，不重做需求对齐）。
+- **落地（有真 RED）**：`src/app/page.tsx` → `homeMode: "home" | "convert" | "local-docs"` 互斥早返回；入口两张 `role="button"` 卡片；二级画面页头「← 返回」（`aria-label="返回首页"`，避开结果页的「返回顶部」）；删掉外层 `tablist`/`aria-controls`/`handleHomeModeTabKeyDown`；CSS 新增 10 个类、删掉死掉的 `.homeNav`。RED：`e2e/home.spec.ts -g "首页入口画面"` **4 failed**；GREEN：chromium **48 passed**、三引擎 × `--repeat-each=3` **225 passed**。
+- **修掉一条确定性 firefox 失败（`home.spec.ts:109`，不是 flake）**：本机 firefox 在视口底部窄带（该布局 y≈672＝按钮垂直中心）丢合成鼠标点击（各 x 全空；`y=661`/`y=690` 正常；`y=700` 的探针落到 `clientY=652`）。`elementFromPoint` 仍命中按钮、DOM `click()` 能切 tab ⇒ 输入派发问题。修法：点偏上位置（`click({ position: { x: 30, y: 6 } })`）；**`toPass` 重试包装 5/5 全红**。机制已写进 `docs/TESTING.md`。
+- **测例侧**：新增 `e2e/entry.ts`（`gotoHydrated` 等 `/api/settings` GET）；13 处裸 `goto("/")` 改走它；`translate.spec.ts` 的 `page.reload()` 现在回入口画面 ⇒ 重载后补 `gotoConverter`。
+- **门禁**：`NODE_OPTIONS= ./init.sh` **exit 0**（92 files / 1237 tests，与 S4 基线相同——`src/app/**` 不在覆盖率 include）；`tsc`/eslint 干净；`test:e2e` **278 passed / 4 skipped / 0 failed**；`e2e/debug.spec.ts` 与 `test-results/` 已删。
+- **文档**：PRD R8/R9 + §3.1、FSD §4.1 整表 + §6 第 2/6 条、S3 `## Result` 追改段、S4 人工清单第 1 条与追改段、`TESTING.md`、`CHANGELOG`×2、`feature_list.json`、`PROGRESS.md`、`session-handoff.md`。
+- **未验证/风险**：**12 条真机验收仍待签字**；`0.3.7` 未发布、未 push、S1–S4 改动均未提交；环节 4 的 `design_audit` 7 条 🔴 全为既有基线（focus-visible 计数误报、字体族数、`".downloads"` 误报），本轮未顺手修；三条 firefox load flake（`home.spec.ts:305`、`paste.spec.ts:212`、新增观察 `settings.spec.ts:544`）维持判定，改完 CSS 后全量 e2e **278 passed / 4 skipped / 0 failed**。
+
+### 2026-09-29（第十四轮）— S4 插件 ZIP 与收口实施完成（T4.0–T4.1/T4.3 绿；12 条真机验收待签）
+
+- **T4.1 ZIP**：既有 `scripts/build-extension.mjs` —— 三份产物 + `使用说明.md` → 暂存 `extension/dist-package/<pid>/md-convertor-extension/` → `ditto -c -k --norsrc --noextattr --keepParent` 到 `pack.zip` → `rename` 成 `public/md-convertor-extension.zip`（未新增脚本、未装 zip 库）；`package.json` 加 `"prebuild": "npm run build:extension"`，`.gitignore` 加 `public/*.zip` 与 `extension/dist-package/`。RED：`extension/tests/extension-package.test.mjs` 4 failed（ZIP 不存在）⇒ GREEN **4 passed**；接线实测 `rm -f` 后 `npm run build` 重建（两次串行均 **34692** bytes）。
+- **三处实测坑**：① 不带 `--norsrc --noextattr` 时 `ditto` 带出 4 个 `._*` AppleDouble（ZIP 9 条）⇒ 加了才是 5 条；② `ditto` 不写 UTF-8 标志位，`unzip -Z1` 把 `使用说明.md` 显示成乱码（`ditto -x`/`unzip` 实际解压正确）⇒ 测试解压后读字节、不对条目名做字节比对；③ `eslint.config.mjs` 的 `globalIgnores` 加 `extension/dist-package/**`（否则暂存目录会被当源码扫出 `no-this-alias`）。
+- **并发互踩（本轮门禁红的真因，已修）**：两个 vitest 文件都在 `beforeAll` 跑 `build:extension` 且默认并行 fork，共享暂存目录被一个进程 `rm -rf` 时另一个正在 `ditto`、共享输出路径被两进程同时写 ⇒ 并列跑 3 次 **2 次红**（`unzip -Z1` 在写一半的 ZIP 上非 0 退出），`--no-file-parallelism` 下 3/3 绿。修法＝每进程唯一暂存 + pack 到 `pack.zip` 再 `rename`（同卷原子），改后并列跑 **5/5 绿**。早先记的 `34346` bytes 出自这条被踩坏的路径，**不是**有效基线。
+- **T4.0 使用说明**：`extension/使用说明.md` 7 节（加载步骤、点一次图标的行为、三项权限逐条用途 + 「不读 Cookie、不上传任何内容」、已知限制、与桌面端批量模式的分工、仓库链接）；保留中文文件名（未改 README.md）。
+- **T4.2 机器侧**：`NODE_OPTIONS= ./init.sh` exit 0（Node 24.15.0，**92 files / 1237 tests**，较 S3 基线 91/1233 增 1 文件 4 例）；`tsc --noEmit` 与 eslint 干净；`test:e2e` **278 passed / 4 skipped / 0 failed**；`test:extension` **15 passed**。首次全量 e2e 有 1 条 firefox flake（`e2e/home.spec.ts:305`，隔离 `--repeat-each=5` 5/5 过），与既有 V3 同族（不同用例），**未修**。
+- **T4.3 收口**：`AGENTS.md`（当前阶段段 + 在册 features + Verification 产出注）、`docs/TESTING.md`（本地文档处理指到 S4 §T4.2 的 12 条清单、`build:extension` 产出补 ZIP/暂存目录、Release Guard 的 `0.3.6` 版行更正为 `0.3.7`、覆盖计数改现测值）、`CHANGELOG`/`.zh.md`（各加一条插件下载 ZIP）、`docs/PLAN-browser-extension.md`（§2 两行状态与 A 现况段、§3 去重依据/桌面端输入两行回填实现口径）、`PROGRESS.md`、`session-handoff.md`、`feature_list.json`、S4 阶段文档。
+- **未验证/风险**：**12 条真机人工验收全部待用户签字**（`feat-042` 保持 `in-progress`）；`0.3.7` 未发布未 push、S1–S4 改动均未提交；`home.spec.ts:305` 的 firefox flake 未修。
+
+### 2026-09-29（第十三轮）— S3 首页模式 + 批量写盘实施完成（T3.0–T3.4，A 块首次真正写盘）
+
+- **范围与写盘纪律**：首页加模式选择器（「转换既有文档」/「粘贴 · 链接转换」）与插件下载链接；新面板能把一个目录的 `.md` 列出来、逐条勾选、逐条写盘并给收尾汇总。**服务端 `/api/local-docs/*` 仍只读**，全功能唯一写盘出口是既有 `outputBridge().saveFile()`；新增的唯一 IPC 面是 `md-convertor:system:open-path`（`electron/system.mjs`，主进程 `shell.openPath`，主进程再验绝对路径）。
+- **T3.2 规划层**：`src/lib/local-docs/batch.ts` **17 passed**（RED `Cannot find module './batch'`）——`planBatch` 返回 `{rows,refusal,suggestedOutputDir}`，拒绝态 `no-bridge`/`no-output`/`same-dir`；`isSameDirectory`/`processedOutputDir` 支撑「一键改用 `<输入>/processed`」；已处理行默认不勾选。**偏差**：`nextPending(rows)` 单参（`forced` 在行上，避免两个真相源）。
+- **T3.3 编排与 IPC**：`src/app/local-docs/client.ts` **11 passed**（RED `Failed to load url ./client`）——`runBatch` 串行、每行过渡后经 `onRows` 发布、`saveFile` 返回 `{ok:false}` 或抛异常都转成可读行状态且继续下一行；未强制的 skip 行**不发请求**。`electron/system.mjs` **13 passed**（失败只回 `OPEN_PATH_FAILED`，原文进 `console.warn`，永不 reject）。preload 两侧同步（RED 11 failed + 1 contract 失败 ⇒ 四文件 **134 passed**）。
+- **T3.0–T3.1 RED 用「摘掉 UI 再跑」取得**：`git stash push -u -- src/app/page.tsx src/app/page.module.css src/app/local-docs` → 重建 → `npx playwright test --project=chromium e2e/home.spec.ts e2e/local-docs.spec.ts` = **11 failed / 21 passed**（4 条模式用例 + 7 条面板用例全红；21 条既有断言仍绿）；恢复后同命令 **32 passed**。面板 7 条覆盖降级态、真实 `scan` 路由列目录、选择目录重扫并写 `input.defaultPath`、一键转化两篇落盘（源文件字节不变）、输出＝输入被拒并一键改目录、桥接抛异常与 `EACCES` 的可读报错；目录全为 `mkdtemp`，桩桥接的 `saveFile` 三态含**抛异常**。
+- **发现并修掉的新失败**：firefox 上 4 条模式用例首轮红——点击落在尚未 hydrate 的 SSR 按钮上被丢弃；改为先等 `/api/settings` 的 GET 后 `--repeat-each=3` = **96 passed**。修的是测例，不是产品。
+- **T3.4 门禁**：`NODE_OPTIONS= ./init.sh` exit 0（Node 24.15.0，**91 files / 1233 tests**，较 S2 基线 88/1180 增 3 文件 53 例）；`tsc --noEmit` 与 eslint 干净；`npm run test:e2e` = **278 passed / 4 skipped / 0 failed**（V3 那条 firefox 用例本轮自己过了——**它是 flake，不是确定失败**，未修）。CHANGELOG 中英各加两条用户可见条目。
+- **超过任务表但已声明的五条**：外层 tab 去括注（移进面板副标题）；`paste.spec.ts:261` 补 `exact: true`（两层 tablist 名字互为子串）；`nextPending` 单参；探桥改用 `useSyncExternalStore`（`loading`→`ready`/`absent`，避开 `react-hooks/set-state-in-effect` 与首屏闪降级文案）；面板多一个「恢复默认」按钮（FSD 人工验收第 8 条要求）。
+- **日期口径**：S1/S2 的阶段文档写 2026-09-24（规划轮日期），但 `package.json`（11:42）、`paths.ts`（11:44）、`process.ts`（12:08）的 mtime 与未被触碰文件的旧 mtime 对照后，S1/S2/S3 实际同在 **2026-09-29**；本轮按真实日期记。
+- **未验证/风险**：`0.3.7` 未发布未 push，S1–S3 改动均未提交；**首页插件链接指向的 `public/md-convertor-extension.zip` 尚不存在（S4 交付物），现在是死链**（e2e 只断言 `href`/`download`）；S4 未动工；V1/V2 已做、V3 未修的裁决清单记在 `session-handoff.md`。
+### 2026-09-24（第十二轮）— S2 文档管线实施完成（T2.0–T2.5，仍无写盘）
+
+- **T2.0 图片内联能力提为导出（FSD §2 的 A1，按「可回滚、行为不变」先做）**：RED 是新增 `src/lib/images.exports.test.ts` 5 failed（导出不存在）→ GREEN 导出 `embedImageBuffer` / `mapWithConcurrency` / `MAX_IMAGES` / `MAX_SOURCE_IMAGE_BYTES` / `ProcessedImage`，既有 `images.test.ts` 47 passed，`git diff` 只有提取与导出。**与任务表的一处偏差**：只把 `prepareImage` 的远端分支改成调它，`prepareDataUriImage` 仍直调 `processImageBuffer` —— 改走新导出会把它的 `IMAGE_DATA_INVALID` 换成 `IMAGE_TYPE_UNSUPPORTED` 并改变占位符行为，与「行为不变」冲突；底层实现仍只有一份。
+- **T2.1 引用扫描**：`src/lib/local-docs/scan-refs.ts` 13 passed（`Cannot find module` → 绿），返回 `ImageRef{start,end,targetStart,targetEnd,syntax,target,alt}`；围栏/行内代码掩码跳过，`data-src` 不误判，引用式语法不处理。RED→GREEN 途中修掉三个真实 bug（HTML `end` 没含 `>`、`alt` 从截断片段读、测试自身的 splice 不变量错）。
+- **T2.2 内联管线**：`inline-images.ts` 13 passed。只改引用那一处字节；本地路径限源 md 目录树内（根外绝对路径 / `..` / 任何 `scheme:` / `//` 一律拒，根逃逸守卫做过变异检查）、扩展名先于读盘判类型、8 MiB 先 `stat` 后 `readFile`；远端走注入的 `fetchPublicResource`；两条路径共用 T2.0 的 `embedImageBuffer`（类型校验与 2048px 重编码不重写）；`data:` 不计读写，超 `MAX_IMAGES` 与超 20 MiB 均保留原引用 + warning；并发 4，中断向上传播。
+- **T2.3 组合层**：`process.ts` 13 passed（去重判定在服务端重算、`check` 回退比 sha256 —— 变异检查删掉哈希比较即红；跳过分支 fake 计数证明零调用；翻译前先 `stripDocMarker`、翻译后写新标记；标记的 `size`/`mtimeMs`/`sha256` 描述源文件）。**全程不写盘**：三个新文件的 `grep -c 'writeFile|mkdir|appendFile|createWriteStream'` 均为 0。
+- **T2.4 路由**：`POST /api/local-docs/process` 7 passed，走 `handleLocalApi`（与 scan 同一外壳，`validateConvertApiCaller` 不重复调用），body `{path, outputPath?, force?, translate?, targetLanguage?}`，`outputPath` 省略即回退设置的 `output.defaultPath`（仍缺则 400 给可读原因）；测试断言成功调用前后输出目录清单不变。
+- **T2.5 门禁**：`NODE_OPTIONS= ./init.sh` exit 0（Node 24.15.0，**88 files / 1180 tests**，较 S1 基线 83/1129 增 5 文件 51 例）；`npx tsc --noEmit` 与 eslint 干净；`npm run test:e2e` = 244 passed / 1 failed / 4 skipped，与 S1 T1.7 逐条一致，唯一失败仍是既有 firefox `e2e/home.spec.ts:108`（T2.0 动了共用模块，这条对照必要）。不加 CHANGELOG（无用户可见变化），不动桌面版本面（仍 `0.3.7`）。
+- **超过任务表但已声明的三条：** 本地扩展名→media type 映射写在 `inline-images.ts`（5 项，未导出 `SUPPORTED_TYPES`，语义不同）；`ImageRef` 多 `targetStart`/`targetEnd`（任务表要求原地替换）；翻译实现的 `warnings: string[]` 未并进结果的 `ConversionWarning[]`（无 code，硬塞会造假 code，S3 要显示需先定形状）。
+- **未验证/风险**：`0.3.7` 未发布未 push，本轮改动同样未提交；S2 无写盘路径，产物落盘仍待 S3；输入目录 == 输出目录的拒绝归 S3（FSD §2 ⑥）；firefox 那条 e2e 仍红；FSD §7 的「本地图片根目录」行已定稿。
+
+### 2026-09-24（第十一轮）— S1 目录与设置实施完成（T1.0–T1.7，桌面代码首次落地 + 一个既有门禁陷阱的修复）
+
+- **T1.0 版本面 0.3.6 → 0.3.7（6 处）**：RED 先在**既有** `scripts/release-guards.test.mjs` 加「目标版本 = `package.json` + lockfile 两处 + `feature_list.currentVersion`」断言（目标版本用正则从 `RELEASE_VERSION_ERROR` 提取，后续 bump 自动跟随），只改 `package.json`/`package-lock.json` 时红（`expected '0.3.7' to be '0.3.6'`），同步其余面后 30 passed。同步面：`scripts/release-desktop.mjs` 两处、`release-guards.test.mjs` 8 处 fixture、`feature_list.json`、`AGENTS.md` Verification 版本句。
+- **服务端与纯函数（T1.1–T1.5）**：`Settings.input.defaultPath` + 宽容读入从 `output` 扩到 `LENIENT_ROOT_KEYS = ["output", "input"]`（带反扩散断言）；`buildServerEnv()` 新增 `MD_CONVERTOR_DOWNLOADS_DIR`（主进程 `app.getPath("downloads")`，服务端空串回退 `~/Downloads`）；新增 `src/lib/local-docs/paths.ts`（服务端守卫与 preload 契约的两套独立实现用 8 条 parity 样例钉住，含 iCloud 路径）、`dedup.ts`（产物首行标记的构造/解析/剥离 + `decideLocalDoc` → `new|skip|check`）、`scan.ts` + `POST /api/local-docs/scan`（只读、一层、按名排序、上限 500、fs 码映射）。每条均先 RED（`Cannot find module './paths'` / `'./dedup'` / `'./route'`）后 GREEN；路由测试用真实 `mkdtemp` 目录、不 mock 扫描，并断言扫描前后目录清单不变。
+- **界面（T1.6）**：设置页「输入」卡片复用「输出」卡样式（零 CSS 改动），选择目录写入 `input`、「恢复默认」写回 `null`、无桥接时两按钮禁用并给出原因；e2e `-g "输入目录"` 2 passed、`-g "输出"` 5 passed 回归。
+- **门禁（T1.7）**：`NODE_OPTIONS= ./init.sh` exit 0（Node 24.15.0，**83 files / 1129 tests**，连续两次全绿）；`npm run test:e2e` = 244 passed / 1 failed / 4 skipped。
+- **范围外已声明的三件（待用户裁决）**：**V1** `vitest.config.ts` 的 `test.exclude` 加 `.next/**` —— `next build`（`output: "standalone"`）把整个仓库镜像进 `.next/standalone`（含测试文件），而 `init.sh` 顺序是 lint → typecheck → test → build，所以任何跟在一次 build/e2e 之后的运行都会收进约 85 个重复套件并报红（实测 17 failed / 162 passed / 179 files，样本 `.next/standalone/src/lib/images.test.ts:573`）；排除构建产物是根因而非 `rm -rf .next` 绕过。**V2** `chooseOutputDirectory()` 补 1 个 `.catch()`（preload 校验是**抛异常**，不是 resolve `{ ok: false }`）。**V3** `e2e/home.spec.ts:108` 一条**既有** firefox 失败，**未修**（见下）。
+- **V3 的证据与机制（新固化教训）**：干净 worktree HEAD `1a08440`（`git worktree add` + `cp -Rc node_modules`，**不要 symlink**）上 `--repeat-each=5` 5/5 复现 ⇒ 非本轮引入、非 flaky；`src/app` 与 `e2e/` 自 `v0.3.6` 起零改动。探针实测：按钮中心 y≈660 / 视口 720 处原始鼠标事件根本到不了文档（window 捕获监听为空、`elementFromPoint` 仍返回按钮本体），而 `el.click()` 与同法点击模式 tab 均正常；把按钮滚到 y≈646 后**同一发原始点击即生效** —— firefox 窗口 `outerHeight` 805 > 屏幕 `availHeight` 692 导致的环境敏感坐标裁剪，桌面端跑 Chromium，对用户无影响。
+- **未验证/风险**：`0.3.7` 未发布、未 push（发布需用户单独授权）；S2 T2.2 的本地图片根目录口径仍未定稿；firefox 那条 e2e 仍红。
 
 ### 2026-09-24（第十轮）— A 桌面端「文档处理」（feat-042）规划定稿：PRD §3 六条裁定 + 两条新需求（纯文档，零代码）
 
