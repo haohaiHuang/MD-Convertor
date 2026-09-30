@@ -2,14 +2,25 @@
 
 ## Current State
 
-- Last updated: 2026-09-30（**第二十五轮：本地文档页补页级标题**——用户报告「粘贴 URL 那页有大标题和副标题，本地文档那页没有」⇒ 方案 A 落地（加同款 hero，卡内不再重复标题），TDD 红→绿。动了 `src/app/`，故版本面 bump 到 `0.3.9`（**未发布、未 commit**）。上一轮见下）
-- Current version: `0.3.9`（**未发布**；上一个已发布版本 `0.3.8`，GitHub Release `v0.3.8`，tag 指向 `6e00474`，产物 **236,224,675 bytes** / SHA-256 `94624625…b2ea`，详表见 `docs/TESTING.md` 的 `## Gated Artifact (0.3.8)`；再上一个 `0.3.7` = 239,472,776 bytes / `6986356b…733c`）。**本机 `/Applications/MD-Convertor.app` = 0.3.8 构建**（第二十四轮装的，本轮改动不在其中）
-- Active feature: **无**。`feat-042`（A 桌面端「文档处理」）已于 2026-09-30 置 `done` 并随 `v0.3.7` 发布（S1–S4 + 12 条真机验收签字）；`feat-040`（B 浏览器插件）同日关闭；`feat-041` 已完成、已发布、已关闭。`0.3.8` 的内容是第二十一轮修复 + 第二十二轮打包收窄，本轮 `0.3.9` 是本地文档页标题面。
-- Next step: **等用户裁决三件事**。① 是否发布 `0.3.9` / 装本机（要先过提交门 ponytail → code-review → neat-freak，且发布需单独授权）；② 是否让 `extension/` 写方 percent-encode 文件名（B1 只修了读方）；③ 云端 Provider 端到端实测（需真实文章）。**不要重写第二套批量编排或第二条写盘路径**；**再次发布任何版本都要用户单独授权**。
-- Branch: `main` 已 push 到 **`538631f`**；**本轮改动尚未 commit**（4 个源码/测试文件 + 版本面 + 台账，见下）。tag `v0.3.8` 仍指 `6e00474`、`v0.3.7` 仍指 `9afbe36`，stash 列表为空。
+- Last updated: 2026-09-30（**第二十六轮：提交门 + `0.3.9` 提交与发布**——4 路只读评审后只修台账/测试（生产代码一行未动），清树跑 `desktop:release` exit 0，提交 `9f3642e` → push → tag `v0.3.9` → `gh release create --latest`，现为 `releases/latest`。前两轮见下）
+- Current version: `0.3.9`（**已发布**：GitHub Release `v0.3.9`，tag 指向 `9f3642e`，产物 **236,224,633 bytes** / SHA-256 `5e75709f…a9c9`，详表见 `docs/TESTING.md` 的 `## Gated Artifact (0.3.9)`）。上一个 `0.3.8` = 236,224,675 bytes / `94624625…b2ea`（tag `6e00474`），`0.3.7` = 239,472,776 bytes / `6986356b…733c`。**本机 `/Applications/MD-Convertor.app` 仍是 0.3.8**（第二十四轮装的；`0.3.9` 未装本机）
+- Active feature: **无**。`feat-042`（A 桌面端「文档处理」）已 `done` 并随 `v0.3.7` 发布（S1–S4 + 12 条真机验收签字）；`feat-040`（B 浏览器插件）同日关闭；`feat-041` 已完成、已发布、已关闭。`0.3.8` = 第二十一轮修复 + 第二十二轮打包收窄；`0.3.9` = 本地文档页页级标题。
+- Next step: **等用户裁决三件事**。① 是否把 `0.3.9` 装到本机 `/Applications`（目前是 0.3.8，装需单独授权，建议用发布 ZIP 解压而非正在运行的 `out/` bundle）；② 是否让 `extension/` 写方 percent-encode 文件名（B1 只修了读方）；③ 云端 Provider 端到端实测（需真实文章）。**不要重写第二套批量编排或第二条写盘路径**；**再次发布任何版本都要用户单独授权**。
+- Branch: `main` 已 push 到 **`9f3642e`**（tag `v0.3.9` 同指），工作区干净（发布后簿记提交见下）。tag `v0.3.8` 仍指 `6e00474`、`v0.3.7` 仍指 `9afbe36`，stash 列表为空。
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+（桌面产物）；浏览器插件另行验收于 Chromium，不进桌面发布门禁
 
-## 本轮（2026-09-30 第二十五轮：本地文档页补页级标题，版本面 → `0.3.9`）
+## 本轮（2026-09-30 第二十六轮：提交门 + `0.3.9` 提交与发布）
+
+- **用户指令**：「可以，commit、push、release」——授权走完整发布流程。
+- **提交门（4 路只读评审）**：ponytail **无可删项**（零新增 CSS、复用既有 hero token、删掉变死的 `.title`）；code-review Standards 无 TDD 硬违规；Spec 一致；neat-freak 找出 3 处陈旧台账句（`AGENTS.md` 的版本句、`PROGRESS.md` 的 `0.3.7` + 已删符号 `resolveScanDir`、`ARCHITECTURE.md`/`.zh.md` 的 `0.3.6` 版本句）与一段 CHANGELOG 英文歧义。
+- **只修台账与测试，生产代码一行未动**：① `e2e/local-docs.spec.ts` 的「卡片说明句」断言补 `{ exact: true }`（旧长句以该子串结尾 ⇒ 原断言在改动前后都绿，本不具判别力），删掉重复的 h1 断言与冗余的 1280 溢出检查（960 一档已覆盖 nowrap 最紧情形）；② 台账三处 + CHANGELOG 英文措辞按评审修正；③ `session-handoff.md` 压到 147 行 / 25,019 B（为发布后簿记留余量）。
+- **门禁**：先 `NODE_OPTIONS= ./init.sh` exit 0（**95 files / 1265 passed + 5 skipped**），再清 `out/` + `.desktop/` 跑 `NODE_OPTIONS= npm run desktop:release` **exit 0**（`./init.sh` → e2e **315 passed / 6 skipped** → live **2 passed** → `desktop:make` → 产物校验 + 历史归档守卫退役通知，均符合预期）。
+- **前两次门禁红，都是既有 flake、与本轮无关**：① firefox `e2e/home.spec.ts:568` 报 `NS_ERROR_PROXY_CONNECTION_REFUSED`（已登记的第 6 条未裁决 flake；隔离 `--repeat-each=5` **5/5 绿**，随后全量绿）；② `test:live` 的 WalkingLabs 用例 `expected 'direct' to be 'browser'`（网络/上游瞬态；隔离复跑 **2/2 绿**）。
+- **提交**：`9f3642e`（实现 + 版本面 + CHANGELOG + 台账，19 files / +168 / −74）→ push `origin/main`（`538631f` → `9f3642e`）→ tag `v0.3.9` 指向构建所用源码 `9f3642e` → `gh release create v0.3.9 … --latest`：非草稿非预发布、asset `uploaded`、服务端 digest 与本地一致、`releases/latest` = `v0.3.9`。**未**把 ZIP 拷进 `~/Downloads/MD-Convertor-archive/releases/`（release guard 会拒绝未登记项）。
+- **产物**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.9.zip` = **236,224,633 bytes**，SHA-256 `5e75709fc864a524661b0994bec0d87ff2eaa8d229f801416e9e34aa3239a9c9`；包内指纹：`Info.plist` 0.3.9 / macOS 12.0、主可执行 arm64、新文案「整理成」命中 `Resources/server/.next/static/chunks/1zp72wugxtkr-.js`、旧 `local-docs-title` 已消失、`Resources/server` 顶层仍恰为白名单六项（零仓库产物）、ZIP 3,542 条目 / 展开 566 M。
+- **未做**：`/Applications` 未重装（仍是 0.3.8）；`extension/` 写方 percent-encode、云端 Provider 实文实测仍待授权。
+
+## 上一轮（2026-09-30 第二十五轮：本地文档页补页级标题，版本面 → `0.3.9`）
 
 - **用户报告**：「粘贴 URL 那个面板有大标题和副标题，但本地文档转换那页没有」→ 给出诊断与三个方案后用户选 **A**（给该页加同级 hero，卡内不再重复标题），现已 TDD 落地。
 - **根因（截图实测）**：`src/app/page.tsx` 的 `local-docs` 分支只有页头 + 一张卡片，**整页没有任何 `h1`**（唯一标题是卡内 `h2 本地文档`，18px）；转换页则是 `h1` 42–64px + 副标题。⇒ 标题层级从 2 起步，且两页构图不对称（1,280×900 截图对照）。
@@ -18,7 +29,7 @@
 - **nowrap 陷阱（已规避并写进 FSD §4.1）**：`page.module.css` 在 `@media (min-width: 761px)` 对 `.title / .subtitle` 施加 `white-space: nowrap`，副标题过长会被直接裁掉（无省略号）⇒ 副标题刻意写短，未去改那条查询（去改会同时影响转换页既有行为）。
 - **溢出核对**：新用例在 **960 / 375** 两档视口逐元素查 `getBoundingClientRect().right > innerWidth`（**不用** `scrollWidth === clientWidth`，会被 `overflow-x: clip` 骗过）= 空。960 是窗口最小宽度（`electron/main.mjs` 的 `minWidth: 960`），nowrap 最紧的一档。
 - **门禁**：`NODE_OPTIONS= ./init.sh` exit 0（**95 files / 1270 tests**；`src/app/**` 不在 vitest 覆盖率 include 内，故计数不变）；`npm run test:e2e` **315 passed / 6 skipped / 0 failed**（+3 = 新用例 ×3 引擎）+ `E2E tracked-file check passed.`。
-- **版本面 TDD bump `0.3.8` → `0.3.9`**：先改 `scripts/release-guards.test.mjs` 期望 ⇒ RED（`expected 'Release version must be 0.3.8.' to contain '0.3.9'`）⇒ 改 `release-desktop.mjs`（错误串 + 判定，2 处）/ `package.json` / `package-lock.json`（2 处）/ `feature_list.currentVersion` ⇒ **30 passed**。**未发布、未 commit、未装本机**。
+- **版本面 TDD bump `0.3.8` → `0.3.9`**：先改 `scripts/release-guards.test.mjs` 期望 ⇒ RED（`expected 'Release version must be 0.3.8.' to contain '0.3.9'`）⇒ 改 `release-desktop.mjs`（错误串 + 判定，2 处）/ `package.json` / `package-lock.json`（2 处）/ `feature_list.currentVersion` ⇒ **30 passed**。当时未发布、未 commit、未装本机（**已由第二十六轮提交并随 `v0.3.9` 发布**）。
 - **只报未改**：① 375px 下文档列表表格拥挤（既有基线，本轮未碰表格 markup/CSS；产品最小窗宽 960 也到不了 375）；② `design_audit` 工具自身报错（相对路径报「目标下无前端文件」、绝对路径崩 `runNonTextContrastChecks is not defined`）⇒ 本轮用 `design_contrast` + 手工核对替代，属工具缺陷。
 
 ## 上一轮（2026-09-30 第二十四轮：提交门四条「只报未改」的处置）

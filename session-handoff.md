@@ -2,42 +2,42 @@
 
 ## Resume Here
 
-- Current version: **`0.3.9`（未发布、未 commit）**——版本面（`package.json` / `package-lock.json` / `feature_list.currentVersion` / `scripts/release-desktop.mjs` / release-guards fixture）已按 TDD 推到 `0.3.9`，本轮改动还在工作区里；**GitHub Release 最新仍是 `v0.3.8`**（tag 指向 `6e00474`，**产物字节数与 SHA-256 见 `docs/TESTING.md` 的 `## Gated Artifact (0.3.8)`**，本文件不重复以免漂移）。再上一个已发布版本 `0.3.7`（239,472,776 bytes / `6986356b…733c`）。未签名/未 notarize（个人测试定位，QA-008 accepted）。
-- **本机 `/Applications/MD-Convertor.app` = 0.3.8 发布包**（第二十四轮装入并真启动验证过）；本轮（0.3.9）的改动不在其中，要在本机看到效果需重新 build + 重装。
+- Current version: **`0.3.9`（已发布：GitHub Release `v0.3.9`，tag 指向 `9f3642e`）**——版本面（`package.json` / `package-lock.json` / `feature_list.currentVersion` / `scripts/release-desktop.mjs` / release-guards fixture）与源码同一条提交，**产物字节数与 SHA-256 见 `docs/TESTING.md` 的 `## Gated Artifact (0.3.9)`**（本文件不重复以免漂移）。上一个已发布版本 `0.3.8`（236,224,675 bytes / `94624625…b2ea`），再上 `0.3.7`（239,472,776 bytes / `6986356b…733c`）。未签名/未 notarize（个人测试定位，QA-008 accepted）。
+- **本机 `/Applications/MD-Convertor.app` = 0.3.8 发布包**（第二十四轮装入并真启动验证过）；`0.3.9`（已发布）**未装本机**，要在本机看到效果需装发布 ZIP（recipe 见 Environment Notes）。
 - Active feature: **无**。`feat-042`（A 桌面端「文档处理」）2026-09-30 置 `done` 并随 `0.3.7` 发布：S1–S4 全绿 + 12 条真机验收由用户签字（阶段文档 `docs/features/app-document-processing/`，逐任务 RED/GREEN 在 `feature_list.json` 的 `feat-042.verification`）。关键不变量：两个 `/api/local-docs/*` **只读不写盘**，**唯一写盘出口是 `outputBridge().saveFile()`**。`feat-040`（B 插件）同日关闭，两者无代码依赖。`0.3.9` 没有新增 feature，内容是本地文档页的标题面。
-- **唯一推荐下一步：先定本轮去向**——① 是否提交 `0.3.9`（需先过提交门：ponytail → code-review → neat-freak，且 commit 要用户确认）；② 是否发布 / 装本机（**发布任何版本都要单独授权**）；另有两件待裁决（③ `extension/` 写方 percent-encode 文件名；④ 云端 Provider 实文实测）。**不要重写第二套批量编排或第二条写盘路径**；提交门四条「只报未改」已在第二十四轮处置完毕（1 修 / 3 判不改），不要再重开。
+- **唯一推荐下一步：先定本轮去向**——① 是否把 `0.3.9` 装到本机 `/Applications`（需单独授权；用发布 ZIP 解压而非 `out/` 里活着的 bundle）；② 
+  `extension/` 写方 percent-encode 文件名；③ 云端 Provider 实文实测。**不要重写第二套批量编排或第二条写盘路径**；提交门四条「只报未改」已在第二十四轮处置完毕（1 修 / 3 判不改），不要再重开。**再发布任何版本（含重发 0.3.9）都要用户单独授权。**
 - Pending（无一是阻塞项）：① 产物与 tag 一律不动，缺失项按退役处理；② 签名/notarization 不做；③ UI 评审结论勿重提；④ 打包冒烟第二十一轮已在新装包上实测通过；⑤ **六条未裁决 flake**（列在 Environment Notes）；⑥ 打包镜像已收窄（第二十二轮）。
-- Branch: `main` 已 push 到 **`538631f`**；**本轮（0.3.9）改动尚未 commit**——工作区有 4 个源码/测试文件（`src/app/page.tsx`、`src/app/local-docs/panel.tsx`、`panel.module.css`、`e2e/local-docs.spec.ts`）+ 版本面 + 台账待提交。tag `v0.3.8` 指 `6e00474`、`v0.3.7` 指 `9afbe36`；stash 空。发布历史见 `docs/QUALITY-AUDIT.md`；`v0.1.3` = `ce041c9` 是不可变历史锚点。
+- Branch: `main` 已 push 到 **`9f3642e`**（= `v0.3.9` 指向的构建源码），**工作区干净**。tag `v0.3.8` 指 `6e00474`、`v0.3.7` 指 `9afbe36`；stash 空。发布历史见 `docs/QUALITY-AUDIT.md`；`v0.1.3` = `ce041c9` 是不可变历史锚点。
 
 - **本文件只写现役状态**（≤150 行 / ≤25KB）：阶段间交接写对应阶段文档的 `## Handoff`，轮次历史压进 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`。
 
 ## 新会话开工提示词（复制即用）
 
 ```
-开工 MD-Convertor —— 本轮改了本地文档页的标题面，版本面已按 TDD 推到 `0.3.9`（**未发布、未 commit**）
-刚做完；现在**没有在办事项**，按用户新指令开工。
+开工 MD-Convertor —— 上一轮提交并发布了 `0.3.9`（本地文档页页级标题）；**现在没有在办事项、工作区干净**，按用户新指令开工。
 
 【建立基线，别跳过】
 1. pwd 确认在 /Users/huanghaohai/Desktop/MD-Convertor。
 2. 读 AGENTS.md（本项目那份）、PROGRESS.md、feature_list.json、session-handoff.md
    （`## Resume Here` 是权威）；需要背景时再读 docs/PLAN-browser-extension.md 与对应 feature 文档的
    `## Result`，不必通读全部阶段文档。
-3. `git status --short` 会列出 `0.3.9` 的 4 个源码/测试文件 + 版本面 + 台账（本轮尚未 commit，别当成脏树）。
-   最新提交 = `538631f`；tag `v0.3.8` = `6e00474`（最新 Release）、`v0.3.7` = `9afbe36`。
+3. `git status --short` 应当是**干净的**（发布轮的改动已全部提交）；最新提交 = `9f3642e`；
+   tag `v0.3.9` = `9f3642e`（最新 Release）、`v0.3.8` = `6e00474`、`v0.3.7` = `9afbe36`。
 4. NODE_OPTIONS= ./init.sh 建立基线：Node 必须是 24.14.1 或 24.15.0（本机默认 v24.16.0 会让
-   electron-forge 空跑却 exit 0）；期望 95 files / 1270 tests 全绿。
+   electron-forge 空跑却 exit 0）；期望 95 files / 1265 passed + 5 skipped（那 5 条是
+   `desktop-server-scope` 守卫，没有 `.desktop/server` 时按设计 skip）。
 
-【0.3.7 / 0.3.8 都已经发布，别重做；0.3.9 未发布】
+【0.3.7 / 0.3.8 / 0.3.9 都已发布，别重做】
 - 12 条真机人工验收已跑完并签字（S4 文档 §T4.2）；不要再为它们写自动化替代品。
 - 再次发布（任何版本）都要用户单独授权。发布门是 `npm run desktop:release`（版本常量、历史 ZIP
   守卫、产物新鲜度/结构/SHA-256 校验都在里面，见 docs/TESTING.md 的「Release Guard」）。
 - 装到本机时用发布 ZIP 解压，不要用 `out/` 里活着的 bundle（recipe 见 Environment Notes）；旧安装用 `mv` 归档不要 `rm -rf`。
 
 【硬约束，违反任一条都算做错】
-- **版本面是 0.3.9 且未发布**：本轮已把版本面 + `scripts/release-desktop.mjs` 的目标版本推到 0.3.9；
-  发下一版时同样先推版本面（bump 需用户授权）；release-guards 的 fixture 已改为从错误串派生
-  （`CURRENT_RELEASE_TARGET`），bump 时不必再改它。只要改桌面代码就得先做这一步，否则发布门禁会用
-  旧版本号打新源码。只改 `extension/` 的轮次不 bump。
+- **版本面是 0.3.9 且已发布**：它已与源码同一条提交（`9f3642e`）；再改桌面代码要**先 bump 到 0.3.10**
+  （bump 需用户授权）；release-guards 的 fixture 已改为从错误串派生（`CURRENT_RELEASE_TARGET`），
+  bump 时不必再改它。若跳过这步，发布门禁会用旧版本号打新源码。只改 `extension/` 的轮次不 bump。
 - 第二十五轮已落地、不要重复做：本地文档页与转换页共用同一组 `.hero / .title / .subtitle`（`local-docs`
   分支自己有一个 `h1 id="page-title"`），卡片里不再重复标题（只留说明句 + 计数 pill）。
   **两个画面的副标题都要短**：`page.module.css` 在 `≥761px` 对 `.title/.subtitle` 施加 `white-space: nowrap`，
@@ -75,7 +75,9 @@
 
 ## Latest Change
 
-**本轮（2026-09-30 第二十五轮）**：用户报告「粘贴 URL 那个面板有大标题和副标题，但本地文档转换那页没有」→ 诊断（截图实测：转换页 `h1` 42–64px + 副标题；本地文档页**整页无 `h1`**，唯一标题是卡内 18px `h2`）+ A/B/C 三案，用户选 **A**。TDD：`e2e/local-docs.spec.ts` 先加「画面级大标题与副标题和转换页同级，卡片里不再重复一次标题」（唯一 `h1` 文案 + `heading level 2` 计数 0 + 两条新文案 + 溢出为空）⇒ RED ⇒ `page.tsx` 的 local-docs 分支加同款 hero（`h1 id="page-title"` + 副标题）、`panel.tsx` 去掉卡内 `h2`、`panel.module.css` 删掉变死的 `.title` ⇒ GREEN（chromium 17 passed）。**零新增 CSS**；溢出用 `getBoundingClientRect().right > innerWidth`（不用 `scrollWidth`，会被 `overflow-x: clip` 骗过）在 **960 / 375** 两档核对（960 是窗口最小宽度、nowrap 最紧）= 空。版本面 TDD bump `0.3.8` → **`0.3.9`**（RED `expected 'Release version must be 0.3.8.' to contain '0.3.9'` ⇒ 30 passed）。门禁：`./init.sh` **95 files / 1270 tests** exit 0、三引擎 e2e **315 passed / 6 skipped**。**未 commit、未发布、未装本机**；提交与发布待授权。
+**本轮（2026-09-30 第二十六轮）**：用户「可以，commit、push、release」⇒ 4 路只读评审（ponytail 无可删项 / Standards 无 TDD 硬违规 / Spec 一致 / neat-freak 找出 3 处陈旧台账句）后**只修台账与测试、生产代码一行未动**（给一条不具判别力的断言补 `exact: true`、删两处冗余断言、修 `AGENTS.md` / `PROGRESS.md` / `ARCHITECTURE` 的陈旧版本句）⇒ `9f3642e` → push → 清树跑 `desktop:release` **exit 0** → tag `v0.3.9` 指向 `9f3642e` → `gh release create --latest`（asset digest 与本地一致、`releases/latest` = `v0.3.9`）。前两次门禁红均为既有 flake（firefox 代理 / live 上游瞬态），隔离重跑全绿。逐条见 `docs/QUALITY-AUDIT.md` 第二十五轮发布条目与 `docs/TESTING.md` 的 `## Gated Artifact (0.3.9)`。
+
+**上一轮（2026-09-30 第二十五轮）**：本地文档页补页级标题——用户报告「粘贴 URL 那个面板有大标题和副标题，但本地文档转换那页没有」⇒ 诊断（截图实测：转换页 `h1` 42–64px + 副标题；本地文档页**整页无 `h1`**，唯一标题是卡内 18px `h2`）后用户选 A：加同级 hero、卡内不再重复标题（**零新增 CSS**）。已随 `v0.3.9` 发布。/local-docs.spec.ts` 先加「画面级大标题与副标题和转换页同级，卡片里不再重复一次标题」（唯一 `h1` 文案 + `heading level 2` 计数 0 + 两条新文案 + 溢出为空）⇒ RED ⇒ `page.tsx` 的 local-docs 分支加同款 hero（`h1 id="page-title"` + 副标题）、`panel.tsx` 去掉卡内 `h2`、`panel.module.css` 删掉变死的 `.title` ⇒ GREEN（chromium 17 passed）。**零新增 CSS**；溢出用 `getBoundingClientRect().right > innerWidth`（不用 `scrollWidth`，会被 `overflow-x: clip` 骗过）在 **960 / 375** 两档核对（960 是窗口最小宽度、nowrap 最紧）= 空。版本面 TDD bump `0.3.8` → **`0.3.9`**（RED `expected 'Release version must be 0.3.8.' to contain '0.3.9'` ⇒ 30 passed）。门禁：`./init.sh` **95 files / 1270 tests** exit 0、三引擎 e2e **315 passed / 6 skipped**。**未 commit、未发布、未装本机**；提交与发布待授权。
 
 **上一轮（2026-09-30 第二十三/二十四轮）**：0.3.8 发布轮 —— 版本面 TDD 推到 `0.3.8`（fixture 默认值改从 `RELEASE_VERSION_ERROR` 派生）⇒ `desktop:release` exit 0 ⇒ `6e00474` → push → tag `v0.3.8` → `gh release create --latest`；随后第二十四轮只处理提交门四条「只报未改」（只改第 2 条：`desktop-server-scope.test.mjs` 的静默假绿 → `describe.skipIf`；①③④ 判不改，纯测试改动未 bump）。逐条见 `docs/QUALITY-AUDIT.md` 与 `docs/TESTING.md` 的 `## Gated Artifact (0.3.8)`。
 
@@ -100,8 +102,8 @@
 
 ## Next Stage Entry
 
-- 当前 `activeFeature` = **无**。`feat-042`（A 桌面端「文档处理」）2026-09-30 已 `done` 并随 `0.3.7` 发布（S1–S4 全绿 + 12 条真机验收签字）；`feat-024` – `feat-041` 均 done。版本面 `0.3.9`（**未发布、未 commit**）。
-- 下一轮入口：**由用户指定**。候选（均需单独授权）：提交 / 发布 `0.3.9`、装本机、`extension/` 写方 percent-encode、云端 Provider 实文实测。**没有强制项**；别再为已关闭的验收写自动化替代品；提交门的四条「只报未改」已处置完毕，不再作为候选项。
+- 当前 `activeFeature` = **无**。`feat-042`（A 桌面端「文档处理」）2026-09-30 已 `done` 并随 `0.3.7` 发布（S1–S4 全绿 + 12 条真机验收签字）；`feat-024` – `feat-041` 均 done。版本面 `0.3.9`（**已发布**，tag `9f3642e`）。
+- 下一轮入口：**由用户指定**。候选（均需单独授权）：把 `0.3.9` 装本机、`extension/` 写方 percent-encode、云端 Provider 实文实测、在 Terminal 里跑一次规范打包冒烟。**没有强制项**；别再为已关闭的验收写自动化替代品；提交门的四条「只报未改」已处置完毕，不再作为候选项。
 - 每轮开头固定读：`PROGRESS.md` → `session-handoff.md` → `feature_list.json` → 相关 `docs/`（涉及翻译行为时先读 `docs/PRD-translation.md`），然后跑 `./init.sh` 建立基线。
 - 全部阶段文档（已完成入口）：`docs/features/translation/S1-settings-infra.md` 至 `S6-release-and-docs.md`；各文档的 Handoff 已写入下一阶段所需的真实接口与边界。
 
@@ -127,15 +129,14 @@
 
 ## Recommended Next Action
 
-**`feat-042` 已随 `0.3.7` 发布，`0.3.8` 已发布并已装本机；`0.3.9`（本地文档页补页级标题）已在工作区、未 commit、未发布。桌面线下一轮没有强制项。**
+**`0.3.9`（本地文档页页级标题）已随 tag `9f3642e` 发布，`0.3.8` 是当前装机版；桌面线下一轮没有强制项。**
 
 **待用户裁决（都可以否决）**：
 
-1. **提交 / 发布 `0.3.9`**：若提交，先跑提交门（ponytail → code-review → neat-freak）再获用户确认；若发布，按发布约定走（源码提交 → 台账提交 → `desktop:release` → tag 指向构建所用源码 → `gh release create --latest` → 发布后簿记提交）。
-2. **把 `0.3.8`（或 `0.3.9`）装到本机 `/Applications`**：目前本机是 0.3.8 发布包；要在本机看到本轮效果需先重 build。
-3. **`extension/` 写方 percent-encode 文件名**（B1 只修了读方，需单独授权）。
-4. **云端 Provider 端到端实测**（真实文章走一遍「拉取模型 → 选模型 → 翻译」，唯一没被真人走完的主干路径）。
-5. **在 Terminal 里跑一次规范打包冒烟**（`ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1`，沙箱开启；agent 沙箱内只能 `--no-sandbox --disable-gpu` 取证）。
+1. **把 `0.3.9` 装到本机 `/Applications`**：用发布 ZIP 解压安装（recipe 见 Environment Notes），旧安装用 `mv` 归档；**装包需单独授权**（本机现在仍是 0.3.8）。
+2. **`extension/` 写方 percent-encode 文件名**（B1 只修了读方，需单独授权）。
+3. **云端 Provider 端到端实测**（真实文章走一遍「拉取模型 → 选模型 → 翻译」，唯一没被真人走完的主干路径）。
+4. **在 Terminal 里跑一次规范打包冒烟**（`ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1`，沙箱开启；agent 沙箱内只能 `--no-sandbox --disable-gpu` 取证）。
 
 **已裁决/已完成，不要重开**：提交门四条「只报未改」（第二十四轮：1 修 / 3 判不改，依据在 `docs/QUALITY-AUDIT.md` 第二十四轮条目，评审再提请指向那里）；预发布评审的行为存疑项与 3 处 ponytail 可删（第二十一轮全落地）；`vitest.config.ts` 的 `.next/**` 排除与 `settings/page.tsx` 的 `.catch()`（V1/V2）；A1 的 `images.ts` 提取导出；S3 的五处任务表外选择 / S4 的四处偏差；真机反馈历轮 16 + 5 + 1 + 6 条；首页入口画面（用户裁定为最初设计意图）；打包镜像收窄（第二十二轮已完成）；本地文档页页级标题（第二十五轮，用户选 A）。
 
