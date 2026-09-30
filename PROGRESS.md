@@ -3,10 +3,10 @@
 ## Current State
 
 - Last updated: 2026-09-30（**第二十三轮：提交门 + 版本面推进到 `0.3.8` + 发布 + 收窄收口**——第二十一、二十二轮改动经四路只读评审后落地并提交；版本面（`package.json` / `package-lock.json` / `feature_list.currentVersion` / `release-desktop.mjs` / release-guards fixture，fixture 已改为从错误串派生）按 TDD 推到 `0.3.8`（RED 5 failed → GREEN 30 passed）；跑 `desktop:release` 后打 tag 并发布 GitHub Release。细节见下）
-- Current version: `0.3.8`（**本轮发布**，GitHub Release `v0.3.8`；产物与 SHA-256 见 `docs/TESTING.md` 的 `## Gated Artifact (0.3.8)` 与 `feature_list.json` 的 `feat-042.verification`）。上一个已发布版本 `0.3.7`（2026-09-30，239,472,776 bytes / `6986356b…733c`）；**本机 `/Applications/MD-Convertor.app` = 第二十一轮构建**（第二十二轮收窄后的构建仍只在 `out/`）
+- Current version: `0.3.8`（**本轮已发布**，GitHub Release `v0.3.8`，tag 指向 `6e00474`；产物 **236,224,675 bytes** / SHA-256 `94624625…b2ea`，详表见 `docs/TESTING.md` 的 `## Gated Artifact (0.3.8)`）。上一个已发布版本 `0.3.7`（2026-09-30，239,472,776 bytes / `6986356b…733c`）；**本机 `/Applications/MD-Convertor.app` = 第二十一轮构建**（第二十二轮收窄后的构建仍只在 `out/`）
 - Active feature: **无**。`feat-042`（A 桌面端「文档处理」）已于 2026-09-30 置 `done` 并随 `v0.3.7` 发布（S1–S4 + 12 条真机验收签字）；`feat-040`（B 浏览器插件）同日关闭；`feat-041` 已完成、已发布、已关闭。**本轮的 0.3.8 没有新增 feature**，内容是第二十一轮修复 + 第二十二轮打包收窄。
 - Next step: **等用户裁决三件事**。① 是否把 `0.3.8` 装上本机 `/Applications`（第二十二轮收窄后的构建仍在 `out/`，属另一轮）；② 是否让 `extension/` 写方 percent-encode 文件名（B1 只修了读方）；③ 云端 Provider 端到端实测（需真实文章）。**不要重写第二套批量编排或第二条写盘路径**；**再次发布任何版本都要用户单独授权**。
-- Branch: `main`，本轮把第二十一、二十二轮改动连同版本面一起提交并打 tag `v0.3.8`（提交哈希见 `git log -1`）；tag `v0.3.7` 仍指 `9afbe36`，stash 列表为空
+- Branch: `main`，本轮把第二十一、二十二轮改动连同版本面一起提交（`6e00474`）并打 tag `v0.3.8`（已 push）；tag `v0.3.7` 仍指 `9afbe36`，stash 列表为空。发布后的簿记提交记录 digest / SHA / 台账（见 `docs/TESTING.md` 与 `docs/QUALITY-AUDIT.md`）。
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+（桌面产物）；浏览器插件另行验收于 Chromium，不进桌面发布门禁
 
 ## 本轮（2026-09-30 第二十三轮：提交门 + `0.3.8` 提交/发布）
@@ -14,7 +14,10 @@
 - **用户指令**：「那就无所谓，commit、push 加提交 release 到 GitHub 吧」——即接受「下载后可能被 Gatekeeper 拦」的既有结论，直接走提交门 + 发布。
 - **提交门（4 路只读评审，0 硬违规）**：ponytail（3 处可删，均装饰性）/ code-review · Spec / code-review · Standards（无 TDD 硬违规）/ neat-freak。**必须改的只有台账与版本面**（版本面仍是已发布的 `0.3.7`，直接发布会让新包与旧包同名）；行为存疑项（`withoutTrailingSlash` 丢掉 `"/"` 分支等）**只报未改**，与第二十轮先例一致。
 - **版本面 bump（TDD）**：先把 `scripts/release-guards.test.mjs` 的期望改到 `0.3.8` ⇒ RED「`expected 'Release version must be 0.3.7.' to contain '0.3.8'`」，再改 `package.json` / `package-lock.json`（两处）/ `feature_list.json` 的 `currentVersion` / `scripts/release-desktop.mjs`（错误串 + `version !== "0.3.8"` 判定）。bump 时又暴露出 fixture 默认版本写死的问题（5 failed）⇒ 顺手把 fixture 默认值改为**从 `RELEASE_VERSION_ERROR` 派生**（`CURRENT_RELEASE_TARGET`），以后 bump 只需改一处 ⇒ GREEN **30 passed**。
-- **门禁**：`NODE_OPTIONS= ./init.sh` 95 files / 1270 tests 全绿；`desktop:release` 见下。
+- **门禁**：`NODE_OPTIONS= ./init.sh` exit 0（**95 files / 1270 tests**）。
+- **发布门**：清 `out/` + `.desktop/` 后 `NODE_OPTIONS= npm run desktop:release` **exit 0** —— `./init.sh` → e2e **312 passed / 6 skipped / 0 failed** → live **2 passed** → `desktop:make` → 产物校验（版本 / arm64 / 包结构 / 新鲜度）+ 历史归档守卫（0.1.0–0.2.1 与只读 0.1.3 副本报退役，符合预期）。
+- **提交与发布**：`6e00474`（实现 + 版本面 + CHANGELOG + 台账）→ push `origin/main`（`3a75cea` → `6e00474`）→ tag `v0.3.8` → `gh release create v0.3.8 … --latest`：非草稿非预发布、asset `uploaded`、服务端 digest 与本地一致、`releases/latest` 指向它。**未**把 ZIP 拷进 `~/Downloads/MD-Convertor-archive/releases/`（release guard 会拒绝未登记项）。
+- **产物**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.8.zip` = **236,224,675 bytes**，SHA-256 `94624625fdb99b492f533b23d9ae63aa22faa5153b5bbea6bc8a02f12cdeb2ea`；解压核查 `Resources/server` 顶层 = `.next / browser / node_modules / package.json / public / server.js`（**零仓库产物**）、ZIP 3,542 条目 / 展开 547 M、asar 命中第二十一轮 `delete current.defaults`、`Info.plist` 0.3.8 / macOS 12.0、主可执行 arm64。
 - **未做**：`extension/` 写方 percent-encode、云端 Provider 实文实测（均待授权）；`/Applications` 本轮未重装（仍是第二十一轮构建）。
 
 ## 上一轮（2026-09-30 第二十二轮：打包镜像收窄 + 无仓库/无缓存可移植性实测）

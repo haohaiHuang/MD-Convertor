@@ -164,13 +164,26 @@ The `0.3.5` gate ran on 2026-09-21 and passed end to end. It carries the visual 
 
 The `0.3.6` gate ran on 2026-09-22 and passed end to end. It carries `feat-041`: a default folder for downloaded Markdown (the Output card in Settings, and a `write through the desktop bridge / fall back to the browser download` fork on 下载), plus that feature's T3.0 packaging narrowing (the archive keeps only `package.json` and `electron/`, 253 entries → 10). Counts: `./init.sh` 68 files / 999 tests, three-engine E2E 239 passed / 4 skipped, live 2 passed. See [`features/default-save-path/S3-release.md`](features/default-save-path/S3-release.md).
 
+The `0.3.8` gate ran on 2026-09-30 and passed end to end (the first attempt). It carries the round-21 fixes landed after the `0.3.7` release (the header 全选 no longer redoes processed documents, the packaged-smoke `defaults` echo fix) plus the round-22 packaging change: `prepare-desktop.mjs` copies a fixed whitelist instead of the whole `.next/standalone` repository mirror, so the shipped size no longer depends on the working tree. The gate was run from a cleaned tree (`out/` and `.desktop/` removed first), and the artifact was extracted and checked: `Resources/server` holds exactly the six whitelist entries with no `docs/`, `src/`, `e2e/`, `tests/` or `out/` copy, and the asar carries the round-21 `delete current.defaults` fingerprint. Counts: `./init.sh` 95 files / 1270 tests, three-engine E2E 312 passed / 6 skipped, live 2 passed.
+
 The `0.3.7` gate ran on 2026-09-30 and passed end to end. It carries all of `feat-042`: the landing screen with two entries, batch processing for local Markdown documents (image inlining, optional translation, dedup, source folder read-only), the local-documents input directory setting, the browser-extension ZIP served from the landing screen, and the two feedback rounds that followed. Counts: `./init.sh` 93 files / 1252 tests, three-engine E2E 306 passed / 6 skipped, live 2 passed. The first attempt died on a firefox hydration timeout (`e2e/local-docs.spec.ts:404`); the case passed 5/5 in isolation and the re-run was fully green. See [`features/app-document-processing/S4-extension-package-and-acceptance.md`](features/app-document-processing/S4-extension-package-and-acceptance.md).
 
 The `0.3.4` gate ran on 2026-09-21 and passed end to end. It carries `feat-036` (a "use paste instead" hint under a failed link fetch), `feat-037` (the cloud card's「清除」resets the whole card) and the application icon: `assets/icon.icns` now replaces Electron's default icon and `assets/` is excluded from the asar. `tests/app-icon.test.ts` guards the icon (1024px transparent master, required icns types, the `forge.config.cjs` wiring trap, and the exclusion) and `electron.icns` inside the bundle was compared with the repository file by SHA-256.
 
 A later fix for long-article translation timeouts (`feat-024`, 2026-09-18) changed the task budget to scale with the batch count. A later round (`feat-029`, 2026-09-18) made a cloud provider's four fields mandatory to save, let the settings page pull models from an unsaved draft without writing anything, and replaced the saved key in its input box with an eight-dot placeholder. It is covered by unit tests for the form rules and the draft model route (`src/lib/settings/provider-form.test.ts`, `src/app/api/provider/models/route.test.ts`) plus three new settings E2E cases and three rewritten ones (the old「拉取模型先保存草稿」expectations no longer hold). Another round raised the per-call ceiling from 60s to 180s (`feat-027`) and fixed a timeout that was reported as an unreadable answer, and it removed the「当前生效」mode badge (`feat-028`). All of it was verified by unit tests, a full `./init.sh` baseline, a three-engine E2E run, and a real-machine probe against the user's cloud provider (a 121-block document that used to fail at the 60s ceiling now returns 200). The version decision landed on `0.3.1`: `package.json`, the lock file, `feature_list.json` and the release guard all read `0.3.1` (the guard test moved to RED first, then to 29 passing). A further round (`feat-031`, 2026-09-20) raised `next` to 16.3.5 and `sharp` to 0.35.4 so `npm audit --omit=dev` reports no production advisories, dropped the gear glyph from the header, renamed both convert buttons to 「转换」, aligned the rich-text convert button's right edge with the paste box above it, and made the key box read-only while a key is stored. The last round (`feat-032`, 2026-09-20) dropped the green「MD」square and set the wordmark in Michroma, vendoring the font and its OFL licence under `public/fonts/` and loading it with `next/font/local`; `tests/brand-font.test.ts` guards the two files, the E2E brand case compares the served woff2 with the repository file by SHA-256, and the build was re-run with all network access denied (`sandbox-exec … (deny network*) npm run build`, exit 0) to prove it no longer reaches Google. The artifact recorded below is the pre-fix `0.3.0` build, kept as history; everything from `feat-024` onwards shipped in the `0.3.1`–`0.3.6` artifacts.
 
-## Gated Artifact (0.3.7)
+## Gated Artifact (0.3.8)
+
+- Path: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.8.zip`
+- Size: `236,224,675` bytes
+- SHA-256: `94624625fdb99b492f533b23d9ae63aa22faa5153b5bbea6bc8a02f12cdeb2ea`
+- Package: version `0.3.8`, arm64, macOS 12.0+
+- Automated evidence: 95 files / 1270 tests, three-engine E2E 312 passed / 6 skipped, live 2/2
+- Bundle content check: `Resources/server` holds exactly the whitelist (`server.js`, `package.json`, `.next`, `node_modules`, plus the injected `public/` and `browser/`), with no `docs/`, `src/`, `e2e/`, `tests/` or `out/` copy (ZIP is `3,542` entries, `547 M` expanded, down from round 22's measured `3,991` entries); the asar carries the round-21 `delete current.defaults` fingerprint
+- Published: [GitHub Release `v0.3.8`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.8) (tag `6e00474`, newest release; the uploaded asset's server-side digest matches the SHA-256 above)
+- Signing: not Developer ID signed or notarized, so the artifact is suitable for personal testing only
+
+## Historical Artifact (0.3.7)
 
 - Path: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.7.zip`
 - Size: `239,472,776` bytes
@@ -178,7 +191,7 @@ A later fix for long-article translation timeouts (`feat-024`, 2026-09-18) chang
 - Package: version `0.3.7`, arm64, macOS 12.0+
 - Automated evidence: 93 files / 1252 tests, 96% statements (about 87.8% branches, 98.2% functions), three-engine E2E 306 passed / 6 skipped, live 2/2
 - Bundle content check: the traced server contains the batch panel's copy - `内嵌图片 ` (the summary line) survives and the retired per-row template `完成（内嵌` is gone, which is the fingerprint that this ZIP was built after the round-19 status-label change
-- Published: [GitHub Release `v0.3.7`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.7) (tag `9afbe36`, newest release; the uploaded asset's server-side digest matches the SHA-256 above)
+- Published: [GitHub Release `v0.3.7`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.7) (tag `9afbe36`; the uploaded asset's server-side digest matches the SHA-256 above)
 - Signing: not Developer ID signed or notarized, so the artifact is suitable for personal testing only
 
 ## Historical Artifact (0.3.6)
