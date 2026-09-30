@@ -17,6 +17,12 @@ describe("output channel names", () => {
   });
 });
 
+describe("system channel names", () => {
+  it("declares the open-path channel the main process handles", () => {
+    expect(contract.CHANNELS.openPath).toBe("md-convertor:system:open-path");
+  });
+});
+
 describe("isValidOutputFilename", () => {
   it.each(["notes.md", "我的文档 2026.md", "a".repeat(255)])("accepts %s", (filename) => {
     expect(contract.isValidOutputFilename(filename)).toBe(true);

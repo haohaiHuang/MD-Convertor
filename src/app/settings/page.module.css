@@ -154,6 +154,14 @@
   margin-left: auto;
 }
 
+/* With `flex-basis: auto` a long path's max-content width decides the line break, so flex-wrap
+   pushed the buttons onto the next line before the ellipsis could ever apply. A zero basis keeps
+   the path on the same line and lets it shrink: the display width is effectively fixed, and the
+   overflow is what the ellipsis in `.path` truncates. */
+.providerHead .path {
+  flex: 1 1 0;
+}
+
 .urlRow {
   display: flex;
   align-items: center;
@@ -208,8 +216,14 @@
 }
 
 .path {
-  color: var(--muted);
+  color: var(--ink);
   font-size: 12.5px;
+  /* Long directories used to push the buttons onto their own line (B3): truncate instead,
+     and keep the full value reachable through the code element's title attribute. */
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .provider .switchRow {

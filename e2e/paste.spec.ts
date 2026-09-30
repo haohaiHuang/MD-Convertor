@@ -1,6 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 
+import { gotoConverter } from "./entry";
+
 const pasteConvertedAt = "2026-08-09T00:00:00.000Z";
 const pasteBodyMarkdown = "这是一段粘贴正文。";
 
@@ -67,7 +69,7 @@ test.beforeEach(async ({ page }) => {
       body: JSON.stringify(responseForPasteRequest(request)),
     });
   });
-  await page.goto("/");
+  await gotoConverter(page);
   await page.getByRole("tab", { name: "富文本转换" }).click();
 });
 
@@ -258,7 +260,7 @@ test("disables tabs during a slow paste conversion and preserves editable input 
   await source.fill("https://example.com/slow");
   await page.getByRole("button", { name: "转换", exact: true }).click();
 
-  await expect(page.getByRole("tab", { name: "链接转换" })).toBeDisabled();
+  await expect(page.getByRole("tab", { name: "链接转换", exact: true })).toBeDisabled();
   await expect(page.getByRole("tab", { name: "富文本转换" })).toBeDisabled();
   await expect(textarea).toHaveAttribute("readonly", "");
   await expect(source).toHaveAttribute("readonly", "");

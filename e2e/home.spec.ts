@@ -4,6 +4,7 @@ import path from "node:path";
 
 import { expect, test, type Page } from "@playwright/test";
 
+import { gotoConverter, gotoHydrated } from "./entry";
 import { rectsInOneFrame } from "./geometry";
 
 const OUTPUT_DIRECTORY = "/tmp/md-convertor-e2e-output";
@@ -39,7 +40,7 @@ test.beforeEach(async ({ page }) => {
   await page.route("**/api/convert", async (route) => {
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(response) });
   });
-  await page.goto("/");
+  await gotoConverter(page);
 });
 
 async function pasteIntoUrlInput(page: import("@playwright/test").Page, value: string) {
@@ -122,7 +123,9 @@ test("suggests the paste mode when a link cannot be fetched", async ({ page }) =
   await page.getByRole("button", { name: "转换", exact: true }).click();
 
   await expect(page.getByText("无法读取该网页，请确认网页可以公开访问。")).toBeVisible();
-  await page.getByRole("button", { name: "改用富文本粘贴" }).click();
+  // This environment's Firefox drops synthesized clicks in a thin band near y=672, which is where the
+  // button's vertical center lands in this layout, so aim a few pixels above it instead of at the center.
+  await page.getByRole("button", { name: "改用富文本粘贴" }).click({ position: { x: 30, y: 6 } });
 
   await expect(page.getByRole("tab", { name: "富文本转换" })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByLabel("粘贴的正文内容")).toBeVisible();
@@ -382,13 +385,9 @@ async function routeSettingsOutput(
   });
 }
 
-/** Navigates and waits for the settings fetch the download branch depends on. */
+/** Enters the converter and waits for the settings fetch the download branch depends on. */
 async function gotoWithSettings(page: Page): Promise<void> {
-  const loaded = page.waitForResponse((response) => (
-    response.url().includes("/api/settings") && response.request().method() === "GET"
-  ));
-  await page.goto("/");
-  await loaded;
+  await gotoConverter(page);
 }
 
 test.describe("下载分叉（默认保存目录）", () => {
@@ -524,5 +523,70 @@ test.describe("下载分叉（默认保存目录）", () => {
     await expect(page.getByRole("status").filter({ hasText: "已改为浏览器下载" })).toBeVisible();
     expect(downloads).toBe(1);
     expect(await page.evaluate(() => (window as typeof window & { objectUrlCount?: number }).objectUrlCount)).toBe(1);
+  });
+});
+
+test.describe("首页入口画面", () => {
+  test("打开应用先看到两个入口，二级画面还没出现", async ({ page }) => {
+    await gotoHydrated(page);
+
+    await expect(page.getByRole("button", { name: "转换既有文档" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "粘贴URL/富文本转换" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "下载浏览器插件" })).toBeVisible();
+    await expect(page.getByLabel("网页链接")).toHaveCount(0);
+    await expect(page.getByRole("tab", { name: "链接转换", exact: true })).toHaveCount(0);
+  });
+
+  test("三个画面里品牌横向位置一致（返回按钮不把品牌推右）", async ({ page }) => {
+    await gotoHydrated(page);
+    const brand = page.locator('[aria-label="MD-Convertor"]');
+    const landing = (await brand.boundingBox())?.x ?? -1;
+
+    await page.getByRole("button", { name: "转换既有文档" }).click();
+    const localDocs = (await brand.boundingBox())?.x ?? -2;
+    await page.getByRole("button", { name: "返回首页" }).click();
+    await page.getByRole("button", { name: "粘贴URL/富文本转换" }).click();
+    const convert = (await brand.boundingBox())?.x ?? -3;
+
+    expect(landing).toBeGreaterThan(0);
+    expect(localDocs).toBeCloseTo(landing, 1);
+    expect(convert).toBeCloseTo(landing, 1);
+  });
+
+  test("点「转换既有文档」进本地文档画面，再点「返回首页」回到入口", async ({ page }) => {
+    await gotoHydrated(page);
+    await page.getByRole("button", { name: "转换既有文档" }).click();
+
+    // No preload outside the desktop app, so the panel degrades to its explanation.
+    await expect(page.getByText("本地文档处理只能在桌面应用中使用。")).toBeVisible();
+    await page.getByRole("button", { name: "返回首页" }).click();
+
+    await expect(page.getByRole("button", { name: "转换既有文档" })).toBeVisible();
+    await expect(page.getByText("本地文档处理只能在桌面应用中使用。")).toHaveCount(0);
+  });
+
+  test("点「粘贴URL/富文本转换」进转换画面，原来的标题、输入与内层 tab 都在，可返回", async ({ page }) => {
+    await gotoHydrated(page);
+    await page.getByRole("button", { name: "粘贴URL/富文本转换" }).click();
+
+    await expect(page.getByRole("heading", { name: "把网页，变成一份干净的文档", level: 1 })).toBeVisible();
+    await expect(page.getByText("Web to Markdown", { exact: true })).toHaveCount(0);
+    await expect(page.getByRole("tab", { name: "链接转换", exact: true })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByLabel("网页链接")).toBeVisible();
+    await page.getByRole("button", { name: "返回首页" }).click();
+
+    await expect(page.getByRole("button", { name: "粘贴URL/富文本转换" })).toBeVisible();
+    await expect(page.getByLabel("网页链接")).toHaveCount(0);
+  });
+
+  test("下载浏览器插件只在入口画面，指向静态 ZIP 且带 download 属性", async ({ page }) => {
+    await gotoHydrated(page);
+    const link = page.getByRole("link", { name: "下载浏览器插件" });
+
+    await expect(link).toHaveAttribute("href", "/md-convertor-extension.zip");
+    await expect(link).toHaveAttribute("download", "");
+
+    await page.getByRole("button", { name: "转换既有文档" }).click();
+    await expect(page.getByRole("link", { name: "下载浏览器插件" })).toHaveCount(0);
   });
 });

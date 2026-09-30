@@ -20,13 +20,14 @@ import {
   type PastedPayload,
 } from "@/lib/paste-client";
 import styles from "./page.module.css";
-import { fetchSettings, outputBridge, outputCodeMessage } from "./settings/client";
+import { LocalDocsPanel } from "./local-docs/panel";
+import { pendingHomeMode, type HomeMode } from "./home-mode";
+import { fetchSettings, outputBridge, outputCodeMessage, type SettingsPayload } from "./settings/client";
 import { languageLabel } from "@/lib/settings/languages";
 import { TranslationError, analyzeDocument, isCancelled, translateDocument } from "@/lib/translate/client";
 import { decideTranslation } from "@/lib/translate/decision";
 import { translatedFilename } from "@/lib/translate/filename";
 import type { ConvertResponse } from "@/types/conversion";
-import type { Settings } from "@/types/settings";
 import type { TranslationAnalysis, TranslationScope } from "@/types/translation";
 
 function formatBytes(bytes: number): string {
@@ -134,13 +135,15 @@ export default function Home() {
     () => createPasteClientState<ConvertResponse>(),
   );
   const [showBackToTop, setShowBackToTop] = useState(false);
+  /** Homepage entry: the landing screen is the default, unless settings handed an origin back. */
+  const [homeMode, setHomeMode] = useState<HomeMode>(() => pendingHomeMode());
   const [translateEnabled, setTranslateEnabled] = useState(false);
   const [targetLanguage, setTargetLanguage] = useState<string | null>(null);
   const [translation, setTranslation] = useState<TranslationState>({ status: "idle" });
   /** True when the last link attempt failed on the server, so pasting the body may still work. */
   const [linkFetchFailed, setLinkFetchFailed] = useState(false);
   /** The settings snapshot of this session; the download branch reads `output` from it. */
-  const [settingsState, setSettingsState] = useState<Settings | null>(null);
+  const [settingsState, setSettingsState] = useState<SettingsPayload | null>(null);
   /**
    * Outcome of the last download; cleared when a new conversion starts. The tone matters
    * as much as the sentence: a refused write used to render exactly like a success, and a
@@ -616,20 +619,89 @@ export default function Home() {
     </label>
   ) : null;
 
+  const settingsHref = `/settings?from=${homeMode}`;
+
+  const siteHeader = (
+    <header className={styles.header}>
+      <div className={styles.headerLeft}>
+        {homeMode === "home" ? (
+          <span className={styles.backSlot} aria-hidden="true" />
+        ) : (
+          <button
+            type="button"
+            className={styles.backButton}
+            aria-label="返回首页"
+            onClick={() => setHomeMode("home")}
+          >
+            ← 返回
+          </button>
+        )}
+        <div className={styles.brand} aria-label="MD-Convertor">
+          <span>MD-Convertor</span>
+        </div>
+      </div>
+      <Link href={settingsHref} className={styles.settingsLink} aria-label="设置" title="设置">
+        设置
+      </Link>
+    </header>
+  );
+
+  // The landing screen is the whole of R8/R9: two entries plus the static plugin download, which
+  // therefore works in a plain browser too. Nothing here is a tab - a click commits to a screen.
+  if (homeMode === "home") {
+    return (
+      <main className={styles.page}>
+        <div className={styles.shell}>
+          {siteHeader}
+          <section className={styles.landing}>
+            <div className={styles.entryGrid}>
+              <button type="button" className={styles.entryCard} onClick={() => setHomeMode("local-docs")}>
+                <span className={styles.entryTitle}>转换既有文档</span>
+                <span className={styles.entryNote}>
+                  插件下载的文档为非Base64内嵌模式，可用此功能转换/翻译，其他.md文档也能使用
+                </span>
+              </button>
+              <button type="button" className={styles.entryCard} onClick={() => setHomeMode("convert")}>
+                <span className={styles.entryTitle}>粘贴URL/富文本转换</span>
+                <span className={styles.entryNote}>粘贴网页链接或正文，在本机提取内容和图片，生成 .md 文件。</span>
+              </button>
+            </div>
+            <p className={styles.pluginRow}>
+              <a className={styles.pluginLink} href="/md-convertor-extension.zip" download>
+                下载浏览器插件
+              </a>
+              <span className={styles.pluginNote}>Chrome里直接转存网页为本地.md</span>
+            </p>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
+  if (homeMode === "local-docs") {
+    return (
+      <main className={styles.page}>
+        <div className={styles.shell}>
+          {siteHeader}
+          <section className={styles.docsPanel}>
+            <LocalDocsPanel
+              settings={settingsState}
+              translateEnabled={translateEnabled}
+              onTranslateEnabledChange={setTranslateEnabled}
+              onSettingsChange={setSettingsState}
+            />
+          </section>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
-        <header className={styles.header}>
-          <div className={styles.brand} aria-label="MD-Convertor">
-            <span>MD-Convertor</span>
-          </div>
-          <Link href="/settings" className={styles.settingsLink} aria-label="设置" title="设置">
-            设置
-          </Link>
-        </header>
+        {siteHeader}
 
         <section className={styles.hero} aria-labelledby="page-title">
-          <p className={styles.eyebrow}>Web to Markdown</p>
           <h1 id="page-title" className={styles.title}>
             把网页，变成一份<span className={styles.accentText}>干净的文档</span>
           </h1>
@@ -911,7 +983,7 @@ export default function Home() {
             {translation.status === "unconfigured" && (
               <p className={styles.translationNotice} role="status">
                 尚未配置可用的翻译模型，请先到
-                <Link href="/settings">设置</Link>
+                <Link href={settingsHref}>设置</Link>
                 页配置后再翻译。
               </p>
             )}

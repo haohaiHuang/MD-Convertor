@@ -75,6 +75,7 @@ describe("settings types", () => {
       },
       languages: { target: "zh-Hans", custom: [] },
       translation: { defaultEnabled: false },
+      input: { defaultPath: null },
       output: { defaultPath: null, useDefaultPath: false },
     });
   });
@@ -359,5 +360,62 @@ describe("output settings", () => {
     }
     expect(captured).toBeInstanceOf(SettingsValidationError);
     expect((captured as SettingsValidationError).message).toContain("output.defaultPath");
+  });
+});
+
+describe("input settings", () => {
+  it("includes input defaults in DEFAULT_SETTINGS", () => {
+    expect(DEFAULT_SETTINGS.input).toEqual({ defaultPath: null });
+  });
+
+  it("accepts a fully populated settings object with input values", () => {
+    const settings = populated();
+    settings.input = { defaultPath: "/Users/someone/Downloads" };
+    expect(validateSettings(settings)).toEqual(settings);
+  });
+
+  it("fills a missing input object with defaults and keeps every existing field (legacy settings.json)", () => {
+    const raw = populated();
+    delete (raw as Partial<Settings>).input;
+    const validated = validateSettings(raw);
+
+    expect(validated.input).toEqual({ defaultPath: null });
+    expect(validated.output).toEqual(raw.output);
+    expect(validated.version).toBe(1);
+    expect(validated.cloud).toEqual(raw.cloud);
+    expect(validated.languages).toEqual(raw.languages);
+  });
+
+  it("still rejects a missing field other than output and input (leniency is not general)", () => {
+    const raw = populated();
+    delete (raw.translation as Partial<Settings["translation"]>).defaultEnabled;
+    expect(() => validateSettings(raw)).toThrow(SettingsValidationError);
+    expect(rejectionFor((settings) => {
+      delete (settings.local as Partial<Settings["local"]>).activeCliId;
+    }).message).toContain("local.activeCliId");
+  });
+
+  it("rejects an empty-string input.defaultPath", () => {
+    const raw = { ...populated(), input: { defaultPath: "" } };
+    let captured: unknown;
+    try {
+      validateSettings(raw);
+    } catch (error) {
+      captured = error;
+    }
+    expect(captured).toBeInstanceOf(SettingsValidationError);
+    expect((captured as SettingsValidationError).message).toContain("input.defaultPath");
+  });
+
+  it("still rejects an unknown field inside input", () => {
+    const raw = { ...populated(), input: { defaultPath: "/tmp/notes", extra: "x" } };
+    let captured: unknown;
+    try {
+      validateSettings(raw);
+    } catch (error) {
+      captured = error;
+    }
+    expect(captured).toBeInstanceOf(SettingsValidationError);
+    expect((captured as SettingsValidationError).message).toContain("input.extra");
   });
 });

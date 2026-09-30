@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { validateConvertApiCaller } from "@/lib/api-security";
 import { AppError } from "@/lib/errors";
+import { defaultDownloadsDir } from "@/lib/local-docs/scan";
 import { SettingsStoreError, readSettings, writeSettings } from "@/lib/settings/store";
 import { SettingsValidationError, validateSettings, type Settings } from "@/types/settings";
 
@@ -44,6 +45,9 @@ function sanitizeSettings(settings: Settings): Settings {
     translation: {
       defaultEnabled: settings.translation.defaultEnabled,
     },
+    input: {
+      defaultPath: settings.input.defaultPath,
+    },
     output: {
       defaultPath: settings.output.defaultPath,
       useDefaultPath: settings.output.useDefaultPath,
@@ -68,7 +72,12 @@ async function respond(request: Request, run: () => Promise<Settings>): Promise<
   try {
     validateConvertApiCaller(request);
     const settings = await run();
-    return NextResponse.json(sanitizeSettings(settings), { status: 200 });
+    // `defaults` is what the input directory resolves to when `input.defaultPath` is null: both
+    // the settings card and the scan panel show this value instead of their own wording (L6).
+    return NextResponse.json(
+      { ...sanitizeSettings(settings), defaults: { inputDir: defaultDownloadsDir() } },
+      { status: 200 },
+    );
   } catch (error) {
     const appError = toSettingsError(error);
     console.warn(JSON.stringify({

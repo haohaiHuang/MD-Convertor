@@ -4,19 +4,23 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { PRESET_TARGET_LANGUAGES, languageLabel } from "@/lib/settings/languages";
 import { providerFormError } from "@/lib/settings/provider-form";
-import { isHttpUrl, type CloudProviderSettings, type LocalCliId, type LocalCliSettings, type Settings, type SettingsMode } from "@/types/settings";
+import { isHttpUrl, type CloudProviderSettings, type LocalCliId, type LocalCliSettings, type SettingsMode } from "@/types/settings";
+import { homeModeFromSearch, setPendingHomeMode } from "../home-mode";
 import {
   codeMessage,
   fetchCliModels,
   fetchProviderModels,
   fetchSettings,
+  inputDirLabel,
   outputBridge,
   outputCodeMessage,
   putSettings,
   scanLocalClis,
   secretsBridge,
   type OutputBridge,
+  type OutputResult,
   type SecretsBridge,
+  type SettingsPayload,
 } from "./client";
 import styles from "./page.module.css";
 
@@ -32,7 +36,7 @@ type CloudDraft = {
 const EMPTY_CLOUD_DRAFT: CloudDraft = { name: "", baseUrl: "", keyInput: "", selectedModel: "", models: [] };
 
 /** One cloud configuration only: edit the provider that translation actually uses. */
-function editingProvider(cloud: Settings["cloud"]): CloudProviderSettings | null {
+function editingProvider(cloud: SettingsPayload["cloud"]): CloudProviderSettings | null {
   return cloud.providers.find((provider) => provider.id === cloud.activeProviderId) ?? cloud.providers[0] ?? null;
 }
 
@@ -48,6 +52,7 @@ function cloudDraft(provider: CloudProviderSettings | null): CloudDraft {
 
 const CLOUD_NOTE = "cloud";
 const OUTPUT_NOTE = "output";
+const INPUT_NOTE = "input";
 
 type Note = { text: string; warn?: boolean };
 
@@ -65,7 +70,7 @@ function mergeModels(current: string[], incoming: string[]): string[] {
 }
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState<Settings | null>(null);
+  const [settings, setSettings] = useState<SettingsPayload | null>(null);
   const [cloudForm, setCloudForm] = useState<CloudDraft>(EMPTY_CLOUD_DRAFT);
   const [notes, setNotes] = useState<Record<string, Note>>({});
   const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
@@ -113,7 +118,7 @@ export default function SettingsPage() {
   }
 
   /** Optimistic save: the UI keeps the new value only when the server confirms it. */
-  async function save(next: Settings, note?: { key: string; text: string; warn?: boolean }): Promise<boolean> {
+  async function save(next: SettingsPayload, note?: { key: string; text: string; warn?: boolean }): Promise<boolean> {
     if (!settings) return false;
     const previous = settings;
     setSaving(true);
@@ -146,7 +151,39 @@ export default function SettingsPage() {
   async function leaveSettings() {
     const pending = pendingSave.current;
     if (pending && !(await pending)) return;
+    // Hand the origin screen back so 「返回转换」 returns to the one the user was on (L7).
+    setPendingHomeMode(homeModeFromSearch(window.location.search));
     router.push("/");
+  }
+
+  /** Picks the directory 文档处理 scans; dismissed or failed selections write nothing. */
+  async function chooseInputDirectory() {
+    if (!settings) return;
+    if (!output) {
+      setNote(INPUT_NOTE, "目录选择只能在桌面应用中使用。", true);
+      return;
+    }
+    setNote(INPUT_NOTE, "正在选择目录…");
+    const result = await output.selectDirectory().catch((): OutputResult => ({ ok: false, code: "SELECT_DIRECTORY_FAILED" }));
+    if (!result.ok) {
+      if (result.code !== "CANCELLED") {
+        setNote(INPUT_NOTE, outputCodeMessage(result.code, "目录选择失败。"), true);
+      }
+      return;
+    }
+    await save(
+      { ...settings, input: { defaultPath: result.path ?? null } },
+      { key: INPUT_NOTE, text: "已保存。" },
+    );
+  }
+
+  /** An empty input path means 「follow the system Downloads directory」. */
+  async function resetInputDirectory() {
+    if (!settings) return;
+    await save(
+      { ...settings, input: { defaultPath: null } },
+      { key: INPUT_NOTE, text: "已恢复默认。" },
+    );
   }
 
   /** Picks a directory through the desktop bridge; a dismissal is silence, not an error. */
@@ -157,7 +194,7 @@ export default function SettingsPage() {
       return;
     }
     setNote(OUTPUT_NOTE, "正在选择目录…");
-    const result = await output.selectDirectory();
+    const result = await output.selectDirectory().catch((): OutputResult => ({ ok: false, code: "SELECT_DIRECTORY_FAILED" }));
     if (!result.ok) {
       if (result.code !== "CANCELLED") {
         setNote(OUTPUT_NOTE, outputCodeMessage(result.code, "目录选择失败。"), true);
@@ -183,7 +220,7 @@ export default function SettingsPage() {
     );
   }
 
-  function patchCli(next: Settings, id: LocalCliId, patch: Partial<LocalCliSettings>): Settings {
+  function patchCli(next: SettingsPayload, id: LocalCliId, patch: Partial<LocalCliSettings>): SettingsPayload {
     return {
       ...next,
       local: {
@@ -360,6 +397,51 @@ export default function SettingsPage() {
         {loadState === "ready" && message ? <p className={styles.status} role="status">{message}</p> : null}
 
         {settings ? (
+          <section className={styles.card} aria-labelledby="input-title">
+            <h2 id="input-title" className={styles.cardTitle}>输入</h2>
+            <p className={styles.cardNote}>
+              文档处理扫描的目录。留用系统的下载目录时，新下载的文档不必先搬到别处。
+            </p>
+
+            <article className={styles.provider} aria-label="输入设置">
+              <div className={styles.providerHead}>
+                <code className={styles.path} title={inputDirLabel(settings)}>
+                  {inputDirLabel(settings)}
+                </code>
+                <div className={styles.actions}>
+                  <button
+                    className={styles.button}
+                    type="button"
+                    disabled={saving || loadState !== "ready" || !output}
+                    onClick={() => void chooseInputDirectory()}
+                  >
+                    选择目录
+                  </button>
+                  <button
+                    className={styles.button}
+                    type="button"
+                    disabled={saving || loadState !== "ready" || !settings.input.defaultPath}
+                    onClick={() => void resetInputDirectory()}
+                  >
+                    恢复默认
+                  </button>
+                </div>
+              </div>
+
+              {!output ? (
+                <p className={styles.cardNote}>目录选择只能在桌面应用中使用。</p>
+              ) : null}
+
+              {notes[INPUT_NOTE] ? (
+                <p className={noteClass(notes[INPUT_NOTE])} role="status">
+                  {notes[INPUT_NOTE].text}
+                </p>
+              ) : null}
+            </article>
+          </section>
+        ) : null}
+
+        {settings ? (
           <section className={styles.card} aria-labelledby="output-title">
             <h2 id="output-title" className={styles.cardTitle}>输出</h2>
             <p className={styles.cardNote}>
@@ -368,7 +450,9 @@ export default function SettingsPage() {
 
             <article className={styles.provider} aria-label="输出设置">
               <div className={styles.providerHead}>
-                <code className={styles.path}>{settings.output.defaultPath ?? "未设置"}</code>
+                <code className={styles.path} title={settings.output.defaultPath ?? "未设置"}>
+                  {settings.output.defaultPath ?? "未设置"}
+                </code>
                 <div className={styles.actions}>
                   <button
                     className={styles.button}
@@ -569,7 +653,9 @@ export default function SettingsPage() {
                     />
                     <span>{cli.name}</span>
                   </label>
-                  <code className={styles.path}>{cli.detectedPath ?? "未检测到"}</code>
+                  <code className={styles.path} title={cli.detectedPath ?? "未检测到"}>
+                    {cli.detectedPath ?? "未检测到"}
+                  </code>
                   <label className={styles.switchRow}>
                     <input
                       type="checkbox"

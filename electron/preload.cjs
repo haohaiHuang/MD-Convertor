@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 /**
- * Sandboxed preload script: exposes `window.mdConvertor.secrets` and
- * `window.mdConvertor.output` to the renderer.
+ * Sandboxed preload script: exposes `window.mdConvertor.secrets`,
+ * `window.mdConvertor.output` and `window.mdConvertor.system` to the renderer.
  *
  * This file must stay self-contained. Electron sandboxed preloads can only resolve
  * built-in modules, so `require("./preload-contract.cjs")` fails at runtime; the
@@ -16,6 +16,7 @@ const CHANNELS = Object.freeze({
   status: "md-convertor:secrets:status",
   selectDirectory: "md-convertor:output:select-directory",
   saveFile: "md-convertor:output:save-file",
+  openPath: "md-convertor:system:open-path",
 });
 
 const PROVIDER_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
@@ -103,6 +104,12 @@ contextBridge.exposeInMainWorld("mdConvertor", {
       assertFilename(filename);
       assertContent(content);
       return invoke(CHANNELS.saveFile, { dirPath, filename, content });
+    },
+  },
+  system: {
+    async openPath(dirPath) {
+      assertDirPath(dirPath);
+      return invoke(CHANNELS.openPath, { dirPath });
     },
   },
 });

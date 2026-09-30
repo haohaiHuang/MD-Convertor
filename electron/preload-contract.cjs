@@ -11,6 +11,7 @@ const CHANNELS = Object.freeze({
   status: "md-convertor:secrets:status",
   selectDirectory: "md-convertor:output:select-directory",
   saveFile: "md-convertor:output:save-file",
+  openPath: "md-convertor:system:open-path",
 });
 
 const PROVIDER_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;

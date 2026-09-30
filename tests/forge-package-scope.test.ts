@@ -17,6 +17,7 @@ const RUNTIME_FILES = [
   "electron/preload-contract.cjs",
   "electron/env.mjs",
   "electron/output.mjs",
+  "electron/system.mjs",
   "electron/runtime-secrets.mjs",
   "electron/server-binary.mjs",
   "electron/secrets.mjs",
@@ -30,7 +31,7 @@ describe("packaged app scope", () => {
   });
 
   it("keeps the Electron-side test files out of the bundle", async () => {
-    for (const file of ["electron/output.test.mjs", "electron/preload.test.cjs", "electron/preload-contract.test.cjs"]) {
+    for (const file of ["electron/output.test.mjs", "electron/system.test.mjs", "electron/preload.test.cjs", "electron/preload-contract.test.cjs"]) {
       expect(await isPackaged(file), `${file} is a test and must not ship`).toBe(false);
     }
   });

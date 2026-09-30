@@ -2,6 +2,8 @@ node_modules/
 .next/
 extension/dist/
 extension/dist-test/
+extension/dist-package/
+public/*.zip
 .desktop/
 out/
 playwright-report/

@@ -15,6 +15,11 @@ export type OutputBridge = {
   saveFile(dirPath: string, filename: string, content: string): Promise<OutputResult>;
 };
 
+export type SystemBridge = {
+  /** Opens a directory in Finder; the main process validates the path again. */
+  openPath(dirPath: string): Promise<OutputResult>;
+};
+
 export type ProviderModelQuery = { providerId?: string; baseUrl?: string; apiKey?: string };
 
 export type ScannedCli = {
@@ -73,8 +78,15 @@ export function outputBridge(): OutputBridge | null {
   return bridge ?? null;
 }
 
+/** Present only inside the desktop app; browsers and e2e have no preload. */
+export function systemBridge(): SystemBridge | null {
+  if (typeof window === "undefined") return null;
+  const bridge = (window as unknown as { mdConvertor?: { system?: SystemBridge } }).mdConvertor?.system;
+  return bridge ?? null;
+}
+
 /** The local API guard requires a JSON content type on every route. */
-async function requestJson<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function requestJson<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(path, {
     headers: { "content-type": "application/json" },
     ...init,
@@ -86,12 +98,32 @@ async function requestJson<T>(path: string, init: RequestInit = {}): Promise<T> 
   return payload as T;
 }
 
-export function fetchSettings(): Promise<Settings> {
-  return requestJson<Settings>("/api/settings");
+/**
+ * The settings response also carries server-resolved defaults (L6): the input directory the
+ * scan falls back to when `input.defaultPath` is null. Optional, because a PUT echo or a test
+ * stub may omit it — and it is stripped again before PUT, since the API validates root keys.
+ */
+export type SettingsPayload = Settings & { defaults?: { inputDir: string } };
+
+/**
+ * What an unset input directory should read as.
+ *
+ * The settings card and the scan panel both show this, so the two screens can never drift apart:
+ * with no explicit directory the server's resolved `defaults.inputDir` is the honest answer, and
+ * only a missing `defaults` (older payloads, partial stubs) falls back to the wording.
+ */
+export function inputDirLabel(settings: SettingsPayload | null): string {
+  return settings?.input.defaultPath ?? settings?.defaults?.inputDir ?? "系统下载目录";
 }
 
-export function putSettings(next: Settings): Promise<Settings> {
-  return requestJson<Settings>("/api/settings", { method: "PUT", body: JSON.stringify(next) });
+export function fetchSettings(): Promise<SettingsPayload> {
+  return requestJson<SettingsPayload>("/api/settings");
+}
+
+export function putSettings(next: SettingsPayload): Promise<SettingsPayload> {
+  const body = { ...next } as Record<string, unknown>;
+  delete body.defaults;
+  return requestJson<SettingsPayload>("/api/settings", { method: "PUT", body: JSON.stringify(body) });
 }
 
 /**

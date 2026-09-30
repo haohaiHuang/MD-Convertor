@@ -168,6 +168,23 @@ describe("buildServerEnv", () => {
     expect(Buffer.from(env.MD_CONVERTOR_SECRETS, "base64").toString("utf8")).toBe("{}");
     expect(env.MD_CONVERTOR_USER_DATA).toBe(userDataDir);
   });
+
+  it("injects the system downloads directory so the scan route knows the default input folder", () => {
+    const env = buildServerEnv({
+      baseEnv: {},
+      pathEnv: "/usr/bin",
+      userDataDir,
+      downloadsDir: "/Users/test/Downloads",
+    });
+
+    expect(env.MD_CONVERTOR_DOWNLOADS_DIR).toBe("/Users/test/Downloads");
+  });
+
+  it("sends an empty downloads directory when the caller cannot resolve one", () => {
+    const env = buildServerEnv({ baseEnv: {}, pathEnv: "/usr/bin", userDataDir });
+
+    expect(env.MD_CONVERTOR_DOWNLOADS_DIR).toBe("");
+  });
 });
 
 describe("encodeSecretsPayload", () => {

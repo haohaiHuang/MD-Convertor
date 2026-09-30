@@ -24,17 +24,18 @@ function loadPreload(invokeImpl = async () => ({ ok: true })) {
   }
   expect(exposeInMainWorld).toHaveBeenCalledTimes(1);
   const [name, api] = exposeInMainWorld.mock.calls[0];
-  return { name, api, bridge: api.secrets, output: api.output, invoke };
+  return { name, api, bridge: api.secrets, output: api.output, system: api.system, invoke };
 }
 
 describe("preload bridge", () => {
-  it("exposes mdConvertor.secrets and mdConvertor.output", () => {
+  it("exposes mdConvertor.secrets, mdConvertor.output and mdConvertor.system", () => {
     const loaded = loadPreload();
 
     expect(loaded.name).toBe("mdConvertor");
-    expect(Object.keys(loaded.api)).toEqual(["secrets", "output"]);
+    expect(Object.keys(loaded.api)).toEqual(["secrets", "output", "system"]);
     expect(Object.keys(loaded.bridge).sort()).toEqual(["clear", "set", "status"]);
     expect(Object.keys(loaded.output).sort()).toEqual(["saveFile", "selectDirectory"]);
+    expect(Object.keys(loaded.system).sort()).toEqual(["openPath"]);
   });
 
   it("uses the channel names the main process handles", async () => {
@@ -221,6 +222,64 @@ describe("preload output bridge", () => {
       const accepted = await loaded.output
         .saveFile(dirPath, "notes.md", "# Hello")
         .then(() => true, () => false);
+      expect(accepted, JSON.stringify(dirPath)).toBe(contract.isAbsoluteDirPath(dirPath));
+    }
+  });
+});
+
+describe("preload system bridge", () => {
+  it("passes the directory over the contract channel", async () => {
+    const loaded = loadPreload();
+
+    await loaded.system.openPath("/Users/someone/Downloads/processed");
+
+    expect(loaded.invoke).toHaveBeenCalledTimes(1);
+    expect(loaded.invoke.mock.calls[0]).toEqual([
+      contract.CHANNELS.openPath,
+      { dirPath: "/Users/someone/Downloads/processed" },
+    ]);
+  });
+
+  it("turns an open-path channel failure into a result object instead of throwing", async () => {
+    const loaded = loadPreload(() => {
+      throw new Error("Finder blew up on /Users/someone/Downloads");
+    });
+
+    const result = await loaded.system.openPath("/Users/someone/Downloads");
+
+    expect(result).toEqual({ ok: false, code: "IPC_FAILED" });
+    expect(JSON.stringify(result)).not.toContain("/Users/someone/Downloads");
+  });
+
+  it.each([
+    ["a home path", "~/Downloads"],
+    ["a relative path", "Downloads/notes"],
+    ["a parent traversal", "/Users/someone/../someone_else"],
+    ["a home shorthand segment", "/Users/someone/~/notes"],
+    ["an empty path", ""],
+    ["a non-string path", 42],
+    ["a missing path", undefined],
+  ])("rejects %s before reaching the main process", async (_label, dirPath) => {
+    const loaded = loadPreload();
+
+    await expect(loaded.system.openPath(dirPath)).rejects.toThrow(TypeError);
+    expect(loaded.invoke).not.toHaveBeenCalled();
+  });
+
+  it("keeps the preload dirPath rule in sync with the contract", async () => {
+    const dirCases = [
+      "/tmp/notes",
+      "~/Documents",
+      "Documents",
+      "/a/../b",
+      "/Users/someone/Library/Mobile Documents/com~apple~CloudDocs/Note",
+      "/Users/someone/~/notes",
+      "",
+      42,
+    ];
+    for (const dirPath of dirCases) {
+      const loaded = loadPreload();
+      const accepted = await loaded.system.openPath(dirPath).then(() => true, () => false);
       expect(accepted, JSON.stringify(dirPath)).toBe(contract.isAbsoluteDirPath(dirPath));
     }
   });

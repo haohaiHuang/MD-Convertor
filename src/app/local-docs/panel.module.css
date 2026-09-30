@@ -1,0 +1,237 @@
+.panel {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 22px 24px 26px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title {
+  margin: 0 0 6px;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+
+.pill {
+  margin: 0;
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.dirRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.path {
+  color: var(--ink);
+  font-size: 12.5px;
+  /* A long directory used to wrap and push the buttons down (the same symptom B3 had in
+     settings). Keep it on one line and truncate; the full value stays in the title attribute. */
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Only the directory row shares its line with buttons, so only there does the path take the
+   leftover width (in the result block it is a stacked line of its own). */
+.dirRow .path {
+  flex: 1 1 0;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.button,
+.primary {
+  padding: 9px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.button:hover {
+  border-color: var(--accent);
+  color: var(--accent-dark);
+}
+
+.button:disabled,
+.primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+  font-weight: var(--weight-ui);
+}
+
+.primary:hover:not(:disabled) {
+  border-color: var(--accent-dark);
+  background: var(--accent-dark);
+  color: #fff;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  /* The translate toggle belongs with the buttons (L3): pushing them to the right keeps it
+     immediately left of 重新扫描 instead of stranded at the far left edge of the row. */
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.switchRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14.5px;
+  cursor: pointer;
+}
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+.hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  /* Rendered only when there is something to warn about; an always-on row kept a 36px hole
+     open under the toolbar for a prompt nobody needed. */
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.hintWarning {
+  color: var(--warning);
+}
+
+.table {
+  width: 100%;
+  margin-top: 14px;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.table th {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: var(--weight-ui);
+  text-align: left;
+}
+
+.table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.name {
+  color: var(--ink);
+  word-break: break-all;
+}
+
+.size,
+.time {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.badge {
+  color: var(--muted);
+}
+
+.failed {
+  color: var(--danger);
+}
+
+.result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.resultText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.summary {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+
+.error {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border: 1px solid var(--danger);
+  border-radius: 12px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 13.5px;
+}
+
+.degraded {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13.5px;
+}

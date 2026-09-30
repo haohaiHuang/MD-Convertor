@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { gotoConverter } from "./entry";
+
 const NAVY = {
   paper: "rgb(249, 250, 251)",
   accent: "rgb(42, 57, 92)",
@@ -22,13 +24,14 @@ async function mockSettings(page: Page) {
         translation: { defaultEnabled: false },
         // The real API fills output server-side; the mock matches that contract.
         output: { defaultPath: null, useDefaultPath: false },
+        input: { defaultPath: null },
       }),
     }),
   );
 }
 
 test("the converter page paints the navy palette", async ({ page }) => {
-  await page.goto("/");
+  await gotoConverter(page);
 
   await expect(page.locator("html")).toHaveCSS("background-color", NAVY.paper);
 
@@ -80,14 +83,14 @@ async function convert(page: Page) {
   await page.route("**/api/convert", (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(CONVERSION) }),
   );
-  await page.goto("/");
+  await gotoConverter(page);
   await page.getByLabel("网页链接").fill("https://example.com/article");
   await page.getByRole("button", { name: "转换", exact: true }).click();
   await expect(page.getByText("转换完成")).toBeVisible();
 }
 
 test("the interface text uses the single collected UI weight", async ({ page }) => {
-  await page.goto("/");
+  await gotoConverter(page);
 
   await expect(page.getByRole("button", { name: "转换", exact: true })).toHaveCSS("font-weight", UI_WEIGHT);
   await expect(page.getByRole("tab", { name: "富文本转换" })).toHaveCSS("font-weight", UI_WEIGHT);

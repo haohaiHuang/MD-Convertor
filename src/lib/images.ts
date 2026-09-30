@@ -5,8 +5,8 @@ import { fetchPublicResource } from "@/lib/fetcher";
 import { GENERATED_MERMAID_IMAGE_ATTRIBUTE } from "@/lib/mermaid";
 import type { ConversionWarning } from "@/types/conversion";
 
-const MAX_IMAGES = 30;
-const MAX_SOURCE_IMAGE_BYTES = 8 * 1024 * 1024;
+export const MAX_IMAGES = 30;
+export const MAX_SOURCE_IMAGE_BYTES = 8 * 1024 * 1024;
 const OPTIMIZE_THRESHOLD_BYTES = 2 * 1024 * 1024;
 const SUPPORTED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]);
 const DATA_URI_TYPES = new Map<string, { format: string; compression?: string }>([
@@ -67,7 +67,7 @@ function parseDataUri(rawSource: string): { buffer: Buffer; contentType: string 
   return { buffer, contentType };
 }
 
-type ProcessedImage = {
+export type ProcessedImage = {
   dataUri?: string;
   warning?: ConversionWarning;
   animatedReduced?: boolean;
@@ -121,6 +121,23 @@ async function processImageBuffer(
     dataUri: `data:${outputType};base64,${outputBuffer.toString("base64")}`,
     animatedReduced,
   };
+}
+
+/**
+ * One-image step shared by the web-page embedder and the Markdown-level inliner: sniffs the
+ * bytes, checks them against the declared type, and re-encodes anything oversized to WebP.
+ * The `prepareDataUriImage` branch keeps calling `processImageBuffer` directly: pasted data
+ * URIs use a different invalid-format warning and can be placeholder-eligible.
+ */
+export async function embedImageBuffer(buffer: Buffer, contentType: string): Promise<ProcessedImage> {
+  return processImageBuffer(buffer, contentType, {
+    validateDeclaredFormat: true,
+    placeholderEligible: false,
+    invalidFormatWarning: {
+      code: "IMAGE_TYPE_UNSUPPORTED",
+      message: "有一张图片的实际格式与声明不一致或不受支持，已保留替代文本。",
+    },
+  });
 }
 
 async function prepareDataUriImage(
@@ -243,14 +260,7 @@ async function prepareImage(
       };
     }
 
-    const processed = await processImageBuffer(result.buffer, result.contentType, {
-      validateDeclaredFormat: true,
-      placeholderEligible: false,
-      invalidFormatWarning: {
-        code: "IMAGE_TYPE_UNSUPPORTED",
-        message: "有一张图片的实际格式与声明不一致或不受支持，已保留替代文本。",
-      },
-    });
+    const processed = await embedImageBuffer(result.buffer, result.contentType);
     return { element, ...processed };
   } catch (error) {
     signal.throwIfAborted();
@@ -267,7 +277,7 @@ async function prepareImage(
   }
 }
 
-async function mapWithConcurrency<T, R>(
+export async function mapWithConcurrency<T, R>(
   values: T[],
   limit: number,
   mapper: (value: T) => Promise<R>,

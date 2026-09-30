@@ -6,6 +6,7 @@ import { app, BrowserWindow, dialog, ipcMain, safeStorage, shell } from "electro
 import preloadContract from "./preload-contract.cjs";
 import { buildServerEnv, readDotEnvFile, readLoginShellPath, resolvePathEnv } from "./env.mjs";
 import { createOutputChannels } from "./output.mjs";
+import { createSystemChannels } from "./system.mjs";
 import { pushRuntimeSecret } from "./runtime-secrets.mjs";
 import { resolveServerBinary } from "./server-binary.mjs";
 import { createSecretsStore } from "./secrets.mjs";
@@ -146,6 +147,7 @@ async function startProductionServer() {
       homeDir: app.getPath("home"),
     }),
     userDataDir,
+    downloadsDir: app.getPath("downloads"),
     secrets: await readStoredSecrets(),
     dotEnv: await readUserDotEnv(),
   });
@@ -324,6 +326,7 @@ async function runBridgeSmokeTest(window) {
 app.whenReady().then(async () => {
   registerSecretsIpc();
   createOutputChannels({ ipcMain, dialog });
+  createSystemChannels({ ipcMain, shell });
   const runtime = process.env.ELECTRON_RENDERER_URL
     ? {
         rendererUrl: process.env.ELECTRON_RENDERER_URL,

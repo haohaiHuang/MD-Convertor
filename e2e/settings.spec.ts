@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { gotoHydrated } from "./entry";
 import { rectsInOneFrame } from "./geometry";
 
 type StoredSettings = {
@@ -10,8 +11,12 @@ type StoredSettings = {
   languages: { target: string; custom: string[] };
   translation: { defaultEnabled: boolean };
   output?: { defaultPath: string | null; useDefaultPath: boolean };
+  input?: { defaultPath: string | null };
+  /** Response-only (L6): what an unset input directory resolves to server-side. */
+  defaults?: { inputDir: string };
 };
 
+/** Also the body of a real PUT, so it must stay free of the response-only `defaults` field. */
 const storedSettings: StoredSettings = {
   version: 1,
   mode: "cloud",
@@ -28,6 +33,7 @@ const storedSettings: StoredSettings = {
   // The real API always returns output (lenient read fills it server-side);
   // the mock must match that contract or the output card would crash the page.
   output: { defaultPath: null, useDefaultPath: false },
+  input: { defaultPath: null },
 };
 
 const providerSettings: StoredSettings = {
@@ -55,7 +61,10 @@ async function mockSettingsApi(page: Page, initial: StoredSettings) {
       putBodies.push(body);
       current = { ...current, ...body };
     }
-    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(current) });
+    // The real API appends the resolved input default to every response (L6); the mock pins a
+    // path so the assertions below stay machine-independent.
+    const body = { ...current, defaults: { inputDir: "/Users/someone/Downloads" } };
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
   });
   return putBodies;
 }
@@ -123,14 +132,54 @@ function secretCalls(page: Page) {
   return page.evaluate(() => (window as unknown as { secretCalls: unknown[][] }).secretCalls);
 }
 
+/** The `window.mdConvertor.output` bridge is the one both directory cards read. */
+async function installOutputBridge(page: Page, chosen = "/Users/someone/Documents/notes") {
+  await page.addInitScript((directory) => {
+    const calls: unknown[][] = [];
+    (window as unknown as { outputCalls: unknown[][] }).outputCalls = calls;
+    const existing = (window as unknown as { mdConvertor?: Record<string, unknown> }).mdConvertor ?? {};
+    (window as unknown as { mdConvertor: unknown }).mdConvertor = {
+      ...existing,
+      output: {
+        selectDirectory: async () => {
+          calls.push(["selectDirectory"]);
+          return { ok: true, path: directory };
+        },
+        saveFile: async (dirPath: string, filename: string, content: string) => {
+          calls.push(["saveFile", dirPath, filename, content]);
+          return { ok: true, path: `${dirPath}/${filename}` };
+        },
+      },
+    };
+  }, chosen);
+}
+
+function outputCalls(page: Page) {
+  return page.evaluate(() => (window as unknown as { outputCalls: unknown[][] }).outputCalls ?? []);
+}
+
 test.describe("设置页", () => {
   test("页头 gear 打开 /settings", async ({ page }) => {
     await page.goto("/");
 
     await page.getByRole("link", { name: "设置" }).click();
 
-    await expect(page).toHaveURL(/\/settings$/);
+    await expect(page).toHaveURL(/\/settings\?from=home$/);
     await expect(page.getByRole("heading", { level: 1, name: "设置" })).toBeVisible();
+  });
+
+  test("从转换画面进设置，返回时回到转换画面而不是入口画面", async ({ page }) => {
+    await gotoHydrated(page);
+    await page.getByRole("button", { name: "粘贴URL/富文本转换" }).click();
+    await expect(page.getByRole("heading", { name: "把网页，变成一份干净的文档", level: 1 })).toBeVisible();
+
+    await page.getByRole("link", { name: "设置" }).click();
+
+    await expect(page).toHaveURL(/\/settings\?from=convert$/);
+    await page.getByRole("button", { name: "返回转换" }).click();
+
+    await expect(page.getByRole("heading", { name: "把网页，变成一份干净的文档", level: 1 })).toBeVisible();
+    await expect(page.getByLabel("网页链接")).toBeVisible();
   });
 
   test("设置页品牌与首页一致（无方块，用 Michroma）", async ({ page }) => {
@@ -560,7 +609,7 @@ test.describe("保存反馈", () => {
 
     await back.click();
     await page.waitForTimeout(300);
-    await expect(page).toHaveURL(/\/settings$/);
+    await expect(page).toHaveURL(/\/settings(\?from=home)?$/);
 
     release();
     await expect(page).toHaveURL(/\/$/);
@@ -635,31 +684,6 @@ test.describe("输出", () => {
     output: { defaultPath: "/Users/someone/Documents/notes", useDefaultPath: true },
   };
 
-  async function installOutputBridge(page: Page) {
-    await page.addInitScript(() => {
-      const calls: unknown[][] = [];
-      (window as unknown as { outputCalls: unknown[][] }).outputCalls = calls;
-      const existing = (window as unknown as { mdConvertor?: Record<string, unknown> }).mdConvertor ?? {};
-      (window as unknown as { mdConvertor: unknown }).mdConvertor = {
-        ...existing,
-        output: {
-          selectDirectory: async () => {
-            calls.push(["selectDirectory"]);
-            return { ok: true, path: "/Users/someone/Documents/notes" };
-          },
-          saveFile: async (dirPath: string, filename: string, content: string) => {
-            calls.push(["saveFile", dirPath, filename, content]);
-            return { ok: true, path: `${dirPath}/${filename}` };
-          },
-        },
-      };
-    });
-  }
-
-  function outputCalls(page: Page) {
-    return page.evaluate(() => (window as unknown as { outputCalls: unknown[][] }).outputCalls ?? []);
-  }
-
   test("卡片渲染：未设置路径、开关关闭、桥接缺失时按钮禁用", async ({ page }) => {
     await mockSettingsApi(page, outputSettings);
     await page.goto("/settings");
@@ -730,5 +754,77 @@ test.describe("输出", () => {
     await expect(page.getByText("已保存", { exact: true })).toBeVisible();
     const body = putBodies.at(-1) as { output?: { defaultPath?: string; useDefaultPath?: boolean } } | undefined;
     expect(body?.output).toEqual({ defaultPath: "/Users/someone/Documents/notes", useDefaultPath: false });
+  });
+});
+
+test.describe("输入目录", () => {
+  const INPUT_CARD = 'section[aria-labelledby="input-title"]';
+
+  test("输入目录卡片渲染：未设置时回显服务端解析的默认目录，无桥接时两个按钮都禁用", async ({ page }) => {
+    await mockSettingsApi(page, storedSettings);
+    await page.goto("/settings");
+
+    const card = page.locator(INPUT_CARD);
+    await expect(card.getByRole("heading", { name: "输入" })).toBeVisible();
+    await expect(card.locator("code")).toHaveText("/Users/someone/Downloads");
+    // No preload in the browser: choosing is impossible, and there is nothing to reset.
+    await expect(card.getByRole("button", { name: "选择目录" })).toBeDisabled();
+    await expect(card.getByRole("button", { name: "恢复默认" })).toBeDisabled();
+    await expect(card.getByText("目录选择只能在桌面应用中使用")).toBeVisible();
+  });
+
+  test("输入目录长路径单行省略、完整值挂在 title，两个按钮不下移", async ({ page }) => {
+    const longDir = `/Users/someone/${"很长的目录/".repeat(15)}Notes`;
+    await mockSettingsApi(page, { ...storedSettings, input: { defaultPath: longDir } });
+    await page.goto("/settings");
+
+    const card = page.locator(INPUT_CARD);
+    const pathCode = card.locator("code");
+    await expect(pathCode).toHaveAttribute("title", longDir);
+
+    const style = await pathCode.evaluate((element) => {
+      const computed = getComputedStyle(element);
+      return {
+        whiteSpace: computed.whiteSpace,
+        textOverflow: computed.textOverflow,
+        truncated: element.scrollWidth > element.clientWidth,
+        height: Math.round(element.getBoundingClientRect().height),
+      };
+    });
+    expect(style.whiteSpace).toBe("nowrap");
+    expect(style.textOverflow).toBe("ellipsis");
+    expect(style.truncated).toBe(true);
+    // One 12.5px line: a wrapped path would be several lines tall and drop the buttons.
+    expect(style.height).toBeLessThan(24);
+
+    const boxes = await rectsInOneFrame(page, {
+      path: pathCode,
+      choose: card.getByRole("button", { name: "选择目录" }),
+      reset: card.getByRole("button", { name: "恢复默认" }),
+    });
+    const center = (box: { y: number; height: number }) => box.y + box.height / 2;
+    expect(center(boxes.choose)).toBeCloseTo(center(boxes.path), 0);
+    expect(center(boxes.reset)).toBeCloseTo(center(boxes.path), 0);
+  });
+
+  test("输入目录桥接下选择目录写入 input，恢复默认写回 null", async ({ page }) => {
+    const putBodies = await mockSettingsApi(page, storedSettings);
+    await installOutputBridge(page, "/Users/someone/Documents/inbox");
+    await page.goto("/settings");
+
+    const card = page.locator(INPUT_CARD);
+    await card.getByRole("button", { name: "选择目录" }).click();
+
+    await expect(card.locator("code")).toHaveText("/Users/someone/Documents/inbox");
+    const afterChoose = putBodies.at(-1) as { input?: unknown; output?: unknown } | undefined;
+    expect(afterChoose?.input).toEqual({ defaultPath: "/Users/someone/Documents/inbox" });
+    // 输入与输出是两个独立的目录，选输入不能顺手动到 output。
+    expect(afterChoose?.output).toEqual({ defaultPath: null, useDefaultPath: false });
+
+    await card.getByRole("button", { name: "恢复默认" }).click();
+
+    await expect(card.locator("code")).toHaveText("/Users/someone/Downloads");
+    expect((putBodies.at(-1) as { input?: unknown } | undefined)?.input).toEqual({ defaultPath: null });
+    expect(await outputCalls(page)).toEqual([["selectDirectory"]]);
   });
 });

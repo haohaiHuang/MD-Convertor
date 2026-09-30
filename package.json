@@ -1,7 +1,7 @@
 {
   "name": "md-convertor",
   "productName": "MD-Convertor",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "private": true,
   "main": "electron/main.mjs",
   "engines": {
@@ -12,6 +12,7 @@
     "dev:web": "next dev --hostname 127.0.0.1 --port 3210",
     "dev:electron": "wait-on http-get://127.0.0.1:3210 && ELECTRON_RENDERER_URL=http://127.0.0.1:3210 electron .",
     "dev:desktop": "concurrently --kill-others --success first npm:dev:web npm:dev:electron",
+    "prebuild": "npm run build:extension",
     "build": "next build",
     "desktop:prepare": "install-electron && node scripts/prepare-desktop.mjs",
     "desktop:package": "npm run build && npm run desktop:prepare && electron-forge package --platform=darwin --arch=arm64",

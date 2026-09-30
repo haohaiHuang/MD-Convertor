@@ -11,6 +11,7 @@ vi.mock("@/lib/settings/store", async (importOriginal) => {
   return { ...actual, readSettings: mocks.read, writeSettings: mocks.write };
 });
 
+import { defaultDownloadsDir } from "@/lib/local-docs/scan";
 import { SettingsStoreError } from "@/lib/settings/store";
 import { GET, PUT } from "./route";
 
@@ -31,6 +32,11 @@ function populated(): Settings {
   });
   settings.cloud.activeProviderId = "openai";
   return settings;
+}
+
+/** The response adds the server-resolved input default (L6) to the stored settings. */
+function withDefaults(settings: Settings): Settings & { defaults: { inputDir: string } } {
+  return { ...settings, defaults: { inputDir: defaultDownloadsDir() } };
 }
 
 function settingsRequest(
@@ -104,7 +110,17 @@ describe("GET /api/settings", () => {
   it("returns the stored settings", async () => {
     const response = await GET(settingsRequest("GET"));
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual(populated());
+    expect(await response.json()).toEqual(withDefaults(populated()));
+  });
+
+  it("reports the input directory both screens should show when nothing is set (L6)", async () => {
+    vi.stubEnv("MD_CONVERTOR_DOWNLOADS_DIR", "/tmp/md-convertor-defaults");
+    try {
+      const response = await GET(settingsRequest("GET"));
+      expect((await response.json()).defaults).toEqual({ inputDir: "/tmp/md-convertor-defaults" });
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("never returns secret-shaped fields from the store", async () => {
@@ -161,8 +177,16 @@ describe("PUT /api/settings", () => {
   it("validates and persists the body, then returns the stored settings", async () => {
     const response = await PUT(settingsRequest("PUT", { body: populated() }));
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual(populated());
+    expect(await response.json()).toEqual(withDefaults(populated()));
     expect(mocks.write).toHaveBeenCalledWith(populated());
+  });
+
+  it("rejects a body that still carries the response-only defaults field", async () => {
+    // Strict root-key validation: the client strips `defaults` before PUT, so this is the
+    // contract that keeps a round-tripped payload from 400ing.
+    const response = await PUT(settingsRequest("PUT", { body: withDefaults(populated()) }));
+    expect(response.status).toBe(400);
+    expect(mocks.write).not.toHaveBeenCalled();
   });
 
   it("does not persist extra fields that reached the body", async () => {

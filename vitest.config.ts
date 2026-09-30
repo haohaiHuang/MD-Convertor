@@ -3,7 +3,19 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
-    exclude: ["e2e/**", "tests/live/**", "node_modules/**", "extension/tests/**/*.spec.ts"],
+    // `.next/standalone` mirrors the whole project once `next build` has run, test files
+    // included, so without this every `init.sh` that follows a build or an e2e run would
+    // collect ~85 duplicated suites and fail. `.desktop/server` and the packaged app under
+    // `out/` are copies of that same mirror, so they duplicate it two more times.
+    exclude: [
+      ".next/**",
+      ".desktop/**",
+      "out/**",
+      "e2e/**",
+      "tests/live/**",
+      "node_modules/**",
+      "extension/tests/**/*.spec.ts",
+    ],
     coverage: {
       reporter: ["text", "html"],
       include: [

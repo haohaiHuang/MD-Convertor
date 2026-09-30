@@ -49,7 +49,13 @@ export type Settings = {
   translation: {
     defaultEnabled: boolean;
   };
+  input: InputSettings;
   output: OutputSettings;
+};
+
+export type InputSettings = {
+  /** Absolute directory path to scan; null = follow the system Downloads directory. */
+  defaultPath: string | null;
 };
 
 export type OutputSettings = {
@@ -79,6 +85,9 @@ export const DEFAULT_SETTINGS: Settings = {
   },
   translation: {
     defaultEnabled: false,
+  },
+  input: {
+    defaultPath: null,
   },
   output: {
     defaultPath: null,
@@ -125,7 +134,15 @@ const CLI_KEYS = ["id", "name", "enabled", "detectedPath", "models", "selectedMo
 const LANGUAGE_KEYS = ["target", "custom"] as const;
 const TRANSLATION_KEYS = ["defaultEnabled"] as const;
 const OUTPUT_KEYS = ["defaultPath", "useDefaultPath"] as const;
-const ROOT_KEYS = ["version", "mode", "cloud", "local", "languages", "translation", "output"] as const;
+const INPUT_KEYS = ["defaultPath"] as const;
+const ROOT_KEYS = ["version", "mode", "cloud", "local", "languages", "translation", "input", "output"] as const;
+/**
+ * Root fields allowed to be absent on read: pre-0.3.6 settings.json files lack `output`,
+ * pre-0.3.7 files lack `input`. A missing object falls back to its defaults instead of
+ * rejecting the whole file and resetting every user config. Every other field stays strict,
+ * and written files always contain both.
+ */
+const LENIENT_ROOT_KEYS = ["input", "output"] as const;
 
 function fail(path: string, reason: string): never {
   throw new SettingsValidationError(`${path} ${reason}`);
@@ -244,14 +261,11 @@ function assertUniqueIds(entries: { id: string }[], path: string, key: string): 
 /** Strict, non-mutating validation of a settings value read from disk or from a request body. */
 export function validateSettings(value: unknown): Settings {
   const root = readObject(value, "settings");
-  // `output` is the only field allowed to be absent on read: pre-0.3.6 settings.json
-  // files legitimately lack it, and rejecting the file would reset every user config.
-  // Everything else stays strict, and written files always contain `output`.
   for (const key of Object.keys(root)) {
     if (!ROOT_KEYS.includes(key as (typeof ROOT_KEYS)[number])) fail(`settings.${key}`, "is not a known field");
   }
   for (const key of ROOT_KEYS) {
-    if (key === "output") continue;
+    if ((LENIENT_ROOT_KEYS as readonly string[]).includes(key)) continue;
     if (!(key in root)) fail(`settings.${key}`, "is missing");
   }
 
@@ -287,7 +301,8 @@ export function validateSettings(value: unknown): Settings {
   const translation = readObject(root.translation, "translation");
   readFields(translation, "translation", TRANSLATION_KEYS);
 
-  // Lenient read: a missing output object falls back to the defaults (see comment above).
+  // Lenient read: a missing input/output object falls back to defaults (see LENIENT_ROOT_KEYS).
+  const input = "input" in root && root.input !== undefined ? readInput(root.input) : { defaultPath: null };
   const output = "output" in root && root.output !== undefined
     ? readOutput(root.output)
     : { defaultPath: null, useDefaultPath: false };
@@ -310,7 +325,16 @@ export function validateSettings(value: unknown): Settings {
     translation: {
       defaultEnabled: readBoolean(translation, "translation", "defaultEnabled"),
     },
+    input,
     output,
+  };
+}
+
+function readInput(value: unknown): InputSettings {
+  const object = readObject(value, "settings.input");
+  readFields(object, "settings.input", INPUT_KEYS);
+  return {
+    defaultPath: readNullableString(object, "settings.input", "defaultPath", NON_EMPTY),
   };
 }
 

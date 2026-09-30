@@ -93,12 +93,20 @@ export function encodeSecretsPayload(secrets) {
  * Environment for the local Next.js server child process. The launching environment
  * wins over userData/.env, and the MD_CONVERTOR_* keys are always authoritative.
  */
-export function buildServerEnv({ baseEnv = {}, pathEnv = "", userDataDir = "", secrets = {}, dotEnv = {} } = {}) {
+export function buildServerEnv({
+  baseEnv = {},
+  pathEnv = "",
+  userDataDir = "",
+  downloadsDir = "",
+  secrets = {},
+  dotEnv = {},
+} = {}) {
   return {
     ...dotEnv,
     ...baseEnv,
     PATH: pathEnv,
     MD_CONVERTOR_USER_DATA: userDataDir,
+    MD_CONVERTOR_DOWNLOADS_DIR: downloadsDir,
     MD_CONVERTOR_SECRETS: encodeSecretsPayload(secrets),
   };
 }

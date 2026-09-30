@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { gotoConverter } from "./entry";
+
 /**
  * Translation front end (S4). The conversion is stubbed so the browser never
  * fetches a real page; `/api/translate/analyze` and `/api/translate/run` are the
@@ -37,6 +39,7 @@ type StoredSettings = {
   translation: { defaultEnabled: boolean };
   // The real API always returns output (lenient read fills it server-side).
   output: { defaultPath: string | null; useDefaultPath: boolean };
+  input: { defaultPath: string | null };
 };
 
 function settingsWith(defaultEnabled: boolean, target: string): StoredSettings {
@@ -48,6 +51,7 @@ function settingsWith(defaultEnabled: boolean, target: string): StoredSettings {
     languages: { target, custom: [] },
     translation: { defaultEnabled },
     output: { defaultPath: null, useDefaultPath: false },
+    input: { defaultPath: null },
   };
 }
 
@@ -187,7 +191,7 @@ test.beforeEach(async ({ page }) => {
 
 test("勾选框按设置里的默认开关取值，取消勾选不跨启动保留，两个面板状态同步", async ({ page }) => {
   await mockSettings(page, true);
-  await page.goto("/");
+  await gotoConverter(page);
 
   await expect(translateToggle(page)).toBeChecked();
   await translateToggle(page).uncheck();
@@ -195,20 +199,23 @@ test("勾选框按设置里的默认开关取值，取消勾选不跨启动保�
   await page.getByRole("tab", { name: "富文本转换" }).click();
   await expect(translateToggle(page)).not.toBeChecked();
 
+  // A reload returns to the landing screen, so the converter has to be entered again; what this
+  // asserts is that the checkbox comes from the settings default, not from session memory.
   await page.reload();
+  await gotoConverter(page);
   await expect(translateToggle(page)).toBeChecked();
 });
 
 test("未打开默认开关时勾选框保持未选中", async ({ page }) => {
   await mockSettings(page, false);
-  await page.goto("/");
+  await gotoConverter(page);
 
   await expect(translateToggle(page)).not.toBeChecked();
 });
 
 test("勾选后转换成功会自动翻译，出现两个 Tab 并默认停在译文", async ({ page }) => {
   await mockSettings(page, true);
-  await page.goto("/");
+  await gotoConverter(page);
   await expect(translateToggle(page)).toBeChecked();
 
   await pasteAndConvert(page);
@@ -224,7 +231,7 @@ test("勾选后转换成功会自动翻译，出现两个 Tab 并默认停在译
 
 test("未勾选时不出现译文 Tab，结果区与现状一致", async ({ page }) => {
   await mockSettings(page, true);
-  await page.goto("/");
+  await gotoConverter(page);
   await translateToggle(page).uncheck();
 
   await pasteAndConvert(page);
@@ -235,7 +242,7 @@ test("未勾选时不出现译文 Tab，结果区与现状一致", async ({ page
 
 test("复制与下载跟随当前 Tab，译文下载名带语言后缀", async ({ page }) => {
   await mockSettings(page, true);
-  await page.goto("/");
+  await gotoConverter(page);
   await pasteAndConvert(page);
   await waitForTranslation(page);
 
@@ -265,7 +272,7 @@ test("翻译中可以取消，取消后原文仍可读且译文显示已取消",
     await new Promise((resolve) => setTimeout(resolve, 8000));
     await route.fulfill({ status: 502, body: "{}" }).catch(() => undefined);
   });
-  await page.goto("/");
+  await gotoConverter(page);
   await pasteAndConvert(page);
 
   await expect(page.getByRole("tabpanel", { name: "译文" })).toContainText("正在翻译正文");
@@ -295,7 +302,7 @@ test("模型失败时显示错误，重试沿用同一 analysis 并成功", asyn
       body: JSON.stringify({ error: { code: "TRANSLATE_PROVIDER_ERROR", message: "模型调用失败，请重试。" } }),
     });
   });
-  await page.goto("/");
+  await gotoConverter(page);
   await pasteAndConvert(page);
 
   await expect(page.getByRole("tabpanel", { name: "译文" })).toContainText("模型调用失败，请重试。");
@@ -315,7 +322,7 @@ test("未配置翻译模型时不出现 Tab，只提示去设置", async ({ page
       body: JSON.stringify({ error: { code: "TRANSLATE_NOT_CONFIGURED", message: "尚未配置翻译模型。" } }),
     }),
   );
-  await page.goto("/");
+  await gotoConverter(page);
   await pasteAndConvert(page);
 
   await expect(page.getByRole("tablist", { name: "转换结果" })).toHaveCount(0);
@@ -330,7 +337,7 @@ test("占比 70%–97% 时弹确认框，选「只翻译非目标语言部分」
   await mockRatioConversion(page);
   await mockAnalysisTargets(page, 8);
   const requests = trackTranslationRequests(page);
-  await page.goto("/");
+  await gotoConverter(page);
   await pasteAndConvert(page);
 
   const dialog = page.getByRole("dialog");
@@ -351,7 +358,7 @@ test("确认框选「不翻译」后保留原文、不显示译文 Tab、不重�
   await mockRatioConversion(page);
   await mockAnalysisTargets(page, 8);
   const requests = trackTranslationRequests(page);
-  await page.goto("/");
+  await gotoConverter(page);
   await pasteAndConvert(page);
 
   await expect(page.getByRole("dialog")).toContainText("是否只翻译其余部分？");
@@ -371,7 +378,7 @@ test("占比 ≥97% 时只提示，不发起翻译", async ({ page }) => {
   await mockRatioConversion(page);
   await mockAnalysisTargets(page, 10);
   const requests = trackTranslationRequests(page);
-  await page.goto("/");
+  await gotoConverter(page);
   await pasteAndConvert(page);
 
   await expect(page.getByRole("status")).toContainText("正文已是英语，无需翻译");
@@ -386,7 +393,7 @@ test("没有可翻译的正文时只提示，不发起翻译", async ({ page }) 
   await mockRatioConversion(page);
   await mockEmptyProseAnalysis(page);
   const requests = trackTranslationRequests(page);
-  await page.goto("/");
+  await gotoConverter(page);
   await pasteAndConvert(page);
 
   await expect(page.getByRole("status")).toContainText("正文没有可翻译的段落");
@@ -399,7 +406,7 @@ test("占比低于 70% 时不打扰，直接全文翻译", async ({ page }) => {
   await mockRatioConversion(page);
   await mockAnalysisTargets(page, 6);
   const requests = trackTranslationRequests(page);
-  await page.goto("/");
+  await gotoConverter(page);
   await pasteAndConvert(page);
 
   await expect(page.getByRole("dialog")).toHaveCount(0);

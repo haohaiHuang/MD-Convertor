@@ -1,6 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { outputCodeMessage } from "./client";
+import { DEFAULT_SETTINGS } from "@/types/settings";
+
+import { inputDirLabel, outputCodeMessage, putSettings } from "./client";
 
 /**
  * `electron/output.mjs` maps a failed write to the raw `error.code` from Node's fs
@@ -26,5 +28,54 @@ describe("outputCodeMessage", () => {
 
   it("falls back when the bridge reported no code at all", () => {
     expect(outputCodeMessage(undefined, "文件写入失败。")).toBe("文件写入失败。");
+  });
+});
+
+/**
+ * `/api/settings` validates the root keys strictly, so the response-only `defaults` field has
+ * to come off again before the round-tripped payload goes back (L6).
+ */
+describe("putSettings", () => {
+  it("strips the response-only defaults field before sending", async () => {
+    const bodies: string[] = [];
+    vi.stubGlobal("fetch", async (_url: string, init: RequestInit) => {
+      bodies.push(String(init.body));
+      return new Response(JSON.stringify(DEFAULT_SETTINGS), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+    try {
+      await putSettings({ ...DEFAULT_SETTINGS, defaults: { inputDir: "/Users/someone/Downloads" } });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    expect(bodies).toHaveLength(1);
+    expect(JSON.parse(bodies[0])).toEqual(DEFAULT_SETTINGS);
+  });
+});
+
+/**
+ * L6: the settings card and the scan panel must show the same thing for an unset input
+ * directory, so both render through this helper instead of repeating the fallback chain.
+ */
+describe("inputDirLabel", () => {
+  it("prefers the directory the user chose", () => {
+    const settings = { ...DEFAULT_SETTINGS, input: { defaultPath: "/Users/someone/Documents" } };
+    expect(inputDirLabel({ ...settings, defaults: { inputDir: "/Users/someone/Downloads" } })).toBe(
+      "/Users/someone/Documents",
+    );
+  });
+
+  it("shows the directory the server would scan when nothing is chosen", () => {
+    expect(inputDirLabel({ ...DEFAULT_SETTINGS, defaults: { inputDir: "/Users/someone/Downloads" } })).toBe(
+      "/Users/someone/Downloads",
+    );
+  });
+
+  it("falls back to the wording when the payload carries no resolved default", () => {
+    expect(inputDirLabel(DEFAULT_SETTINGS)).toBe("系统下载目录");
+    expect(inputDirLabel(null)).toBe("系统下载目录");
   });
 });

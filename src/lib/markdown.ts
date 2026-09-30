@@ -43,7 +43,7 @@ function normalizePasteTitle(value: string): string {
 
 const RESERVED_FILENAME = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;
 
-function cleanFilenameStem(value: string): string {
+export function cleanFilenameStem(value: string): string {
   return value
     .replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-")
     .replace(/[. ]+$/g, "")
