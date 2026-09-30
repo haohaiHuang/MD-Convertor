@@ -107,6 +107,8 @@
 | 默认值 | `home`（入口画面）。**刷新 / 重开应用回到入口画面**（客户端状态，不写 sessionStorage / URL） | V1 + 线路 §5.4「不是常驻主流功能」；入口即「一开始」 |
 | 现有断言 | `e2e/home.spec.ts` 的像素锁（textarea / source / submit 同一水平行）与 `rectsInOneFrame` 断言**必须保持绿**——但现在要先经 `e2e/entry.ts` 的 `gotoConverter(page)`（等 `/api/settings` GET 完成后再点「粘贴URL/富文本转换」）进入转换画面再断言 | 转换画面自身 DOM 与改动前一致，只是多一步进入 |
 | 插件按钮 | 入口画面底部一行小字链接：`<a href="/md-convertor-extension.zip" download>下载浏览器插件</a>`（只在入口画面；2026-09-30 起带下划线，副标题「Chrome里直接转存网页为本地.md」与其上下居中） | 用户原话；静态资源，无桥接也可用（§4.8） |
+| 二级画面的页级标题 | `convert` 与 `local-docs` **共用同一组** `styles.hero / .title / .subtitle`（大标题 + 一句副标题），`local-docs` 的卡片里不再重复一遍标题（只留说明句 + 计数 pill）；两个画面各有自己的 `h1`（`id="page-title"`） | 2026-09-30 用户报告「粘贴 URL 那页有大标题和副标题，本地文档那页没有」⇒ 成熟产品加画面，方向就是 app 本身，复用既有 hero token，不发明新风格（阶段 4 快速通道） |
+| 副标题长度约束 | 两个画面的副标题都要**短**：`page.module.css` 在 `@media (min-width: 761px)` 对 `.title / .subtitle` 施加 `white-space: nowrap`，过长会被裁掉（无省略号）。要放长文案就先把那条查询去掉（同时影响转换页原有行为） | 2026-09-29 入口画面已踩过同一查询（撑破标题） |
 
 ### 4.2 输入目录设置（② + 恢复默认）
 

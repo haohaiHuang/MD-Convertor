@@ -255,14 +255,11 @@ export function LocalDocsPanel({
       : disabledReason ?? (scan && rows.length === 0 ? "这个目录里没有 md 文件。" : null);
 
   return (
-    <section className={styles.panel} aria-labelledby="local-docs-title">
+    <section className={styles.panel}>
       <div className={styles.head}>
-        <div>
-          <h2 id="local-docs-title" className={styles.title}>本地文档</h2>
-          <p className={styles.subtitle}>
-            批量处理本地 md：内嵌图片、可选翻译，产物写到设置里的输出目录，源文件不会被改动。
-          </p>
-        </div>
+        {/* No title here: the screen has a page-level heading, and repeating it in the card read as
+            the same words twice. What stays is the part the heading does not say. */}
+        <p className={styles.subtitle}>产物写到设置里的输出目录，源文件不会被改动。</p>
         <p className={styles.pill}>共 {rows.length} 篇 · 已处理 {processedCount} 篇</p>
       </div>
 

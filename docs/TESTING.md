@@ -141,11 +141,11 @@ This checklist was run and passed on 2026-09-24 (all six items; item 5 used a th
 
 `npm run desktop:release` requires:
 
-- package version exactly `0.3.8`
+- package version exactly `0.3.9`
 - Node.js 24.x, but not 24.16.0: that patch stalls inside `yauzl` while unpacking the Electron archive, so `electron-forge make` never produces a ZIP. Node 24.14.1 and 24.15.0 both pass the full gate
 - the historical archive set: every manifest ZIP that still exists must keep its fixed SHA-256, and no unlisted release ZIP may appear in `~/Downloads/MD-Convertor-archive/releases/`
 - a ZIP created during the current run
-- packaged version `0.3.8`
+- packaged version `0.3.9`
 - an arm64 executable and complete application bundle
 
 The guard rechecks historical artifacts on both success and failure. A Forge command that exits without a new ZIP is a failure.

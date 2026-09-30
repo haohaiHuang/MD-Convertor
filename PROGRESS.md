@@ -2,14 +2,26 @@
 
 ## Current State
 
-- Last updated: 2026-09-30（**第二十四轮：提交门四条「只报未改」处置**——1 条真问题按 TDD 修（`desktop-server-scope` 的静默假绿 → `describe.skipIf`），3 条逐条给证据后**故意不改**并入档 QUALITY-AUDIT。纯测试改动，未 bump 版本、未发新版。上一轮见下）
-- Current version: `0.3.8`（**本轮已发布**，GitHub Release `v0.3.8`，tag 指向 `6e00474`；产物 **236,224,675 bytes** / SHA-256 `94624625…b2ea`，详表见 `docs/TESTING.md` 的 `## Gated Artifact (0.3.8)`）。上一个已发布版本 `0.3.7`（2026-09-30，239,472,776 bytes / `6986356b…733c`）；**本机 `/Applications/MD-Convertor.app` = 第二十一轮构建**（第二十二轮收窄后的构建仍只在 `out/`）
-- Active feature: **无**。`feat-042`（A 桌面端「文档处理」）已于 2026-09-30 置 `done` 并随 `v0.3.7` 发布（S1–S4 + 12 条真机验收签字）；`feat-040`（B 浏览器插件）同日关闭；`feat-041` 已完成、已发布、已关闭。**本轮的 0.3.8 没有新增 feature**，内容是第二十一轮修复 + 第二十二轮打包收窄。
-- Next step: **等用户裁决三件事**。① 是否把 `0.3.8` 装上本机 `/Applications`（第二十二轮收窄后的构建仍在 `out/`，属另一轮）；② 是否让 `extension/` 写方 percent-encode 文件名（B1 只修了读方）；③ 云端 Provider 端到端实测（需真实文章）。**不要重写第二套批量编排或第二条写盘路径**；**再次发布任何版本都要用户单独授权**。
-- Branch: `main`，本轮把第二十一、二十二轮改动连同版本面一起提交（`6e00474`）并打 tag `v0.3.8`（已 push）；tag `v0.3.7` 仍指 `9afbe36`，stash 列表为空。发布后的簿记提交记录 digest / SHA / 台账（见 `docs/TESTING.md` 与 `docs/QUALITY-AUDIT.md`）。
+- Last updated: 2026-09-30（**第二十五轮：本地文档页补页级标题**——用户报告「粘贴 URL 那页有大标题和副标题，本地文档那页没有」⇒ 方案 A 落地（加同款 hero，卡内不再重复标题），TDD 红→绿。动了 `src/app/`，故版本面 bump 到 `0.3.9`（**未发布、未 commit**）。上一轮见下）
+- Current version: `0.3.9`（**未发布**；上一个已发布版本 `0.3.8`，GitHub Release `v0.3.8`，tag 指向 `6e00474`，产物 **236,224,675 bytes** / SHA-256 `94624625…b2ea`，详表见 `docs/TESTING.md` 的 `## Gated Artifact (0.3.8)`；再上一个 `0.3.7` = 239,472,776 bytes / `6986356b…733c`）。**本机 `/Applications/MD-Convertor.app` = 0.3.8 构建**（第二十四轮装的，本轮改动不在其中）
+- Active feature: **无**。`feat-042`（A 桌面端「文档处理」）已于 2026-09-30 置 `done` 并随 `v0.3.7` 发布（S1–S4 + 12 条真机验收签字）；`feat-040`（B 浏览器插件）同日关闭；`feat-041` 已完成、已发布、已关闭。`0.3.8` 的内容是第二十一轮修复 + 第二十二轮打包收窄，本轮 `0.3.9` 是本地文档页标题面。
+- Next step: **等用户裁决三件事**。① 是否发布 `0.3.9` / 装本机（要先过提交门 ponytail → code-review → neat-freak，且发布需单独授权）；② 是否让 `extension/` 写方 percent-encode 文件名（B1 只修了读方）；③ 云端 Provider 端到端实测（需真实文章）。**不要重写第二套批量编排或第二条写盘路径**；**再次发布任何版本都要用户单独授权**。
+- Branch: `main` 已 push 到 **`538631f`**；**本轮改动尚未 commit**（4 个源码/测试文件 + 版本面 + 台账，见下）。tag `v0.3.8` 仍指 `6e00474`、`v0.3.7` 仍指 `9afbe36`，stash 列表为空。
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+（桌面产物）；浏览器插件另行验收于 Chromium，不进桌面发布门禁
 
-## 本轮（2026-09-30 第二十四轮：提交门四条「只报未改」的处置）
+## 本轮（2026-09-30 第二十五轮：本地文档页补页级标题，版本面 → `0.3.9`）
+
+- **用户报告**：「粘贴 URL 那个面板有大标题和副标题，但本地文档转换那页没有」→ 给出诊断与三个方案后用户选 **A**（给该页加同级 hero，卡内不再重复标题），现已 TDD 落地。
+- **根因（截图实测）**：`src/app/page.tsx` 的 `local-docs` 分支只有页头 + 一张卡片，**整页没有任何 `h1`**（唯一标题是卡内 `h2 本地文档`，18px）；转换页则是 `h1` 42–64px + 副标题。⇒ 标题层级从 2 起步，且两页构图不对称（1,280×900 截图对照）。
+- **改动（TDD）**：`e2e/local-docs.spec.ts` 先加「画面级大标题与副标题和转换页同级，卡片里不再重复一次标题」（断言唯一 `h1` 文案 + `heading level 2` 计数为 0 + 两条新文案可见 + 溢出为空）⇒ RED（该页确无 h1）⇒ 实现：`page.tsx` 的 local-docs 分支加同款 `<section className={styles.hero} aria-labelledby="page-title">` + `<h1 id="page-title">` + 副标题；`panel.tsx` 去掉卡内 `h2` / `aria-labelledby`，只留说明句 + 计数 pill；`panel.module.css` 删掉随之变死的 `.title` ⇒ GREEN（该文件 chromium 17 passed）。**零新增 CSS**（复用 `.hero / .title / .subtitle / .accentText`）。
+- **文案**（三处不重复）：h1「把本地 md，整理成干净的文档」；副标题「一次挑一批，在本机内嵌图片、可选翻译。」；卡内说明句「产物写到设置里的输出目录，源文件不会被改动。」
+- **nowrap 陷阱（已规避并写进 FSD §4.1）**：`page.module.css` 在 `@media (min-width: 761px)` 对 `.title / .subtitle` 施加 `white-space: nowrap`，副标题过长会被直接裁掉（无省略号）⇒ 副标题刻意写短，未去改那条查询（去改会同时影响转换页既有行为）。
+- **溢出核对**：新用例在 **960 / 375** 两档视口逐元素查 `getBoundingClientRect().right > innerWidth`（**不用** `scrollWidth === clientWidth`，会被 `overflow-x: clip` 骗过）= 空。960 是窗口最小宽度（`electron/main.mjs` 的 `minWidth: 960`），nowrap 最紧的一档。
+- **门禁**：`NODE_OPTIONS= ./init.sh` exit 0（**95 files / 1270 tests**；`src/app/**` 不在 vitest 覆盖率 include 内，故计数不变）；`npm run test:e2e` **315 passed / 6 skipped / 0 failed**（+3 = 新用例 ×3 引擎）+ `E2E tracked-file check passed.`。
+- **版本面 TDD bump `0.3.8` → `0.3.9`**：先改 `scripts/release-guards.test.mjs` 期望 ⇒ RED（`expected 'Release version must be 0.3.8.' to contain '0.3.9'`）⇒ 改 `release-desktop.mjs`（错误串 + 判定，2 处）/ `package.json` / `package-lock.json`（2 处）/ `feature_list.currentVersion` ⇒ **30 passed**。**未发布、未 commit、未装本机**。
+- **只报未改**：① 375px 下文档列表表格拥挤（既有基线，本轮未碰表格 markup/CSS；产品最小窗宽 960 也到不了 375）；② `design_audit` 工具自身报错（相对路径报「目标下无前端文件」、绝对路径崩 `runNonTextContrastChecks is not defined`）⇒ 本轮用 `design_contrast` + 手工核对替代，属工具缺陷。
+
+## 上一轮（2026-09-30 第二十四轮：提交门四条「只报未改」的处置）
 
 - **用户问**：「只报不改这四条，影响大吗？要修正吗」→ 逐条给证据后用户指令「改吧」。**只改第 2 条**，其余三条刻意不改并写进 `docs/QUALITY-AUDIT.md` 第二十四轮条目（避免下轮评审重提）。
 - **① `withoutTrailingSlash` 丢 `|| "/"` —— 误报，照改会出错**（不改）：抽取前后逐字相同（旧 `client.ts` 就是 `replace(/\/+$/, "")`），全仓 `|| "/"` 零命中；实算六个调用点，加守卫会把 `processedOutputDir("/")` 变成 `"//processed"`、`joinDocPath("/","x.md")` 变成 `"//x.md"`。
@@ -167,7 +179,7 @@
 - **TS 6 不再自动收 `@types`**：`node_modules/@types/*` 不会自动进 program（本项目的 `@types/node` 是被 `next-env.d.ts` → `next` 间接带进来的），所以 `@types/chrome` 必须显式引用 —— 靠 `extension/src/chrome-types.d.ts` 里一行 `/// <reference types="chrome" />`（零 import）覆盖扩展全部文件；新增用 `chrome.*` 的文件不要再逐个加指令。
 - **同名用 `overwrite` 而不是 `uniquify`**：`uniquify` 只改 md 名（`标题 (1).md`）、目录名不变，一次重复导出就把文件对拆散；这也是不加时间戳的理由。
 - 签名/notarization 不做（QA-008 accepted，2026-09-20 用户决定）；UI 评审结论勿重提（2026-09-20 全部不整改）。
-- **A 块（`feat-042`）S1–S4 已实施（S4 于 2026-09-29）**：版本面已是 `0.3.7`（**不要再 bump**，发布需用户单独授权）。三条已定约束：图片内联在 **Markdown 层**复用 `src/lib/images.ts`（不另写一套 sharp/尺寸判断，提为导出是行为不变的 A1 重构）；**服务端路由只读、写盘只经既有 `outputBridge().saveFile()`**（S2 的 `/api/local-docs/process` 也不写盘）；A 的 e2e **不得读真实下载目录**（默认目录的解析只在路由单测里注入环境变量验证），桥接桩必须能抛。S1 已交付可复用：`src/lib/local-docs/paths.ts`（`isSafeDirectoryPath`/`isMarkdownFileName`/`resolveScanDir`）、`dedup.ts`、`scan.ts`（`scanLocalDocs`/`defaultDownloadsDir`）。S2 已交付可复用：`scan-refs.ts`（`scanImageRefs`）、`inline-images.ts`（`inlineLocalDocImages`）、`process.ts`（`processLocalDoc`，返回 `{skipped} | {markdown,filename,sha256,warnings,stats,translation}`；服务端自己重算跳过判定），以及 `images.ts` 新导出 `embedImageBuffer`/`mapWithConcurrency`/`MAX_IMAGES`/`MAX_SOURCE_IMAGE_BYTES`。S2 的一条口径已定稿：**本地图片只允许源 md 所在目录树内的相对路径**，根外绝对路径 / `..` / `scheme:` / `//` 一律拒（保留原引用 + warning），远端只走 `fetchPublicResource`，`data:` 原样保留不计数。**S3 已交付可复用**：`src/lib/local-docs/batch.ts`（`planBatch`/`isSameDirectory`/`processedOutputDir`/`applyRowStatus`/`nextPending`/`summarize`）、`src/app/local-docs/{client.ts,panel.tsx,panel.module.css}`（`runBatch(rows, ctx)` 注入 `processDoc`/`saveFile`/`onRows`）、`electron/system.mjs` 的 `md-convertor:system:open-path`。
+- **A 块（`feat-042`）S1–S4 已实施（S4 于 2026-09-29）**：版本面已随桌面改动推进到 `0.3.9`（**不要再重复 bump**，发布需用户单独授权）。三条已定约束：图片内联在 **Markdown 层**复用 `src/lib/images.ts`（不另写一套 sharp/尺寸判断，提为导出是行为不变的 A1 重构）；**服务端路由只读、写盘只经既有 `outputBridge().saveFile()`**（S2 的 `/api/local-docs/process` 也不写盘）；A 的 e2e **不得读真实下载目录**（默认目录的解析只在路由单测里注入环境变量验证），桥接桩必须能抛。S1 已交付可复用：`src/lib/local-docs/paths.ts`（`isSafeDirectoryPath`/`isMarkdownFileName`/`requireSafeDirectoryPath`）、`dedup.ts`、`scan.ts`（`scanLocalDocs`/`defaultDownloadsDir`）。S2 已交付可复用：`scan-refs.ts`（`scanImageRefs`）、`inline-images.ts`（`inlineLocalDocImages`）、`process.ts`（`processLocalDoc`，返回 `{skipped} | {markdown,filename,sha256,warnings,stats,translation}`；服务端自己重算跳过判定），以及 `images.ts` 新导出 `embedImageBuffer`/`mapWithConcurrency`/`MAX_IMAGES`/`MAX_SOURCE_IMAGE_BYTES`。S2 的一条口径已定稿：**本地图片只允许源 md 所在目录树内的相对路径**，根外绝对路径 / `..` / `scheme:` / `//` 一律拒（保留原引用 + warning），远端只走 `fetchPublicResource`，`data:` 原样保留不计数。**S3 已交付可复用**：`src/lib/local-docs/batch.ts`（`planBatch`/`isSameDirectory`/`processedOutputDir`/`applyRowStatus`/`nextPending`/`summarize`）、`src/app/local-docs/{client.ts,panel.tsx,panel.module.css}`（`runBatch(rows, ctx)` 注入 `processDoc`/`saveFile`/`onRows`）、`electron/system.mjs` 的 `md-convertor:system:open-path`。
 - **面板写盘只有一条路**：全部经 `runBatch` → `outputBridge().saveFile()`；e2e 只桩 preload 桥（成功 / fs 码 / **抛异常** 三态），扫描与处理必须走真实路由，目录一律 `mkdtemp`，**不得碰真实 Downloads**。
 - **入口卡片是 `role="button"`、名字仍是子串**：卡片「粘贴URL/富文本转换」包含内层 tab「富文本转换」，断言内层 tab 仍要 `exact: true`（同屏可达时 Playwright 的 name 匹配是子串）；同理 `<td>` 里带 checkbox 时，name 单元格的可访问名会吸到 `aria-label="选择 …"`，也要 `exact: true`。
 - **点首页模式选择器前先等 hydration**：模式是客户端状态，SSR 页上的点击会被静默丢弃（firefox 尤其容易）；`gotoHydrated` 等的是页面自己的 `/api/settings` GET。看到「点了没反应」先查这一拍，别先当产品缺陷。

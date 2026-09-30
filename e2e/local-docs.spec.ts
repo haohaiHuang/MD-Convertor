@@ -15,6 +15,9 @@ import { rectsInOneFrame } from "./geometry";
  * explicit `input`/`output` settings pointing at `mkdtemp` directories.
  */
 
+/** The local-docs screen's page-level heading, shared by the cases that use it as "this screen". */
+const LOCAL_DOCS_TITLE = "把本地 md，整理成干净的文档";
+
 type StubSaveFile = "ok" | "throw" | "denied";
 
 type SavedCall = { dirPath: string; filename: string; content: string };
@@ -101,6 +104,29 @@ function defaultPatch(inputDir: string, outputDir: string): SettingsPatch {
   };
 }
 
+/**
+ * Hero elements that stick out of the viewport, measured against the viewport inside one frame.
+ *
+ * `getBoundingClientRect()` is deliberate: `scrollWidth === clientWidth` loses its teeth once the
+ * ancestor clips (`overflow-x: clip`), which is exactly how a `nowrap` heading gets cut off while
+ * still reporting that it fits. Comparing inside the same `evaluate` also keeps a scroll between
+ * the element read and the viewport read from showing up as a broken layout.
+ */
+async function heroOverflow(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const problems: string[] = [];
+    for (const element of document.querySelectorAll("h1, h1 + p")) {
+      const rect = element.getBoundingClientRect();
+      if (rect.left < -0.5 || rect.right > window.innerWidth + 0.5) {
+        problems.push(
+          `${element.tagName} ${Math.round(rect.left)}..${Math.round(rect.right)} in ${window.innerWidth}`,
+        );
+      }
+    }
+    return problems;
+  });
+}
+
 let root: string;
 let inputDir: string;
 let outputDir: string;
@@ -127,7 +153,7 @@ test.describe("本地文档面板", () => {
     await installBridge(page);
     await routeSettings(page, defaultPatch(inputDir, outputDir), []);
     await openLocalDocs(page);
-    await expect(page.getByRole("heading", { level: 2, name: "本地文档" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: LOCAL_DOCS_TITLE })).toBeVisible();
 
     // Both navigations must wait for the settings fetch they trigger: clicking before hydration
     // is lost, and ending the test with a stubbed fetch still in flight makes the route handler
@@ -140,7 +166,7 @@ test.describe("本地文档面板", () => {
     await settingsPageLoaded;
     await page.getByRole("button", { name: "返回转换" }).click();
 
-    await expect(page.getByRole("heading", { level: 2, name: "本地文档" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: LOCAL_DOCS_TITLE })).toBeVisible();
     await expect(page.locator(`code[title="${inputDir}"]`)).toBeVisible();
     await expect(page.getByRole("button", { name: "一键转换" })).toBeVisible();
   });
@@ -157,7 +183,7 @@ test.describe("本地文档面板", () => {
     expect(resolved).not.toBe("系统下载目录");
 
     await openLocalDocs(page);
-    await expect(page.getByRole("heading", { level: 2, name: "本地文档" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: LOCAL_DOCS_TITLE })).toBeVisible();
     await expect(page.locator('code[title^="/"]')).toHaveText(resolved);
   });
 
@@ -166,6 +192,33 @@ test.describe("本地文档面板", () => {
 
     await expect(page.getByText("本地文档处理只能在桌面应用中使用。")).toBeVisible();
     await expect(page.getByRole("button", { name: "一键转换" })).toHaveCount(0);
+    // The hero belongs to the screen, not to the panel, so it survives the degraded branch.
+    await expect(page.getByRole("heading", { level: 1, name: LOCAL_DOCS_TITLE })).toBeVisible();
+  });
+
+  test("画面级大标题与副标题和转换页同级，卡片里不再重复一次标题", async ({ page }) => {
+    await installBridge(page);
+    await routeSettings(page, defaultPatch(inputDir, outputDir), []);
+    await openLocalDocs(page);
+
+    // Before this the screen rendered no page-level heading at all: its only title was the card's
+    // own h2, so the heading outline started at level 2 and the panel carried the whole screen.
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(LOCAL_DOCS_TITLE);
+    await expect(page.getByRole("heading", { level: 2 })).toHaveCount(0);
+    await expect(page.getByText("一次挑一批，在本机内嵌图片、可选翻译。")).toBeVisible();
+    // The long-form detail stays with the card's controls instead of being said twice up top.
+    // `exact` matters: the card's old sentence contained this same clause as a suffix, so a
+    // substring match would stay green even if the long form came back.
+    await expect(page.getByText("产物写到设置里的输出目录，源文件不会被改动。", { exact: true })).toBeVisible();
+
+    // `.title`/`.subtitle` are `white-space: nowrap` above 761px, so a heading that outgrows the
+    // shell is clipped rather than wrapped - and a screenshot still looks plausible. 960 is the
+    // window's own minWidth, the tightest point where nowrap is active and therefore the widest
+    // text that can survive it; below the breakpoint the text wraps instead.
+    for (const width of [960, 375]) {
+      await page.setViewportSize({ width, height: 800 });
+      expect(await heroOverflow(page), `viewport ${width}px`).toEqual([]);
+    }
   });
 
   test("有桥接时列出真实扫描到的 md，勾选与翻译开关可用", async ({ page }) => {

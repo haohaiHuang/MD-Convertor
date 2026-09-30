@@ -498,7 +498,7 @@ describe("desktop release protection orchestration", () => {
     expect(events).toEqual([]);
   });
 
-  it("accepts only the current 0.3.8 release target", async () => {
+  it("accepts only the current 0.3.9 release target", async () => {
     const { options } = makeReleaseFixture();
     await expect(runRelease(options)).resolves.toMatchObject({ digest: "digest" });
 
@@ -506,7 +506,7 @@ describe("desktop release protection orchestration", () => {
     await expect(runRelease(superseded.options)).rejects.toThrow(RELEASE_VERSION_ERROR);
     expect(superseded.events).toEqual([]);
 
-    expect(RELEASE_VERSION_ERROR).toContain("0.3.8");
+    expect(RELEASE_VERSION_ERROR).toContain("0.3.9");
   });
 
   it("keeps the release target, package version, lockfile, and feature_list currentVersion aligned", async () => {

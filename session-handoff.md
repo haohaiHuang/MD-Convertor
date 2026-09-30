@@ -2,41 +2,46 @@
 
 ## Resume Here
 
-- Current version: **`0.3.8`（本轮发布）**——版本面（`package.json` / `package-lock.json` / `feature_list.currentVersion` / `scripts/release-desktop.mjs` / release-guards fixture）已按 TDD 推到 `0.3.8`，GitHub Release `v0.3.8` 已发布；**产物字节数与 SHA-256 见 `docs/TESTING.md` 的 `## Gated Artifact (0.3.8)`**（本文件不重复记录以免漂移）。上一个已发布版本 `0.3.7`（2026-09-30，239,472,776 bytes / `6986356b…733c`）。未签名/未 notarize（个人测试定位，QA-008 accepted）。
-- **本机 `/Applications/MD-Convertor.app` 仍是第二十一轮的本地构建**（0.3.7 的名字 + 修复）；第二十二轮收窄后的构建只在 `out/`，**本轮没有重装**——装不装由用户定。
-- Active feature: **无**。`feat-042`（A 桌面端「文档处理」）2026-09-30 置 `done` 并随 `0.3.7` 发布：S1–S4 全绿 + 12 条真机验收由用户签字（阶段文档 `docs/features/app-document-processing/`，逐任务 RED/GREEN 在 `feature_list.json` 的 `feat-042.verification`）。关键不变量：两个 `/api/local-docs/*` **只读不写盘**，**唯一写盘出口是 `outputBridge().saveFile()`**。`feat-040`（B 插件）同日关闭，两者无代码依赖。`0.3.8` 没有新增 feature，内容是第二十一轮修复 + 第二十二轮打包收窄。
-- **唯一推荐下一步：等用户裁决三件事**——① 是否把 `0.3.8` 装上本机 `/Applications`（属另一轮）；② 是否让 `extension/` 写方 percent-encode 文件名（B1 只修了读方）；③ 云端 Provider 端到端实测（需真实文章，唯一没被真人走完的主干路径）。**不要重写第二套批量编排或第二条写盘路径**；**再次发布任何版本都要用户单独授权**；**提交门的四条「只报未改」已在第二十四轮处置完毕**（1 修 / 3 判不改，见 Recommended Next Action）。
-- Pending（无一是阻塞项）：① 产物与 tag 一律不动，缺失项按退役处理；② 签名/notarization 不做；③ UI 评审结论勿重提；④ 打包冒烟第二十一轮已在**新装包**上实测通过，无需重验；⑤ **六条未裁决 flake**（列在 Environment Notes）；⑥ 打包镜像已收窄（第二十二轮，白名单 + 守卫测试）——**真正的价值是包的大小不再取决于工作树**，体积只小 3.24 MB。
-- Branch: `main`，本轮把第二十一、二十二轮改动连同版本面一起提交（`6e00474`）并打 tag `v0.3.8`（已 push，Release 为 latest）；tag `v0.3.7` 仍指 `9afbe36`；stash 空。发布历史见 `docs/QUALITY-AUDIT.md`；`v0.1.3` = `ce041c9` 是不可变历史锚点。
+- Current version: **`0.3.9`（未发布、未 commit）**——版本面（`package.json` / `package-lock.json` / `feature_list.currentVersion` / `scripts/release-desktop.mjs` / release-guards fixture）已按 TDD 推到 `0.3.9`，本轮改动还在工作区里；**GitHub Release 最新仍是 `v0.3.8`**（tag 指向 `6e00474`，**产物字节数与 SHA-256 见 `docs/TESTING.md` 的 `## Gated Artifact (0.3.8)`**，本文件不重复以免漂移）。再上一个已发布版本 `0.3.7`（239,472,776 bytes / `6986356b…733c`）。未签名/未 notarize（个人测试定位，QA-008 accepted）。
+- **本机 `/Applications/MD-Convertor.app` = 0.3.8 发布包**（第二十四轮装入并真启动验证过）；本轮（0.3.9）的改动不在其中，要在本机看到效果需重新 build + 重装。
+- Active feature: **无**。`feat-042`（A 桌面端「文档处理」）2026-09-30 置 `done` 并随 `0.3.7` 发布：S1–S4 全绿 + 12 条真机验收由用户签字（阶段文档 `docs/features/app-document-processing/`，逐任务 RED/GREEN 在 `feature_list.json` 的 `feat-042.verification`）。关键不变量：两个 `/api/local-docs/*` **只读不写盘**，**唯一写盘出口是 `outputBridge().saveFile()`**。`feat-040`（B 插件）同日关闭，两者无代码依赖。`0.3.9` 没有新增 feature，内容是本地文档页的标题面。
+- **唯一推荐下一步：先定本轮去向**——① 是否提交 `0.3.9`（需先过提交门：ponytail → code-review → neat-freak，且 commit 要用户确认）；② 是否发布 / 装本机（**发布任何版本都要单独授权**）；另有两件待裁决（③ `extension/` 写方 percent-encode 文件名；④ 云端 Provider 实文实测）。**不要重写第二套批量编排或第二条写盘路径**；提交门四条「只报未改」已在第二十四轮处置完毕（1 修 / 3 判不改），不要再重开。
+- Pending（无一是阻塞项）：① 产物与 tag 一律不动，缺失项按退役处理；② 签名/notarization 不做；③ UI 评审结论勿重提；④ 打包冒烟第二十一轮已在新装包上实测通过；⑤ **六条未裁决 flake**（列在 Environment Notes）；⑥ 打包镜像已收窄（第二十二轮）。
+- Branch: `main` 已 push 到 **`538631f`**；**本轮（0.3.9）改动尚未 commit**——工作区有 4 个源码/测试文件（`src/app/page.tsx`、`src/app/local-docs/panel.tsx`、`panel.module.css`、`e2e/local-docs.spec.ts`）+ 版本面 + 台账待提交。tag `v0.3.8` 指 `6e00474`、`v0.3.7` 指 `9afbe36`；stash 空。发布历史见 `docs/QUALITY-AUDIT.md`；`v0.1.3` = `ce041c9` 是不可变历史锚点。
 
 - **本文件只写现役状态**（≤150 行 / ≤25KB）：阶段间交接写对应阶段文档的 `## Handoff`，轮次历史压进 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`。
 
 ## 新会话开工提示词（复制即用）
 
 ```
-开工 MD-Convertor —— `feat-042` 已随 `0.3.7` 发布，`0.3.8`（第二十一轮修复 + 第二十二轮打包收窄）
-刚发布；现在**没有在办事项**，按用户新指令开工。
+开工 MD-Convertor —— 本轮改了本地文档页的标题面，版本面已按 TDD 推到 `0.3.9`（**未发布、未 commit**）
+刚做完；现在**没有在办事项**，按用户新指令开工。
 
 【建立基线，别跳过】
 1. pwd 确认在 /Users/huanghaohai/Desktop/MD-Convertor。
 2. 读 AGENTS.md（本项目那份）、PROGRESS.md、feature_list.json、session-handoff.md
    （`## Resume Here` 是权威）；需要背景时再读 docs/PLAN-browser-extension.md 与对应 feature 文档的
    `## Result`，不必通读全部阶段文档。
-3. `git status --short` 应当干净；最新提交 = 0.3.8 的发布提交，tag `v0.3.8` 指向它，tag `v0.3.7` = `9afbe36`。
+3. `git status --short` 会列出 `0.3.9` 的 4 个源码/测试文件 + 版本面 + 台账（本轮尚未 commit，别当成脏树）。
+   最新提交 = `538631f`；tag `v0.3.8` = `6e00474`（最新 Release）、`v0.3.7` = `9afbe36`。
 4. NODE_OPTIONS= ./init.sh 建立基线：Node 必须是 24.14.1 或 24.15.0（本机默认 v24.16.0 会让
    electron-forge 空跑却 exit 0）；期望 95 files / 1270 tests 全绿。
 
-【0.3.7 / 0.3.8 都已经发布，别重做】
+【0.3.7 / 0.3.8 都已经发布，别重做；0.3.9 未发布】
 - 12 条真机人工验收已跑完并签字（S4 文档 §T4.2）；不要再为它们写自动化替代品。
 - 再次发布（任何版本）都要用户单独授权。发布门是 `npm run desktop:release`（版本常量、历史 ZIP
   守卫、产物新鲜度/结构/SHA-256 校验都在里面，见 docs/TESTING.md 的「Release Guard」）。
 - 装到本机时用发布 ZIP 解压，不要用 `out/` 里活着的 bundle（recipe 见 Environment Notes）；旧安装用 `mv` 归档不要 `rm -rf`。
 
 【硬约束，违反任一条都算做错】
-- **版本面是 0.3.8 且已发布**：下一轮若要发版，第一件事是把版本面 + `scripts/release-desktop.mjs` 的
-  目标版本一起推到 `0.3.9`（bump 需用户授权）；release-guards 的 fixture 已改为从错误串派生
+- **版本面是 0.3.9 且未发布**：本轮已把版本面 + `scripts/release-desktop.mjs` 的目标版本推到 0.3.9；
+  发下一版时同样先推版本面（bump 需用户授权）；release-guards 的 fixture 已改为从错误串派生
   （`CURRENT_RELEASE_TARGET`），bump 时不必再改它。只要改桌面代码就得先做这一步，否则发布门禁会用
-  0.3.8 的名字打 0.3.8 之后的源码。只改 `extension/` 的轮次不 bump。
+  旧版本号打新源码。只改 `extension/` 的轮次不 bump。
+- 第二十五轮已落地、不要重复做：本地文档页与转换页共用同一组 `.hero / .title / .subtitle`（`local-docs`
+  分支自己有一个 `h1 id="page-title"`），卡片里不再重复标题（只留说明句 + 计数 pill）。
+  **两个画面的副标题都要短**：`page.module.css` 在 `≥761px` 对 `.title/.subtitle` 施加 `white-space: nowrap`，
+  长文案会被直接裁掉（无省略号）；要放长文案先去掉那条查询（会同时改变转换页既有行为，需用户点头）。
 - 第二十一轮已落地、不要重复做：表头「全选」只勾未处理行且不带 `force`（逐行手勾＝重做）；`force` 保持
   忽略 sha256 短路（规格已改成与实现一致）；客户端的本地 skip 镜像已删；三处 ponytail 可删项已删/合并
   （`resolveScanDir`、`joinDocPath` 的重复正则、两份目录守卫 → `paths.requireSafeDirectoryPath`）；
@@ -70,11 +75,11 @@
 
 ## Latest Change
 
-**本轮（2026-09-30 第二十四轮）**：用户问「只报不改这四条，影响大吗？要修正吗」→ 逐条给证据后用户说「改吧」，于是**只改第 2 条**：① `withoutTrailingSlash` 丢 `|| "/"` 是**误报**（抽取前后逐字相同，全仓零命中；实算六个调用点，加守卫反而把 `processedOutputDir("/")` 变成 `"//processed"`、`joinDocPath` 变成 `"//x.md"`）——不改；② `tests/desktop-server-scope.test.mjs` 的 `if (!prepared) return;` 会**静默假绿**（`desktop:release` 里 `init.sh` 跑在 `desktop:make` 之前，那 5 条 `keeps …` 什么都没查就算通过）—— TDD 修：RED 无 `.desktop` 时 **17 passed / 1 skipped** ⇒ 产物检查收进 `describe.skipIf(!prepared)` ⇒ GREEN 无 `.desktop` **13 passed / 5 skipped**、有真产物 **18 passed**；③ 文本级 `indexOf` 守卫不改（要变强须在生产 `electron/main.mjs` 抽纯函数，为只在真机冒烟里跑的路径不划算）；④ ponytail 3 处可删项不改（纯装饰）。门禁 `./init.sh` **95 files / 1270 tests** exit 0；纯测试改动，**不 bump 版本、不发新版**。
+**本轮（2026-09-30 第二十五轮）**：用户报告「粘贴 URL 那个面板有大标题和副标题，但本地文档转换那页没有」→ 诊断（截图实测：转换页 `h1` 42–64px + 副标题；本地文档页**整页无 `h1`**，唯一标题是卡内 18px `h2`）+ A/B/C 三案，用户选 **A**。TDD：`e2e/local-docs.spec.ts` 先加「画面级大标题与副标题和转换页同级，卡片里不再重复一次标题」（唯一 `h1` 文案 + `heading level 2` 计数 0 + 两条新文案 + 溢出为空）⇒ RED ⇒ `page.tsx` 的 local-docs 分支加同款 hero（`h1 id="page-title"` + 副标题）、`panel.tsx` 去掉卡内 `h2`、`panel.module.css` 删掉变死的 `.title` ⇒ GREEN（chromium 17 passed）。**零新增 CSS**；溢出用 `getBoundingClientRect().right > innerWidth`（不用 `scrollWidth`，会被 `overflow-x: clip` 骗过）在 **960 / 375** 两档核对（960 是窗口最小宽度、nowrap 最紧）= 空。版本面 TDD bump `0.3.8` → **`0.3.9`**（RED `expected 'Release version must be 0.3.8.' to contain '0.3.9'` ⇒ 30 passed）。门禁：`./init.sh` **95 files / 1270 tests** exit 0、三引擎 e2e **315 passed / 6 skipped**。**未 commit、未发布、未装本机**；提交与发布待授权。
 
-**上一轮（2026-09-30 第二十三轮）**：用户「commit、push 加提交 release 到 GitHub」⇒ 提交门（四路只读评审，0 硬违规）后只改台账与版本面，版本面按 TDD 推到 `0.3.8`（RED 5 failed → GREEN 30 passed，fixture 默认值改为从 `RELEASE_VERSION_ERROR` 派生）⇒ 清树跑 `desktop:release` exit 0 ⇒ 提交 `6e00474` → push → tag `v0.3.8` → `gh release create --latest`。逐条报告见 `docs/QUALITY-AUDIT.md` 第二十三轮条目与 `docs/TESTING.md` 的 `## Gated Artifact (0.3.8)`。
+**上一轮（2026-09-30 第二十三/二十四轮）**：0.3.8 发布轮 —— 版本面 TDD 推到 `0.3.8`（fixture 默认值改从 `RELEASE_VERSION_ERROR` 派生）⇒ `desktop:release` exit 0 ⇒ `6e00474` → push → tag `v0.3.8` → `gh release create --latest`；随后第二十四轮只处理提交门四条「只报未改」（只改第 2 条：`desktop-server-scope.test.mjs` 的静默假绿 → `describe.skipIf`；①③④ 判不改，纯测试改动未 bump）。逐条见 `docs/QUALITY-AUDIT.md` 与 `docs/TESTING.md` 的 `## Gated Artifact (0.3.8)`。
 
-**上一轮（第二十二轮）**：**打包镜像收窄为白名单** —— `scripts/prepare-desktop.mjs` 不再整目录 `cp` `.next/standalone` 那份仓库镜像，改按 `scripts/desktop-server-entries.mjs` 的白名单逐项拷贝；`tests/desktop-server-scope.test.mjs`（真产物）+ `scripts/prepare-desktop.test.mjs`（fixture）钉住。**省的是卫生与确定性，不是体积**（镜像里那批仓库目录只有 ~8 MB；真正价值＝ build 时 `out/` 829 M 在场、`.next/standalone` 镜像到 1.17 GB 而 `.desktop/server` 仍稳定 288 MiB）。可移植性已在本机实测：空 HOME / 无 playwright 缓存 / **把仓库目录改名**后冒烟仍通过。第二十一轮（全选不改已处理行、`force` 口径按实现定稿、删死分支与 3 处可删项、修打包冒烟 `defaults` 回灌）与第二十轮（0.3.7 发布）逐条见 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`。
+**上一轮（第二十二轮）**：**打包镜像收窄为白名单** —— `prepare-desktop.mjs` 不再整目录 `cp` `.next/standalone` 那份仓库镜像，改按 `desktop-server-entries.mjs` 的白名单逐项拷贝（`tests/desktop-server-scope.test.mjs` + `prepare-desktop.test.mjs` 钉住）。**省的是卫生与确定性，不是体积**（真正价值＝ build 时 `out/` 在场也不再让包膨胀）。可移植性已在本机实测：空 HOME / 无 playwright 缓存 / **把仓库目录改名**后冒烟仍通过。第二十一轮（全选不改已处理行、`force` 口径定稿、删死分支与 3 处可删项、修打包冒烟 `defaults` 回灌）与第二十轮（0.3.7 发布）逐条见 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`。
 
 - **归档位置**：逐轮叙述见 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`（含 2026-09-24 起各轮）；S1–S4 逐任务证据见 `feature_list.json` 的 `feat-042.verification`；B 插件见 `feat-040.verification`。
 
@@ -95,25 +100,23 @@
 
 ## Next Stage Entry
 
-- 当前 `activeFeature` = **无**。`feat-042`（A 桌面端「文档处理」）2026-09-30 已 `done` 并随 `0.3.7` 发布（S1–S4 全绿 + 12 条真机验收签字）；`feat-024` – `feat-041` 均 done。版本面 `0.3.8`（**本轮已发布**）。
-- 下一轮入口：**由用户指定**。候选（均需单独授权）：把 `0.3.8` 装到本机、`extension/` 写方 percent-encode、云端 Provider 实文实测。**没有强制项**；别再为已关闭的验收写自动化替代品；提交门的四条「只报未改」已处置完毕，不再作为候选项。
+- 当前 `activeFeature` = **无**。`feat-042`（A 桌面端「文档处理」）2026-09-30 已 `done` 并随 `0.3.7` 发布（S1–S4 全绿 + 12 条真机验收签字）；`feat-024` – `feat-041` 均 done。版本面 `0.3.9`（**未发布、未 commit**）。
+- 下一轮入口：**由用户指定**。候选（均需单独授权）：提交 / 发布 `0.3.9`、装本机、`extension/` 写方 percent-encode、云端 Provider 实文实测。**没有强制项**；别再为已关闭的验收写自动化替代品；提交门的四条「只报未改」已处置完毕，不再作为候选项。
 - 每轮开头固定读：`PROGRESS.md` → `session-handoff.md` → `feature_list.json` → 相关 `docs/`（涉及翻译行为时先读 `docs/PRD-translation.md`），然后跑 `./init.sh` 建立基线。
 - 全部阶段文档（已完成入口）：`docs/features/translation/S1-settings-infra.md` 至 `S6-release-and-docs.md`；各文档的 Handoff 已写入下一阶段所需的真实接口与边界。
 
 ## Environment Notes
 
 - 网络：`github.com` / `api.github.com` 可用，但 GitHub releases 上 0.1.x 的历史 ZIP 取不回来。若 `node_modules/electron/dist` 缺失，用 `ELECTRON_MIRROR=https://registry.npmmirror.com/-/binary/electron/ npx install-electron`。
-- 代理（2026-09-20 实测）：本机 `ALL_PROXY` / `HTTPS_PROXY` 指向 `127.0.0.1:7897` 且转发已坏——`gh` / `curl` 报 `EOF` / `SSL_ERROR_SYSCALL`，`git fetch|push` 同样失败，**直连正常**（`git -c http.proxy= -c https.proxy= …`）。遇到 `EOF` 先试直连。
-- Playwright 浏览器：缺就 `npx playwright install chromium firefox webkit`。
+- 代理（2026-09-20 / 09-22 实测，Clash `127.0.0.1:7897`）：`ALL_PROXY` / `HTTPS_PROXY` 转发已坏——`gh` / `curl` 报 `EOF` / `SSL_ERROR_SYSCALL`、`git fetch|push` 同样失败，**直连正常**（`git -c http.proxy= -c https.proxy= …`）。跑 Playwright 前同样要先 `unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy ALL_PROXY all_proxy` + `NO_PROXY=127.0.0.1,localhost`（否则 `connectOverCDP` 报 `Unexpected status 502`；Firefox 还会跟随系统代理，Chromium 不跟随）。
 - `MD_CONVERTOR_TEST_PROVIDER=1` 是测试/e2e 专用开关（内置伪模型，不联网）；生产未设置时该分支不可达。生产路径的环境变量仍是 `MD_CONVERTOR_USER_DATA` / `MD_CONVERTOR_SECRETS` / `MD_CONVERTOR_SESSION_TOKEN` / `PATH`。
-- **Firefox e2e 需要 `MOZ_DISABLE_CONTENT_SANDBOX=1`（已固化在 `playwright.config.ts` 顶部，`??=` 可关）**：macOS 禁嵌套沙箱——已在沙箱里的进程再 `sandbox_init()` 得 `Operation not permitted`，表现为每个用例 30s 超时。**只需这一个变量**（其余同名开关无效）；**不要用** `firefoxUserPrefs: { "security.sandbox.content.level": 0 }`（实测 SIGKILL / exit 137）。三引擎数字：**312 passed / 6 skipped / 0 failed（2026-09-30 实测）**。
+- **Firefox e2e 需要 `MOZ_DISABLE_CONTENT_SANDBOX=1`（已固化在 `playwright.config.ts` 顶部，`??=` 可关）**：macOS 禁嵌套沙箱——已在沙箱里的进程再 `sandbox_init()` 得 `Operation not permitted`，表现为每个用例 30s 超时。**只需这一个变量**（其余同名开关无效）；**不要用** `firefoxUserPrefs: { "security.sandbox.content.level": 0 }`（实测 SIGKILL / exit 137）。三引擎数字：**315 passed / 6 skipped / 0 failed（2026-09-30 实测）**。
 - **firefox 在视口底部窄带会丢掉合成鼠标点击（2026-09-29 查实，不是产品缺陷也不是 flake）**：修法是点偏上位置（`click({ position: { x: 30, y: 6 } })`，仍是真实鼠标点击；`toPass` 重试包装 5/5 全红）。探针数据与机制见 `docs/TESTING.md`。
-- **六条未裁决的 flake**：`e2e/home.spec.ts:305`、`e2e/paste.spec.ts:212`、`e2e/settings.spec.ts:544`（firefox 设置页未渲染完就查 radio）、`e2e/settings.spec.ts:731` 与 `e2e/local-docs.spec.ts:404`（`gotoHydrated` 等 `/api/settings` GET 30s 超时）、`e2e/home.spec.ts:201`（firefox 代理错误，清了代理仍偶发）——均隔离重跑全绿。看着它红先比对干净 worktree；要碰先问用户。
-- **判「一条 e2e 失败是不是本轮造成的」用干净 worktree，不要靠记忆**（`git worktree add` + `cp -Rc node_modules`，**不要 symlink**）+ `npm run build`；recipe 见 `docs/TESTING.md`。
+- **六条未裁决的 flake**：`home.spec.ts:305`、`paste.spec.ts:212`、`settings.spec.ts:544`（firefox 未渲染完就查 radio）、`settings.spec.ts:731` 与 `local-docs.spec.ts:404`（`gotoHydrated` 等 `/api/settings` 30s 超时）、`home.spec.ts:201`（firefox 代理，清了仍偶发）——均隔离重跑全绿；看着它红先比对干净 worktree，要碰先问用户。
+- **判「某条 e2e 失败是不是本轮造成的」用干净 worktree**（`git worktree add` + `cp -Rc node_modules`，**不要 symlink**）+ `npm run build`；recipe 见 `docs/TESTING.md`。
 - **点客户端状态控件前先等 hydration、并统一走 `e2e/entry.ts`（2026-09-29）**：入口画面 / 模式 / 内层 tab 都是客户端 state，SSR 页上的点击会在监听器接上之前被静默丢弃——firefox 是够慢的那个引擎。等一拍 `/api/settings` 的 GET（页面自己的挂载副作用）就稳；修的是**测例**，因为这是 SSR 固有的窗口。看到「点了没反应」先查这条，别先当产品缺陷。
 - **名字互为子串的可访问名要 `exact: true`（2026-09-30 更新）**：入口卡片现在是 `role="button"`、「粘贴URL/富文本转换」（非 tab），所以内层 tab 「链接转换」不再与它冲突；但同屏可达的 「富文本转换」 仍与它互为子串，断言内层 tab 时仍要 `exact: true`；`<td>` 里带 checkbox 时单元格名字会吸到 checkbox 的 `aria-label="选择 …"`，也要 `exact: true`。
 - **`vitest.config.ts` 的 `test.exclude` 必须保留 `.next/**` + `.desktop/**` + `out/**`**：`next build`（`output: "standalone"`）把整个仓库镜像进 `.next/standalone`（含测试文件），`.desktop/server` 与 `out/…/Resources/server` 是同一份副本；少了它们，跟在一次 build / e2e / `desktop:make` 之后的 `./init.sh` 会收进几百份重复用例并报红。**收窄（第二十二轮）没有取消这条**——`.desktop/server` 仍会存在，只是不再含仓库副本。
-- **代理会污染 Playwright（2026-09-22）**：环境注入的 `HTTP_PROXY` 会被 Playwright 继承（`connectOverCDP` 报 `Unexpected status 502`），跑命令前先 `unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy ALL_PROXY all_proxy` + `NO_PROXY=127.0.0.1,localhost`；系统代理是 Clash `127.0.0.1:7897`（Firefox 跟随、Chromium 不跟随）。
 - **打包应用在本 shell 里的启动姿势（2026-09-22）**：注入的 `ELECTRON_RUN_AS_NODE=1` 会让 Electron 当纯 Node 跑（像卡死，不像报错）；取消后 Chromium 自己的沙箱又被宿主 seatbelt 拒（`Operation not permitted` → GPU 进程崩溃）。探针用 `unset ELECTRON_RUN_AS_NODE` + `--no-sandbox --disable-gpu --remote-debugging-port=9222`（**`--no-sandbox` 仅探针用**，双击启动不受影响）。后台 `&` 起的进程会在该次 Bash 调用结束时被回收，启动与探针放进同一条命令；`rm -f dir/*` 无匹配会中断 `&&` 链，改用 `find dir -type f -delete`。
 - **本机安装的稳妥 recipe（2026-09-22）**：安装源用**发布 ZIP 解压**（`ditto -x -k out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-<ver>.zip /tmp/<dir>`）而不是 `out/` 里的 `.app` bundle——不碰正在运行的构建、不需要先 Cmd+Q、还能证明「装上的就是发布的那一个」；旧安装用 `mv` 移到 `~/Downloads/MD-Convertor-archive/installed-apps/`，不要 `rm -rf`。
 - **`MD_CONVERTOR_USER_DATA` 不能隔离打包应用（2026-09-22 实测）**：`electron/env.mjs` 的 `buildServerEnv()` 无条件用主进程算出的 `userDataDir` 覆盖它。真机探针必然读写真实 `settings.json` 并写进开关指向的真实目录（曾写进 iCloud）。必须五步收尾：备份 → 跑 → 逐字段比对（页面 PUT 是整份替换）→ 还原 `defaultPath`/`useDefaultPath` → 删除探针文件。
@@ -124,17 +127,17 @@
 
 ## Recommended Next Action
 
-**`feat-042` 已随 `0.3.7` 发布，`0.3.8`（第二十一轮修复 + 第二十二轮打包收窄）本轮已发布。桌面线下一轮没有强制项。**
+**`feat-042` 已随 `0.3.7` 发布，`0.3.8` 已发布并已装本机；`0.3.9`（本地文档页补页级标题）已在工作区、未 commit、未发布。桌面线下一轮没有强制项。**
 
 **待用户裁决（都可以否决）**：
 
-1. **提交门四条「只报未改」——已在第二十四轮处置完毕，不要再重开**：① `withoutTrailingSlash` 的 `|| "/"` 是**误报且修复会引入双斜杠**；② `desktop-server-scope.test.mjs` 的静默假绿**已按 TDD 修为 `describe.skipIf`**（裸 checkout 报 `13 passed / 5 skipped`）；③ 文本级 `indexOf` 守卫**已判不改**（要变强须改生产 `electron/main.mjs`，不值）；④ ponytail 3 处装饰性可删项**已判不改**。判断依据逐条在 `docs/QUALITY-AUDIT.md` 第二十四轮条目；评审再提请指向那里，**不要重开**。
-2. **`extension/` 写方 percent-encode 文件名**（B1 只修了读方，需单独授权）。
-3. **云端 Provider 端到端实测**（真实文章走一遍「拉取模型 → 选模型 → 翻译」，唯一没被真人走完的主干路径）。
-4. **在 Terminal 里跑一次规范打包冒烟**（`ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1`，沙箱开启；agent 沙箱内只能 `--no-sandbox --disable-gpu` 取证）。
-5. **把 `0.3.8` 装到本机 `/Applications`**（`out/` 已有产物；属另一轮）。
+1. **提交 / 发布 `0.3.9`**：若提交，先跑提交门（ponytail → code-review → neat-freak）再获用户确认；若发布，按发布约定走（源码提交 → 台账提交 → `desktop:release` → tag 指向构建所用源码 → `gh release create --latest` → 发布后簿记提交）。
+2. **把 `0.3.8`（或 `0.3.9`）装到本机 `/Applications`**：目前本机是 0.3.8 发布包；要在本机看到本轮效果需先重 build。
+3. **`extension/` 写方 percent-encode 文件名**（B1 只修了读方，需单独授权）。
+4. **云端 Provider 端到端实测**（真实文章走一遍「拉取模型 → 选模型 → 翻译」，唯一没被真人走完的主干路径）。
+5. **在 Terminal 里跑一次规范打包冒烟**（`ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1`，沙箱开启；agent 沙箱内只能 `--no-sandbox --disable-gpu` 取证）。
 
-**已裁决/已完成，不要重开**：预发布评审的行为存疑项与 3 处 ponytail 可删（第二十一轮全落地）；`vitest.config.ts` 的 `.next/**` 排除与 `settings/page.tsx` 的 `.catch()`（V1/V2）；A1 的 `images.ts` 提取导出；S3 的五处任务表外选择 / S4 的四处偏差；真机反馈历轮 16 + 5 + 1 + 6 条；首页入口画面（用户裁定为最初设计意图）；打包镜像收窄（第二十二轮已完成）。
+**已裁决/已完成，不要重开**：提交门四条「只报未改」（第二十四轮：1 修 / 3 判不改，依据在 `docs/QUALITY-AUDIT.md` 第二十四轮条目，评审再提请指向那里）；预发布评审的行为存疑项与 3 处 ponytail 可删（第二十一轮全落地）；`vitest.config.ts` 的 `.next/**` 排除与 `settings/page.tsx` 的 `.catch()`（V1/V2）；A1 的 `images.ts` 提取导出；S3 的五处任务表外选择 / S4 的四处偏差；真机反馈历轮 16 + 5 + 1 + 6 条；首页入口画面（用户裁定为最初设计意图）；打包镜像收窄（第二十二轮已完成）；本地文档页页级标题（第二十五轮，用户选 A）。
 
 **约束提醒**：不要重做 `feat-024` – `feat-042` 里任何已完成 feature。**不要移除 `feat-041` 已固化的四条语义**：`isAbsoluteDirPath` 不要收紧回 `value.includes("~")`（iCloud 目录会被全拒）；`await bridge.*` 不要去掉 `.catch()`（preload 拒非法参数是**抛异常**）；`OUTPUT_CODE_MESSAGES` 六个真实 fs 码不要换回笼统文案；下载分叉不要扩成「另存为」对话框（FSD 非目标）。也不要放宽端点/密钥/归档守卫，不要删 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 里已退役的条目，不要动 `0.1.3` – `0.3.8` 的任何 tag 与仍存在的受保护 ZIP。
 
@@ -142,4 +145,4 @@
 
 ## 历史（已退役，不需要读）
 
-- 旧轮次叙述已退役：原文见 `git show ab1d653:session-handoff.md`，结论见 QUALITY-AUDIT 的 `## Archived Round Log`，门禁计数见 `docs/TESTING.md`。
+- 原文见 `git show ab1d653:session-handoff.md`；结论见 QUALITY-AUDIT 的 `## Archived Round Log`；门禁计数见 `docs/TESTING.md`。

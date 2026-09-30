@@ -4,6 +4,12 @@
 
 This project follows the principles of [Keep a Changelog](https://keepachangelog.com/). User-facing changes that have not yet been released belong under `Unreleased`.
 
+## [0.3.9] - 2026-09-30
+
+### Added
+
+- The local-documents screen now carries a page-level title and subtitle of its own, matching the treatment of the single-article screen, so the two no longer look lopsided; the card below keeps its explanation and its document count instead of repeating the heading.
+
 ## [0.3.8] - 2026-09-30
 
 ### Fixed

@@ -683,6 +683,14 @@ export default function Home() {
       <main className={styles.page}>
         <div className={styles.shell}>
           {siteHeader}
+
+          <section className={styles.hero} aria-labelledby="page-title">
+            <h1 id="page-title" className={styles.title}>
+              把本地 md，整理成<span className={styles.accentText}>干净的文档</span>
+            </h1>
+            <p className={styles.subtitle}>一次挑一批，在本机内嵌图片、可选翻译。</p>
+          </section>
+
           <section className={styles.docsPanel}>
             <LocalDocsPanel
               settings={settingsState}
