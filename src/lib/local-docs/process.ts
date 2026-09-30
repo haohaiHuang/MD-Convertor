@@ -15,7 +15,7 @@ import type { AnalyzeResponse, RunResponse, TranslationScope } from "@/types/tra
 import type { ConversionWarning } from "@/types/conversion";
 import { buildDocMarker, decideLocalDoc, localDocFilename, parseDocMarker, stripDocMarker } from "./dedup";
 import { inlineLocalDocImages, type InlineImageStats } from "./inline-images";
-import { isMarkdownFileName, isSafeDirectoryPath } from "./paths";
+import { isMarkdownFileName, isSafeDirectoryPath, requireSafeDirectoryPath } from "./paths";
 
 export type ProcessLocalDocInput = {
   /** Absolute path of the source `.md`. */
@@ -66,11 +66,6 @@ function requireSourcePath(value: unknown): string {
   return value;
 }
 
-function requireOutputDir(value: unknown): string {
-  if (!isSafeDirectoryPath(value)) throw new AppError(400, "INVALID_DIR_PATH", "目录不合法。");
-  return value;
-}
-
 async function statSource(sourcePath: string): Promise<{ size: number; mtimeMs: number }> {
   try {
     const stats = await stat(sourcePath);
@@ -101,7 +96,7 @@ export async function processLocalDoc(
   signal.throwIfAborted();
 
   const sourcePath = requireSourcePath(input.sourcePath);
-  const outputDir = requireOutputDir(input.outputDir);
+  const outputDir = requireSafeDirectoryPath(input.outputDir);
   const filename = localDocFilename(path.basename(sourcePath));
   const outputPath = path.join(outputDir, filename);
   const source = await statSource(sourcePath);

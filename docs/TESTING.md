@@ -47,7 +47,7 @@ Firefox occasionally loses the hydration wait itself: `gotoHydrated` sits on `pa
 
 Translation tests need no network and no key: `scripts/start-e2e-server.mjs` sets `MD_CONVERTOR_TEST_PROVIDER=1`, which makes `/api/translate/*` use an in-process stub model. The branch does not exist when the flag is unset, so a production run still returns 409 `TRANSLATE_NOT_CONFIGURED` without a configured model. Keep the flag out of any production or release command.
 
-`vitest.config.ts` must keep `.next/**` in `test.exclude`. `next build` uses `output: "standalone"`, which mirrors the whole repository - test files included - into `.next/standalone`. Without that exclusion any vitest run that follows a build or an e2e run collects about 85 duplicate suites and fails (measured: 17 failed / 162 passed / 179 files), and because `init.sh` runs tests before build, the run that goes red is the *next* one, which reads like flake. The fix is the exclusion, never `rm -rf .next` as a workaround. `.desktop/**` and `out/**` are excluded for the same reason: `scripts/prepare-desktop.mjs` copies `.next/standalone` wholesale into `.desktop/server`, and `electron-forge`'s `extraResource` puts that into `Resources/server` of the app under `out/`, so the same mirror sits in three places once a desktop build has run (measured: 307 files collected instead of 93, 51 failed, 20s into the run). Keep all three exclusions: they are what keeps the gate green after `desktop:make`. The mirror is also a packaging defect in its own right - a clean `next build` here writes `AGENTS.md`, `docs/`, `e2e/`, `src/`, `tests/`, `feature_list.json` and friends into `.next/standalone` (401 MB, of which 389 MB is the legitimate `node_modules`), so the built `.app` ships a copy of the repository (571 MB with `out/`/`.desktop/` cleaned first, 2.3 GB when the previous bundle is still around to be mirrored again). `0.3.6`'s installed bundle has no such copy, and the mechanism behind the change is still unidentified; narrowing `prepare-desktop.mjs` to copy only `server.js`, `.next`, `node_modules`, `public` and the injected `browser/` would fix it, but that is a separate round awaiting a decision.
+`vitest.config.ts` must keep `.next/**` in `test.exclude`. `next build` uses `output: "standalone"`, which mirrors the whole repository - test files included - into `.next/standalone`. Without that exclusion any vitest run that follows a build or an e2e run collects about 85 duplicate suites and fails (measured: 17 failed / 162 passed / 179 files), and because `init.sh` runs tests before build, the run that goes red is the *next* one, which reads like flake. The fix is the exclusion, never `rm -rf .next` as a workaround. `.desktop/**` and `out/**` are excluded for the same reason: `scripts/prepare-desktop.mjs` copies `.next/standalone` wholesale into `.desktop/server`, and `electron-forge`'s `extraResource` puts that into `Resources/server` of the app under `out/`, so the same mirror sits in three places once a desktop build has run (measured: 307 files collected instead of 93, 51 failed, 20s into the run). Keep all three exclusions: they are what keeps the gate green after `desktop:make`. The mirror is also a packaging defect in its own right - a clean `next build` here writes `AGENTS.md`, `docs/`, `e2e/`, `src/`, `tests/`, `feature_list.json` and friends into `.next/standalone` (401 MB, of which 389 MB is the legitimate `node_modules`), so the built `.app` ships a copy of the repository (571 MB with `out/`/`.desktop/` cleaned first, 2.3 GB when the previous bundle is still around to be mirrored again). `0.3.6`'s installed bundle has no such copy, and the mechanism behind the change is still unidentified. Fixed on 2026-09-30: `prepare-desktop.mjs` copies only the whitelist entries instead of the mirror — see the paragraph above and `## Portability of the bundle` below.
 
 To decide whether an e2e failure predates your change, use a clean worktree instead of memory: `git worktree add /tmp/xxx HEAD`, then `cp -Rc node_modules /tmp/xxx/` (an APFS clone, about 5s), `npm run build` and run the same case with `--repeat-each=5`. Do **not** symlink `node_modules` - the build fails with `Symlink ... is invalid` under turbopack. Clean up with `rm -rf /tmp/xxx && git worktree prune`.
 
@@ -66,7 +66,7 @@ The baseline covers:
 - the translation task budget: `translateTaskTimeoutMs(batchCount)` returns `max(120s, batches × 180s + 30s)`, and both endpoints size their deadline from the real batch count (a long article of many short paragraphs is not cut off at a fixed 120s)
 - the translation checkbox, 原文 / 译文 tabs, copy and download per tab, progress, cancel, retry, and the ratio dialog
 
-`vitest.config.ts` limits coverage to `src/lib/**/*.ts` plus the convert and translate routes, excludes test files and `src/types/**`, and sets per-file thresholds. Every `src/lib/translate/**` module has its own threshold (95/90/100/95, or 90/75/100/90 for `segment.ts`). Coverage is currently 96% statements (about 87.8% branches - the third decimal moves between runs, 98.2% functions) over 93 files / 1252 tests, which includes the extension layers 1–2 and the S4 packaging test; the desktop-only figure was 95.28% over 64 files / 866 tests when the `0.3.6` gate ran.
+`vitest.config.ts` limits coverage to `src/lib/**/*.ts` plus the convert and translate routes, excludes test files and `src/types/**`, and sets per-file thresholds. Every `src/lib/translate/**` module has its own threshold (95/90/100/95, or 90/75/100/90 for `segment.ts`). Coverage is currently 96% statements (about 87.8% branches - the third decimal moves between runs, 98.2% functions) over 95 files / 1270 tests, which includes the extension layers 1–2 and the S4 packaging test; the desktop-only figure was 95.28% over 64 files / 866 tests when the `0.3.6` gate ran.
 
 E2E runs against the production standalone service and fails if tracked files change. `playwright.config.ts` sets `workers: 1` because the translation engine holds one process-wide task slot; parallel workers would collide with 429 `TRANSLATE_BUSY`.
 
@@ -141,11 +141,11 @@ This checklist was run and passed on 2026-09-24 (all six items; item 5 used a th
 
 `npm run desktop:release` requires:
 
-- package version exactly `0.3.7`
+- package version exactly `0.3.8`
 - Node.js 24.x, but not 24.16.0: that patch stalls inside `yauzl` while unpacking the Electron archive, so `electron-forge make` never produces a ZIP. Node 24.14.1 and 24.15.0 both pass the full gate
 - the historical archive set: every manifest ZIP that still exists must keep its fixed SHA-256, and no unlisted release ZIP may appear in `~/Downloads/MD-Convertor-archive/releases/`
 - a ZIP created during the current run
-- packaged version `0.3.7`
+- packaged version `0.3.8`
 - an arm64 executable and complete application bundle
 
 The guard rechecks historical artifacts on both success and failure. A Forge command that exits without a new ZIP is a failure.
@@ -322,6 +322,26 @@ Two traps while searching the asar:
 
 - macOS BSD grep returns **0 for multibyte patterns in a binary file** unless `LC_ALL=C` is set (`grep -c "中文串" app.asar` looks like a clean miss). `strings` has the same blind spot for any non-ASCII code. For real confidence, extract to `/tmp` and grep the tree.
 - `npx asar extract-file <asar> <path> /tmp/out` ignores the third argument, so the file lands in the current directory under its basename (`page.tsx`) and stdout stays empty. Extract to `/tmp`, or use the read-only commands above. Details: `~/.pi/agent/TROUBLESHOOTING.md` §4.
+
+The server copy holds exactly the whitelist in `scripts/desktop-server-entries.mjs`: `server.js`, `package.json`, `.next`, `node_modules`, `public`, `browser`. `next build` mirrors the whole repository into `.next/standalone` — `docs/`, `src`, `e2e`, `tests`, `coverage`, and the previous build's `out/` when one exists (a build that ran with `out/` present left 1.17 GB of mirror) — so `scripts/prepare-desktop.mjs` copies those entries by name instead of copying the mirror wholesale, and the shipped size no longer depends on what the working tree happens to contain. `tests/desktop-server-scope.test.mjs` asserts the prepared directory equals the whitelist and holds no repository artifact; `scripts/prepare-desktop.test.mjs` guards the same list against a fixture.
+
+## Portability of the bundle
+
+Does the ZIP run on a machine with no repository, no caches and no prior state? This can be checked without a second Mac:
+
+```bash
+WORK=/tmp/md-verify; rm -rf "$WORK"; mkdir -p "$WORK"
+ditto -x -k out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-<version>.zip "$WORK"
+APP="$WORK/MD-Convertor.app/Contents/MacOS/MD-Convertor"
+mv /Users/<you>/Desktop/MD-Convertor /Users/<you>/Desktop/MD-Convertor__hidden  # restore it afterwards!
+env -u ELECTRON_RUN_AS_NODE NODE_OPTIONS= HOME=/tmp/fresh-home \
+  ELECTRON_CONVERSION_SMOKE_URL=https://example.com/ ELECTRON_SMOKE_MIN_TEXT_CHARS=80 \
+  "$APP" --no-sandbox --disable-gpu
+```
+
+Renaming the checkout while the extracted app runs proves nothing resolves through the developer path. `HOME=/tmp/fresh-home` proves a first run works with no `settings.json`, no keychain entry and no `~/Library/Caches/ms-playwright`: `electron/main.mjs` sets `PLAYWRIGHT_EXECUTABLE_PATH`, so the bundled `browser/chrome-headless-shell` renders the page and the log ends on `Desktop conversion smoke passed: browser, …`. A JS-rendered page (the lecture URL from `tests/live/mermaid-page.test.ts`) is the stronger variant — it needs the bundled shell *and* sharp, and reports embedded images.
+
+`ELECTRON_SMOKE_TEST_SECRETS=1` cannot pass under a fake `HOME`: `safeStorage` needs the login keychain, so it reports `encryptionAvailable false` and `SECRETS_UNAVAILABLE`. That is the environment, not the bundle; the key path is covered by a smoke run under the real `HOME` with `settings.json`/`secrets.json` backed up and compared afterwards.
 
 ## Manual Acceptance
 

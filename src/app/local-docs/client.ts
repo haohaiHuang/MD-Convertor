@@ -4,7 +4,7 @@
  * The loop takes `processDoc` / `saveFile` as arguments so it can be tested without a
  * server or a preload bridge — the same code runs in production and in `client.test.ts`.
  */
-import { applyRowStatus, nextPending, type BatchRow } from "@/lib/local-docs/batch";
+import { applyRowStatus, nextPending, withoutTrailingSlash, type BatchRow } from "@/lib/local-docs/batch";
 import type { ProcessLocalDocResult } from "@/lib/local-docs/process";
 import type { LocalDocsScanResult } from "@/lib/local-docs/scan";
 
@@ -54,7 +54,7 @@ export function processDocument(request: ProcessRequest): Promise<ProcessLocalDo
 }
 
 function joinDocPath(dirPath: string, name: string): string {
-  return `${dirPath.replace(/\/+$/, "")}/${name}`;
+  return `${withoutTrailingSlash(dirPath)}/${name}`;
 }
 
 export function errorText(error: unknown, fallback: string): string {
@@ -76,12 +76,6 @@ export async function runBatch(rows: readonly BatchRow[], ctx: BatchRunContext):
 
     current = applyRowStatus(current, entry.id, { status: { phase: "running" } });
     publish();
-
-    if (entry.state === "skip" && !entry.forced) {
-      current = applyRowStatus(current, entry.id, { status: { phase: "skipped" } });
-      publish();
-      continue;
-    }
 
     try {
       const result = await ctx.processDoc({

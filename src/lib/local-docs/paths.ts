@@ -5,6 +5,7 @@
  * runs in a sandbox that cannot require this file, so both sides carry their own copy and
  * `paths.parity.test.ts` fails if they drift. Neither side is allowed to trust the other.
  */
+import { AppError } from "@/lib/errors";
 
 /** Absolute POSIX directory path without traversal or home-shorthand segments. */
 export function isSafeDirectoryPath(value: unknown): value is string {
@@ -25,7 +26,11 @@ export function isMarkdownFileName(value: unknown): value is string {
     && !value.includes("..");
 }
 
-/** Requested directory, or the system Downloads directory when the request omits one. */
-export function resolveScanDir(dirPath: string | undefined, downloadsDir: string): string {
-  return dirPath ?? downloadsDir;
+/**
+ * Validated absolute directory path, or a 400. Both local-docs pipelines (scan, process) guard
+ * their directories through here so the refusal stays identical.
+ */
+export function requireSafeDirectoryPath(value: unknown): string {
+  if (!isSafeDirectoryPath(value)) throw new AppError(400, "INVALID_DIR_PATH", "目录不合法。");
+  return value;
 }

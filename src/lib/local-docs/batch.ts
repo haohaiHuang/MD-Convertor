@@ -52,8 +52,9 @@ export type BatchPlanInput = {
   hasBridge: boolean;
 };
 
-function withoutTrailingSlash(dirPath: string): string {
-  return dirPath.replace(/\/+$/, "") || "/";
+/** Trailing slashes are the user's noise, not part of the path: `/a/b/` and `/a/b` are one place. */
+export function withoutTrailingSlash(dirPath: string): string {
+  return dirPath.replace(/\/+$/, "");
 }
 
 /** Same directory, not the same string: the user's trailing slash (or lack of one) is noise. */

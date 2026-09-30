@@ -265,6 +265,9 @@ async function runSecretsSmokeTest(window) {
       };
       const shared = { baseUrl: "http://127.0.0.1:9/v1", keyStored: false, models: [], selectedModel: null };
       const current = (await callApi("GET")).payload;
+      // GET carries the read-only defaults helper; PUT is strict about root keys, so a
+      // round-tripped payload 400s unless it is dropped (route.test.ts pins that contract).
+      delete current.defaults;
       const setup = await callApi("PUT", {
         ...current,
         cloud: {

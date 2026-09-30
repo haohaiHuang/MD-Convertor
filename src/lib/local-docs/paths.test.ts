@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isMarkdownFileName, isSafeDirectoryPath, resolveScanDir } from "./paths";
+import { isMarkdownFileName, isSafeDirectoryPath } from "./paths";
 
 describe("isSafeDirectoryPath", () => {
   it("accepts an absolute directory path", () => {
@@ -51,15 +51,5 @@ describe("isMarkdownFileName", () => {
     expect(isMarkdownFileName("")).toBe(false);
     expect(isMarkdownFileName(`${"a".repeat(254)}.md`)).toBe(false);
     expect(isMarkdownFileName(undefined)).toBe(false);
-  });
-});
-
-describe("resolveScanDir", () => {
-  it("uses the requested directory when it is present", () => {
-    expect(resolveScanDir("/tmp/notes", "/Users/someone/Downloads")).toBe("/tmp/notes");
-  });
-
-  it("falls back to the downloads directory when the request omits one", () => {
-    expect(resolveScanDir(undefined, "/Users/someone/Downloads")).toBe("/Users/someone/Downloads");
   });
 });

@@ -49,6 +49,8 @@ describe("desktop preparation command", () => {
       await writeFixture(fixtureRoot, "node_modules/@img/sharp-libvips-darwin-arm64/native-marker");
 
       await writeFixture(fixtureRoot, ".next/standalone/server.js");
+      await writeFixture(fixtureRoot, ".next/standalone/package.json", "{ \"type\": \"commonjs\" }");
+      await writeFixture(fixtureRoot, ".next/standalone/.next/required-server-files.json");
       await writeFixture(
         fixtureRoot,
         ".next/standalone/node_modules/electron/dist/Electron.app/duplicate-runtime",
@@ -102,6 +104,11 @@ describe("desktop preparation command", () => {
       await expect(access(serverPath("browser", "chrome-headless-shell"))).resolves.toBeUndefined();
       await expect(access(serverPath("node_modules", "next", "runtime-marker"))).resolves
         .toBeUndefined();
+      // `next build` writes a manifest next to `server.js`; copying it keeps the prepared
+      // directory shaped exactly like the standalone output it is copied from.
+      await expect(access(serverPath("package.json"))).resolves.toBeUndefined();
+      await expect(access(serverPath(".next", "required-server-files.json"))).resolves.toBeUndefined();
+      await expect(access(serverPath("public", "public-marker"))).resolves.toBeUndefined();
     } finally {
       await rm(fixtureRoot, { force: true, recursive: true });
     }

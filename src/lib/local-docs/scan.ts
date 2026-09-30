@@ -9,7 +9,7 @@ import os from "node:os";
 import path from "node:path";
 import { AppError } from "@/lib/errors";
 import { decideLocalDoc, localDocFilename, parseDocMarker, type LocalDocState } from "./dedup";
-import { isMarkdownFileName, isSafeDirectoryPath } from "./paths";
+import { isMarkdownFileName, requireSafeDirectoryPath } from "./paths";
 
 export const MAX_SCANNED_FILES = 500;
 
@@ -55,11 +55,6 @@ function asFsError(error: unknown, fallbackCode: string, fallbackMessage: string
   return new AppError(500, fallbackCode, fallbackMessage);
 }
 
-function requireSafeDir(value: unknown, code: string, message: string): string {
-  if (!isSafeDirectoryPath(value)) throw new AppError(400, code, message);
-  return value;
-}
-
 /** First chunk of a file, or null when it does not exist. */
 async function readFirstChunk(filePath: string): Promise<string | null> {
   let handle: Awaited<ReturnType<typeof open>> | undefined;
@@ -89,10 +84,10 @@ export async function scanLocalDocs(
   env: Record<string, string | undefined> = process.env,
 ): Promise<LocalDocsScanResult> {
   const downloadsDir = defaultDownloadsDir(env);
-  const dirPath = requireSafeDir(input.dirPath ?? downloadsDir, "INVALID_DIR_PATH", "目录不合法。");
+  const dirPath = requireSafeDirectoryPath(input.dirPath ?? downloadsDir);
   const outputDir = input.outputDir === undefined
     ? null
-    : requireSafeDir(input.outputDir, "INVALID_DIR_PATH", "目录不合法。");
+    : requireSafeDirectoryPath(input.outputDir);
 
   let entries;
   try {

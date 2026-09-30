@@ -163,6 +163,21 @@ describe("processLocalDoc — dedup", () => {
     const forced = await processLocalDoc({ sourcePath, outputDir, signal, force: true });
     expect(forced.skipped).toBe(false);
   });
+
+  it("force recomputes even when the source hash is unchanged (the redo escape hatch)", async () => {
+    const sourcePath = await writeSource("forced-unchanged.md", "# 未改动\n");
+    const first = await processLocalDoc({ sourcePath, outputDir, signal });
+    if (first.skipped) throw new Error("expected a fresh product");
+    await writeProduct(first.markdown, "forced-unchanged.md");
+
+    // Same bytes: an ordinary run is short-circuited by the hash from the marker...
+    const again = await processLocalDoc({ sourcePath, outputDir, signal });
+    expect(again.skipped).toBe(true);
+
+    // ...but a re-ticked row means redo, or L4's escape hatch would do nothing at all.
+    const forced = await processLocalDoc({ sourcePath, outputDir, signal, force: true });
+    expect(forced.skipped).toBe(false);
+  });
 });
 
 describe("processLocalDoc — translation", () => {

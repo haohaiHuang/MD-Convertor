@@ -283,6 +283,24 @@ TDD：RED＝把 `e2e/local-docs.spec.ts` 两处断言改成 `getByRole("cell", {
 
 > 注意：`src/app/**` 不在 vitest 覆盖率 include 里，所以这次的证据是 e2e（14 passed）而不是单测。
 
+### 提交门只报未改项的落地（2026-09-30 第七轮，同日已处理）
+
+`0.3.7` 发布前的四个只读评审（ponytail / code-review·Spec / code-review·Standards / neat-freak）里，有一批「只报未改、等用户裁决」的项。用户裁定「改」后逐条落地（另：`0.3.7` 已发布，所以本轮在**不 bump 版本**的前提下改，见本节末）。
+
+| # | 评审发现 | 处置 |
+| --- | --- | --- |
+| 1 | 「全选 + 一键转换」会把已处理的文档一并重做（`panel.tsx` 的全选设 `forced: true`，与 FSD §4.6「已处理的默认不勾选」冲突） | 已改：表头「全选」只勾 `state !== "skip"` 的行、且**不带 `force`**；单独勾已处理的那一行仍是重做（L4 逃生口不变）。FSD §4.6 新增「默认勾选」行、§1 的 R2 行同步 |
+| 2 | `process.ts` 的 `force` 跳过 sha256 短路，重新勾选未改动的文档会整篇重算（「预期行为，但规格文字写得比实现窄」） | 保留实现、**改规格**：FSD §4.6「强制重做」改为「忽略 `skip`，也忽略哈希」并注明推翻原措辞；新增 `process.test.ts` 钉住用例（未改动 + 不带 `force` ⇒ 跳过；带 `force` ⇒ 重算）。理由：逃生口要在「源没变、只是要重跑」时有效（B1 那一轮正是如此），哈希挡住它就不是逃生口 |
+| 3 | 「`phase: "skipped"` 分支在 UI 上不可达」 | 分两半：**服务端来的跳过可达**（新 `e2e/local-docs.spec.ts`「内容没变只改了 mtime」：报「已处理，跳过」、不写盘、汇总跳过 1 篇），FSD §4.7 记下这是它唯一可见路径；**客户端那条本地镜像分支确实死**（`nextPending` 要求 `checked`，而勾过的 `skip` 行必是 `forced`），已删，`client.test.ts` 改为钉「未勾选的已处理行不发起请求」 |
+| 4 | ponytail 的 3 处可删：`resolveScanDir` 只被自己的测试调用、`joinDocPath` 重复了 `batch.ts` 的去尾斜杠、`scan.ts`/`process.ts` 各有一份相同的目录守卫 | 已删/合并：`resolveScanDir` 连同其测试删除；`withoutTrailingSlash` 改为导出、`joinDocPath` 复用它；两份守卫合并为 `paths.requireSafeDirectoryPath` |
+| 5 | （本轮新发现）打包冒烟 `ELECTRON_SMOKE_TEST_SECRETS=1` 在 0.3.7 上**必红** | 已修：本地文档那一轮起 GET `/api/settings` 多带一个响应专用的 `defaults`，而 PUT 严格拒绝未知根键（`route.test.ts` 有钉），`electron/main.mjs` 的冒烟直接把 GET 的回包回灌 PUT ⇒ 400 `INVALID_SETTINGS`（实测）。现在回灌前 `delete current.defaults`，并加 `tests/secrets-smoke-payload.test.ts` 钉住这行（源码级守卫，同 `forge-package-scope.test.ts` 的口径）。发布门禁不跑冒烟，所以 0.3.7 带着它出过门 |
+
+证据：RED＝`npx playwright test --project=chromium e2e/local-docs.spec.ts -g "全选|内容没变只改了"` 1 failed / 1 passed（失败在「全选后已处理行仍勾上」）→ GREEN＝同文件 chromium **16 passed**；单测 `npx vitest run src/lib/local-docs/ src/app/local-docs/ tests/` **181 passed**。门禁：`NODE_OPTIONS= ./init.sh` exit 0（**94 files / 1252 tests**）；`npm run test:e2e` **312 passed / 6 skipped / 0 failed**（三引擎 2.6m）+ `E2E tracked-file check passed.`。
+
+> 版本面：`0.3.7` 已于 2026-09-30 发布，本轮**未 bump**（用户未授权下一个发布）。这批改动在 `main` 上、位于 tag `v0.3.7` 之后；下一次发布轮的第一件事是把版本面与 `scripts/release-desktop.mjs` 的目标版本一起推到 `0.3.8`（含 guard fixture），否则发布门禁会用 0.3.7 的名字打出 0.3.7 之后的源码。
+>
+> 本机安装（同日）：用户要求把带修复的构建装上 ⇒ 清 `out/` + `.desktop`、`desktop:make` exit 0（`.app` 572 M），用**新产的 ZIP** 解压后 `ditto` 进 `/Applications`（名字仍是 `0.3.7`，**与实际源不同版**，仅本机使用）；原发布版 0.3.7 归档为 `~/Downloads/MD-Convertor-archive/installed-apps/MD-Convertor-0.3.7-release.app`。该包上打包冒烟实测通过（`Runtime secret smoke passed`），`settings.json` / `secrets.json` 与备份逐字节相同。
+
 ## Handoff
 
 - 本阶段是 A 的收尾，但**不等于发布**：`desktop:release` 的目标版本已随 S1 T1.0 是 `0.3.7`（`scripts/release-desktop.mjs` 两处与 `scripts/release-guards.test.mjs` 均已核对），发布 `0.3.7` 需要用户单独下指令，并同时更新 `AGENTS.md` 版本句与 `docs/TESTING.md` 的产物哈希段。

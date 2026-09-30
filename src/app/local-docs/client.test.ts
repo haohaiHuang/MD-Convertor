@@ -90,17 +90,17 @@ describe("runBatch", () => {
     expect(rows[0].status).toEqual({ phase: "idle" });
   });
 
-  it("marks a processed row as skipped without asking the server", async () => {
+  it("leaves an unchecked processed row alone instead of asking the server", async () => {
     const processDoc = vi.fn(async () => product("a.md"));
     const saveFile = vi.fn(async () => ({ ok: true }));
     const rows = await runBatch(
-      [row({ id: "a.md", state: "skip", forced: false })],
+      [row({ id: "a.md", state: "skip", checked: false, forced: false })],
       context({ processDoc, saveFile }),
     );
 
     expect(processDoc).not.toHaveBeenCalled();
     expect(saveFile).not.toHaveBeenCalled();
-    expect(rows[0].status).toEqual({ phase: "skipped" });
+    expect(rows[0].status).toEqual({ phase: "idle" });
   });
 
   it("sends a forced processed row to the server like any other", async () => {

@@ -2,6 +2,8 @@ import { cp, mkdir, readFile, readdir, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
+import { DESKTOP_SERVER_ENTRIES } from "./desktop-server-entries.mjs";
+
 const projectRoot = process.cwd();
 const sourceRoot = path.join(projectRoot, ".next", "standalone");
 const targetRoot = path.join(projectRoot, ".desktop", "server");
@@ -34,7 +36,14 @@ const headlessShellRoot = path.join(
 
 await rm(targetRoot, { force: true, recursive: true });
 await mkdir(targetRoot, { recursive: true });
-await cp(sourceRoot, targetRoot, { recursive: true, verbatimSymlinks: true });
+// Only the runtime entries: `next build` mirrors the whole repository into `.next/standalone`,
+// including `out/` and `.desktop/` when a build follows a `desktop:make`.
+for (const entry of DESKTOP_SERVER_ENTRIES) {
+  await cp(path.join(sourceRoot, entry), path.join(targetRoot, entry), {
+    recursive: true,
+    verbatimSymlinks: true,
+  });
+}
 // Next.js traces playwright-core's `require("electron")` into the standalone output, which pulls in
 // Electron's own ~295 MB unpacked runtime that the server never loads. The app already ships that runtime in
 // Contents/Frameworks, so a second copy here only inflates the bundle.

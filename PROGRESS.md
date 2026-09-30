@@ -2,14 +2,48 @@
 
 ## Current State
 
-- Last updated: 2026-09-30（**第二十轮：`0.3.7` 已发布**——提交门（ponytail / code-review 双轴 / neat-freak）跑完，只按评审修了台账与文档（`feature_list.json` 的 `activeFeature` → `null`、scope 尾句、S4 三处「待签字」、QUALITY-AUDIT 判决句、FSD §6 第 4 条证据口径），**生产代码一行未动**（已签字的构建不重做）；`npm run desktop:release` 全绿（init.sh 93 files / 1252 tests → e2e 306/6/0 → live 2/2 → `desktop:make`），ZIP 239,472,776 bytes / SHA-256 `6986356b…733c` 已上传 GitHub Release `v0.3.7`（Latest，服务端 digest 与之逐字节一致）。上一轮的 R7 与 12 条真机签字见 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`）
-- Current version: `0.3.7`（**已发布**，GitHub Release `v0.3.7`，2026-09-30，tag 指向 `9afbe36`；产物 239,472,776 bytes / SHA-256 `6986356b0c5a80c1cffc46092eea305b59ad21563225de1844fac1aad171733c`）。上一个已发布版本 `0.3.6`（2026-09-22）；**本机 `/Applications/MD-Convertor.app` 装的仍是 0.3.6 旧包**（Sep 23 构建，无面板），要看 0.3.7 请用发布 ZIP 解压或 `out/` 里的新构建
-- Active feature: **无**。`feat-042`（A 桌面端「文档处理」）**已于 2026-09-30 置 `done` 并随 `v0.3.7` 发布**（S1–S4 全部实施完成，12 条真机人工验收由用户跑完后签字；阶段文档在 `docs/features/app-document-processing/`）。`feat-040`（B 浏览器插件）已于同日关闭（S1/S2/S3 完成、T3.4 人工验收 6 条全过）；`feat-041` 已完成、已发布、已关闭。
-- Next step: **现役事项已清空，等用户下一条指令**。可选项（均需单独授权，按当前证据排序）：① 收窄打包镜像（`scripts/prepare-desktop.mjs` 只拷 `server.js` / `.next` / `node_modules` / `public` / `browser` + 守卫测试，属另开一轮；`.app` 里 `Resources/server` 现在是整仓镜像副本，清 `out/`/`.desktop` 后 572 M）；② `extension/` 写方 percent-encode 文件名（B1 只修了读方）；③ 云端 Provider 端到端实测（需真实文章）；④ 把 0.3.7 装到本机 `/Applications`（本机仍是 0.3.6，安装须用发布 ZIP 解压，旧包先归档）。**不要再 bump 版本**（已是 `0.3.7`，已发布）、**不要重写第二套批量编排或第二条写盘路径**。
-- Branch: `main`，**工作区干净、已 push**：A 块在 `9afbe36`（三个提交 `1a08440` 规划定稿 → `84ddf08` 实现 → `9afbe36` 文档收口，tag `v0.3.7` 指向它），其上还有**一条发布后簿记提交**（写「已发布」记录，不写它自己的 hash——写入即变）；stash 列表为空
+- Last updated: 2026-09-30（**第二十三轮：提交门 + 版本面推进到 `0.3.8` + 发布 + 收窄收口**——第二十一、二十二轮改动经四路只读评审后落地并提交；版本面（`package.json` / `package-lock.json` / `feature_list.currentVersion` / `release-desktop.mjs` / release-guards fixture，fixture 已改为从错误串派生）按 TDD 推到 `0.3.8`（RED 5 failed → GREEN 30 passed）；跑 `desktop:release` 后打 tag 并发布 GitHub Release。细节见下）
+- Current version: `0.3.8`（**本轮发布**，GitHub Release `v0.3.8`；产物与 SHA-256 见 `docs/TESTING.md` 的 `## Gated Artifact (0.3.8)` 与 `feature_list.json` 的 `feat-042.verification`）。上一个已发布版本 `0.3.7`（2026-09-30，239,472,776 bytes / `6986356b…733c`）；**本机 `/Applications/MD-Convertor.app` = 第二十一轮构建**（第二十二轮收窄后的构建仍只在 `out/`）
+- Active feature: **无**。`feat-042`（A 桌面端「文档处理」）已于 2026-09-30 置 `done` 并随 `v0.3.7` 发布（S1–S4 + 12 条真机验收签字）；`feat-040`（B 浏览器插件）同日关闭；`feat-041` 已完成、已发布、已关闭。**本轮的 0.3.8 没有新增 feature**，内容是第二十一轮修复 + 第二十二轮打包收窄。
+- Next step: **等用户裁决三件事**。① 是否把 `0.3.8` 装上本机 `/Applications`（第二十二轮收窄后的构建仍在 `out/`，属另一轮）；② 是否让 `extension/` 写方 percent-encode 文件名（B1 只修了读方）；③ 云端 Provider 端到端实测（需真实文章）。**不要重写第二套批量编排或第二条写盘路径**；**再次发布任何版本都要用户单独授权**。
+- Branch: `main`，本轮把第二十一、二十二轮改动连同版本面一起提交并打 tag `v0.3.8`（提交哈希见 `git log -1`）；tag `v0.3.7` 仍指 `9afbe36`，stash 列表为空
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+（桌面产物）；浏览器插件另行验收于 Chromium，不进桌面发布门禁
 
-## 本轮（2026-09-30 第二十轮：提交门 + `0.3.7` 发布）
+## 本轮（2026-09-30 第二十三轮：提交门 + `0.3.8` 提交/发布）
+
+- **用户指令**：「那就无所谓，commit、push 加提交 release 到 GitHub 吧」——即接受「下载后可能被 Gatekeeper 拦」的既有结论，直接走提交门 + 发布。
+- **提交门（4 路只读评审，0 硬违规）**：ponytail（3 处可删，均装饰性）/ code-review · Spec / code-review · Standards（无 TDD 硬违规）/ neat-freak。**必须改的只有台账与版本面**（版本面仍是已发布的 `0.3.7`，直接发布会让新包与旧包同名）；行为存疑项（`withoutTrailingSlash` 丢掉 `"/"` 分支等）**只报未改**，与第二十轮先例一致。
+- **版本面 bump（TDD）**：先把 `scripts/release-guards.test.mjs` 的期望改到 `0.3.8` ⇒ RED「`expected 'Release version must be 0.3.7.' to contain '0.3.8'`」，再改 `package.json` / `package-lock.json`（两处）/ `feature_list.json` 的 `currentVersion` / `scripts/release-desktop.mjs`（错误串 + `version !== "0.3.8"` 判定）。bump 时又暴露出 fixture 默认版本写死的问题（5 failed）⇒ 顺手把 fixture 默认值改为**从 `RELEASE_VERSION_ERROR` 派生**（`CURRENT_RELEASE_TARGET`），以后 bump 只需改一处 ⇒ GREEN **30 passed**。
+- **门禁**：`NODE_OPTIONS= ./init.sh` 95 files / 1270 tests 全绿；`desktop:release` 见下。
+- **未做**：`extension/` 写方 percent-encode、云端 Provider 实文实测（均待授权）；`/Applications` 本轮未重装（仍是第二十一轮构建）。
+
+## 上一轮（2026-09-30 第二十二轮：打包镜像收窄 + 无仓库/无缓存可移植性实测）
+
+- **用户指令**：新开一轮做「收窄」，硬条件＝除签名与 arm64 之外，**别的电脑下载下来就能装、能用**（不能依赖开发机路径 / 开发仓库 / 缺失的运行文件）。
+- **改动（TDD，RED→GREEN）**：`scripts/prepare-desktop.mjs` 的整目录 `cp(sourceRoot, targetRoot)` 换成按 `scripts/desktop-server-entries.mjs` 的白名单逐项拷贝（`server.js` / `package.json` / `.next` / `node_modules`；`public` 与 `browser` 仍分别来自仓库根与 Playwright 缓存，既有 sharp/playwright 补拷与 `node_modules/electron` 删除逻辑不动）。RED：新增的 `tests/desktop-server-scope.test.mjs` 在旧 `.desktop/server` 上报 1 failed（列出镜像混进的仓库条目）；GREEN：18/18。`scripts/prepare-desktop.test.mjs` 的 fixture 同步补上 `.next/standalone/{package.json,.next/required-server-files.json}` 与 `public/public-marker` 断言。
+- **尺寸真相（口径要说准）**：镜像里那批仓库目录本身只有 ~8 MB，所以**收窄省的是卫生与确定性，不是体积**。实测 ZIP 236,232,689 B（旧发布版 239,472,776 B，**−3.24 MB / −1.35%**），ZIP 条目 3,991 → **3,542**（少 449 个文件，即 `docs` / `src` / `e2e` / `tests` / `coverage` / `playwright-report` / `AGENTS.md` / `PROGRESS.md` / `session-handoff.md` / `feature_list.json` 等）；`.app` 572 M → 565 M。
+- **真正价值 = 「包的大小不再取决于工作树」**：本轮 build 时 `out/`（829 M）在场，`.next/standalone` 被镜像到 **1.17 GB**（旧代码会把这 1.17 GB 整份拷进 `.desktop/server`；第二十一轮也曾亲眼见到 2.3 G 的 `.app`），而白名单拷出来的 `.desktop/server` 仍稳定在 **288 MiB**。
+- **可移植性实测（本机可做的全部证据）**：把新 ZIP `ditto -x -k` 解到 `/tmp`（服务目录恰为白名单 6 项、零仓库产物）后 —— ① `HOME=/tmp/md-fresh-home`（无 `settings.json`、无 keychain 项、**无 `~/Library/Caches/ms-playwright`**）跑转换冒烟：`example.com` → `passed: browser, 1463 bytes, 1063 chars`；JS 渲染页（`tests/live` 那条 lecture URL）→ `passed: browser, 11254 bytes, 6030 chars, 1 embedded image` ⇒ 包内 `browser/chrome-headless-shell` + sharp 自足；② **把仓库目录改名**后再跑同一冒烟仍然通过（跑完已 `trap` 还原，`git status` 不变）⇒ 运行时不解析开发机路径；③ `/health` 200、`/md-convertor-extension.zip` 200（34692 B）⇒ `public/` 与插件下载链接在包内有效；④ 冒烟后 0 孤儿进程。
+- **两条边界（如实记录，不是缺陷）**：`ELECTRON_SMOKE_TEST_SECRETS=1` 在假 HOME 下必红（`safeStorage` 需要登录钥匙串 → `encryptionAvailable false` / `SECRETS_UNAVAILABLE`），密钥路径的证据只能在真 HOME 下跑（带备份+比对）；产物仍是 ad-hoc/未签名（`Identifier=Electron`、无 TeamIdentifier，`spctl -a -t exec` 拒绝）——与已发布的 0.3.7 逐项相同，属既有结论 QA-008，与收窄无关。
+- **门禁**：`NODE_OPTIONS= ./init.sh` exit 0（**95 files / 1270 tests**，含两个新守卫文件）；`tsc --noEmit` / eslint 干净；`desktop:make` exit 0（log `/tmp/make22.log`）。e2e 本轮未跑（未改 `src/`，且本轮改动只影响打包拷贝）。
+- **未做 / 待用户**：未 commit、未 push、未 bump 版本、未跑 `desktop:release`、**未重装 `/Applications`**（那里仍是第二十一轮构建）；`extension/` 写方 percent-encode 与云端 Provider 实文实测仍待授权。
+
+
+
+## 上一轮（2026-09-30 第二十一轮：评审未改项落地 + 装 0.3.7）
+
+- **用户三条指令**：「1. 改」＝把发布前评审里「只报未改」的项落地；「2. 怎么收」＝口述收窄打包镜像的办法（**只答不改**）；「3. 安装新包」＝把已发布的 0.3.7 装到 `/Applications`。
+- **① 全选不再重做已处理文档**（TDD：`e2e/local-docs.spec.ts` 新增「「全选」只勾未处理的文档」RED 1 failed → 该文件 chromium 16 passed）：表头 checkbox 只勾 `state !== "skip"` 的行且**不设 `force`**；逐行手勾已处理行仍是重做（L4 逃生口）。FSD §4.6 新增「默认勾选」行、§1 R2 行同步。
+- **② `force` 口径按实现定稿**：保留「忽略 `skip` 也忽略哈希」的整篇重算，把 FSD §4.6 原文（「`check` 仍做哈希比对」）放宽到与实现一致并注明推翻，`process.test.ts` 加钉住用例（源未变：不带 `force` ⇒ `skipped`，带 `force` ⇒ 重算）。
+- **③ skipped 分支可达性**：服务端来的跳过**可达**（新增 e2e「内容没变只改了 mtime」：`已处理，跳过`、汇总「跳过 1 篇」、`saved === []`），FSD §4.7 记下这是它唯一可见路径；客户端 `runBatch` 里那条本地 skip 镜像**确实死**（`nextPending` 要求 `checked`，而勾过的 skip 行必为 `forced`）→ 删除，`client.test.ts` 改成钉「未勾选的已处理行不发请求」。
+- **④ ponytail 三处可删项**：删 `resolveScanDir` + 其 2 条自测；`withoutTrailingSlash` 提为导出并让 `client.ts` 的 `joinDocPath` 复用（去掉重复正则）；`scan.ts` 的 `requireSafeDir` 与 `process.ts` 的 `requireOutputDir` 合并为 `paths.requireSafeDirectoryPath`。
+- **⑤ 打包冒烟缺陷（本轮新发现）+ 修**：`ELECTRON_SMOKE_TEST_SECRETS=1` 在 0.3.7 上必红（`electron/main.mjs` 把 GET `/api/settings` 的回包整体回灌 PUT，而 0.3.7 起 GET 多带响应专用的 `defaults`，PUT 严格拒绝未知根键 ⇒ 400 `INVALID_SETTINGS`，实测）。现在回灌前 `delete current.defaults`，并加 `tests/secrets-smoke-payload.test.ts` 源码级守卫（同 `forge-package-scope.test.ts` 口径）。发布门禁不跑冒烟，所以 0.3.7 带着它出过门。
+- **门禁**：`NODE_OPTIONS= ./init.sh` **exit 0**（**94 files / 1252 tests**，覆盖率与上轮同级）；`npm run test:e2e` **312 passed / 6 skipped / 0 failed**（三引擎 2.6m）+ `E2E tracked-file check passed.`（+6 = 两条新 e2e 各三引擎）。`tsc --noEmit` 与 eslint 干净。
+- **③ 装包（已完成，同日两次）**：先按发布 ZIP 复核 sha256 = `6986356b…733c` → `ditto -x -k` 装入发布版 0.3.7（554 M，无 quarantine），旧 0.3.6 先 `mv` 后归档；用户随后要求「把修改后的给装上」⇒ 清 `out/` + `.desktop`（发布 ZIP 先备份到 `/tmp/MD-Convertor-0.3.7-published.zip`，sha256 复核一致）→ `NODE_OPTIONS= npm run desktop:make` exit 0（`.app` 572 M，ZIP 240 M）→ 用**新产的 ZIP** 解压装入 `/Applications`，原发布版归档。判别式指纹：`delete current.defaults` 仅新包命中（asar），`requireSafeDirectoryPath` 仅新包的 `.next/server` 命中（4 文件）。
+- **⑥ 新装包上的打包冒烟（实测通过）**：`ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1 … --no-sandbox --disable-gpu` → `Preload bridge smoke passed` + `Runtime secret smoke passed: TRANSLATE_NOT_CONFIGURED → TRANSLATE_PROVIDER_ERROR → TRANSLATE_NOT_CONFIGURED`（**0.3.7 发布版上这一步必红 400 `INVALID_SETTINGS`**，故这是本轮修复在打包构建上的直接证据）；另 `/health` 200（真启动）。收尾核对：`settings.json` 与 `secrets.json` 备份**逐字节相同**（无 `smoke-runtime` 残留），无孤儿进程。
+- **未做**：未 bump 版本（0.3.7 已发布、下一版未获授权）、未跑 `desktop:release`（会以 0.3.7 之名重产产物）、未收窄打包镜像（方案已口述交用户，未获授权）、未 commit/push（等用户指示）。
+
+## 上一轮（2026-09-30 第二十轮：提交门 + `0.3.7` 发布）
 
 - **用户指令**：「1，搞完之后 commit、push 加发布 release」⇒ 先做选项 1（把 S4 第 8 条与 FSD §6 第 10 条里「行状态注明只翻译了非目标语言部分」这条陈旧期望删掉，与 R7「行只报状态」口径统一），再提交、推送、发布。
 - **提交门（4 个并行只读评审）**：ponytail（3 处可删，均属装饰性、无第二套编排或第二条写盘路径）；code-review · Spec（发现 S4 第 8 条的落差、`skip` 分支 UI 不可达 + 全选会重做已处理文档、`force` 跳过 sha256 短路）；code-review · Standards（无 TDD 硬违规；两层路径校验、浏览器模块无 `node:*`、无密钥均通过）；neat-freak（`activeFeature` 未置 `null`、S4 三处「待签」、QUALITY-AUDIT 判决句）。**只按评审改了台账与文档，生产代码一行未动。**
@@ -40,7 +74,8 @@
 - **修复**：`.providerHead .path { flex: 1 1 0 }`（输入 / 输出 / 本地代理三处共用该规则；`.providerHead` 保留 `wrap`，窄屏仍能换行）。
 - **TDD**：`e2e/settings.spec.ts` 「输入目录」组内新增长路径用例（title 完整值 / nowrap / ellipsis / scrollWidth > clientWidth / 单行高度 / 按钮与路径中心对齐）。RED：只有居中断言失败（40px）→ GREEN：`settings.spec.ts` + `local-docs.spec.ts`（chromium）47 passed。
 - **同轮修掉上一轮钉住用例自身的测试缺陷**：`e2e/local-docs.spec.ts:125` 在导航后立即结束，转发的 `/api/settings` 桩还在 `route.fetch()`，Playwright 关上下文时报 `Response has been disposed`（两次全量跑各红 1 例，webkit/chromium 各一）。现在两次导航各自等设置请求落地（`--repeat-each=10` 10/10 绿）。
-- **`vitest.config.ts` 的 `test.exclude` 加 `.desktop/**` + `out/**`**：它们是 `.next/standalone` 那份仓库镜像的副本（`prepare-desktop` 整目录 `cp` → forge 的 `extraResource`），少了会让 `desktop:make` 之后的 `./init.sh` 收进 307 个文件 / 51 failed。
+- **打包镜像白名单（第二十二轮固化）**：`scripts/prepare-desktop.mjs` **只按 `scripts/desktop-server-entries.mjs` 的白名单拷贝**（`server.js` / `package.json` / `.next` / `node_modules`；`public` 与 `browser` 另从仓库根与 Playwright 缓存拷入）。**不得改回整目录 `cp(sourceRoot, targetRoot)`**：`next build` 会把整个仓库（含上一轮的 `out/`）镜像进 `.next/standalone`，整份拷就意味着「包的大小取决于工作树状态」（实测本轮镜像 1.17 GB、第二十一轮曾出过 2.3 G 的 `.app`）。新增入口要有两条守卫跟着改：`tests/desktop-server-scope.test.mjs`（真产物）+ `scripts/prepare-desktop.test.mjs`（fixture）。
+- **`vitest.config.ts` 的 `test.exclude` 保留 `.desktop/**` + `out/**`**：`.desktop/server` 与 `out/…/Resources/server` 里的 `node_modules` 同样带测试文件（白名单后仍成立），少了会让 `desktop:make` 之后的 `./init.sh` 收进重复套件并报红。
 - **新发现（只报未修，待用户裁决）**：`next build` 的 `output: "standalone"` 会把仓库根整个镜像进 `.next/standalone`（`AGENTS.md` / `docs/` / `e2e/` / `src/` / `tests/` / `feature_list.json`…，401 M，其中 389 M 是正牌 `node_modules`），`Resources/server` 因此带一份仓库副本。清掉 `out/` 与 `.desktop` 再打包能把包从 2.3 G 降到 571 M，但副本仍在；收窄要改 `scripts/prepare-desktop.mjs` 只拷 `server.js` / `.next` / `node_modules` / `public` / `browser`，属另开一轮的事。`/Applications` 里的 0.3.6 没有这份副本，机制未查明。
 - **门禁**：`NODE_OPTIONS= ./init.sh` exit 0；`npm run test:e2e` **306 passed / 6 skipped / 0 failed**（三引擎 2.5m；含新增的 settings 用例）。
 - **未做**：未跑 `desktop:release`、未 push、未动 tag/ZIP、未改任何生产行为（只 CSS 10 行 + 测试基建）；12 条真机人工验收仍待签；commit 待用户指示。

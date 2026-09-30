@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -344,6 +345,74 @@ test.describe("本地文档面板", () => {
     await expect(page.getByRole("cell", { name: "完成", exact: true })).toBeVisible();
     const saved = await page.evaluate(() => (window as unknown as StubWindow).saved ?? []);
     expect(saved.map((call) => call.filename)).toEqual(["第一篇.md"]);
+  });
+
+  test("「全选」只勾未处理的文档：已处理的那一行不会被重做", async ({ page }) => {
+    const processed = path.join(inputDir, "第二篇.md");
+    const processedOutput = path.join(outputDir, "第二篇.md");
+    const stats = await stat(processed);
+    // 第二篇 is already processed (a real marker); 第一篇 is not.
+    await writeFile(
+      processedOutput,
+      `<!-- md-convertor: ${JSON.stringify({
+        source: processed,
+        size: stats.size,
+        mtimeMs: stats.mtimeMs,
+        sha256: "0".repeat(64),
+        outputPath: processedOutput,
+        processedAt: "2026-09-29T00:00:00.000Z",
+      })} -->\n\n# 第二篇\n`,
+      "utf8",
+    );
+
+    await installBridge(page);
+    await routeSettings(page, defaultPatch(inputDir, outputDir), []);
+    await openLocalDocs(page);
+
+    await expect(page.getByText("共 2 篇 · 已处理 1 篇")).toBeVisible();
+
+    await page.getByLabel("全选").check();
+
+    await expect(page.getByLabel("选择 第一篇.md")).toBeChecked();
+    await expect(page.getByLabel("选择 第二篇.md")).not.toBeChecked();
+
+    await page.getByRole("button", { name: "一键转换" }).click();
+
+    await expect(page.getByText(/成功 1 篇 · 跳过 0 篇 · 失败 0 篇/)).toBeVisible();
+    const saved = await page.evaluate(() => (window as unknown as StubWindow).saved ?? []);
+    expect(saved.map((call) => call.filename)).toEqual(["第一篇.md"]);
+  });
+
+  test("内容没变只改了 mtime：一键转换按哈希短路，报「已处理，跳过」且不写盘", async ({ page }) => {
+    await rm(path.join(inputDir, "第二篇.md"), { force: true });
+    const source = path.join(inputDir, "第一篇.md");
+    const outputPath = path.join(outputDir, "第一篇.md");
+    const stats = await stat(source);
+    const sha256 = createHash("sha256").update(await readFile(source)).digest("hex");
+    // Same size and hash, older mtime: the scan says 已改变, the pipeline still has to skip.
+    await writeFile(
+      outputPath,
+      `<!-- md-convertor: ${JSON.stringify({
+        source,
+        size: stats.size,
+        mtimeMs: stats.mtimeMs - 5_000,
+        sha256,
+        outputPath,
+        processedAt: "2026-09-29T00:00:00.000Z",
+      })} -->\n\n# 第一篇\n\n正文。\n`,
+      "utf8",
+    );
+
+    await installBridge(page);
+    await routeSettings(page, defaultPatch(inputDir, outputDir), []);
+    await openLocalDocs(page);
+
+    await expect(page.getByRole("cell", { name: "已改变", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "一键转换" }).click();
+
+    await expect(page.getByText(/成功 0 篇 · 跳过 1 篇 · 失败 0 篇/)).toBeVisible();
+    await expect(page.getByRole("cell", { name: "已处理，跳过", exact: true })).toBeVisible();
+    expect(await page.evaluate(() => (window as unknown as StubWindow).saved ?? [])).toEqual([]);
   });
 
   test("转换结果：数量一行、输出目录一行、打开目录在右侧", async ({ page }) => {

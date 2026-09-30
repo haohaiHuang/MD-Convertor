@@ -4,6 +4,16 @@
 
 This project follows the principles of [Keep a Changelog](https://keepachangelog.com/). User-facing changes that have not yet been released belong under `Unreleased`.
 
+## [0.3.8] - 2026-09-30
+
+### Fixed
+
+- The header 「全选」 checkbox no longer re-does documents that were already processed. It ticks only the documents that have not been processed yet, so 「全选」 followed by 一键转换 leaves the folder's finished documents alone; ticking a processed row yourself still redoes just that row.
+
+### Changed
+
+- The app bundle no longer carries a copy of the repository. The server folder inside the app was a wholesale copy of the `.next/standalone` output, which mirrors the whole checkout — `docs/`, `src/`, `e2e/`, `tests/`, and the previous build's `out/` if one was still around — so the download grew or shrank with whatever the working tree happened to contain. It now copies a fixed list of entries, which also drops about 3 MB of archive and 449 files.
+
 ## [0.3.7] - 2026-09-30
 
 ### Added

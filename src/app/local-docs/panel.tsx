@@ -236,7 +236,11 @@ export function LocalDocsPanel({
 
   const checkedCount = rows.filter((row) => row.checked).length;
   const processedCount = rows.filter((row) => row.state !== "new").length;
-  const allChecked = rows.length > 0 && checkedCount === rows.length;
+  // 全选 covers what a batch run means by default: the documents that still need work. An
+  // already-processed row (state `skip`) stays out of it — ticking that one row by hand is what
+  // asks for a redo (L4), and it is the only way to ask (FSD §4.6).
+  const selectable = rows.filter((row) => row.state !== "skip");
+  const allChecked = selectable.length > 0 && selectable.every((row) => row.checked);
 
   let disabledReason: string | null = null;
   if (busy === "running") disabledReason = "正在处理，请等待这一批结束。";
@@ -337,7 +341,9 @@ export function LocalDocsPanel({
                   disabled={busy !== null}
                   onChange={(event) => {
                     const next = event.target.checked;
-                    setRows((current) => current.map((row) => ({ ...row, checked: next, forced: next })));
+                    setRows((current) => current.map((row) => (
+                      row.state === "skip" ? row : { ...row, checked: next, forced: false }
+                    )));
                   }}
                 />
               </th>

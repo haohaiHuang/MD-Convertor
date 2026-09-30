@@ -17,6 +17,10 @@ import {
 } from "./release-guards.mjs";
 import { RELEASE_VERSION_ERROR, runRelease, verifyFreshArtifact } from "./release-desktop.mjs";
 
+// Derived, not restated: the release target lives in one place, so a version bump cannot leave a
+// fixture behind that makes five orchestration tests fail for the wrong reason.
+const CURRENT_RELEASE_TARGET = RELEASE_VERSION_ERROR.match(/\d+\.\d+\.\d+/)?.[0];
+
 describe("protected 0.1.3 source tag guard", () => {
   it("requires the peeled v0.1.3 tag to match the full fixed commit without pinning main", () => {
     const refs = [];
@@ -383,7 +387,7 @@ describe("desktop release protection orchestration", () => {
       events,
       options: {
         root: "/tmp/release-orchestration-root",
-        version: "0.3.7",
+        version: CURRENT_RELEASE_TARGET,
         runCommand: (command, args) => {
           events.push(`run:${command} ${args.join(" ")}`.trim());
         },
@@ -494,7 +498,7 @@ describe("desktop release protection orchestration", () => {
     expect(events).toEqual([]);
   });
 
-  it("accepts only the current 0.3.7 release target", async () => {
+  it("accepts only the current 0.3.8 release target", async () => {
     const { options } = makeReleaseFixture();
     await expect(runRelease(options)).resolves.toMatchObject({ digest: "digest" });
 
@@ -502,7 +506,7 @@ describe("desktop release protection orchestration", () => {
     await expect(runRelease(superseded.options)).rejects.toThrow(RELEASE_VERSION_ERROR);
     expect(superseded.events).toEqual([]);
 
-    expect(RELEASE_VERSION_ERROR).toContain("0.3.7");
+    expect(RELEASE_VERSION_ERROR).toContain("0.3.8");
   });
 
   it("keeps the release target, package version, lockfile, and feature_list currentVersion aligned", async () => {
@@ -511,12 +515,11 @@ describe("desktop release protection orchestration", () => {
     const featureList = JSON.parse(await readFile(new URL("../feature_list.json", import.meta.url), "utf8"));
     // A version bump that misses one surface lets `desktop:release` refuse to run until
     // someone notices by hand; this turns the miss into a named failure.
-    const releaseTarget = RELEASE_VERSION_ERROR.match(/\d+\.\d+\.\d+/)?.[0];
-    expect(releaseTarget).toBeDefined();
-    expect(packageJson.version).toBe(releaseTarget);
-    expect(lockfile.version).toBe(releaseTarget);
-    expect(lockfile.packages[""].version).toBe(releaseTarget);
-    expect(featureList.currentVersion).toBe(releaseTarget);
+    expect(CURRENT_RELEASE_TARGET).toBeDefined();
+    expect(packageJson.version).toBe(CURRENT_RELEASE_TARGET);
+    expect(lockfile.version).toBe(CURRENT_RELEASE_TARGET);
+    expect(lockfile.packages[""].version).toBe(CURRENT_RELEASE_TARGET);
+    expect(featureList.currentVersion).toBe(CURRENT_RELEASE_TARGET);
   });
 });
 
