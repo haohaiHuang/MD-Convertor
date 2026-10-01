@@ -2,47 +2,45 @@
 
 ## Resume Here
 
-- Current version: **`0.3.9`（已发布：GitHub Release `v0.3.9`，tag 指向 `9f3642e`，与源码同一条提交）**——**产物字节数与 SHA-256 见 `docs/TESTING.md` 的 `## Gated Artifact (0.3.9)`**（本文件不重复以免漂移）。未签名/未 notarize（个人测试定位，QA-008 accepted）。
+- Current version: **`0.3.10`（已发布：GitHub Release `v0.3.10`，tag 指向 `77703c3`，与源码同一条提交）**——**产物字节数与 SHA-256 见 `docs/TESTING.md` 的 `## Gated Artifact (0.3.10)`**（本文件不重复以免漂移）。未签名/未 notarize（个人测试定位，QA-008 accepted）。
 - **多设备约定（2026-09-30 起）**：本文件是**公开仓库**里的跨机共享文档，只记全局客观事实。**`/Applications/<App>.app` 装机版本是各机本地状态，不写进本文件**；各机见自己的 `.workbuddy/memory/DEVICES.md`（不入 git）。装机记录与实测不符时，**先怀疑不是同一台设备，不要先怀疑记录**（2026-09-30 曾因此误改另一台机器的真实记录）。
-- Active feature: **无（feat-043「UI 走查整改」2026-10-01 置 `done`：11/11 销项、三阶段独立 QA 验收均 PASS；真机确认后按用户反馈追补一条「特点行同行右对齐」；commit 等用户指示）**。逐任务 RED/GREEN 在 `feature_list.json` 的 `feat-043.verification`（8 条）与 `docs/features/ui-fix/`（S1–S3 阶段文档）。关键不变量（仍生效）：两个 `/api/local-docs/*` **只读不写盘**，**唯一写盘出口是 `outputBridge().saveFile()`**。
-- **唯一推荐下一步：等用户审阅 feat-043 改动并指示 commit**（20 modified + 5 untracked 全部未提交，清单见 `PROGRESS.md` 本轮章节）。commit 后候选（均需单独授权）：发布 `0.3.10`（发布前才 TDD bump）、`extension/` 写方 percent-encode、云端 Provider 实文实测。**feat-043 执行结果**：D1 `--col:880px` ✓、D2 `#6b7484`（4.71:1）✓、D4 P2-3…P2-6 推迟 ✓；**D3 按规格口径实施**（顶栏 `1fr auto 1fr` + 品牌 `justify-self:center` 落视口中轴）——旧交接提示词的「86px 配平列/品牌左对齐」与设计规格 §2.1 及品牌 x 红线断言自相矛盾，判为走样；若用户要左对齐，一行 `justify-self` 可切换（**待用户确认**）。断言先行四条已全部落位（4/4）。
-- Pending（无一是阻塞项）：① 产物与 tag 一律不动，缺失项按退役处理；② 签名/notarization 不做；③ 2026-09-20 旧 UI 评审（`docs/UI-REVIEW-2026-09-20.md`）勿重提（09-30 走查已销项）；④ 六条未裁决 flake（见 Environment Notes）；⑤ **发布任何新版本前先 TDD bump 到 `0.3.10`，bump 与发布均需用户授权**；⑥ D3 品牌对齐口径待用户确认（见上）。
-- Branch: `main` 仍指 **`064112d`**（feat-043 改动未提交；tag `v0.3.9` 指其前一条 `9f3642e`）。**工作区不干净（22 modified + 5 untracked，全部未提交，commit 等用户指示）**：modified＝实现/测试 10（`src/app/{page.tsx,page.module.css,globals.css}`、`src/app/settings/{client.ts,client.test.ts,page.tsx,page.module.css}`、`src/app/local-docs/{panel.tsx,panel.module.css}`、`tests/palette.test.ts`）+ e2e 5（home/settings/local-docs/theme/translate）+ 台账 7（feature_list/PROGRESS/session-handoff/AGENTS/CHANGELOG×2/QUALITY-AUDIT）；untracked＝三份 feat-043 规划文档 + `docs/features/ui-fix/` + `outputs/`（QA 截图/探针）。stash 空；`v0.3.8` = `6e00474`、`v0.3.7` = `9afbe36`、`v0.1.3` = `ce041c9` 不可变。
+- Active feature: **无（feat-043「UI 走查整改」已 `done` 并随 `v0.3.10` 发布：11/11 销项、三阶段独立 QA 验收均 PASS、真机反馈追补「特点行同行右对齐」）**。逐任务 RED/GREEN 在 `feature_list.json` 的 `feat-043.verification`（8 条）与 `docs/features/ui-fix/`（S1–S3 阶段文档）。关键不变量（仍生效）：两个 `/api/local-docs/*` **只读不写盘**，**唯一写盘出口是 `outputBridge().saveFile()`**。
+- **唯一推荐下一步：无在办事项，等用户下一条指令**。候选（均需单独授权）：`extension/` 写方 percent-encode、云端 Provider 实文实测、P2-3…P2-6（用户锁死推迟）。**feat-043 执行结果**：D1 `--col:880px` ✓、D2 `#6b7484`（4.71:1）✓、D4 P2-3…P2-6 推迟 ✓；**D3 按规格口径实施并获用户真机「OK了」认可**（顶栏 `1fr auto 1fr` + 品牌 `justify-self:center` 落视口中轴）；断言先行四条已全部落位（4/4）。
+- Pending（无一是阻塞项）：① 产物与 tag 一律不动，缺失项按退役处理；② 签名/notarization 不做；③ 2026-09-20 旧 UI 评审（`docs/UI-REVIEW-2026-09-20.md`）勿重提（09-30 走查已销项）；④ 六条未裁决 flake（见 Environment Notes）；⑤ **发布任何新版本前先 TDD bump 到 `0.3.11`，bump 与发布均需用户授权**。
+- Branch: `main` = **`77703c3`**（feat-043 实现 + 版本面 + CHANGELOG，32 files / +1660 / −247；tag `v0.3.10` 指向它）。发布后簿记为第二提交（docs-only）。`outputs/`（QA 截图/探针）按惯例不入库。stash 空；`v0.3.9` = `9f3642e`、`v0.3.8` = `6e00474`、`v0.3.7` = `9afbe36`、`v0.1.3` = `ce041c9` 不可变。
 
 - **本文件只写现役状态**（≤150 行 / ≤25KB）：阶段间交接写对应阶段文档的 `## Handoff`，轮次历史压进 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`。
 
 ## 新会话开工提示词（复制即用）
 
 ```
-开工 MD-Convertor —— 第二十九轮做完 feat-043「UI 走查整改」实施（S1/S2/S3 全落地、
-走查 11 条 11/11 销项、三阶段独立 QA 验收均 PASS），**未 bump、未 commit、未发布**。
-本轮做什么由用户指令定（大概率是审阅 + commit）。
+开工 MD-Convertor —— 第三十轮已把 feat-043「UI 走查整改」随 `v0.3.10` 发布完毕
+（提交 `77703c3`、tag `v0.3.10`、GitHub Release 已上线、发布门禁一次通过）。
+本轮做什么由用户指令定；当前无在办事项。
 
 【建立基线，别跳过】
 1. pwd 确认在 /Users/huanghaohai/Desktop/MD-Convertor。
 2. 读 AGENTS.md、PROGRESS.md、feature_list.json、session-handoff.md（`## Resume Here` 是权威）。
-3. `git status --short` 预期不干净：22 modified + 5 untracked（feat-043 全部改动 + 真机反馈追补
-   未提交，清单见 PROGRESS.md 本轮章节）。HEAD = `064112d`，tag `v0.3.9` = `9f3642e`。
+3. `git status --short` 预期只有发布后簿记的 docs 改动（或干净，视第二提交是否已推）。
+   HEAD = `77703c3`，tag `v0.3.10` = `77703c3`。
 4. NODE_OPTIONS= ./init.sh 建立基线：Node 必须 24.14.1/24.15.0。期望 **95 files / 1274 passed /
    0 skipped**。若 `desktop-server-scope` 报缺文件，读 Environment Notes 的修复 recipe。
 
-【feat-043 已完成，别重做】
+【feat-043 已随 v0.3.10 发布，别重做】
 - 走查 11 条（9 P1 + P2-1 + P2-2）已全部销项（终验销项表见 `docs/features/ui-fix/
-  S3-polish-and-closeout.md` 的 Result）；P2-3…P2-6 是**用户锁死推迟**，不是欠账。
+  S3-polish-and-closeout.md` 的 Result）+ 真机反馈追补「特点行同行右对齐」；P2-3…P2-6 是
+  **用户锁死推迟**，不是欠账。
 - 已落地锚点：三 token `--col:880px`/`--control-h:36px`/`--radius-control:10px`；顶栏三列网格
   `1fr auto 1fr` + 品牌 `justify-self:center`（红线 = `home.spec.ts:540-553` 三屏品牌 x ±0.05px，
   断言原文禁改）；placeholder `#6b7484`；禁用态弃 opacity 换色（primary 5.78:1 / secondary 6.26:1）；
-  `.hintRow` 与勾选框同行、右对齐（2026-10-01 真机反馈取代「左对齐同轴」）；`.entryCard` min-height 220px；
-  no-output 四件套；CLI 检测状态。
-- **D3 待用户确认**：实施按规格口径（品牌居中轴，brandCenter=viewportCenter）。若用户要
-  「品牌左对齐」，只改 `.brand` 的 `justify-self` 并同步 `home.spec:601` 品牌中心断言，
-  红线 `home.spec:540-553` 仍不动。
+  `.footerRow` 让 `.hintRow` 与勾选框同行、右对齐（2026-10-01 真机反馈取代「左对齐同轴」）；
+  `.entryCard` min-height 220px；no-output 四件套；CLI 检测状态。
 - 断言先行四条已落位（4/4）；输出「选择目录」按钮 title 是**条件挂载**（禁用态挂、可用态不挂，
   双向锁在 `settings.spec`），别改成恒挂。
 
 【版本面】
-- `0.3.9` 已发布（tag `9f3642e`）；feat-043 实施期不 bump 的约定已履行完毕。**发布任何新版本
-  前先 TDD bump 到 `0.3.10`，bump 与发布都要用户单独授权**；只改 `extension/` 的轮次不 bump。
+- `0.3.10` 已发布（tag `77703c3`）。**发布任何新版本前先 TDD bump 到 `0.3.11`，bump 与发布都要
+  用户单独授权**；只改 `extension/` 的轮次不 bump。`desktop:release` 只认当前版本面。
 
 【硬约束（沿用，违反任一条都算做错）】
 - 不要重写第二套批量编排或第二条写盘路径（唯一写盘出口 `outputBridge().saveFile()`）。
@@ -67,11 +65,11 @@
 
 ## Latest Change
 
-**本轮（2026-10-01 第二十九轮：feat-043「UI 走查整改」实施）**：S1 顶栏三列网格 `1fr auto 1fr`（删 `.backSlot`/`.headerLeft`/`.backLink`、品牌居中轴）+ 3 token + 14 处宽度换 `var(--col)` + 控件 36/13.5/10 + 禁用态换色 + `backLabel(from)`；S2 no-output 四件套（警示行上移 + 「去设置」+ `aria-describedby`）/ CLI 检测状态（coerce + 8px 状态点 + `.pathMissing`）/ placeholder `#6b7484` / 删输出卡重复句（按钮条件挂 title）；S3 `.hintRow` 同轴 + `.entryCard` min-height 220px。全程 TDD 断言先行（断言先行四条 4/4 落位），三阶段独立 QA 验收均 PASS，终验 11/11 销项 + Tab 扫描 0 缺环 + 对比度 5.78/6.26/4.71 对上（init.sh 95/1274/0，e2e 348/6/0 三引擎）。**真机确认追补**：用户裁定特点行「无需登录/图片内嵌/随用随走」不再独占一行，改为与翻译勾选框同行、右对齐（RED→GREEN 3/3，取代 P1-6 左缘同轴口径，init 95/1274/0 + e2e 348/6/0）。**未 bump、未提交、未发布**；D3 按规格口径（品牌居中轴）实施、待用户确认。
+**本轮（2026-10-01 第三十轮：feat-043 提交 + `0.3.10` 发布）**：TDD bump 版本面 0.3.9 → 0.3.10（release-guards 期望先行 RED → GREEN 30 passed）⇒ 提交 `77703c3`（32 files / +1660 / −247）⇒ push + tag `v0.3.10` ⇒ `desktop:release` 门禁**一次通过**（3m38s，lint/typecheck/coverage 全绿、e2e 348/6/0、live 2/2、产物校验过、历史守卫退役通知符合预期）⇒ GitHub Release `v0.3.10` 已发布（236,226,685 bytes / SHA-256 `f25e0ae9…`，服务端 digest 一致、`releases/latest` 已指向）。**大资产上传坑**：`gh release create` 带 236MB 资产一把梭会 `unexpected EOF`（gh 自动回滚无残留），拆两步（先建骨架再 `gh release upload`）53 秒传完。
 
-**上一轮（2026-09-30 第二十八轮：UI/UX 走查 + 改修实施计划，生产代码零改动）**：用户要「产品画面 UIUX 优化建议（标题居中、返回/设置按钮与框体不对齐）+ 走查报告」⇒ 9 张实拍截图 ⇒ `docs/UI-REVIEW-2026-09-30.md` + `outputs/UI-REVIEW-2026-09-30.html`（19.5/25、无 P0、P1×7+P2×6；根因＝`.backSlot` 86px 挤偏品牌 + 顶栏 1086px vs 内容列 820/960/860 三套宽度）⇒ 设计规格 + `docs/PLAN-ui-fix.md`（feat-043）。用户「按照plan动手」后改口「**开发用新会话开发**」⇒ 本轮只走查、规划、收尾。
+**上一轮（2026-10-01 第二十九轮：feat-043「UI 走查整改」实施）**：S1 顶栏三列网格 `1fr auto 1fr`（删 `.backSlot`/`.headerLeft`/`.backLink`、品牌居中轴）+ 3 token + 14 处宽度换 `var(--col)` + 控件 36/13.5/10 + 禁用态换色 + `backLabel(from)`；S2 no-output 四件套（警示行上移 + 「去设置」+ `aria-describedby`）/ CLI 检测状态（coerce + 8px 状态点 + `.pathMissing`）/ placeholder `#6b7484` / 删输出卡重复句（按钮条件挂 title）；S3 `.hintRow` 同轴 + `.entryCard` min-height 220px。全程 TDD 断言先行（断言先行四条 4/4 落位），三阶段独立 QA 验收均 PASS，终验 11/11 销项 + Tab 扫描 0 缺环 + 对比度 5.78/6.26/4.71 对上（init.sh 95/1274/0，e2e 348/6/0 三引擎）。**真机确认追补**：用户裁定特点行「无需登录/图片内嵌/随用随走」不再独占一行，改为与翻译勾选框同行、右对齐（RED→GREEN 3/3，取代 P1-6 左缘同轴口径，init 95/1274/0 + e2e 348/6/0）。
 
-**更早（第二十七轮及以前）**：见 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`；逐任务证据在 `feature_list.json` 各条 `verification`。
+**更早（第二十八轮及以前）**：见 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`；逐任务证据在 `feature_list.json` 各条 `verification`。
 
 ## Important Boundaries
 
@@ -100,6 +98,7 @@
 - 网络：`github.com` / `api.github.com` 可用，但 GitHub releases 上 0.1.x 的历史 ZIP 取不回来。若 `node_modules/electron/dist` 缺失，用 `ELECTRON_MIRROR=https://registry.npmmirror.com/-/binary/electron/ npx install-electron`。
 - **`.desktop/server` 陈旧时的修复 recipe（2026-09-30 第二十八轮实测）**：`./init.sh` 红在 `desktop-server-scope`「keeps …」＝`.desktop/server` 比仓库旧（它是 `desktop:prepare` 的产物，裸 `./init.sh` 不重建）。正规修法 `npm run build && npm run desktop:prepare && ./init.sh`；坑：`install-electron` 在 dist 已存在时 exit 0 不下载，而 prepare 还要 `~/Library/Caches/electron` 的 zip（缺失即 `ENOENT scandir`）⇒ 把既有 `.desktop/electron/*.zip` 拷进 `.desktop/electron-cache/` 再 `ELECTRON_CACHE=$PWD/.desktop/electron-cache npm run desktop:prepare`（**不要往 `~/Library` 造目录**）；沙箱内 `PATH=/usr/local/bin`（Node 24）+ `NODE_OPTIONS=`。
 - 代理（2026-09-20 / 09-22 实测，Clash `127.0.0.1:7897`）：`ALL_PROXY` / `HTTPS_PROXY` 转发已坏——`gh` / `curl` 报 `EOF` / `SSL_ERROR_SYSCALL`、`git fetch|push` 同样失败，**直连正常**（`git -c http.proxy= -c https.proxy= …`）。跑 Playwright 前同样要先 `unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy ALL_PROXY all_proxy` + `NO_PROXY=127.0.0.1,localhost`（否则 `connectOverCDP` 报 `Unexpected status 502`；Firefox 还会跟随系统代理，Chromium 不跟随）。**但 Release 资产下载恰好相反（2026-09-30 实测）：显式 `--proxy 127.0.0.1:7897` 达 3.48 MB/s，`gh release download` 直连仅 ~80 KB/s、裸 `curl` 直连 0 字节——大资产一律显式走代理。**
+- **`gh release create` 带 236MB 资产一把梭会 `unexpected EOF`（2026-10-01 实测）**：一次 POST 建 release + 传大资产的组合会在中途断连（gh 会自动回滚，无草稿残留，可安全重试）。**拆两步**：先 `gh release create <tag> --latest --title … --notes-file …`（秒回），再 `gh release upload <tag> <zip>`（53 秒传完）。上传后按惯例校验：非草稿非预发布、asset `state: uploaded`、服务端 `digest` 与本地 `shasum -a 256` 一致、`releases/latest` 指向新 tag。另：`gh release view --json` 不认 `isLatest` 字段，查 latest 用 `gh api repos/…/releases/latest`。
 - `MD_CONVERTOR_TEST_PROVIDER=1` 是测试/e2e 专用开关（内置伪模型，不联网）；生产未设置时该分支不可达。生产路径的环境变量仍是 `MD_CONVERTOR_USER_DATA` / `MD_CONVERTOR_SECRETS` / `MD_CONVERTOR_SESSION_TOKEN` / `PATH`。
 - **Firefox e2e 需要 `MOZ_DISABLE_CONTENT_SANDBOX=1`（已固化在 `playwright.config.ts` 顶部，`??=` 可关）**：macOS 禁嵌套沙箱——已在沙箱里的进程再 `sandbox_init()` 得 `Operation not permitted`，表现为每个用例 30s 超时。**只需这一个变量**（其余同名开关无效）；**不要用** `firefoxUserPrefs: { "security.sandbox.content.level": 0 }`（实测 SIGKILL / exit 137）。三引擎数字：**315 passed / 6 skipped / 0 failed（2026-09-30 实测）**。
 - **firefox 在视口底部窄带会丢掉合成鼠标点击（2026-09-29 查实，不是产品缺陷也不是 flake）**：修法是点偏上位置（`click({ position: { x: 30, y: 6 } })`，仍是真实鼠标点击；`toPass` 重试包装 5/5 全红）。探针数据与机制见 `docs/TESTING.md`。

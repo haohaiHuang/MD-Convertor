@@ -282,6 +282,16 @@ Approved for personal testing. Not approved for frictionless public distribution
 
 ## Archived Round Log
 
+### 2026-10-01（第三十轮）—— feat-043 提交 + `0.3.10` 发布
+
+- 用户真机确认通过（唯一反馈「特点行同行右对齐」已随第二十九轮追补落地）后授权「commit、push加release」。
+- TDD bump 0.3.9 → 0.3.10：release-guards 期望先行 RED（1 failed）⇒ `release-desktop.mjs` + `package.json` + lock 两处 + `feature_list.json` → GREEN（30 passed）。
+- 提交 `77703c3`（feat-043 S1–S3 + 真机反馈追补 + 版本面，32 files / +1660 / −247）→ push → tag `v0.3.10` 指向构建源码提交。
+- 发布门禁 `desktop:release` **一次通过**（3m38s）：lint/typecheck/coverage 全绿、e2e 348/6/0、live 2/2、产物校验过、历史归档守卫退役通知符合预期。
+- 产物 `MD-Convertor-darwin-arm64-0.3.10.zip` = 236,226,685 bytes / SHA-256 `f25e0ae9aea0a915748ee5f6790ffb9ae467e35ecdf59512f25749684fcc1945`；包内指纹（footerRow 同行布局、返回文案三件套、去设置、产品特点）全命中；ZIP 3,542 条目 / 566 M。
+- GitHub Release `v0.3.10` 已发布（非草稿非预发布、`releases/latest` 已指向、服务端 digest 与本地一致）。**坑**：`gh release create` 带 236MB 资产一把梭 `unexpected EOF`（自动回滚无残留），拆「先建骨架 + `gh release upload`」两步后 53 秒传完（已记 session-handoff Environment Notes）。
+- 版本面现为已发布 `0.3.10`（tag `77703c3`）；下轮再发布需授权且发布前 TDD bump `0.3.11`。六条未裁决 flake 零命中。
+
 ### 2026-10-01（第二十九轮）—— feat-043「UI 走查整改」实施（S1/S2/S3 全绿）
 
 - 按 `docs/PLAN-ui-fix.md` 实施 11 条（9 P1 + P2-1 + P2-2），逐任务 TDD 断言先行；四条断言先行（settings「返回」文案映射、local-docs「返回文档处理」、settings:548 CLI 启停、settings:697 重复提示）4/4 先落 RED 再实现。

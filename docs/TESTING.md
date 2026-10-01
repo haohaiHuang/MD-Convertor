@@ -141,11 +141,11 @@ This checklist was run and passed on 2026-09-24 (all six items; item 5 used a th
 
 `npm run desktop:release` requires:
 
-- package version exactly `0.3.9`
+- package version exactly `0.3.10`
 - Node.js 24.x, but not 24.16.0: that patch stalls inside `yauzl` while unpacking the Electron archive, so `electron-forge make` never produces a ZIP. Node 24.14.1 and 24.15.0 both pass the full gate
 - the historical archive set: every manifest ZIP that still exists must keep its fixed SHA-256, and no unlisted release ZIP may appear in `~/Downloads/MD-Convertor-archive/releases/`
 - a ZIP created during the current run
-- packaged version `0.3.9`
+- packaged version `0.3.10`
 - an arm64 executable and complete application bundle
 
 The guard rechecks historical artifacts on both success and failure. A Forge command that exits without a new ZIP is a failure.
@@ -174,7 +174,20 @@ The `0.3.4` gate ran on 2026-09-21 and passed end to end. It carries `feat-036` 
 
 A later fix for long-article translation timeouts (`feat-024`, 2026-09-18) changed the task budget to scale with the batch count. A later round (`feat-029`, 2026-09-18) made a cloud provider's four fields mandatory to save, let the settings page pull models from an unsaved draft without writing anything, and replaced the saved key in its input box with an eight-dot placeholder. It is covered by unit tests for the form rules and the draft model route (`src/lib/settings/provider-form.test.ts`, `src/app/api/provider/models/route.test.ts`) plus three new settings E2E cases and three rewritten ones (the old「拉取模型先保存草稿」expectations no longer hold). Another round raised the per-call ceiling from 60s to 180s (`feat-027`) and fixed a timeout that was reported as an unreadable answer, and it removed the「当前生效」mode badge (`feat-028`). All of it was verified by unit tests, a full `./init.sh` baseline, a three-engine E2E run, and a real-machine probe against the user's cloud provider (a 121-block document that used to fail at the 60s ceiling now returns 200). The version decision landed on `0.3.1`: `package.json`, the lock file, `feature_list.json` and the release guard all read `0.3.1` (the guard test moved to RED first, then to 29 passing). A further round (`feat-031`, 2026-09-20) raised `next` to 16.3.5 and `sharp` to 0.35.4 so `npm audit --omit=dev` reports no production advisories, dropped the gear glyph from the header, renamed both convert buttons to 「转换」, aligned the rich-text convert button's right edge with the paste box above it, and made the key box read-only while a key is stored. The last round (`feat-032`, 2026-09-20) dropped the green「MD」square and set the wordmark in Michroma, vendoring the font and its OFL licence under `public/fonts/` and loading it with `next/font/local`; `tests/brand-font.test.ts` guards the two files, the E2E brand case compares the served woff2 with the repository file by SHA-256, and the build was re-run with all network access denied (`sandbox-exec … (deny network*) npm run build`, exit 0) to prove it no longer reaches Google. The artifact recorded below is the pre-fix `0.3.0` build, kept as history; everything from `feat-024` onwards shipped in the `0.3.1`–`0.3.6` artifacts.
 
-## Gated Artifact (0.3.9)
+The `0.3.10` gate ran on 2026-10-01 and passed end to end (first attempt). It carries `feat-043` (the UI review fixes: the header brand back on the viewport centre line via a three-column grid, context-aware 「← 返回」 labels, the local-documents warnings moved above the toolbar with a 「去设置」 link and a screen-reader-visible disabled reason, the settings duplicate-hint removal, readable placeholder contrast, opaque disabled states, shorter same-axis entry cards) plus the real-machine feedback round: the three ✓ feature hints now share the translate checkbox's row, right-aligned to the content column. Counts: `./init.sh` 95 files / 1274 tests, three-engine E2E 348 passed / 6 skipped, live 2 passed.
+
+## Gated Artifact (0.3.10)
+
+- Path: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.10.zip`
+- Size: `236,226,685` bytes
+- SHA-256: `f25e0ae9aea0a915748ee5f6790ffb9ae467e35ecdf59512f25749684fcc1945`
+- Package: version `0.3.10`, arm64, macOS 12.0+
+- Automated evidence: 95 files / 1274 tests, three-engine E2E 348 passed / 6 skipped, live 2/2
+- Bundle content check: the traced server carries the same-row feature hints (`footerRow` in the page chunk `3wkuip11gcu97.js` and its CSS chunk `2pt9pyl76f3id.css`), the three context-aware back labels (返回首页 / 返回文档处理 / 返回转换) and the warning link `去设置`; `Resources/server` still holds exactly the whitelist (ZIP is `3,542` entries, `566 M` expanded)
+- Published: [GitHub Release `v0.3.10`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.10) (tag `77703c3`, newest release; the uploaded asset's server-side digest matches the SHA-256 above)
+- Signing: not Developer ID signed or notarized, so the artifact is suitable for personal testing only
+
+## Historical Artifact (0.3.9)
 
 - Path: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.9.zip`
 - Size: `236,224,633` bytes
