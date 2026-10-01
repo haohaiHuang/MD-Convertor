@@ -282,6 +282,26 @@ Approved for personal testing. Not approved for frictionless public distribution
 
 ## Archived Round Log
 
+### 2026-10-01（第二十九轮）—— feat-043「UI 走查整改」实施（S1/S2/S3 全绿）
+
+- 按 `docs/PLAN-ui-fix.md` 实施 11 条（9 P1 + P2-1 + P2-2），逐任务 TDD 断言先行；四条断言先行（settings「返回」文案映射、local-docs「返回文档处理」、settings:548 CLI 启停、settings:697 重复提示）4/4 先落 RED 再实现。
+- S1 顶栏与栅格（CSS Grid 三列 + `.brand` 移出 `.backSlot`、`--col: 880px`、hintRow 同轴、entryCard 去 aspect-ratio）、S2 状态与反馈（placeholder `#6b7484`、禁用态换色不降透明度、CLI 状态点、去重复提示）、S3 观感收尾（去设置胶囊、aria-describedby 生命周期、条件 title）全部落地。
+- 真机确认后追加一条用户反馈：特点行「无需登录/图片内嵌/随用随走」独占一行观感怪，改为与翻译勾选框**同行、右对齐**（RED→GREEN，取代 P1-6 左缘同轴口径；init 95/1274/0 + e2e 348/6/0 三引擎）。
+- 三阶段独立 QA 验收均 PASS（T1.6/T2.5/T3.3），终验 11/11 销项；红线 `home.spec.ts:540-553` 原文 md5 `61d1d6bd` 全程未动；六条未裁决 flake 零命中。
+- 门禁：T1.6 = init 95/1274/0 + e2e 330/6/0；T2.5 = 95/1274/0 + 342/6/0；T3.3 = 95/1274/0 + e2e 354 tests（Chromium 118/0/0、Firefox 115/3/0、WebKit 115/3/0）。
+- 工程师申报 7 条不确定项：5 接受（胶囊文字色、`.modeTab:disabled` 最小化、`.action:disabled` 前瞻配方、settings 胶囊提前、`useSyncExternalStore`）、2 返工（translateToggle 禁用态 opacity→换色、两条 e2e 标题未同步）后全绿。
+- D3 顶栏品牌对齐存在文档歧义（交接写「86px 配平列/品牌左对齐」vs 规格「`1fr auto 1fr` + `justify-self:center`」），按**规格口径**实施（brandCenter=viewportCenter=590 实测），待用户确认。
+- 版本面保持已发布 `0.3.9`（实施期不 bump）；未提交、未发布（commit 等用户另行指示）。
+
+### 2026-09-30（第二十八轮）—— UI/UX 走查 + feat-043 改修实施计划（纯文档，零代码）
+
+- 用户指令三段：「给产品画面 UIUX 出优化建议（1 标题居中 2 返回/设置按钮与框体不对齐）+ 走查报告」→「给出改修的实施计划」→「按照plan动手」后改口「**开发用新会话开发**」。本轮只走查与规划，实现留给新会话。
+- 证据：`dev:web` + Playwright 1180×820@2x 浏览器态 + 真实 Electron 窗口（`--no-sandbox` + CDP），共 9 张实拍。产出 `docs/UI-REVIEW-2026-09-30.md` + `outputs/UI-REVIEW-2026-09-30.html`（图文版）：19.5/25、无 P0、P1×7 + P2×6；根因＝`.backSlot` 86px 挤偏品牌、顶栏 1086px 与 820/960/860 三套内容宽度不对齐。
+- 修正报告一处对比度错误：placeholder `#767f8f` 实为 4.04:1（报告写 ≈4.6:1），规格改定 `#6b7484`（4.71:1）。
+- 规划：`docs/UI-FIX-DESIGN-SPEC-2026-09-30.md`（token/控件/禁用态规格 + **16 项 e2e 风险、4 条断言必须先行改**）→ `docs/PLAN-ui-fix.md`（feat-043：D1–D4 决策 + S1/S2/S3，逐任务带 RED 列）。锁死：`--col: 880px`（非 960）、`#6b7484`、顶栏左对齐配平、只做 11 条（9 P1 + P2-1 + P2-2），P2-3…P2-6 推迟。
+- 基线曾红 1 条（`desktop-server-scope` 缺插件 zip）：`.desktop/server` 是 9-22 陈旧副本；`desktop:prepare` 又因 `~/Library/Caches/electron` 缺失 ENOENT ⇒ 既有 zip 挪进 `.desktop/electron-cache/` + `ELECTRON_CACHE` 重跑 ⇒ **exit 0，95 files / 1270 passed / 0 skipped**。recipe 入 `session-handoff.md` Environment Notes。
+- 未做：生产代码零改动；`feature_list.json` 未登记 feat-043（留给 T1.0）；未 bump、未提交、未发布。
+
 ### 2026-09-30（第二十五轮发布）—— 提交门 + `0.3.9` 提交 / 发布
 
 - 用户指令：「可以，commit、push、release」——授权完整发布流程（提交门结果只修台账与文档，生产代码一行未动）。

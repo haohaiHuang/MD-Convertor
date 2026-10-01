@@ -53,6 +53,8 @@ const ALLOWED_LITERALS = [
   "rgba(20, 24, 36, 0.22)",
   "rgba(20, 24, 36, 0.45)",
   "#939ba9",
+  // feat-043 S2 (T2.3): the AA-compliant placeholder grey (#6b7484, 4.71:1 on white).
+  "#6b7484",
   "#a9b1bf",
   "#a9b3c6",
   "#f4f6f9",

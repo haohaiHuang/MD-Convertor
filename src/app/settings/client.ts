@@ -116,6 +116,25 @@ export function inputDirLabel(settings: SettingsPayload | null): string {
   return settings?.input.defaultPath ?? settings?.defaults?.inputDir ?? "系统下载目录";
 }
 
+/**
+ * The settings screen's back capsule, labelled after the screen it returns to. The visible
+ * text (including the 「← 」 prefix) is the accessible name — there is deliberately no
+ * aria-label — so the e2e specs locate the button by these exact strings. `?from=` is
+ * untrusted input: anything outside the known screens falls back to the plain label.
+ */
+export function backLabel(from: string | null | undefined): string {
+  switch (from) {
+    case "home":
+      return "← 返回首页";
+    case "local-docs":
+      return "← 返回文档处理";
+    case "convert":
+      return "← 返回转换";
+    default:
+      return "← 返回";
+  }
+}
+
 export function fetchSettings(): Promise<SettingsPayload> {
   return requestJson<SettingsPayload>("/api/settings");
 }

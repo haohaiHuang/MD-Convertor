@@ -6,6 +6,7 @@
  * instead of resolving `{ ok: false }` — an unguarded `void bridge.x()` fails silently.
  */
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import Link from "next/link";
 
 import {
   applyRowStatus,
@@ -282,6 +283,31 @@ export function LocalDocsPanel({
         </div>
       </div>
 
+      {/* feat-043 §4.1: the blocking notice sits above the toolbar, warning-coloured for the
+          two refusals, and offers the way out inline. Informational rows stay muted. */}
+      {notice ? (
+        <p
+          className={
+            refusal === "same-dir" || refusal === "no-output"
+              ? `${styles.hint} ${styles.hintWarning}`
+              : styles.hint
+          }
+          role="status"
+        >
+          {notice}
+          {refusal === "no-output" ? (
+            <Link className={styles.button} href="/settings?from=local-docs">
+              去设置
+            </Link>
+          ) : null}
+          {refusal === "same-dir" && suggestedOutputDir ? (
+            <button className={styles.button} type="button" disabled={busy !== null} onClick={() => void applySuggestedOutput()}>
+              改用 {suggestedOutputDir}
+            </button>
+          ) : null}
+        </p>
+      ) : null}
+
       <div className={styles.toolbar}>
         <label className={styles.switchRow}>
           <input
@@ -307,23 +333,16 @@ export function LocalDocsPanel({
             className={styles.primary}
             type="button"
             disabled={busy !== null || refusal !== null || checkedCount === 0 || !scan}
+            aria-describedby={disabledReason ? "convert-disabled-reason" : undefined}
             onClick={() => void execute(rows)}
           >
             一键转换
           </button>
+          {disabledReason ? (
+            <span id="convert-disabled-reason" className={styles.srOnly}>{disabledReason}</span>
+          ) : null}
         </div>
       </div>
-
-      {notice ? (
-        <p className={refusal === "same-dir" ? `${styles.hint} ${styles.hintWarning}` : styles.hint} role="status">
-          {notice}
-          {refusal === "same-dir" && suggestedOutputDir ? (
-            <button className={styles.button} type="button" disabled={busy !== null} onClick={() => void applySuggestedOutput()}>
-              改用 {suggestedOutputDir}
-            </button>
-          ) : null}
-        </p>
-      ) : null}
 
       {rows.length > 0 ? (
         <table className={styles.table}>

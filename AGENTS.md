@@ -13,7 +13,7 @@
 
 第一阶段交付 Apple Silicon Mac 单机应用。Electron 承载现有 Next.js 16 / Node.js 24 / TypeScript strict 应用，使用 Readability、Turndown、Playwright 和 Sharp 完成安全抓取、正文提取、动态渲染和图片内嵌。0.3.0 起另提供可选文档翻译：正文交给用户自行配置的模型（本机 agent CLI 或云 Provider），只翻译非目标语言部分。0.3.6 起可在设置里指定默认保存目录，让「下载」直接把 Markdown 写进该目录而不再每次弹保存框（未启用或直写被拒时仍走原保存对话框）。产品范围见 `docs/PRODUCT.md`，翻译产品需求见 `docs/PRD-translation.md`，本地安全与打包边界见 `docs/ARCHITECTURE.md`。
 
-0.3.6 之后的当前阶段是**浏览器插件线路**（两个产品，详见 `docs/PLAN-browser-extension.md`）：**B 浏览器插件（`feat-040`）已完成并关闭（2026-09-24）**——点一下工具栏图标就把当前页正文与图片存成 `<标题>.md` + `<标题>.images/`（Chromium MV3，代码在 `extension/`，不影响桌面产物）；**A 桌面端「文档处理」（`feat-042`）已完成并关闭（2026-09-30，12 条真机人工验收由用户跑完全部通过）**（批量处理本地 `.md`：选目录 → 列 md → 勾选 → 内嵌图片/翻译 → 输出 → 去重；另含首页模式选择器与插件下载 ZIP 两条新需求，无顺序与代码依赖）：**S1（目录与设置）、S2（文档管线）、S3（首页模式 + 批量写盘）已完成（2026-09-29，T1.0–T1.7 / T2.0–T2.5 / T3.0–T3.4 全绿），S4（插件 ZIP 与人工验收）已实施（T4.0–T4.1、T4.3 绿；T4.2 的 12 条真机验收已于 2026-09-30 签字通过）**，**2026-09-30 真机 16 条反馈（3 缺陷 + 13 优化：U1–U6 入口画面、L1–L7 面板/设置、B1–B3）已全部落地（B1 只修读方，插件写方未动）**，当前版本面已是 `0.3.9`（**未发布**；`0.3.8` 已于 2026-09-30 随 `v0.3.8` 发布；再次发布任何版本仍需单独授权），**当前没有在办事项**；插件 ZIP 已产出到 `public/md-convertor-extension.zip`（首页下载链接不再死链）。B 的实施文档是 `docs/features/browser-extension/`（`FSD.md` + S1/S2/S3，**S1–S3 已全部实施，T3.4 真机人工验收 6 条全部通过**）；A 的实施文档是 `docs/features/app-document-processing/`（`FSD.md` + S1–S4）。**改桌面代码前先读 A 的 `FSD.md`（尤其是开头五条前提与 §2「替你落的默认」）；版本 bump 已在 S1 T1.0 完成到 `0.3.7`、随后随发布推进到 `0.3.8`、第二十五轮再随本地文档页标题面推进到 `0.3.9`，不要重复 bump。**
+0.3.6 之后的当前阶段是**浏览器插件线路**（两个产品，详见 `docs/PLAN-browser-extension.md`）：**B 浏览器插件（`feat-040`）已完成并关闭（2026-09-24）**——点一下工具栏图标就把当前页正文与图片存成 `<标题>.md` + `<标题>.images/`（Chromium MV3，代码在 `extension/`，不影响桌面产物）；**A 桌面端「文档处理」（`feat-042`）已完成并关闭（2026-09-30，12 条真机人工验收由用户跑完全部通过）**（批量处理本地 `.md`：选目录 → 列 md → 勾选 → 内嵌图片/翻译 → 输出 → 去重；另含首页模式选择器与插件下载 ZIP 两条新需求，无顺序与代码依赖）：**S1（目录与设置）、S2（文档管线）、S3（首页模式 + 批量写盘）已完成（2026-09-29，T1.0–T1.7 / T2.0–T2.5 / T3.0–T3.4 全绿），S4（插件 ZIP 与人工验收）已实施（T4.0–T4.1、T4.3 绿；T4.2 的 12 条真机验收已于 2026-09-30 签字通过）**，**2026-09-30 真机 16 条反馈（3 缺陷 + 13 优化：U1–U6 入口画面、L1–L7 面板/设置、B1–B3）已全部落地（B1 只修读方，插件写方未动）**，当前版本面已是 `0.3.9`（**已发布**，2026-09-30 随 `v0.3.9`；`0.3.8` 亦同日发布；再次发布任何版本仍需单独授权），**feat-043「UI 走查整改」已完成（2026-10-01 实施，S1/S2/S3 全绿，11 条销项，三阶段 QA PASS；计划 `docs/PLAN-ui-fix.md`，走查 `docs/UI-REVIEW-2026-09-30.md`，规格 `docs/UI-FIX-DESIGN-SPEC-2026-09-30.md`，实施文档 `docs/features/ui-fix/`），当前无在办事项、改动未提交（commit 等用户另行指示）**；插件 ZIP 已产出到 `public/md-convertor-extension.zip`（首页下载链接不再死链）。B 的实施文档是 `docs/features/browser-extension/`（`FSD.md` + S1/S2/S3，**S1–S3 已全部实施，T3.4 真机人工验收 6 条全部通过**）；A 的实施文档是 `docs/features/app-document-processing/`（`FSD.md` + S1–S4）。**改桌面代码前先读 A 的 `FSD.md`（尤其是开头五条前提与 §2「替你落的默认」）与 `docs/PLAN-ui-fix.md`；版本 bump 已在 S1 T1.0 完成到 `0.3.7`、随后随发布推进到 `0.3.8`、第二十五轮再随本地文档页标题面推进到 `0.3.9`，不要重复 bump（feat-043 已随实施保持 `0.3.9` 且未提交；再发布任何版本前才 bump 且需授权）。**
 
 ## Startup Workflow
 
@@ -42,6 +42,7 @@
 - 产品或架构决策写入相应项目文档；会话状态写入 `PROGRESS.md`，不要依赖聊天记录延续上下文。
 - 面向用户的显著变化记录到 `CHANGELOG.md` 的 `[Unreleased]`。
 - 不提交密钥、令牌、Cookie、个人数据、受版权保护的完整网页内容或其他敏感材料。
+- **多设备**：本项目在多台开发机上推进。`PROGRESS.md` / `session-handoff.md` / `docs/**` 是公开仓库里的**跨机共享文档**，只记全局客观事实（版本号、产物 SHA-256、tag/提交）；**单机状态（`/Applications` 装机版本、本地归档与产物路径）不写进这些文件**，记在该机自己的 `.workbuddy/memory/DEVICES.md`（`.workbuddy/` 不入 git，每机一份）。**装机或环境记录与实测不符时，先怀疑「不是同一台设备」，不要先怀疑记录**（2026-09-30 曾因此把另一台机器的真实记录当「台账错误」改掉）。
 
 ## Required State Artifacts
 
@@ -56,7 +57,7 @@
 - `docs/PLAN-browser-extension.md`：**当前阶段的路线图**（浏览器插件线路 —— 两个产品的分工、顺序、边界、已定决策；§6 的四组规则冲突已于 2026-09-24 裁定、§7 是当前未验证与风险）。2026-09-24 起顺序为 **B 先做（`feat-040`，已有阶段文档）、A 另案（`feat-042`，无顺序依赖）**。施工级细节在对应 feature 文档里。**开工前先读本文件与 `docs/features/browser-extension/FSD.md`。**
 - `docs/PLAN-next-phase.md`：`0.3.5` 视觉刷新的路线图，**已完成并归档**（2026-09-21 发布）；只在追溯那一阶段的方向与决策时读取。
 - `docs/PRD-upgrade-v2.md` 与 `docs/UI-DESIGN-SPEC.md`：**已于 2026-09-21 删除**（作废原因见路线图 §7）；不要重建，也不要把两者中的范围、色板或改造文件清单搬回来。
-- `docs/features/<feature>/**`：FSD 执行文档（`FSD.md` 总纲 + 每阶段一份 Spec/Plan/Task 一体的执行文档）。实施某阶段时只读 `FSD.md` 与该阶段文档，不必读其它阶段文档。当前在册：`docs/features/translation/`（0.3.0，已完成）、`docs/features/ui-refresh/`（0.3.5，已完成）、`docs/features/default-save-path/`（feat-041 默认 MD 保存路径，0.3.6，已完成）、`docs/features/browser-extension/`（B 浏览器插件，`feat-040`，**S1/S2/S3 全部完成，T3.4 人工验收 6 条全部通过（2026-09-24），已关闭**）、`docs/features/app-document-processing/`（A 桌面端「文档处理」，`feat-042`，**2026-09-29 规划与 S1–S4 实施完成（`FSD.md` + S1–S4）；版本面 bump 到 `0.3.7` 的动作已随 S1 T1.0 做完，S4 的 12 条真机验收已于 2026-09-30 全部签字，`feat-042` 已置 `done` 并关闭**）。
+- `docs/features/<feature>/**`：FSD 执行文档（`FSD.md` 总纲 + 每阶段一份 Spec/Plan/Task 一体的执行文档）。实施某阶段时只读 `FSD.md` 与该阶段文档，不必读其它阶段文档。当前在册：`docs/features/translation/`（0.3.0，已完成）、`docs/features/ui-refresh/`（0.3.5，已完成）、`docs/features/default-save-path/`（feat-041 默认 MD 保存路径，0.3.6，已完成）、`docs/features/browser-extension/`（B 浏览器插件，`feat-040`，**S1/S2/S3 全部完成，T3.4 人工验收 6 条全部通过（2026-09-24），已关闭**）、`docs/features/app-document-processing/`（A 桌面端「文档处理」，`feat-042`，**2026-09-29 规划与 S1–S4 实施完成（`FSD.md` + S1–S4）；版本面 bump 到 `0.3.7` 的动作已随 S1 T1.0 做完，S4 的 12 条真机验收已于 2026-09-30 全部签字，`feat-042` 已置 `done` 并关闭**）、`docs/features/ui-fix/`（feat-043 UI 走查整改，**S1/S2/S3 已于 2026-10-01 实施完成，三阶段 QA PASS、11 条销项，已置 `done`**）。
 
 后续企划新增文档时，应在这里补充其用途和读取时机，而不是把详细方案堆入本文件。
 

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { DEFAULT_SETTINGS } from "@/types/settings";
 
-import { inputDirLabel, outputCodeMessage, putSettings } from "./client";
+import { backLabel, inputDirLabel, outputCodeMessage, putSettings } from "./client";
 
 /**
  * `electron/output.mjs` maps a failed write to the raw `error.code` from Node's fs
@@ -77,5 +77,30 @@ describe("inputDirLabel", () => {
   it("falls back to the wording when the payload carries no resolved default", () => {
     expect(inputDirLabel(DEFAULT_SETTINGS)).toBe("系统下载目录");
     expect(inputDirLabel(null)).toBe("系统下载目录");
+  });
+});
+
+/**
+ * feat-043 S1 (T1.5): the settings back capsule names the screen it returns to. The visible
+ * text is the accessible name (no aria-label), so the e2e specs locate the button by exactly
+ * these strings, including the 「← 」 prefix.
+ */
+describe("backLabel", () => {
+  it("names the home screen", () => {
+    expect(backLabel("home")).toBe("← 返回首页");
+  });
+
+  it("names the local-documents screen", () => {
+    expect(backLabel("local-docs")).toBe("← 返回文档处理");
+  });
+
+  it("names the converter screen", () => {
+    expect(backLabel("convert")).toBe("← 返回转换");
+  });
+
+  it("falls back to the plain label for a missing or unknown origin", () => {
+    expect(backLabel(null)).toBe("← 返回");
+    expect(backLabel(undefined)).toBe("← 返回");
+    expect(backLabel("somewhere-else")).toBe("← 返回");
   });
 });

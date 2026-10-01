@@ -619,30 +619,41 @@ export default function Home() {
     </label>
   ) : null;
 
+  // 2026-10-01 real-machine feedback: the ✓ feature group rides on the toggle's row,
+  // right-aligned to the content column, instead of having a row of its own below.
+  const converterFooter = (
+    <div className={styles.footerRow}>
+      {translateToggle}
+      <div className={styles.hintRow} aria-label="产品特点">
+        <span>无需登录</span>
+        <span>图片内嵌</span>
+        <span>随用随走</span>
+      </div>
+    </div>
+  );
+
   const settingsHref = `/settings?from=${homeMode}`;
 
   const siteHeader = (
     <header className={styles.header}>
-      <div className={styles.headerLeft}>
-        {homeMode === "home" ? (
-          <span className={styles.backSlot} aria-hidden="true" />
-        ) : (
-          <button
-            type="button"
-            className={styles.backButton}
-            aria-label="返回首页"
-            onClick={() => setHomeMode("home")}
-          >
-            ← 返回
-          </button>
-        )}
-        <div className={styles.brand} aria-label="MD-Convertor">
-          <span>MD-Convertor</span>
-        </div>
+      {homeMode === "home" ? null : (
+        <button
+          type="button"
+          className={`${styles.headerBack} ${styles.backButton}`}
+          aria-label="返回首页"
+          onClick={() => setHomeMode("home")}
+        >
+          ← 返回
+        </button>
+      )}
+      <div className={styles.brand} aria-label="MD-Convertor">
+        <span>MD-Convertor</span>
       </div>
-      <Link href={settingsHref} className={styles.settingsLink} aria-label="设置" title="设置">
-        设置
-      </Link>
+      <div className={styles.headerActions}>
+        <Link href={settingsHref} className={styles.settingsLink} aria-label="设置" title="设置">
+          设置
+        </Link>
+      </div>
     </header>
   );
 
@@ -798,7 +809,7 @@ export default function Home() {
               {hasLinkInput && !hasValidUrl && (
                 <p id="link-url-error" className={styles.validation} role="alert">请输入完整的 HTTP 或 HTTPS 网页链接。</p>
               )}
-              {translateToggle}
+              {converterFooter}
             </section>
           ) : (
             <section id="paste-panel" role="tabpanel" aria-labelledby="paste-tab" className={styles.modePanel}>
@@ -871,15 +882,9 @@ export default function Home() {
                   <p id="paste-size-error" className={styles.validation} role="alert">粘贴内容超过 5 MiB，请减少内容后重试。</p>
                 )}
               </form>
-              {translateToggle}
+              {converterFooter}
             </section>
           )}
-
-          <div className={styles.hintRow} aria-label="产品特点">
-            <span>无需登录</span>
-            <span>图片内嵌</span>
-            <span>随用随走</span>
-          </div>
 
           {isLoading && (
             <div className={styles.statusCard} role="status" aria-live="polite">

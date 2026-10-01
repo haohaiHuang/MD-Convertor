@@ -14,6 +14,10 @@
   --shadow: 0 22px 60px rgb(30 35 50 / 10%);
   --weight-body: 400;
   --weight-ui: 400;
+  /* feat-043 S1: one content column for all screens plus the capsule-control metrics. */
+  --col: 880px;
+  --control-h: 36px;
+  --radius-control: 10px;
 }
 
 * {

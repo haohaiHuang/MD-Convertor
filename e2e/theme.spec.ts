@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import { gotoConverter } from "./entry";
 
@@ -133,4 +133,40 @@ test("antialiasing is switched on for one consistent stroke rendering", async ({
     () => (getComputedStyle(document.body) as unknown as { webkitFontSmoothing: string }).webkitFontSmoothing,
   );
   expect(smoothing).toBe("antialiased");
+});
+
+/**
+ * feat-043 S1 (T1.2): the three layout tokens the column grid and capsule work hangs on.
+ * The geometry specs measure that they take effect on real boxes; this locks the values.
+ */
+test("the layout tokens resolve on :root", async ({ page }) => {
+  await page.goto("/");
+
+  const tokens = await page.evaluate(() => {
+    const root = getComputedStyle(document.documentElement);
+    return {
+      col: root.getPropertyValue("--col").trim(),
+      controlHeight: root.getPropertyValue("--control-h").trim(),
+      radiusControl: root.getPropertyValue("--radius-control").trim(),
+    };
+  });
+  expect(tokens).toEqual({ col: "880px", controlHeight: "36px", radiusControl: "10px" });
+});
+
+/**
+ * feat-043 S2 (T2.3): the three placeholders share one AA-compliant grey — #6b7484, 4.71:1 on
+ * white. The earlier round's #767f8f stays locked out: it only reaches 4.04:1 (below AA).
+ */
+test("the three placeholders paint the AA-compliant grey", async ({ page }) => {
+  await gotoConverter(page);
+
+  const expected = "rgb(107, 116, 132)";
+  const placeholderColor = (locator: Locator): Promise<string> =>
+    locator.evaluate((element) => getComputedStyle(element, "::placeholder").color);
+
+  // .input (网页链接) lives on the link panel; .textarea + .sourceInput on the paste panel.
+  expect(await placeholderColor(page.getByLabel("网页链接"))).toBe(expected);
+  await page.getByRole("tab", { name: "富文本转换" }).click();
+  expect(await placeholderColor(page.getByLabel("粘贴的正文内容"))).toBe(expected);
+  expect(await placeholderColor(page.getByLabel("来源 URL（可选）"))).toBe(expected);
 });

@@ -414,3 +414,64 @@ test("占比低于 70% 时不打扰，直接全文翻译", async ({ page }) => {
   expect(requests.scopes).toEqual(["all"]);
   await expect(page.getByRole("tabpanel", { name: "译文" })).toContainText(`[en] ${ratioParagraphs[0]}`);
 });
+
+// ---------------------------------------------------------------------------
+// feat-043 S1 §3.3 · disabled checkbox: muted label + cursors, never opacity
+// ---------------------------------------------------------------------------
+
+test("勾选框禁用时宿主 label 转 muted、cursor 落位且不用 opacity", async ({ page }) => {
+  await mockSettings(page, false);
+  let release = () => {};
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  await page.route("**/api/convert-paste", async (route) => {
+    await gate;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(pasteResponse),
+    });
+  });
+  await gotoConverter(page);
+
+  await page.getByRole("tab", { name: "富文本转换" }).click();
+  const textarea = page.getByLabel("粘贴的正文内容");
+  await textarea.evaluate((element, payload) => {
+    const event = new Event("paste", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "clipboardData", {
+      value: {
+        getData: (type: string) => type === "text/plain" ? payload : "",
+      },
+    });
+    element.dispatchEvent(event);
+  }, bodyMarkdown);
+  await page.getByRole("button", { name: "转换", exact: true }).click();
+
+  // The convert request is gated, so the toggle stays disabled while it is inspected.
+  await expect(translateToggle(page)).toBeDisabled();
+  const styles = await page.evaluate(() => {
+    const input = document.querySelector<HTMLInputElement>('input[type="checkbox"]:disabled');
+    const label = input?.closest("label");
+    if (!label || !input) return null;
+    const probe = document.createElement("span");
+    probe.style.color = "var(--muted)";
+    document.body.appendChild(probe);
+    const muted = getComputedStyle(probe).color;
+    probe.remove();
+    const labelStyle = getComputedStyle(label);
+    return {
+      color: labelStyle.color,
+      muted,
+      cursor: labelStyle.cursor,
+      opacity: labelStyle.opacity,
+      inputCursor: getComputedStyle(input).cursor,
+    };
+  });
+  expect(styles).not.toBeNull();
+  expect(styles?.color).toBe(styles?.muted);
+  expect(styles?.cursor).toBe("default");
+  expect(styles?.opacity).toBe("1");
+  expect(styles?.inputCursor).toBe("not-allowed");
+
+  release();
+  await expect(page.getByRole("heading", { name: "转换完成", level: 2 })).toBeVisible();
+});

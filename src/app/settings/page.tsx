@@ -1,12 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { PRESET_TARGET_LANGUAGES, languageLabel } from "@/lib/settings/languages";
 import { providerFormError } from "@/lib/settings/provider-form";
 import { isHttpUrl, type CloudProviderSettings, type LocalCliId, type LocalCliSettings, type SettingsMode } from "@/types/settings";
 import { homeModeFromSearch, setPendingHomeMode } from "../home-mode";
 import {
+  backLabel,
   codeMessage,
   fetchCliModels,
   fetchProviderModels,
@@ -69,6 +70,29 @@ function mergeModels(current: string[], incoming: string[]): string[] {
   return merged;
 }
 
+/** Subscribe to history navigation so the back capsule follows `?from=` changes. */
+function subscribeToSearch(onChange: () => void): () => void {
+  window.addEventListener("popstate", onChange);
+  return () => window.removeEventListener("popstate", onChange);
+}
+
+/** Current `?from=` value; primitive return keeps the store snapshot stable. */
+function readFromSearchParam(): string | null {
+  return new URLSearchParams(window.location.search).get("from");
+}
+
+/** spec §4.2: a CLI the scan never found can never be saved as enabled. */
+function coerceDetectedClis(next: SettingsPayload): SettingsPayload {
+  if (next.local.clis.every((cli) => !cli.enabled || cli.detectedPath)) return next;
+  return {
+    ...next,
+    local: {
+      ...next.local,
+      clis: next.local.clis.map((cli) => (cli.enabled && !cli.detectedPath ? { ...cli, enabled: false } : cli)),
+    },
+  };
+}
+
 export default function SettingsPage() {
   const [settings, setSettings] = useState<SettingsPayload | null>(null);
   const [cloudForm, setCloudForm] = useState<CloudDraft>(EMPTY_CLOUD_DRAFT);
@@ -80,6 +104,11 @@ export default function SettingsPage() {
   const [output, setOutput] = useState<OutputBridge | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [reloadToken, setReloadToken] = useState(0);
+  // The back capsule names the screen ?from= points to. The query string is external
+  // mutable state, so it is read through useSyncExternalStore: the server snapshot is
+  // null (plain fallback) and hydration stays clean without setState-in-effect.
+  const fromParam = useSyncExternalStore(subscribeToSearch, readFromSearchParam, () => null);
+  const backText = backLabel(fromParam);
   const router = useRouter();
   const pendingSave = useRef<Promise<boolean> | null>(null);
 
@@ -120,14 +149,15 @@ export default function SettingsPage() {
   /** Optimistic save: the UI keeps the new value only when the server confirms it. */
   async function save(next: SettingsPayload, note?: { key: string; text: string; warn?: boolean }): Promise<boolean> {
     if (!settings) return false;
+    const payload = coerceDetectedClis(next);
     const previous = settings;
     setSaving(true);
-    setSettings(next);
+    setSettings(payload);
     setMessage("");
     setSaveStatus("saving");
     const task = (async () => {
       try {
-        setSettings(await putSettings(next));
+        setSettings(await putSettings(payload));
         if (note) setNote(note.key, note.text, note.warn);
         setSaveStatus("saved");
         return true;
@@ -364,6 +394,13 @@ export default function SettingsPage() {
     <main className={styles.page}>
       <div className={styles.shell}>
         <header className={styles.header}>
+          <button
+            className={`${styles.headerBack} ${styles.backButton}`}
+            type="button"
+            onClick={() => void leaveSettings()}
+          >
+            {backText}
+          </button>
           <div className={styles.brand} aria-label="MD-Convertor">
             <span>MD-Convertor</span>
           </div>
@@ -371,7 +408,6 @@ export default function SettingsPage() {
             {saveStatus === "saving" ? <span className={styles.saveStatus} role="status">保存中…</span> : null}
             {saveStatus === "saved" ? <span className={styles.saveStatus} role="status">已保存</span> : null}
             {saveStatus === "error" ? <span className={styles.saveStatusError} role="alert">未保存</span> : null}
-            <button className={styles.backLink} type="button" onClick={() => void leaveSettings()}>返回转换</button>
           </div>
         </header>
 
@@ -458,6 +494,7 @@ export default function SettingsPage() {
                     className={styles.button}
                     type="button"
                     disabled={saving || loadState !== "ready" || !output}
+                    title={output ? undefined : "目录选择只能在桌面应用中使用"}
                     onClick={() => void chooseOutputDirectory()}
                   >
                     选择目录
@@ -476,10 +513,6 @@ export default function SettingsPage() {
                 />
                 <span>使用默认目录</span>
               </label>
-
-              {!output ? (
-                <p className={styles.cardNote}>目录选择只能在桌面应用中使用。</p>
-              ) : null}
 
               {notes[OUTPUT_NOTE] ? (
                 <p className={noteClass(notes[OUTPUT_NOTE])} role="status">
@@ -651,9 +684,19 @@ export default function SettingsPage() {
                       disabled={saving}
                       onChange={() => void save({ ...settings, local: { ...settings.local, activeCliId: cli.id } })}
                     />
-                    <span>{cli.name}</span>
+                    <span className={styles.cliName}>
+                      {cli.name}
+                      {/* feat-043 §4.2: an 8px detection dot (aria-hidden) right behind the name. */}
+                      <span
+                        className={cli.detectedPath ? styles.statusDot : `${styles.statusDot} ${styles.statusDotOff}`}
+                        aria-hidden="true"
+                      />
+                    </span>
                   </label>
-                  <code className={styles.path} title={cli.detectedPath ?? "未检测到"}>
+                  <code
+                    className={cli.detectedPath ? styles.path : styles.pathMissing}
+                    title={cli.detectedPath ?? "未检测到"}
+                  >
                     {cli.detectedPath ?? "未检测到"}
                   </code>
                   <label className={styles.switchRow}>
@@ -661,8 +704,8 @@ export default function SettingsPage() {
                       type="checkbox"
                       className={styles.checkbox}
                       aria-label={`启用 ${cli.id}`}
-                      checked={cli.enabled}
-                      disabled={saving}
+                      checked={cli.enabled && !!cli.detectedPath}
+                      disabled={saving || !cli.detectedPath}
                       onChange={(event) => void save(patchCli(settings, cli.id, { enabled: event.target.checked }))}
                     />
                     <span>启用</span>

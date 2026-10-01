@@ -149,7 +149,7 @@ test.afterEach(async () => {
 });
 
 test.describe("本地文档面板", () => {
-  test("从面板进设置，返回转换回到面板而不是入口画面", async ({ page }) => {
+  test("从面板进设置，返回文档处理回到面板而不是入口画面", async ({ page }) => {
     await installBridge(page);
     await routeSettings(page, defaultPatch(inputDir, outputDir), []);
     await openLocalDocs(page);
@@ -164,7 +164,8 @@ test.describe("本地文档面板", () => {
     await page.getByRole("link", { name: "设置" }).click();
     await expect(page).toHaveURL(/\/settings\?from=local-docs$/);
     await settingsPageLoaded;
-    await page.getByRole("button", { name: "返回转换" }).click();
+    // feat-043 S1: with ?from=local-docs the back capsule is labelled 「← 返回文档处理」.
+    await page.getByRole("button", { name: "返回文档处理" }).click();
 
     await expect(page.getByRole("heading", { level: 1, name: LOCAL_DOCS_TITLE })).toBeVisible();
     await expect(page.locator(`code[title="${inputDir}"]`)).toBeVisible();
@@ -532,5 +533,78 @@ test.describe("本地文档面板", () => {
 
     await expect(page.getByRole("cell", { name: "处理失败（没有写入权限。）" })).toHaveCount(2);
     await expect(page.getByText("EACCES")).toHaveCount(0);
+  });
+
+  // feat-043 S2 (T2.1, spec §4.1): the blocking notice is a warning row ABOVE the toolbar,
+  // with a way out (去设置) and a readable disabled reason hanging on 一键转换.
+
+  test("no-output 警示行上移到工具栏之前，用警示色", async ({ page }) => {
+    await installBridge(page);
+    await routeSettings(
+      page,
+      { input: { defaultPath: inputDir }, output: { defaultPath: null, useDefaultPath: false } },
+      [],
+    );
+    await openLocalDocs(page);
+
+    const notice = page.getByRole("status").filter({ hasText: "还没有设置输出目录" });
+    await expect(notice).toBeVisible();
+    // §4.1 colour: --warning #8a5a12 on --surface, the same warning vocabulary as same-dir.
+    expect(await notice.evaluate((element) => getComputedStyle(element).color)).toBe("rgb(138, 90, 18)");
+
+    const order = await page.evaluate(() => {
+      const row = [...document.querySelectorAll('[role="status"]')]
+        .find((element) => (element.textContent ?? "").includes("还没有设置输出目录"));
+      const toolbar = document.querySelector('[aria-label="翻译产物"]')?.closest("label")?.parentElement;
+      if (!(row instanceof HTMLElement) || !(toolbar instanceof HTMLElement)) return "missing";
+      return (toolbar.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_PRECEDING) !== 0 ? "before" : "after";
+    });
+    expect(order).toBe("before");
+  });
+
+  test("no-output 警示行提供「去设置」，跳到设置页的文档处理入口", async ({ page }) => {
+    await installBridge(page);
+    await routeSettings(
+      page,
+      { input: { defaultPath: inputDir }, output: { defaultPath: null, useDefaultPath: false } },
+      [],
+    );
+    await openLocalDocs(page);
+
+    const goSettings = page.getByRole("link", { name: "去设置" });
+    await expect(goSettings).toBeVisible();
+    // The navigation triggers a settings fetch this route handler must finish before the
+    // context closes, so wait it out the way the return-trip case does.
+    const settingsPageLoaded = page.waitForResponse((response) => (
+      response.url().includes("/api/settings") && response.request().method() === "GET"
+    ));
+    await goSettings.click();
+    await expect(page).toHaveURL(/\/settings\?from=local-docs$/);
+    await settingsPageLoaded;
+    await expect(page.getByRole("heading", { name: "输出" })).toBeVisible();
+  });
+
+  test("一键转换的禁用原因挂 aria-describedby，改用输出目录后启用即移除", async ({ page }) => {
+    const putBodies: Record<string, unknown>[] = [];
+    await installBridge(page);
+    await routeSettings(
+      page,
+      { input: { defaultPath: inputDir }, output: { defaultPath: inputDir, useDefaultPath: false } },
+      putBodies,
+    );
+    await openLocalDocs(page);
+
+    const run = page.getByRole("button", { name: "一键转换" });
+    // Wait for the refusal to land first: during the scan the button is already disabled but
+    // has no reason attached yet.
+    await expect(page.getByRole("status").filter({ hasText: "输出目录和输入目录是同一个目录" })).toBeVisible();
+    await expect(run).toBeDisabled();
+    const reasonId = await run.getAttribute("aria-describedby");
+    expect(reasonId).toBeTruthy();
+    await expect(page.locator(`[id="${reasonId ?? "missing"}"]`)).toHaveText(/输出目录不能和输入目录相同/);
+
+    await page.getByRole("button", { name: `改用 ${inputDir}/processed` }).click();
+    await expect(run).toBeEnabled();
+    await expect(run).not.toHaveAttribute("aria-describedby");
   });
 });

@@ -4,6 +4,28 @@
 
 This project follows the principles of [Keep a Changelog](https://keepachangelog.com/). User-facing changes that have not yet been released belong under `Unreleased`.
 
+## [0.3.10] - 2026-10-01
+
+### Fixed
+
+- The header brand now sits on the viewport's centre line again. It used to be pushed off-centre by the 86px back-button slot; the header is now a three-column grid, so the brand aligns with the content column on every screen regardless of what sits left or right of it.
+
+- The 「← 返回」 button labels now say where they go: 「← 返回首页」 on the settings screen when you came from the landing page, 「← 返回文档处理」 when you came from the local-documents screen, and 「← 返回转换」 on the single-article screen.
+
+- The local-documents warnings (no output folder, output = input) now sit above the toolbar in a warning colour with a one-click 「去设置」 link, instead of being plain text buried below it; the 一键转换 button exposes its disabled reason to screen readers.
+
+- The settings screen no longer repeats the same hint sentence twice next to the output folder picker, and its folder-picker tooltip only appears while the button is actually disabled.
+
+### Changed
+
+- Placeholder text in the URL and prompt fields is now dark enough to read comfortably (contrast 4.71:1).
+
+- Disabled toggles, buttons and checkboxes stay fully opaque and signal their state through colour instead of fading out.
+
+- The landing screen's two entry cards are a touch shorter, and their labels line up with the form fields below.
+
+- The three ✓ feature hints (无需登录 / 图片内嵌 / 随用随走) now sit on the same row as the translate checkbox, right-aligned to the content column, instead of taking a row of their own below it.
+
 ## [0.3.9] - 2026-09-30
 
 ### Added

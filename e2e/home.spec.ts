@@ -590,3 +590,120 @@ test.describe("首页入口画面", () => {
     await expect(page.getByRole("link", { name: "下载浏览器插件" })).toHaveCount(0);
   });
 });
+
+/**
+ * feat-043 S1 (T1.1, assertion-first): the top bar becomes a three-column grid pinned to the
+ * content column. These are the geometric contracts behind review items 点 1 (brand axis) and
+ * 点 2 (the bar hugging the content column), written before the implementation so they can be
+ * seen failing on the old layout.
+ */
+test.describe("顶栏与内容列几何对齐", () => {
+  test("品牌中心落在顶栏中心 ±4px", async ({ page }) => {
+    const { header, brand } = await rectsInOneFrame(page, {
+      header: page.locator("header"),
+      brand: page.locator('[aria-label="MD-Convertor"]'),
+    });
+
+    const headerCenter = header.x + header.width / 2;
+    const brandCenter = brand.x + brand.width / 2;
+    expect(Math.abs(brandCenter - headerCenter)).toBeLessThanOrEqual(4);
+  });
+
+  test("返回按钮左缘与设置按钮右缘贴合内容列 ±4px", async ({ page }) => {
+    const { back, settings, column, header } = await rectsInOneFrame(page, {
+      back: page.getByRole("button", { name: "返回首页" }),
+      settings: page.getByRole("link", { name: "设置" }),
+      column: page.getByRole("form", { name: "网页转换表单" }),
+      header: page.locator("header"),
+    });
+
+    expect(Math.abs(back.x - column.x)).toBeLessThanOrEqual(4);
+    expect(Math.abs(settings.x + settings.width - (column.x + column.width))).toBeLessThanOrEqual(4);
+    // The bar is exactly as wide as the content column, so it can never drift with its own content.
+    expect(Math.abs(header.width - column.width)).toBeLessThanOrEqual(4);
+    // --col takes effect here: the shared column measures 880px at this viewport.
+    expect(column.width).toBeCloseTo(880, 0);
+  });
+
+  test("返回与设置按钮同高同圆角 ±1px", async ({ page }) => {
+    const { back, settings } = await rectsInOneFrame(page, {
+      back: page.getByRole("button", { name: "返回首页" }),
+      settings: page.getByRole("link", { name: "设置" }),
+    });
+
+    expect(Math.abs(back.height - settings.height)).toBeLessThanOrEqual(1);
+    // --control-h and --radius-control take effect on both capsules.
+    expect(back.height).toBeCloseTo(36, 0);
+    expect(settings.height).toBeCloseTo(36, 0);
+    const radius = await page.getByRole("button", { name: "返回首页" })
+      .evaluate((node) => getComputedStyle(node).borderRadius);
+    expect(radius).toBe("10px");
+  });
+});
+
+/*
+ * feat-043 S3 (T3.1/T3.2, assertion-first): the polish pass on the landing and converter
+ * screens — the feature row rides on the translate toggle's row, right-aligned to the
+ * content column (2026-10-01 real-machine feedback supersedes the old left-axis rule),
+ * and the entry cards stop being stretched by `aspect-ratio: 1 / 1`.
+ */
+test.describe("入口画面与表单同轴（S3）", () => {
+  test("产品特点与翻译勾选同行，特点组右对齐到内容列右缘", async ({ page }) => {
+    // Pinned settings so the toggle's label is deterministic across runs and engines.
+    await page.route("**/api/settings", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          version: 1,
+          mode: "cloud",
+          cloud: { providers: [], activeProviderId: null },
+          local: { clis: [], activeCliId: null },
+          languages: { target: "zh-Hans", custom: [] },
+          translation: { defaultEnabled: false },
+          output: { defaultPath: null, useDefaultPath: false },
+          input: { defaultPath: null },
+        }),
+      }),
+    );
+    await gotoConverter(page);
+
+    // The ✓ group shares the checkbox's row and ends flush with the content column.
+    const boxes = await rectsInOneFrame(page, {
+      hintFirst: page.getByText("无需登录"),
+      hintLast: page.getByText("随用随走"),
+      toggle: page.getByRole("checkbox", { name: "翻译为简体中文" }),
+      form: page.getByRole("form", { name: "网页转换表单" }),
+    });
+    const toggleMidY = boxes.toggle.y + boxes.toggle.height / 2;
+    const hintMidY = boxes.hintFirst.y + boxes.hintFirst.height / 2;
+    // Same row (the two used to stack vertically).
+    expect(Math.abs(hintMidY - toggleMidY)).toBeLessThanOrEqual(6);
+    // The group starts after the checkbox row's label, not under it.
+    expect(boxes.hintFirst.x).toBeGreaterThanOrEqual(boxes.toggle.x + boxes.toggle.width);
+    // Right-aligned to the content column: the form is the column's right edge.
+    expect(
+      Math.abs(boxes.hintLast.x + boxes.hintLast.width - (boxes.form.x + boxes.form.width)),
+    ).toBeLessThanOrEqual(4);
+  });
+
+  test("入口卡片不再被 aspect-ratio 拉高，760px 单列不破", async ({ page }) => {
+    await gotoHydrated(page);
+
+    const docsCard = page.getByRole("button", { name: "转换既有文档" });
+    const convertCard = page.getByRole("button", { name: "粘贴URL/富文本转换" });
+    const boxes = await rectsInOneFrame(page, { docs: docsCard, convert: convertCard });
+    // feat-043 S3 (T3.2): `aspect-ratio: 1 / 1` made each card as tall as it was wide.
+    expect(boxes.docs.height).toBeLessThanOrEqual(260);
+    expect(boxes.convert.height).toBeLessThanOrEqual(260);
+    // Above the breakpoint the pair still sits side by side.
+    expect(boxes.convert.x).toBeGreaterThan(boxes.docs.x + boxes.docs.width - 4);
+
+    await page.setViewportSize({ width: 760, height: 800 });
+    const stacked = await rectsInOneFrame(page, { docs: docsCard, convert: convertCard });
+    // The 760px single column survives the new sizing: one card per row.
+    expect(stacked.convert.y).toBeGreaterThanOrEqual(stacked.docs.y + stacked.docs.height - 4);
+    expect(stacked.docs.width).toBeLessThanOrEqual(760);
+    expect(stacked.docs.height).toBeLessThanOrEqual(260);
+  });
+});

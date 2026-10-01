@@ -2,14 +2,44 @@
 
 ## Current State
 
-- Last updated: 2026-09-30（**第二十六轮：提交门 + `0.3.9` 提交与发布**——4 路只读评审后只修台账/测试（生产代码一行未动），清树跑 `desktop:release` exit 0，提交 `9f3642e` → push → tag `v0.3.9` → `gh release create --latest`，现为 `releases/latest`。前两轮见下）
-- Current version: `0.3.9`（**已发布**：GitHub Release `v0.3.9`，tag 指向 `9f3642e`，产物 **236,224,633 bytes** / SHA-256 `5e75709f…a9c9`，详表见 `docs/TESTING.md` 的 `## Gated Artifact (0.3.9)`）。上一个 `0.3.8` = 236,224,675 bytes / `94624625…b2ea`（tag `6e00474`），`0.3.7` = 239,472,776 bytes / `6986356b…733c`。**本机 `/Applications/MD-Convertor.app` 仍是 0.3.8**（第二十四轮装的；`0.3.9` 未装本机）
-- Active feature: **无**。`feat-042`（A 桌面端「文档处理」）已 `done` 并随 `v0.3.7` 发布（S1–S4 + 12 条真机验收签字）；`feat-040`（B 浏览器插件）同日关闭；`feat-041` 已完成、已发布、已关闭。`0.3.8` = 第二十一轮修复 + 第二十二轮打包收窄；`0.3.9` = 本地文档页页级标题。
-- Next step: **等用户裁决三件事**。① 是否把 `0.3.9` 装到本机 `/Applications`（目前是 0.3.8，装需单独授权，建议用发布 ZIP 解压而非正在运行的 `out/` bundle）；② 是否让 `extension/` 写方 percent-encode 文件名（B1 只修了读方）；③ 云端 Provider 端到端实测（需真实文章）。**不要重写第二套批量编排或第二条写盘路径**；**再次发布任何版本都要用户单独授权**。
-- Branch: `main` 已 push 到 **`9f3642e`**（tag `v0.3.9` 同指），工作区干净（发布后簿记提交见下）。tag `v0.3.8` 仍指 `6e00474`、`v0.3.7` 仍指 `9afbe36`，stash 列表为空。
+- Last updated: 2026-10-01（**第二十九轮：feat-043「UI 走查整改」实施**——S1/S2/S3 全部落地、三阶段独立 QA 验收均 PASS、走查 11 条 11/11 销项；**真机确认后按用户反馈追补一条**：特点行改与翻译勾选同行、右对齐；**未 bump（保持 0.3.9）、未提交、未发布**。上一轮为第二十八轮走查 + 规划）
+- **多设备约定（2026-09-30 起）**：本文件与 `session-handoff.md` 是**公开仓库**里的跨机共享文档，只记**全局客观事实**（发布版本、产物 SHA-256、tag 指向、构建源码提交）。**`/Applications/<App>.app` 的装机版本是每台开发机各自的本地状态，一律不写进本文件**——多机下会互相覆盖。各机装机状态见各自的 `.workbuddy/memory/DEVICES.md`（不入 git，每机一份）。
+- Current version: `0.3.9`（**已发布**：GitHub Release `v0.3.9`，tag 指向 `9f3642e`，产物 **236,224,633 bytes** / SHA-256 `5e75709f…a9c9`，详表见 `docs/TESTING.md` 的 `## Gated Artifact (0.3.9)`）。上一个 `0.3.8` = 236,224,675 bytes / `94624625…b2ea`（tag `6e00474`），`0.3.7` = 239,472,776 bytes / `6986356b…733c`。
+- Active feature: **无（feat-043「UI 走查整改」已 `done`，commit 等用户指示）**。feat-043 = 走查 11 条（9 P1 + P2-1 + P2-2）整改，S1 顶栏与栅格 / S2 状态与反馈 / S3 观感收尾，逐任务 TDD 断言先行，三阶段独立 QA 验收均 PASS（11/11 销项）；逐任务证据见 `feature_list.json` 的 `feat-043.verification` 与 `docs/features/ui-fix/` 三份阶段文档。`feat-042` 已 `done` 并随 `v0.3.7` 发布；`feat-040`/`feat-041` 已关闭。`0.3.8` = 第二十一轮修复 + 第二十二轮打包收窄；`0.3.9` = 本地文档页页级标题。
+- Next step: **等用户审阅 feat-043 改动并指示 commit**。commit 后候选（均需单独授权）：发布 `0.3.10`（发布前才 TDD bump、需授权）、`extension/` 写方 percent-encode、云端 Provider 实文实测。**一处解读待用户确认**：交接提示词 D3 写「86px 配平列 / 品牌左对齐」，与设计规格 §2「`1fr auto 1fr` + 品牌 `justify-self:center`」及品牌 x 红线断言自相矛盾，实施按**规格口径**（品牌落视口中轴，QA 实测 brandCenter=viewportCenter=590）；若确要左对齐，一行 `justify-self` 可切换。**不要重写第二套批量编排或第二条写盘路径**；**再次发布任何版本都要用户单独授权**。
+- Branch: `main` 仍指 **`064112d`**（新改动未提交；tag `v0.3.9` 指其前一条 `9f3642e`）。**工作区不干净（全部未提交，commit 等用户指示）**：modified 20 个＝实现/测试 10（`src/app/{page.tsx,page.module.css,globals.css}`、`src/app/settings/{client.ts,client.test.ts,page.tsx,page.module.css}`、`src/app/local-docs/{panel.tsx,panel.module.css}`、`tests/palette.test.ts`）+ e2e 5（home/settings/local-docs/theme/translate）+ 台账 5（AGENTS/PROGRESS/session-handoff/QUALITY-AUDIT/feature_list）；untracked 5＝`docs/PLAN-ui-fix.md` / `docs/UI-FIX-DESIGN-SPEC-2026-09-30.md` / `docs/UI-REVIEW-2026-09-30.md` / `docs/features/ui-fix/` / `outputs/`。stash 空。
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+（桌面产物）；浏览器插件另行验收于 Chromium，不进桌面发布门禁
 
-## 本轮（2026-09-30 第二十六轮：提交门 + `0.3.9` 提交与发布）
+## 本轮（2026-10-01 第二十九轮：feat-043「UI 走查整改」实施，S1–S3 全落地）
+
+- **范围与口径**：走查 11 条（9 P1 + P2-1 + P2-2）按 `docs/PLAN-ui-fix.md` 施工；S1 顶栏与栅格（T1.0–T1.6）→ S2 状态与反馈（T2.1–T2.5）→ S3 观感收尾（T3.1–T3.4）。全程 TDD 断言先行（RED 留痕 `/tmp/red-*.log`）；**版本面保持 0.3.9 不 bump、未发布、未提交**；红线 `home.spec.ts:540-553` 三屏品牌 x（±0.05px）断言原文未动（md5 `61d1d6bd`）、三引擎全绿。
+- **S1（顶栏与栅格）**：3 token（`--col:880px`/`--control-h:36px`/`--radius-control:10px`）+ 14 处宽度字面量换 `var(--col)`；顶栏改三列网格 `1fr auto 1fr`（删 `.headerLeft`/`.backSlot`/`.backLink`，品牌 `justify-self:center`，宽度 `min(var(--col),100%)`）；控件归一 36/13.5/10、checkbox 16px、禁用态弃 opacity 换色；`backLabel(from)` 返回文案映射 + 4 单测；断言先行改写 settings.spec:595 / local-docs.spec:152（标题同步）。**D3 歧义裁定**：品牌落视口中轴（规格 §2.1 + 红线断言口径），交接提示词「86px 配平列/品牌左对齐」判为交接走样——待用户确认（一行 `justify-self` 可切换）。
+- **S2（状态与反馈）**：no-output 四件套（警示行上移 `.toolbar` 前 + `.hint .hintWarning` 警示色 5.91:1 + 「去设置」胶囊跳 `/settings?from=local-docs` + `aria-describedby` 生命周期）；CLI 检测状态（保存 coerce `enabled:false`、未检测勾选框强制禁用不勾选、8px 状态点、`.pathMissing` 6.26:1）；placeholder 三处统一 `#6b7484`（4.71:1，palette 白名单登记）；删输出卡重复句（输入卡保留）+ 「选择目录」按钮**条件挂 title**（仅禁用态挂；裁定＝规格意图「禁用原因仍可读」，可用态挂会说谎；双向锁断言钉住）。
+- **S3（观感收尾）**：`.hintRow` 整组左对齐与 `.translateToggle` 同轴（RED 左缘差 314.7px → 0）；`.entryCard` 删 `aspect-ratio` → `min-height:220px` + padding `28px 24px`（RED 433px → 220px），760px `aspect-ratio:auto` 死规则删除。
+- **真机确认追补（2026-10-01）**：打包真机给用户确认后收到一条反馈——「无需登录/图片内嵌/随用随走」独占一行观感怪，用户裁定改为**与翻译勾选框同一行、右对齐**到内容列右缘。TDD：`home.spec.ts` 用例改锚（同行 ≤6px / 特点组在勾选右侧 / 组右缘贴 `.form` 右缘 ±4px）⇒ RED 三引擎（垂直差 37px）⇒ 新增 `.footerRow`（`space-between`）+ `.translateToggle`/`.hintRow` 去列宽 ⇒ GREEN 3/3。**取代 S3 的 P1-6 左缘同轴口径**（规格 §5.1、PLAN D3、S3 文档均已标注取代）；未配翻译时（无勾选框）特点组维持左对齐。门禁：init 95/1274/0 + e2e 348/6/0。
+- **验收（三阶段独立 QA 均 PASS）**：T1.6（init.sh 95 files/1274 passed/0 skipped + e2e 330/6/0）；T2.5（+六组新断言逐条三引擎核对、4 页截图销项）；T3.3 终验（e2e **348 passed/6 skipped/0 failed** 三引擎、**11/11 销项表**、Tab 焦点扫描四页 0 缺环、对比度复核 5.78/6.26/4.71 全对上且禁用态 opacity 全 1）。截图证据 `outputs/qa-s1-*.png` / `qa-s2-*.png` / `qa-s3-*.png` + 探针脚本（untracked）。六条已知 flake 全程零命中。
+- **未做**：未 bump、未 commit、未发布、未动 `extension/**`、`--weight-ui:400` 与色值锁未碰、六条 flake 未顺手修。P2-3…P2-6 按用户锁死决策推迟。
+
+## 上一轮（2026-09-30 第二十八轮：UI/UX 走查 + 改修实施计划）
+
+- **用户三段指令**：①「功能层面开发差不多了，给产品画面的 UIUX 出优化建议——1. MD-Convertor 标题居中比较好 2. 返回和设置按钮和下方框体没有对齐，还有其他什么问题？帮我走查，出走查报告」；②「给出改修的实施计划」；③「按照plan动手」→ 改口「**开发用新会话开发**」⇒ 本轮只走查、只规划，实现留给新会话。
+- **证据流水线**：`npm run dev:web`（127.0.0.1:3210）+ Playwright 1180×820@2x（Electron 窗口尺寸）拍浏览器态 4 张；真实 Electron 窗口走 `ELECTRON_RENDERER_URL=http://127.0.0.1:3210 ./node_modules/.bin/electron . --no-sandbox --disable-gpu --remote-debugging-port=9222` + `chromium.connectOverCDP` 拍 4 张（沙箱内必须 `--no-sandbox`，否则 GPU 崩）；共 9 张存 `/tmp/mdc-ui/`。
+- **走查结论**（`docs/UI-REVIEW-2026-09-30.md` + 同名 `outputs/*.html` 图文版，9 张 base64 内嵌截图）：19.5/25、Anti-Slop 通过、**无 P0**、P1×7 + P2×6。用户两条的根因：品牌不居中＝`.backSlot`/`.backButton` 固定 `width:86px` 把 flex 品牌挤离视口中心；按钮不对齐＝顶栏跨 shell 1086px，而内容列 `.modeTabs/.modePanel/.form` 820px、`.entryCard` 960px、`settings` 860px 三套宽度并存。**纠正了报告里一处对比度算错**：placeholder 报告写「`#767f8f` ≈4.6:1」，实算 4.04:1（不达标），规格改用 `#6b7484`（4.71:1）。
+- **规划产物**：`docs/UI-FIX-DESIGN-SPEC-2026-09-30.md`（设计规格：token 映射表、顶栏三列栅格、控件 36px/圆角 10px、禁用态 5.78:1/6.26:1、**16 项 e2e 风险图，其中 4 条文案类断言必须断言先行改**）；`docs/PLAN-ui-fix.md`（feat-043 单事项，决策 D1–D4 + S1 T1.0–T1.6 / S2 T2.1–T2.5 / S3 T3.1–T3.4，逐任务带 RED 列）。**决策已锁**：D1 `--col: 880px`（非 960，中文行宽/卡片比例/表格适配理由）、D2 placeholder `#6b7484`、D3 顶栏左对齐配平、D4 推迟 P2-3…P2-6（本轮只做 11 条 = 9 P1 + P2-1 + P2-2）。
+- **基线故障诊断与修复（环境问题，非回归）**：`./init.sh` 红 1 条 `desktop-server-scope > keeps public/md-convertor-extension.zip`（其余 1269 通过、lint/typecheck 干净）。根因＝`.desktop/server` 是 9-22 23:51 的陈旧副本（早于 feat-042 把该 zip 列入 `DESKTOP_SERVER_REQUIRED_FILES`），裸 `./init.sh` 不会重建它。修复链 `npm run build && npm run desktop:prepare && ./init.sh` 先卡在 `prepare-desktop.mjs:18` `ENOENT ~/Library/Caches/electron`（`install-electron` 在 dist 已存在时直接 exit 0 不下载）⇒ 把既有 `electron-v43.3.0-darwin-arm64.zip` 拷进 `.desktop/electron-cache/` 并 `ELECTRON_CACHE=$PWD/.desktop/electron-cache` 重跑 ⇒ **`CHAIN_EXIT=0`，95 files / 1270 passed / 0 skipped**。recipe 已写进 `session-handoff.md` 的 Environment Notes。
+- **未做**：生产代码零改动；`feature_list.json` 未登记 feat-043（留给新会话 T1.0）；未 bump（实施期保持 0.3.9）、未提交、未发布。
+
+## 上一轮（2026-09-30 第二十七轮：拉取 GitHub 最新代码 + 把 `0.3.9` 装到本机）
+
+- **用户指令**：「帮我把 github 上面的最新版代码拉取到本地，同时安装到本机」。
+- **拉代码**：`git fetch --all --tags --prune` → 本地落后 27 提交（起点 `776cce0` = 0.3.6 簿记），远程新增 tag `v0.3.7` / `v0.3.8` / `v0.3.9` → `git merge --ff-only origin/main` → HEAD = **`064112d`**，版本面 `0.3.9`，工作树干净。
+- **依赖**：`npm install`（**Node v24.14.1**，在 `/usr/local/bin/node`；本 shell 默认 PATH 前置的是 22.22.2）—— lock 新增 `@types/chrome` 等，`added 4 packages`。
+- **装应用（先校验再安装）**：`gh release view v0.3.9` 确认唯一 asset = `MD-Convertor-darwin-arm64-0.3.9.zip`；下载后 SHA-256 = `5e75709f…a9c9` / 236,224,633 bytes，与 `docs/TESTING.md` 的 `## Gated Artifact (0.3.9)` **逐位一致**；`ditto -x -k` 解压（`Info.plist` 0.3.9 / 主可执行 arm64）→ 旧版 `mv` 归档（**不用 `rm -rf`**）到 `~/Downloads/MD-Convertor-archive/installed-apps/MD-Convertor-0.3.6.app` → 装入 `/Applications` → `xattr -cr` 清隔离（未签名产物必需）→ `open` 真启动验证（`lsappinfo`：`Version="0.3.9" Arch=ARM64`，GPU / network 子进程正常拉起）。
+- **多设备视角更正（本轮真正学到的）**：最初把「共享台账记 0.3.8 / 本机实测 0.3.6」判为**台账误记**并改写，**这个定性是错的**——那台记录 0.3.8 的机器是**另一台开发机**，两台机器各自记的都是真的。根因是共享文档用了单机视角的「本机」，多机下必然互相覆盖。已改用新约定：共享文档不再记装机版本，各机状态移入自己的 `.workbuddy/memory/DEVICES.md`（本机已建，另一台待补登记）。
+- **下载速度坑（已写进 session-handoff 的 Environment Notes）**：Release 大资产 `gh release download` 直连仅 ~80 KB/s（推算 45 min）、裸 `curl` 直连 6 s 下 0 字节；改走 `curl -L --proxy http://127.0.0.1:7897` 达 **3.48 MB/s（66 s 下完）**。旧笔记「代理坏、直连正常」只对 git / gh 的 API 路径成立，对 release 资产恰好相反。
+- **未做**：生产代码零改动、未 commit（工作树干净，HEAD 与 `origin/main` 同步）；`extension/` 写方 percent-encode、云端 Provider 实文实测仍待授权。
+
+## 上一轮（2026-09-30 第二十六轮：提交门 + `0.3.9` 提交与发布）
 
 - **用户指令**：「可以，commit、push、release」——授权走完整发布流程。
 - **提交门（4 路只读评审）**：ponytail **无可删项**（零新增 CSS、复用既有 hero token、删掉变死的 `.title`）；code-review Standards 无 TDD 硬违规；Spec 一致；neat-freak 找出 3 处陈旧台账句（`AGENTS.md` 的版本句、`PROGRESS.md` 的 `0.3.7` + 已删符号 `resolveScanDir`、`ARCHITECTURE.md`/`.zh.md` 的 `0.3.6` 版本句）与一段 CHANGELOG 英文歧义。
@@ -18,7 +48,7 @@
 - **前两次门禁红，都是既有 flake、与本轮无关**：① firefox `e2e/home.spec.ts:568` 报 `NS_ERROR_PROXY_CONNECTION_REFUSED`（已登记的第 6 条未裁决 flake；隔离 `--repeat-each=5` **5/5 绿**，随后全量绿）；② `test:live` 的 WalkingLabs 用例 `expected 'direct' to be 'browser'`（网络/上游瞬态；隔离复跑 **2/2 绿**）。
 - **提交**：`9f3642e`（实现 + 版本面 + CHANGELOG + 台账，19 files / +168 / −74）→ push `origin/main`（`538631f` → `9f3642e`）→ tag `v0.3.9` 指向构建所用源码 `9f3642e` → `gh release create v0.3.9 … --latest`：非草稿非预发布、asset `uploaded`、服务端 digest 与本地一致、`releases/latest` = `v0.3.9`。**未**把 ZIP 拷进 `~/Downloads/MD-Convertor-archive/releases/`（release guard 会拒绝未登记项）。
 - **产物**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.9.zip` = **236,224,633 bytes**，SHA-256 `5e75709fc864a524661b0994bec0d87ff2eaa8d229f801416e9e34aa3239a9c9`；包内指纹：`Info.plist` 0.3.9 / macOS 12.0、主可执行 arm64、新文案「整理成」命中 `Resources/server/.next/static/chunks/1zp72wugxtkr-.js`、旧 `local-docs-title` 已消失、`Resources/server` 顶层仍恰为白名单六项（零仓库产物）、ZIP 3,542 条目 / 展开 566 M。
-- **未做**：`/Applications` 未重装（仍是 0.3.8）；`extension/` 写方 percent-encode、云端 Provider 实文实测仍待授权。
+- **未做**：`/Applications` 当轮未重装（装机状态一律不记在本文件，见上条约定）；`extension/` 写方 percent-encode、云端 Provider 实文实测仍待授权。
 
 ## 上一轮（2026-09-30 第二十五轮：本地文档页补页级标题，版本面 → `0.3.9`）
 

@@ -544,10 +544,26 @@ test.describe("本地代理与模式", () => {
     const scanned = (putBodies.at(-1)?.local as { clis: Record<string, unknown>[] }).clis;
     expect(scanned[0]).toMatchObject({ id: "pi", detectedPath: "/usr/local/bin/pi" });
     expect(scanned[1]).toMatchObject({ id: "claude", detectedPath: null });
+    // feat-043 S2 (T2.2): saving coerces an undetected CLI to enabled: false.
+    expect(scanned[1]).toMatchObject({ enabled: false });
 
-    await page.getByRole("checkbox", { name: "启用 claude" }).uncheck();
+    // …and the checkbox itself refuses to enable an undetected CLI.
+    const claudeToggle = page.getByRole("checkbox", { name: "启用 claude" });
+    await expect(claudeToggle).toBeDisabled();
+    await expect(claudeToggle).not.toBeChecked();
+
+    // The enable round-trip runs on the detected CLI and survives a reload both ways.
+    const piToggle = page.getByRole("checkbox", { name: "启用 pi" });
+    await piToggle.uncheck();
     await expect(page.getByText("已保存", { exact: true })).toBeVisible();
-    expect((putBodies.at(-1)?.local as { clis: { enabled: boolean }[] }).clis[1].enabled).toBe(false);
+    expect((putBodies.at(-1)?.local as { clis: { enabled: boolean }[] }).clis[0].enabled).toBe(false);
+    await page.reload();
+    await expect(page.getByRole("checkbox", { name: "启用 pi" })).not.toBeChecked();
+    await page.getByRole("checkbox", { name: "启用 pi" }).check();
+    await expect(page.getByText("已保存", { exact: true })).toBeVisible();
+    expect((putBodies.at(-1)?.local as { clis: { enabled: boolean }[] }).clis[0].enabled).toBe(true);
+    await page.reload();
+    await expect(page.getByRole("checkbox", { name: "启用 pi" })).toBeChecked();
 
     await page.getByRole("button", { name: "拉取 pi 的模型" }).click();
     await expect(page.getByText("已获取 1 个模型。")).toBeVisible();
@@ -592,7 +608,7 @@ test.describe("模式卡片", () => {
 });
 
 test.describe("保存反馈", () => {
-  test("返回转换等待在途保存后再离开", async ({ page }) => {
+  test("「← 返回」等待在途保存后再离开", async ({ page }) => {
     let release = () => {};
     const gate = new Promise<void>((resolve) => { release = resolve; });
     await page.route("**/api/settings", async (route) => {
@@ -601,7 +617,10 @@ test.describe("保存反馈", () => {
     });
     await page.goto("/settings");
 
-    const back = page.getByRole("button", { name: "返回转换" });
+    // feat-043 S1: the capsule's label is mapped from ?from=, and this goto carries none, so
+    // the plain 「← 返回」 is what shows. Substring matching locates it before and after the
+    // wording change; the wait-for-pending-save behaviour under test is untouched.
+    const back = page.getByRole("button", { name: "返回" });
     await expect(back).toBeVisible();
 
     await page.getByRole("radio", { name: "本地 CLI" }).check();
@@ -693,8 +712,12 @@ test.describe("输出", () => {
     await expect(card.getByText("未设置")).toBeVisible();
     await expect(card.getByRole("checkbox", { name: "使用默认目录" })).not.toBeChecked();
     // No preload in the browser: choosing a directory is impossible, so the button is off.
-    await expect(card.getByRole("button", { name: "选择目录" })).toBeDisabled();
-    await expect(card.getByText("目录选择只能在桌面应用中使用")).toBeVisible();
+    const choose = card.getByRole("button", { name: "选择目录" });
+    await expect(choose).toBeDisabled();
+    // feat-043 S2 (T2.4): the output card no longer repeats the sentence as a paragraph —
+    // the disabled button carries it as its title, and the input card keeps the only copy.
+    await expect(choose).toHaveAttribute("title", "目录选择只能在桌面应用中使用");
+    await expect(card.getByText("目录选择只能在桌面应用中使用。")).toHaveCount(0);
   });
 
   test("桥接下选择目录后路径回显并写入 output", async ({ page }) => {
@@ -703,6 +726,9 @@ test.describe("输出", () => {
     await page.goto("/settings");
 
     const card = page.locator('section[aria-labelledby="output-title"]');
+    // feat-043 S3 (QA T2.5 follow-up): the conditional title is locked both ways —
+    // with a bridge the button is usable, so it must not claim directories are impossible.
+    await expect(card.getByRole("button", { name: "选择目录" })).not.toHaveAttribute("title");
     await card.getByRole("button", { name: "选择目录" }).click();
 
     await expect(card.getByText("/Users/someone/Documents/notes")).toBeVisible();
