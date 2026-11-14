@@ -66,7 +66,7 @@ The baseline covers:
 - the translation task budget: `translateTaskTimeoutMs(batchCount)` returns `max(120s, batches × 180s + 30s)`, and both endpoints size their deadline from the real batch count (a long article of many short paragraphs is not cut off at a fixed 120s)
 - the translation checkbox, 原文 / 译文 tabs, copy and download per tab, progress, cancel, retry, and the ratio dialog
 
-`vitest.config.ts` limits coverage to `src/lib/**/*.ts` plus the convert and translate routes, excludes test files and `src/types/**`, and sets per-file thresholds. Every `src/lib/translate/**` module has its own threshold (95/90/100/95, or 90/75/100/90 for `segment.ts`). Coverage is currently 96% statements (about 87.8% branches - the third decimal moves between runs, 98.2% functions) over 95 files / 1270 tests, which includes the extension layers 1–2 and the S4 packaging test; the desktop-only figure was 95.28% over 64 files / 866 tests when the `0.3.6` gate ran.
+`vitest.config.ts` limits coverage to `src/lib/**/*.ts` plus the convert and translate routes, excludes test files and `src/types/**`, and sets per-file thresholds. Every `src/lib/translate/**` module has its own threshold (95/90/100/95, or 90/75/100/90 for `segment.ts`). Coverage is currently 96% statements (about 87.8% branches - the third decimal moves between runs, 98.2% functions) over 95 files / 1274 tests, which includes the extension layers 1–2 and the S4 packaging test; the desktop-only figure was 95.28% over 64 files / 866 tests when the `0.3.6` gate ran.
 
 E2E runs against the production standalone service and fails if tracked files change. `playwright.config.ts` sets `workers: 1` because the translation engine holds one process-wide task slot; parallel workers would collide with 429 `TRANSLATE_BUSY`.
 
@@ -195,7 +195,7 @@ The `0.3.10` gate ran on 2026-10-01 and passed end to end (first attempt). It ca
 - Package: version `0.3.9`, arm64, macOS 12.0+
 - Automated evidence: 95 files / 1265 passed + 5 skipped (the five `desktop-server-scope` guards skip when `.desktop` has not been prepared yet, and `./init.sh` runs before `desktop:make`), three-engine E2E 315 passed / 6 skipped, live 2/2
 - Bundle content check: the traced server carries the new page-level heading copy (`整理成`) in `Resources/server/.next/static/chunks/1zp72wugxtkr-.js` while the retired card title `local-docs-title` is gone - the round-25 hero fingerprint; `Resources/server` still holds exactly the whitelist (ZIP is `3,542` entries, `566 M` expanded)
-- Published: [GitHub Release `v0.3.9`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.9) (tag `9f3642e`, newest release; the uploaded asset's server-side digest matches the SHA-256 above)
+- Published: [GitHub Release `v0.3.9`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.9) (tag `9f3642e`; the uploaded asset's server-side digest matches the SHA-256 above)
 - Signing: not Developer ID signed or notarized, so the artifact is suitable for personal testing only
 
 ## Historical Artifact (0.3.8)

@@ -2,7 +2,7 @@
 
 [English](README.md) | **简体中文**
 
-MD-Convertor 是一个 Apple Silicon Mac 网页转 Markdown 单机工具。你可以转换公开网页链接，也可以粘贴自己已经复制的富文本，然后预览、复制或下载一份自包含的 Markdown 文件。
+MD-Convertor 是一个 Apple Silicon Mac 网页转 Markdown 单机工具。你可以转换公开网页链接、粘贴自己已经复制的富文本，或批量处理一个存放既有 Markdown 的目录，然后预览、复制或下载自包含的 Markdown 文件。
 
 ## 主要能力
 
@@ -17,6 +17,7 @@ MD-Convertor 是一个 Apple Silicon Mac 网页转 Markdown 单机工具。你�
 - 最终文件上限 20 MiB，优先保留正文；不支持或超预算的图片降级为替代文本并提示
 - 支持停止转换、清空两种输入、复制、下载、结果统计和快速返回输入区
 - 可以在设置里选定一次默认目录，之后「下载」直接把 Markdown 写进该目录，不再每次都弹保存框；写入被拒时会说明原因并自动降级为普通下载
+- 批量处理本地 Markdown 目录：选定目录后列出其中 `.md` 文件的大小、修改时间与处理状态；勾选后一键为每份文档内嵌其引用的图片（可选翻译）并写进输出目录，逐份报告结果，且不向源目录写入任何内容——浏览器插件存的文档走同一条管线
 - 另附独立 Chromium 浏览器插件，直接在浏览器里干活：在当前页面点一下工具栏图标就存成 `<标题>.md` + `<标题>.images/`，不用开桌面端、不用起服务（以「加载已解压的扩展程序」指向 `extension/dist`）
 
 - 翻译使用你自行配置的模型：本机已安装的 agent CLI（`pi` 或 `claude`），或你在设置页配置的 OpenAI 兼容云端 Provider（只保存一条）。不勾选翻译勾选框就不会发起翻译，MD-Convertor 也不提供任何密钥或账号。
@@ -40,19 +41,17 @@ xattr -dr com.apple.quarantine "/Applications/MD-Convertor.app"
 
 ## 当前版本
 
-- 当前版本：`0.3.6`——Markdown 默认保存目录（Apple Silicon Mac，macOS 12.0+）。`0.3.6` 门禁已于 2026-09-22 通过，并已装到本机。
-- 最近一次正式发布：[`v0.3.6`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.6)。
+- 当前版本：`0.3.10`——feat-043 UI 走查整改，2026-10-01 发布（Apple Silicon Mac，macOS 12.0+）。
+- 最近一次正式发布：[`v0.3.10`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.10)。
 - 所有产物均未做 Developer ID 签名与 notarization，仅适合个人测试。
 
-当前已通过门禁并发布的产物（`0.3.6`）：
+当前已通过门禁并发布的产物（`0.3.10`）：
 
-- ZIP：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.6.zip`
-- 大小：`235,956,668` bytes
-- SHA-256：`9b89d55c5c3cbf63519d56136f63e14170de26489623ea149c0a1daf0569f351`
+- ZIP：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.10.zip`
+- 大小：`236,226,685` bytes
+- SHA-256：`f25e0ae9aea0a915748ee5f6790ffb9ae467e35ecdf59512f25749684fcc1945`
 
-上一版已发布产物（`0.3.5`）：`237,335,837` bytes，SHA-256 `313bbbc341c94da0a5ca92f668f2df06cea9f734e47d7af65880500aa192d45f`。
-
-更早的已发布产物（`0.3.3`）：`232,947,408` bytes，SHA-256 `1bf807dfe294860c24345efe5caf2b0fcbd54f88476df7085c9bd03b47b37a72`。
+更早的已发布产物：`0.3.9` = `236,224,633` bytes / SHA-256 `5e75709f…a9c9`；`0.3.8` = `236,224,675` bytes / `94624625…b2ea`；`0.3.5` = `237,335,837` bytes / `313bbbc3…9245f`。逐版完整记录见[测试手册](docs/TESTING.md)。
 
 请从 [GitHub Releases](https://github.com/haohaiHuang/MD-Convertor/releases) 下载。
 
@@ -80,6 +79,6 @@ npm run test:live
 npm run desktop:release
 ```
 
-发布流程只接受 `0.3.6`，对仓库外仍然存在的历史产物逐个校验哈希（缺失项报为退役而不阻断发布），拒绝旧产物，并校验包内版本、arm64 架构、应用结构、大小和 SHA-256。
+发布流程只接受 `0.3.10`，对仓库外仍然存在的历史产物逐个校验哈希（缺失项报为退役而不阻断发布），拒绝旧产物，并校验包内版本、arm64 架构、应用结构、大小和 SHA-256。
 
 更多信息见[产品说明](docs/PRODUCT.zh.md)、[架构说明](docs/ARCHITECTURE.zh.md)、[测试手册](docs/TESTING.zh.md)、[质量报告](docs/QUALITY-AUDIT.md)和[版本记录](CHANGELOG.zh.md)。

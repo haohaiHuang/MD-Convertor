@@ -4,6 +4,18 @@
 
 This project follows the principles of [Keep a Changelog](https://keepachangelog.com/). User-facing changes that have not yet been released belong under `Unreleased`.
 
+## [Unreleased]
+
+### Fixed
+
+- Production dependencies were upgraded to close disclosed advisories (dompurify, next, sharp, undici, source-map-js — all patch-level within the existing ranges, lock file only); `npm audit --omit=dev` is back to zero. For users this means the HTML sanitizer and image pipeline no longer carry known-vulnerable versions.
+
+### Changed
+
+- README and the product specification (both languages) now reflect the 0.3.10 feature set: the 「转换既有文档」 batch-processing entry and the 0.3.10 artifact record are in, and the product's non-goals no longer contradict the shipped batch feature.
+
+- Removed one-off leftovers: the 0.3.0-era CLI probe script (its conclusions were long encoded in code and docs) and a `.gitignore` rule pointing at a file that never existed.
+
 ## [0.3.10] - 2026-10-01
 
 ### Fixed

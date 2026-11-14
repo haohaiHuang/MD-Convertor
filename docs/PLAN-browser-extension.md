@@ -1,10 +1,10 @@
 # PLAN — 浏览器插件线路（浏览器端 + 桌面端配合）
 
-- 状态：**方向已定（2026-09-22）；B（`feat-040`）已完成并关闭（2026-09-24，S1/S2/S3 完成，T3.4 人工验收 6 条全过）；A 另案待规划**
-- 日期：2026-09-22（2026-09-24 修订：B 先做、A 拆出）
-- feature ids：`feat-040`（B 浏览器插件，**先做**）、`feat-042`（A 桌面端「文档处理」，**另案**，不再是 B 的前置）
-- 产品需求：`docs/PRD-browser-extension.md`（B，§3 六条已裁定）、`docs/PRD-app-document-processing.md`（A，待对齐）
-- 施工文档：`docs/features/browser-extension/`（`FSD.md` + S1/S2/S3）；A 的实施规划待其启动时另建
+- 状态：**整条线路已完成并归档（2026-09-30）**：B（`feat-040`）2026-09-24 关闭（S1/S2/S3 完成，T3.4 人工验收 6 条全过）；A（`feat-042`）2026-09-30 关闭（S1–S4 完成，12 条真机验收签字）并随 `v0.3.7` 发布。
+- 日期：2026-09-22（2026-09-24 修订：B 先做、A 拆出；2026-11-14 审计时头部状态句同步收口）
+- feature ids：`feat-040`（B 浏览器插件，已完成）、`feat-042`（A 桌面端「文档处理」，已完成）
+- 产品需求：`docs/PRD-browser-extension.md`（B，§3 六条已裁定）、`docs/PRD-app-document-processing.md`（A，已定稿）
+- 施工文档：`docs/features/browser-extension/`（B 的 `FSD.md` + S1/S2/S3）、`docs/features/app-document-processing/`（A 的 `FSD.md` + S1–S4）
 - 上一阶段路线图：`docs/PLAN-next-phase.md`（0.3.5 视觉刷新，已完成、已归档）
 
 本文件只回答这条线路的**方向、两个产品的分工与配合、顺序、边界**。产品内部需求在各自 PRD；施工细节（技术方案、阶段拆分、测试用例）留到实施规划。

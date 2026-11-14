@@ -7,36 +7,33 @@
 - Active feature: **无（feat-043「UI 走查整改」已 `done` 并随 `v0.3.10` 发布：11/11 销项、三阶段独立 QA 验收均 PASS、真机反馈追补「特点行同行右对齐」）**。逐任务 RED/GREEN 在 `feature_list.json` 的 `feat-043.verification`（8 条）与 `docs/features/ui-fix/`（S1–S3 阶段文档）。关键不变量（仍生效）：两个 `/api/local-docs/*` **只读不写盘**，**唯一写盘出口是 `outputBridge().saveFile()`**。
 - **唯一推荐下一步：无在办事项，等用户下一条指令**。候选（均需单独授权）：`extension/` 写方 percent-encode、云端 Provider 实文实测、P2-3…P2-6（用户锁死推迟）。**feat-043 执行结果**：D1 `--col:880px` ✓、D2 `#6b7484`（4.71:1）✓、D4 P2-3…P2-6 推迟 ✓；**D3 按规格口径实施并获用户真机「OK了」认可**（顶栏 `1fr auto 1fr` + 品牌 `justify-self:center` 落视口中轴）；断言先行四条已全部落位（4/4）。
 - Pending（无一是阻塞项）：① 产物与 tag 一律不动，缺失项按退役处理；② 签名/notarization 不做；③ 2026-09-20 旧 UI 评审（`docs/UI-REVIEW-2026-09-20.md`）勿重提（09-30 走查已销项）；④ 六条未裁决 flake（见 Environment Notes）；⑤ **发布任何新版本前先 TDD bump 到 `0.3.11`，bump 与发布均需用户授权**。
-- Branch: `main` = **`77703c3`**（feat-043 实现 + 版本面 + CHANGELOG，32 files / +1660 / −247；tag `v0.3.10` 指向它）。发布后簿记为第二提交（docs-only）。`outputs/`（QA 截图/探针）按惯例不入库。stash 空；`v0.3.9` = `9f3642e`、`v0.3.8` = `6e00474`、`v0.3.7` = `9afbe36`、`v0.1.3` = `ce041c9` 不可变。
+- Branch: `main` = **`97c3301`**（0.3.10 发布簿记；feat-043 实现提交 `77703c3` 即 tag `v0.3.10`）。**工作区有第三十一轮未提交改动**（20 files：package-lock 依赖升级 + 文档同步 + 清理，清单见 `PROGRESS.md` 本轮章节；commit 等用户指示）。`outputs/`（QA 截图/探针）按惯例不入库。stash 有两条 2026-09 的历史暂存；`v0.3.9` = `9f3642e`、`v0.3.8` = `6e00474`、`v0.3.7` = `9afbe36`、`v0.1.3` = `ce041c9` 不可变。
 
 - **本文件只写现役状态**（≤150 行 / ≤25KB）：阶段间交接写对应阶段文档的 `## Handoff`，轮次历史压进 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`。
 
 ## 新会话开工提示词（复制即用）
 
 ```
-开工 MD-Convertor —— 第三十轮已把 feat-043「UI 走查整改」随 `v0.3.10` 发布完毕
-（提交 `77703c3`、tag `v0.3.10`、GitHub Release 已上线、发布门禁一次通过）。
+开工 MD-Convertor —— 第三十一轮已完成全项目审计整改（未发布新版本，版本面仍 0.3.10）。
 本轮做什么由用户指令定；当前无在办事项。
 
 【建立基线，别跳过】
 1. pwd 确认在 /Users/huanghaohai/Desktop/MD-Convertor。
 2. 读 AGENTS.md、PROGRESS.md、feature_list.json、session-handoff.md（`## Resume Here` 是权威）。
-3. `git status --short` 预期只有发布后簿记的 docs 改动（或干净，视第二提交是否已推）。
-   HEAD = `77703c3`，tag `v0.3.10` = `77703c3`。
-4. NODE_OPTIONS= ./init.sh 建立基线：Node 必须 24.14.1/24.15.0。期望 **95 files / 1274 passed /
-   0 skipped**。若 `desktop-server-scope` 报缺文件，读 Environment Notes 的修复 recipe。
+3. `git status --short` 预期有第三十一轮未提交改动（依赖 lock + 文档同步 + 清理），
+   HEAD = `97c3301`（0.3.10 发布簿记），tag `v0.3.10` = `77703c3`。
+4. NODE_OPTIONS= ./init.sh 建立基线：Node 必须 24.x。期望 **95 files / 1274 passed / 0 skipped**。
+   若 `desktop-server-scope` 报缺文件，读 Environment Notes 的修复 recipe
+   （注意：`.desktop/electron-cache` 已在第三十一轮删除，recipe 里改用它前需先重建或改用 `~/Library/Caches`）。
 
-【feat-043 已随 v0.3.10 发布，别重做】
-- 走查 11 条（9 P1 + P2-1 + P2-2）已全部销项（终验销项表见 `docs/features/ui-fix/
-  S3-polish-and-closeout.md` 的 Result）+ 真机反馈追补「特点行同行右对齐」；P2-3…P2-6 是
-  **用户锁死推迟**，不是欠账。
-- 已落地锚点：三 token `--col:880px`/`--control-h:36px`/`--radius-control:10px`；顶栏三列网格
-  `1fr auto 1fr` + 品牌 `justify-self:center`（红线 = `home.spec.ts:540-553` 三屏品牌 x ±0.05px，
-  断言原文禁改）；placeholder `#6b7484`；禁用态弃 opacity 换色（primary 5.78:1 / secondary 6.26:1）；
-  `.footerRow` 让 `.hintRow` 与勾选框同行、右对齐（2026-10-01 真机反馈取代「左对齐同轴」）；
-  `.entryCard` min-height 220px；no-output 四件套；CLI 检测状态。
-- 断言先行四条已落位（4/4）；输出「选择目录」按钮 title 是**条件挂载**（禁用态挂、可用态不挂，
-  双向锁在 `settings.spec`），别改成恒挂。
+【第三十一轮已做，别重做】
+- 生产依赖 5 漏洞清零（dompurify 3.4.17 / next 16.4.6 / sharp 0.35.5 / undici / source-map-js，
+  仅 package-lock.json 变更）；QA-012 已更新为「每次发布门禁重跑生产审计」。
+- README/PRODUCT/ARCHITECTURE 双语同步到 0.3.10 真实功能面（PRODUCT 补了「本地文档处理」整节）。
+- 删除：scripts/probe-local-cli.mjs（一次性探针，git `0caa564` 可找回）、
+  .desktop/electron-cache（116MB 重复 zip）、.gitignore 的 !.env.example。
+- 状态文档收口：PLAN-ui-fix / PLAN-browser-extension 头部归档眉批、UI-REVIEW-09-30 销项眉批、
+  session-handoff 尾部旧状态、QUALITY-AUDIT verdict 瘦身（超长段清零）。
 
 【版本面】
 - `0.3.10` 已发布（tag `77703c3`）。**发布任何新版本前先 TDD bump 到 `0.3.11`，bump 与发布都要
@@ -65,7 +62,9 @@
 
 ## Latest Change
 
-**本轮（2026-10-01 第三十轮：feat-043 提交 + `0.3.10` 发布）**：TDD bump 版本面 0.3.9 → 0.3.10（release-guards 期望先行 RED → GREEN 30 passed）⇒ 提交 `77703c3`（32 files / +1660 / −247）⇒ push + tag `v0.3.10` ⇒ `desktop:release` 门禁**一次通过**（3m38s，lint/typecheck/coverage 全绿、e2e 348/6/0、live 2/2、产物校验过、历史守卫退役通知符合预期）⇒ GitHub Release `v0.3.10` 已发布（236,226,685 bytes / SHA-256 `f25e0ae9…`，服务端 digest 一致、`releases/latest` 已指向）。**大资产上传坑**：`gh release create` 带 236MB 资产一把梭会 `unexpected EOF`（gh 自动回滚无残留），拆两步（先建骨架再 `gh release upload`）53 秒传完。
+**本轮（2026-11-14 第三十一轮：全项目审计 + 整改）**：只读审计（代码层 + 文档层双路探查 + 逐条人工复核，探查报告的 page.tsx 死变量三条复核为误报已剔除）→ 用户「修吧」→ 落地：**A1** `npm audit --omit=dev` 3 critical + 2 high → 0（dompurify 3.4.17 / next 16.4.6 / sharp 0.35.5 / undici / source-map-js，仅 `package-lock.json` 变更 +167/−165；QA-012 更新为每次发布门禁重跑审计）；**A2-A4** README×2 / PRODUCT×2 / ARCHITECTURE×2 同步到 0.3.10 真实功能面（PRODUCT 补「本地文档处理」整节、非目标矛盾修正、README 产物记录更新）；**B** 删 `.desktop/electron-cache`（116MB 重复 zip）、`scripts/probe-local-cli.mjs`（S3 文档注明 git `0caa564` 可找回）、`.gitignore` 的 `!.env.example`；**C** PLAN-ui-fix / PLAN-browser-extension / UI-REVIEW-09-30 归档眉批、TESTING.md newest 标记与覆盖率漂移、AGENTS.md 文档登记补全、本文件尾部旧状态收口、QUALITY-AUDIT verdict 瘦身（超长段清零，历史判决压成指针）；CHANGELOG×2 补 `[Unreleased]`。验证：`NODE_OPTIONS= ./init.sh` **95 files / 1274 passed / 0 skipped**、audit 0。**未 bump、未 commit、未发布**。
+
+**上一轮（2026-10-01 第三十轮：feat-043 提交 + `0.3.10` 发布）**：TDD bump 版本面 0.3.9 → 0.3.10（release-guards 期望先行 RED → GREEN 30 passed）⇒ 提交 `77703c3`（32 files / +1660 / −247）⇒ push + tag `v0.3.10` ⇒ `desktop:release` 门禁**一次通过**（3m38s，lint/typecheck/coverage 全绿、e2e 348/6/0、live 2/2、产物校验过、历史守卫退役通知符合预期）⇒ GitHub Release `v0.3.10` 已发布（236,226,685 bytes / SHA-256 `f25e0ae9…`，服务端 digest 一致、`releases/latest` 已指向）。**大资产上传坑**：`gh release create` 带 236MB 资产一把梭会 `unexpected EOF`（gh 自动回滚无残留），拆两步（先建骨架再 `gh release upload`）53 秒传完。
 
 **上一轮（2026-10-01 第二十九轮：feat-043「UI 走查整改」实施）**：S1 顶栏三列网格 `1fr auto 1fr`（删 `.backSlot`/`.headerLeft`/`.backLink`、品牌居中轴）+ 3 token + 14 处宽度换 `var(--col)` + 控件 36/13.5/10 + 禁用态换色 + `backLabel(from)`；S2 no-output 四件套（警示行上移 + 「去设置」+ `aria-describedby`）/ CLI 检测状态（coerce + 8px 状态点 + `.pathMissing`）/ placeholder `#6b7484` / 删输出卡重复句（按钮条件挂 title）；S3 `.hintRow` 同轴 + `.entryCard` min-height 220px。全程 TDD 断言先行（断言先行四条 4/4 落位），三阶段独立 QA 验收均 PASS，终验 11/11 销项 + Tab 扫描 0 缺环 + 对比度 5.78/6.26/4.71 对上（init.sh 95/1274/0，e2e 348/6/0 三引擎）。**真机确认追补**：用户裁定特点行「无需登录/图片内嵌/随用随走」不再独占一行，改为与翻译勾选框同行、右对齐（RED→GREEN 3/3，取代 P1-6 左缘同轴口径，init 95/1274/0 + e2e 348/6/0）。
 
@@ -88,8 +87,8 @@
 
 ## Next Stage Entry
 
-- 当前 `activeFeature` = **无（`feat-024` – `feat-043` 均 done）**。版本面 `0.3.9`（**已发布**，tag `9f3642e`）。
-- 下一轮入口：**等用户指令**（审阅 + commit feat-043 改动，或授权发布 `0.3.10` / 其它候选）。候选（均需单独授权）：发布 `0.3.10`（先 TDD bump）、`extension/` 写方 percent-encode、云端 Provider 实文实测、Terminal 规范打包冒烟。别再为已关闭的验收写自动化替代品。
+- 当前 `activeFeature` = **无（`feat-024` – `feat-043` 均 done）**。版本面 `0.3.10`（**已发布**，tag `77703c3`）。
+- 下一轮入口：**等用户指令**。候选（均需单独授权）：`extension/` 写方 percent-encode、云端 Provider 实文实测、Terminal 规范打包冒烟、发布 `0.3.11`（先 TDD bump）。别再为已关闭的验收写自动化替代品。
 - 每轮开头固定读：`PROGRESS.md` → `session-handoff.md` → `feature_list.json` → 相关 `docs/`（涉及翻译行为时先读 `docs/PRD-translation.md`），然后跑 `./init.sh` 建立基线。
 - 全部阶段文档（已完成入口）：`docs/features/translation/S1-settings-infra.md` 至 `S6-release-and-docs.md`；各文档的 Handoff 已写入下一阶段所需的真实接口与边界。
 
@@ -117,11 +116,11 @@
 
 ## Recommended Next Action
 
-**等用户审阅 feat-043 改动并指示 commit**（改动清单见 `PROGRESS.md` 本轮章节；门禁已全绿：`init.sh` 95 files / 1274 passed / 0 skipped，e2e **348 passed / 6 skipped / 0 failed** 三引擎，终验 11/11 销项 + Tab 焦点 0 缺环 + 对比度复核全对上）。**一处待用户确认**：D3 品牌对齐——实施按规格口径（品牌居中轴），若要左对齐只切 `.brand` 的 `justify-self` 一行。
+**等用户指令**（`0.3.10` 已发布、feat-043 已收口；2026-11-14 第三十一轮完成全项目审计整改——生产依赖 5 个漏洞清零、README/PRODUCT/ARCHITECTURE 双语同步到 0.3.10、删探针与冗余缓存，门禁全绿，改动清单见 `PROGRESS.md` 本轮章节）。
 
-**commit 之后的候选（均需单独授权）**：发布 `0.3.10`（发布前才 TDD bump）；`extension/` 写方 percent-encode 文件名（B1 只修了读方）；云端 Provider 端到端实测（唯一没被真人走完的主干路径）；Terminal 里跑一次规范打包冒烟（agent 沙箱内只能 `--no-sandbox --disable-gpu` 取证）。
+**候选（均需单独授权）**：`extension/` 写方 percent-encode 文件名（B1 只修了读方）；云端 Provider 端到端实测（唯一没被真人走完的主干路径）；Terminal 里跑一次规范打包冒烟（agent 沙箱内只能 `--no-sandbox --disable-gpu` 取证）；发布 `0.3.11`（发布前才 TDD bump，bump 与发布均需授权）。
 
-**已裁决/已完成，不要重开**：feat-043 UI 走查整改 11 条（第二十九轮，S1–S3 全部销项）；把 `0.3.9` 装本机（第二十七轮）；提交门四条「只报未改」（第二十四轮：1 修 / 3 判不改，依据在 `docs/QUALITY-AUDIT.md`）；预发布评审存疑项与 3 处 ponytail 可删（第二十一轮落地）；V1/V2（`.next/**` 排除、`settings/page.tsx` 的 `.catch()`）；真机反馈历轮 16+5+1+6 条；首页入口画面（用户裁定为最初设计意图）；打包镜像收窄（第二十二轮）；本地文档页页级标题（第二十五轮，用户选 A）。
+**已裁决/已完成，不要重开**：feat-043 UI 走查整改 11 条（第二十九轮，S1–S3 全部销项）；`0.3.10` 发布（第三十轮）；第三十一轮审计整改（依赖升级仅 lock 变更、文档同步、探针删除）；提交门四条「只报未改」（第二十四轮：1 修 / 3 判不改，依据在 `docs/QUALITY-AUDIT.md`）；预发布评审存疑项与 3 处 ponytail 可删（第二十一轮落地）；V1/V2（`.next/**` 排除、`settings/page.tsx` 的 `.catch()`）；真机反馈历轮 16+5+1+6 条；首页入口画面（用户裁定为最初设计意图）；打包镜像收窄（第二十二轮）；本地文档页页级标题（第二十五轮，用户选 A）。
 
 **约束提醒（`feat-041` 四条语义 + 守卫）**：`isAbsoluteDirPath` 不要收紧回 `value.includes("~")`（iCloud 目录会被全拒）；`await bridge.*` 不要去掉 `.catch()`（preload 拒非法参数是**抛异常**）；`OUTPUT_CODE_MESSAGES` 六个真实 fs 码不要换回笼统文案；下载分叉不要扩成「另存为」对话框。也不要放宽端点/密钥/归档守卫，不要删 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 里已退役的条目，不要动 `0.1.3` – `0.3.8` 的 tag 与仍存在的受保护 ZIP，不要重做 `feat-024` – `feat-042`。
 

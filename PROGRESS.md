@@ -2,7 +2,7 @@
 
 ## Current State
 
-- Last updated: 2026-10-01（**第三十轮：feat-043 提交 + `0.3.10` 发布**——TDD bump 到 0.3.10、提交 `77703c3`、tag `v0.3.10`、`desktop:release` 门禁一次通过、GitHub Release `v0.3.10` 已发布；上一轮为第二十九轮 feat-043 实施 + 真机反馈追补）
+- Last updated: 2026-11-14（**第三十一轮：全项目审计 + 整改**——只读审计后按用户「修吧」指令落地：生产依赖 5 漏洞清零、README/PRODUCT/ARCHITECTURE 双语同步 0.3.10、探针/冗余缓存/死规则清理、QUALITY-AUDIT verdict 瘦身；上一轮为第三十轮 feat-043 提交 + `0.3.10` 发布）
 - **多设备约定（2026-09-30 起）**：本文件与 `session-handoff.md` 是**公开仓库**里的跨机共享文档，只记**全局客观事实**（发布版本、产物 SHA-256、tag 指向、构建源码提交）。**`/Applications/<App>.app` 的装机版本是每台开发机各自的本地状态，一律不写进本文件**——多机下会互相覆盖。各机装机状态见各自的 `.workbuddy/memory/DEVICES.md`（不入 git，每机一份）。
 - Current version: `0.3.10`（**已发布**：GitHub Release `v0.3.10`，tag 指向 `77703c3`，产物 **236,226,685 bytes** / SHA-256 `f25e0ae9…c1945`，详表见 `docs/TESTING.md` 的 `## Gated Artifact (0.3.10)`）。上一个 `0.3.9` = 236,224,633 bytes / `5e75709f…a9c9`（tag `9f3642e`），`0.3.8` = 236,224,675 bytes / `94624625…b2ea`。
 - Active feature: **无（feat-043「UI 走查整改」已 `done` 并随 `v0.3.10` 发布）**。feat-043 = 走查 11 条（9 P1 + P2-1 + P2-2）整改 + 真机反馈追补（特点行同行右对齐），S1 顶栏与栅格 / S2 状态与反馈 / S3 观感收尾，逐任务 TDD 断言先行，三阶段独立 QA 验收均 PASS；逐任务证据见 `feature_list.json` 的 `feat-043.verification` 与 `docs/features/ui-fix/` 三份阶段文档。`feat-042` 已 `done` 并随 `v0.3.7` 发布；`feat-040`/`feat-041` 已关闭。`0.3.10` = feat-043 全部整改。
@@ -10,7 +10,17 @@
 - Branch: `main` = **`77703c3`**（feat-043 实现 + 版本面 + CHANGELOG，32 files / +1660 / −247；tag `v0.3.10` 指向它）。发布后簿记为第二提交。`outputs/`（QA 截图/探针）按惯例不入库。stash 空。
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+（桌面产物）；浏览器插件另行验收于 Chromium，不进桌面发布门禁
 
-## 本轮（2026-10-01 第三十轮：feat-043 提交 + `0.3.10` 发布）
+## 本轮（2026-11-14 第三十一轮：全项目审计 + 整改）
+
+- **用户指令**：「通读整个项目，找出所有坏掉的、不一致的、低效的、已经不需要的东西。列出来给我审。」→ 审计清单交付后「修吧」。**本轮不 bump 版本**（无桌面产品代码改动；依赖升级只动 lock，版本面 0.3.10 维持）。
+- **审计方法**：两路并行只读探查（代码层 + 文档层）+ 逐条人工复核（探查报告里的 page.tsx 死变量三条经行号核对为**误报**，已剔除；CSS 死类三个 module.css 精确对齐确认零死类）。
+- **A1 依赖漏洞清零**：`npm audit --omit=dev` 从 3 critical + 2 high（dompurify ≤3.4.16 DOM XSS、next 16.0.0–16.4.0 RCE/SSRF、sharp <0.35.5、undici、source-map-js）→ **0 vulnerabilities**。升级 dompurify 3.4.17 / next 16.4.6 / sharp 0.35.5 / undici / source-map-js，全部在既有 `package.json` 区间内，**只有 `package-lock.json` 变更**（+167/−165）。`npm audit fix --omit=dev` 曾连带移除 dev 包，已 `npm prune` + `npm install --include=dev` 恢复，vitest/tsc/electron 工具链齐全。QA-012 条目更新为「两次 resolved（09-20 与 11-14）+ 每次发布门禁都要重跑生产审计」。
+- **A2-A4 文档同步**：`docs/PRODUCT.md` + `.zh` 补「本地文档处理」整节（入口画面、批量管线、源目录只读、目录设置），「非目标」的「不支持批量输入」改写为与 feat-042 一致的口径，入口描述从「两个」改「三个」；`README.md` + `.zh` 版本句/产物 SHA-256/发布链接全部 0.3.6 → 0.3.10，Highlights 补批量处理条目；`docs/ARCHITECTURE.md` + `.zh` 的 release 目标版本与「当前版本」句 0.3.9 → 0.3.10。
+- **B 清理**：删 `.desktop/electron-cache/`（与 `.desktop/electron/` 逐字节相同的 116MB 重复 zip，第二十八轮 ENOENT 修复的临时产物常驻化）；删 `scripts/probe-local-cli.mjs`（0.3.0 一次性探针，结论固化于 `src/lib/local-cli/registry.ts` 与 S3 文档表格，S3 文档两处注明「已删、git 历史 `0caa564` 可找回」）；删 `.gitignore` 的 `!.env.example`（文件从未存在）。
+- **C 一致性**：`session-handoff.md` Next Stage Entry / Recommended Next Action 从第二十九轮旧状态收口到 0.3.10 已发布 + 本轮记录；`docs/PLAN-ui-fix.md` 状态行「待用户批准开工」→ 已完成归档眉批；`docs/PLAN-browser-extension.md` 头部「A 待规划」→ 整条线路归档；`docs/UI-REVIEW-2026-09-30.md` 加销项眉批（11 条已随 feat-043 销项）；`docs/TESTING.md` 0.3.9 条目撤 newest 标记、覆盖率 1270 → 1274；`AGENTS.md` Required State Artifacts 补登记 PLAN-ui-fix / UI-FIX-DESIGN-SPEC / 两份 UI-REVIEW，PLAN-browser-extension 描述从「当前阶段路线图」改归档口径。
+- **C1 QUALITY-AUDIT 瘦身**：Current Verdict 从「0.3.9 起每版完整发布记录串成的超长段落」重写为两条紧凑判决（当前版本 0.3.10 + 本轮审计轮记录），0.3.1–0.3.9 历史判决压成指向 Archived Round Log 与 TESTING.md 的指针（原文在 git 历史 `97c3301` 及更早）；Release Decision 段同步压短。**全文档超长行（>1000 字符）清零**。
+- **验证**：`NODE_OPTIONS= ./init.sh` **95 files / 1274 passed / 0 skipped**（升级前后各跑一次均全绿）；三引擎 e2e **348 passed / 6 skipped / 0 failed** + tracked-file check passed（首跑报 tracked-file 变更系 `next build` 重写 AGENTS.md 尾部 nextjs-agent-rules 块落在运行中途——该块由 Next 自管，重跑即过，非回归）；`npm audit --omit=dev` 0 vulnerabilities。
+- **未做**：六条未裁决 flake 未碰（零命中）；`extension/` 未动； TESTING.zh.md 的双语滞后**未**在本轮扩补（历史决定记录在案，本轮只同步了它引用的英文侧事实，中文版停留在 0.3.6 的结构性问题留给用户决定是否收缩策略）；PROGRESS.md 自身的轮次历史堆积未压（30+ 轮全量保留）。
 
 - **用户指令**：「OK了，commit、push加release」——真机确认通过（唯一反馈「特点行同行右对齐」已在第二十九轮追补落地）后授权完整发布流程。
 - **TDD bump**：`scripts/release-guards.test.mjs` 先改期望 `RELEASE_VERSION_ERROR` 含 `0.3.10`（RED 1 failed）⇒ `scripts/release-desktop.mjs` 错误串与 `version !== "0.3.10"` 判定 + `package.json`/`package-lock.json`（两处）/`feature_list.json` `currentVersion` → 0.3.10（GREEN 30 passed）。
@@ -19,6 +29,8 @@
 - **产物**：`MD-Convertor-darwin-arm64-0.3.10.zip` = **236,226,685 bytes**，SHA-256 `f25e0ae9aea0a915748ee5f6790ffb9ae467e35ecdf59512f25749684fcc1945`；包内指纹：`footerRow`（同行布局）在页面 chunk `3wkuip11gcu97.js` + CSS `2pt9pyl76f3id.css`，返回文案三件套（返回首页/返回文档处理/返回转换）、`去设置`、`产品特点` 全命中；ZIP 3,542 条目 / 展开 566 M。
 - **GitHub Release `v0.3.10`**：首次 `gh release create` 带资产一把梭时上传中断（`unexpected EOF`，236MB 大资产网络瞬断；gh 已回滚无残留）⇒ 拆两步（先建 Release 骨架、再 `gh release upload` 53s 传完）⇒ 校验：非草稿非预发布、asset `uploaded`、服务端 digest `f25e0ae9…` 与本地一致、`releases/latest` = `v0.3.10`。
 - **未做**：`extension/` 写方 percent-encode、云端 Provider 实文实测、P2-3…P2-6 仍待授权；六条未裁决 flake 未顺手修。
+
+## 上一轮（2026-10-01 第三十轮：feat-043 提交 + `0.3.10` 发布）
 
 ## 上一轮（2026-10-01 第二十九轮：feat-043「UI 走查整改」实施，S1–S3 全落地）
 

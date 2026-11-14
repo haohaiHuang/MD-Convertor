@@ -39,7 +39,7 @@
 - `src/lib/translate/run.ts` — 批次、范围过滤、任务锁、超时、取消
 - `src/lib/translate/limits.ts` — 全部常量集中
 - `src/app/api/translate/analyze/route.ts`、`src/app/api/translate/run/route.ts`
-- 探针脚本：`scripts/probe-local-cli.mjs`（一次性，用于确认 CLI 参数，不进入产品路径）
+- 探针脚本：`scripts/probe-local-cli.mjs`（一次性，用于确认 CLI 参数，不进入产品路径；**已于 2026-11-14 全项目审计时删除**，其结论早已固化进本文件表格与 `src/lib/local-cli/registry.ts`，如需重探可从 git 历史 `0caa564` 找回）
 
 改动：`vitest.config.ts`（coverage `include` 增加两个翻译端点并给 `src/lib/translate/**` 各模块设定门槛）。
 
@@ -63,7 +63,7 @@
 
 ## T3.1 探针结论（实测于 2026-09-17，本机 macOS 26.7 / darwin-arm64）
 
-探针脚本：`scripts/probe-local-cli.mjs`（一次性诊断，不在产品路径内；静态探针默认运行，真实模型调用需 `--live`）。实测版本：`pi 0.85.1`、`claude 2.1.273 (Claude Code)`。
+探针脚本：`scripts/probe-local-cli.mjs`（一次性诊断，不在产品路径内；脚本本体已于 2026-11-14 审计清理时删除，git 历史 `0caa564` 可找回）。实测版本：`pi 0.85.1`、`claude 2.1.273 (Claude Code)`。
 
 | CLI | stdin 支持 | 限权参数 | 模型参数 | 长 prompt 表现 | 结论 |
 | --- | --- | --- | --- | --- | --- |

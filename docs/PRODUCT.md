@@ -4,16 +4,25 @@
 
 ## Users and goals
 
-MD-Convertor is designed for individuals who want to archive web content. The first release is a standalone Apple Silicon Mac app with two independent entry points: paste a public webpage URL, or paste rich web content that the user has already copied. Both paths create a local, single-file Markdown document that can be previewed, copied, and downloaded.
+MD-Convertor is designed for individuals who want to archive web content. The desktop app is a standalone Apple Silicon Mac application with three entry points: paste a public webpage URL, paste rich web content the user has already copied, or process a folder of existing Markdown documents. The first two create a local, single-file Markdown document that can be previewed, copied, and downloaded; the third batch-processes `.md` files that are already on disk (including documents saved by the browser extension). A separate Chromium browser extension covers the browser-first workflow (see below).
 
 ## Core flows
 
-1. Choose Link Conversion or Rich Text Conversion.
+1. The app opens on a landing screen with two entries: 「粘贴URL/富文本转换」 keeps the single-article flow and 「转换既有文档」 switches to the local-documents screen; each screen carries a 「← 返回」 back to wherever you came from.
+2. Choose Link Conversion or Rich Text Conversion.
 2. Link mode accepts an HTTP/HTTPS URL, validates it, and waits for explicit submission. Click Convert or press Enter to start. An in-progress conversion can be stopped without losing the URL. Clear Link removes the URL, validation message, and previous result; it is disabled while converting.
 3. Rich text mode processes only an explicit clipboard snapshot. It reads both `text/html` and `text/plain`, while the text area displays plain text. Semantically structured content uses sanitized HTML; otherwise clipboard plain text is authoritative.
 4. Editing pasted content immediately discards the captured HTML and switches to plain text. A new paste replaces the entire previous input rather than merging fragments. The optional source URL affects only source metadata and relative link/image resolution. Clear removes HTML, plain text, the source URL, and the previous result; it is disabled while converting.
 5. Link mode can use the embedded browser for dynamic pages. Rich text mode never refetches the source webpage. Both modes show file size, text character count, image statistics, warnings, and a Markdown preview.
 6. Copy writes the original Markdown to the clipboard. Download saves the `.md` file locally: with the Settings switch on it writes straight into the configured default folder and reports the path it landed on, and with the switch off it keeps the system save dialog. A refused direct write names the reason and falls back to the save dialog, so the file still reaches the user. A successful copy briefly displays a confirmation. After the page is scrolled by roughly 500px, Back to Top returns to the input area without clearing any input or result.
+
+## Local document processing
+
+1. The local-documents screen scans the configured input directory and lists its `.md` files with size, modification time, and whether each one was already processed. Already-processed documents start unticked, unprocessed ones start ticked; the header 「全选」 ticks only the not-yet-processed rows.
+2. 一键转换 inlines the images each ticked document references (same download, validation, and size budgets as link mode) and writes the result into the output folder. Every row reports its own outcome — 完成, 已处理，跳过, or 失败 with the reason — while the summary line carries the image and outcome counts plus the folder written to, with a 打开目录 button beside it.
+3. The source folder is only ever read; nothing is written back into it. Picking the same folder for input and output is refused with a one-click offer to write into a `processed` subfolder instead. The output folder is also where the browser extension's `<title>.md` + `<title>.images/` pairs land, so extension-saved documents feed the same pipeline.
+4. Translation, when ticked, applies to the batch the same way it applies to a single article: the document text goes to the configured endpoint only for the ticked rows, and a failed translation keeps the original.
+5. The settings page has an 输入 card for the input directory and an 输出 card for the output directory; each uses the same macOS folder picker, and 恢复默认 resets to the system Downloads folder.
 
 ## Output rules
 
@@ -45,13 +54,14 @@ MD-Convertor is designed for individuals who want to archive web content. The fi
 - Optional document translation into eleven preset target languages (Simplified Chinese, English, Japanese, Korean, French, German, Spanish, Portuguese, Italian, Russian, Arabic) plus custom BCP-47 tags. Translation is performed by a model the user configures: a local agent CLI already installed on the Mac, or a cloud provider with an OpenAI-compatible endpoint. No MD-Convertor-hosted model, account, or subscription is involved.
 - Translation sends the article to the configured endpoint only when the user checks the translation box and a conversion finishes. The original result is never blocked by translation: a failed translation keeps the original and offers a retry.
 - A separate Chromium (Chrome, Edge, Brave) browser extension for the browser-first workflow, accepted on 2026-09-24 and loaded unpacked from `extension/dist`: one toolbar click on the page you are reading saves it as `<title>.md` plus a `<title>.images/` folder. It runs inside the page you already have open, so it needs neither the desktop app nor a server, and images that require your signed-in session still download. Failed images keep their original URL and carry a `<!-- 图片未下载：… -->` note; re-exporting the same page overwrites the previous pair. It is not published to a store and has no popup or options page.
+- Local batch processing of existing Markdown documents (see Local document processing above): pick a folder, review the list, and inline images or translate across many `.md` files in one run, with per-document outcomes and no writes back into the source folder.
 
 ## Non-goals
 
 - No Intel Mac, Windows, or Linux packages in the first release.
 - No hosted service, cross-device synchronization, account, history, or automatic updates.
 - No bypassing authentication, paywalls, CAPTCHAs, or website access restrictions. Paste mode processes only clipboard content explicitly supplied by the user.
-- No automatic import of arbitrary files or webpage bodies, non-HTML resources such as PDFs, or batch input. Extraction quality is not guaranteed to be identical across all websites.
+- No automatic import of arbitrary files or webpage bodies, and no non-HTML resources such as PDFs. Local document processing takes `.md` files only, from a folder the user explicitly picks. Extraction quality is not guaranteed to be identical across all websites.
 - No guarantee that images requiring authentication, cookies, temporary signatures, or `blob:` URLs can be fetched. Such images retain alt text and produce a warning.
 - No reverse engineering of Mermaid source from JavaScript bundles and no raw SVG/Canvas in Markdown. Link mode accepts only validated raster screenshots produced by the controlled Chromium session; paste mode accepts only Mermaid PNGs generated locally from independently sanitized SVG.
 

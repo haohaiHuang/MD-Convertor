@@ -54,7 +54,11 @@
 - `docs/QUALITY-AUDIT.md`：整体质检结论、问题等级、整改顺序与复验清单；安全整改和发布放行前读取。
 - ~~`docs/TASKS-*.md`~~：**该模式已于 0.2.1 退役**（当时的 `docs/TASKS-*.md` 已随该版本清理，见 `394cf3d`）。0.3.0 起的任务级事实源就在 `docs/features/<feature>/S<n>-*.md` 的 **Tasks 表**（含 RED、完成条件、验证列），不要再新建 `docs/TASKS-*.md`。
 - `docs/PRD-*.md`：产品需求事实源。当前在册：`docs/PRD-translation.md`（0.3.0 翻译）、`docs/PRD-app-document-processing.md`（A 桌面端「文档处理」）、`docs/PRD-browser-extension.md`（B 浏览器插件）。涉及产品范围、非目标或隐私条款变化时，先读 PRD 再读 `docs/PRODUCT.md`；PRD 与 PRODUCT.md 冲突时以 PRD 为准并同步修订 PRODUCT.md。
-- `docs/PLAN-browser-extension.md`：**当前阶段的路线图**（浏览器插件线路 —— 两个产品的分工、顺序、边界、已定决策；§6 的四组规则冲突已于 2026-09-24 裁定、§7 是当前未验证与风险）。2026-09-24 起顺序为 **B 先做（`feat-040`，已有阶段文档）、A 另案（`feat-042`，无顺序依赖）**。施工级细节在对应 feature 文档里。**开工前先读本文件与 `docs/features/browser-extension/FSD.md`。**
+- `docs/PLAN-browser-extension.md`：浏览器插件线路的路线图（两个产品的分工、顺序、边界、已定决策），**整条线路已完成并归档**（B `feat-040` 2026-09-24 关闭、A `feat-042` 2026-09-30 关闭）；只在追溯该线路决策时读取。
+- `docs/PLAN-ui-fix.md`：feat-043「UI 走查整改」的施工计划，**已完成并归档**（2026-10-01 随 `v0.3.10` 发布）；实施证据在 `docs/features/ui-fix/`。
+- `docs/UI-REVIEW-2026-09-20.md`：**旧版 UI 评审（v0.3.1），用户已拍板全部不整改、勿重提**；与 09-30 走查报告是两回事，不要混淆。
+- `docs/UI-REVIEW-2026-09-30.md`：0.3.9 界面走查报告，11 条发现**已全部随 feat-043 销项**（P2-3…P2-6 用户锁死推迟）；文件头有销项眉批，仅供追溯。
+- `docs/UI-FIX-DESIGN-SPEC-2026-09-30.md`：feat-043 的视觉调整数值规格（token、对比度等），**已实施完毕**；只在核对当时数值口径时读取。
 - `docs/PLAN-next-phase.md`：`0.3.5` 视觉刷新的路线图，**已完成并归档**（2026-09-21 发布）；只在追溯那一阶段的方向与决策时读取。
 - `docs/PRD-upgrade-v2.md` 与 `docs/UI-DESIGN-SPEC.md`：**已于 2026-09-21 删除**（作废原因见路线图 §7）；不要重建，也不要把两者中的范围、色板或改造文件清单搬回来。
 - `docs/features/<feature>/**`：FSD 执行文档（`FSD.md` 总纲 + 每阶段一份 Spec/Plan/Task 一体的执行文档）。实施某阶段时只读 `FSD.md` 与该阶段文档，不必读其它阶段文档。当前在册：`docs/features/translation/`（0.3.0，已完成）、`docs/features/ui-refresh/`（0.3.5，已完成）、`docs/features/default-save-path/`（feat-041 默认 MD 保存路径，0.3.6，已完成）、`docs/features/browser-extension/`（B 浏览器插件，`feat-040`，**S1/S2/S3 全部完成，T3.4 人工验收 6 条全部通过（2026-09-24），已关闭**）、`docs/features/app-document-processing/`（A 桌面端「文档处理」，`feat-042`，**2026-09-29 规划与 S1–S4 实施完成（`FSD.md` + S1–S4）；版本面 bump 到 `0.3.7` 的动作已随 S1 T1.0 做完，S4 的 12 条真机验收已于 2026-09-30 全部签字，`feat-042` 已置 `done` 并关闭**）、`docs/features/ui-fix/`（feat-043 UI 走查整改，**S1/S2/S3 已于 2026-10-01 实施完成，三阶段 QA PASS、11 条销项，已置 `done`**）。

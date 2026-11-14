@@ -2,7 +2,7 @@
 
 **English** | [简体中文](README.zh.md)
 
-MD-Convertor is a local webpage-to-Markdown app for Apple Silicon Macs. Convert a public webpage link, or paste rich content you already copied, then preview, copy, or download one self-contained Markdown file.
+MD-Convertor is a local webpage-to-Markdown app for Apple Silicon Macs. Convert a public webpage link, paste rich content you already copied, or batch-process a folder of existing Markdown documents — then preview, copy, or download self-contained Markdown files.
 
 ## Highlights
 
@@ -17,6 +17,7 @@ MD-Convertor is a local webpage-to-Markdown app for Apple Silicon Macs. Convert 
 - Keeps body text first under a 20 MiB output limit; unsupported or over-budget images fall back to alt text with warnings
 - Supports stopping a conversion, clearing either input mode, copying, downloading, result statistics, and quick return to the input area
 - Can save Markdown straight into a default folder you choose once in Settings, so the save dialog stops appearing on every download; a refused write names the reason and falls back to the normal download
+- Batch-processes local Markdown folders: pick a directory, its `.md` files are listed with size, modification time, and processed state; tick the ones you want and one click inlines the images each document references (optional translation included) into the output folder, with per-document outcomes and no writes back into the source folder — documents saved by the browser extension feed the same pipeline
 - Ships a separate Chromium extension for working in the browser itself: one toolbar click on the page you are reading saves it as `<title>.md` plus a `<title>.images/`, with no desktop app and no server running (load unpacked from `extension/dist`)
 
 - Translation uses a model you configure yourself: an agent CLI already installed on the Mac (`pi` or `claude`), or one OpenAI-compatible cloud provider you configure in Settings. Nothing is translated until you check the translation box, and no MD-Convertor key or account exists.
@@ -40,17 +41,17 @@ Do not run this command for an app whose source or checksum you do not trust.
 
 ## Current Release
 
-- Current version: `0.3.6` — a default folder for downloaded Markdown files (Apple Silicon Mac, macOS 12.0+). The `0.3.6` gate passed on 2026-09-22 and the build is installed locally.
-- Latest published release: [`v0.3.6`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.6).
+- Current version: `0.3.10` — the UI walkthrough fixes of feat-043, published 2026-10-01 (Apple Silicon Mac, macOS 12.0+).
+- Latest published release: [`v0.3.10`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.10).
 - No build is Developer ID signed or notarized, so every artifact is suitable for personal testing only.
 
-Current gated and published artifact (`0.3.6`):
+Current gated and published artifact (`0.3.10`):
 
-- ZIP: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.6.zip`
-- Size: `235,956,668` bytes
-- SHA-256: `9b89d55c5c3cbf63519d56136f63e14170de26489623ea149c0a1daf0569f351`
+- ZIP: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.10.zip`
+- Size: `236,226,685` bytes
+- SHA-256: `f25e0ae9aea0a915748ee5f6790ffb9ae467e35ecdf59512f25749684fcc1945`
 
-Previous published artifact (`0.3.5`): `237,335,837` bytes, SHA-256 `313bbbc341c94da0a5ca92f668f2df06cea9f734e47d7af65880500aa192d45f`.
+Previous published artifacts: `0.3.9` = `236,224,633` bytes, SHA-256 `5e75709f…a9c9`; `0.3.8` = `236,224,675` bytes, SHA-256 `94624625…b2ea`; `0.3.5` = `237,335,837` bytes, SHA-256 `313bbbc341c94da0a5ca92f668f2df06cea9f734e47d7af65880500aa192d45f`. Full per-version records live in [Testing](docs/TESTING.md).
 
 Download the ZIP from the [GitHub Releases](https://github.com/haohaiHuang/MD-Convertor/releases) page.
 
@@ -78,6 +79,6 @@ npm run test:live
 npm run desktop:release
 ```
 
-The release workflow requires version `0.3.6`, hash-checks every historical artifact that still exists outside the repository (missing entries are reported as retired instead of blocking), rejects stale output, and validates the packaged version, arm64 architecture, bundle structure, size, and SHA-256.
+The release workflow requires version `0.3.10`, hash-checks every historical artifact that still exists outside the repository (missing entries are reported as retired instead of blocking), rejects stale output, and validates the packaged version, arm64 architecture, bundle structure, size, and SHA-256.
 
 See [Product](docs/PRODUCT.md), [Architecture](docs/ARCHITECTURE.md), [Testing](docs/TESTING.md), [Quality Audit](docs/QUALITY-AUDIT.md), and [Changelog](CHANGELOG.md).
