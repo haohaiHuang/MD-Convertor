@@ -2,28 +2,39 @@
 
 ## Current State
 
-- Last updated: 2026-11-14（**第三十二轮：外部审计 P2 四条整改 + 审计门禁**——同名覆盖、符号链接越界、插件 md 下载假成功、发布门禁缺审计，全部 TDD 修复，版本面 `0.3.11`（未发布、未提交）；上一轮为第三十一轮全项目审计 + 整改）
+- Last updated: 2026-11-16（**第三十三轮：台账漂移修复 + 三项待办整改**——19 处「未提交」的现役口径改正，随后按授权做完 ①插件写方 percent-encode ②Electron 43.3.0 → 43.8.10 ③`next` 下界 `^16.4.6`；三项均已入库未提交、未发布，版本面 `0.3.11` 未发布）
 - **多设备约定（2026-09-30 起）**：本文件与 `session-handoff.md` 是**公开仓库**里的跨机共享文档，只记**全局客观事实**（发布版本、产物 SHA-256、tag 指向、构建源码提交）。**`/Applications/<App>.app` 的装机版本是每台开发机各自的本地状态，一律不写进本文件**——多机下会互相覆盖。各机装机状态见各自的 `.workbuddy/memory/DEVICES.md`（不入 git，每机一份）。
 - Current version: 仓库版本面 **`0.3.11`（未发布，2026-11-14 随 feat-044 TDD bump）**；**已发布**的是 `0.3.10`（GitHub Release `v0.3.10`，tag 指向 `77703c3`，产物 **236,226,685 bytes** / SHA-256 `f25e0ae9…c1945`，详表见 `docs/TESTING.md` 的 `## Gated Artifact (0.3.10)`）。上一个 `0.3.9` = 236,224,633 bytes / `5e75709f…a9c9`（tag `9f3642e`），`0.3.8` = 236,224,675 bytes / `94624625…b2ea`。
-- Active feature: **无（`feat-044`「审计 P2 整改」已 `done`，未发布、未提交）**。feat-044 = 4 条代码修复 + 1 条门禁缺口：① `localDocFilename` 只对「清洗改过名」的源追加 `-<8 位 FNV-1a>`（消除 `a?.md`/`a*.md` 撞成同一产物）② 列表显示真实产物名（`outputName`）③ 本地图片边界改看 `realpath`（符号链接不能越界）④ 插件 `run()` 等 md 下载到 `complete`，中断/超时 → `DOWNLOAD_FAILED` ⑤ `npm run audit:runtime` 接进 `desktop:release`（生产依赖有公告即中止，Electron 12 条公告只告警、登记 `QA-DEV` + `feat-045`）。逐任务 RED/GREEN 见 `feat-044.verification` 与 `docs/features/audit-p2-remediation/FSD.md`。feat-043 已 `done` 并随 `v0.3.10` 发布；`feat-042` 随 `v0.3.7` 发布。feat-043 = 走查 11 条（9 P1 + P2-1 + P2-2）整改 + 真机反馈追补（特点行同行右对齐），S1 顶栏与栅格 / S2 状态与反馈 / S3 观感收尾，逐任务 TDD 断言先行，三阶段独立 QA 验收均 PASS；逐任务证据见 `feature_list.json` 的 `feat-043.verification` 与 `docs/features/ui-fix/` 三份阶段文档。`feat-042` 已 `done` 并随 `v0.3.7` 发布；`feat-040`/`feat-041` 已关闭。`0.3.10` = feat-043 全部整改。
-- Next step: **feat-044 未提交、未发布**，等用户决定提交与发布（发布需单独授权）。之后候选（均需单独授权）：`feat-045` Electron 43.3.0 → 43.8.10/45.x（要完整门禁 + 打包冒烟）、`package.json` 的 `next` 下界过时、`extension/` 写方 percent-encode、云端 Provider 实文实测、P2-3…P2-6（用户锁死推迟）。**不要重写第二套批量编排或第二条写盘路径**；版本面已 bump 到 `0.3.11`，发布无需再 bump；下一次 bump（`0.3.12`）只在改动桌面代码的轮次开头做且需授权。
-- Branch: `main` = **`0c64834`**（feat-044 整改提交，34 files，**尚未 `git push`**；其父提交是第三十一轮簿记 `fb63c06`，`v0.3.10` 的 tag 仍指向 `77703c3`）。工作树在提交后为干净。`outputs/`（QA 截图/探针）按惯例不入库。stash 空。
+- Active feature: **无（`feat-044` 与 `feat-045` 均 `done`，三项待办已在本轮做完，全部未提交、未 push、未发布）**。feat-044 = 4 条代码修复 + 1 条门禁缺口：① `localDocFilename` 只对「清洗改过名」的源追加 `-<8 位 FNV-1a>`（消除 `a?.md`/`a*.md` 撞成同一产物）② 列表显示真实产物名（`outputName`）③ 本地图片边界改看 `realpath`（符号链接不能越界）④ 插件 `run()` 等 md 下载到 `complete`，中断/超时 → `DOWNLOAD_FAILED` ⑤ `npm run audit:runtime` 接进 `desktop:release`（生产依赖有公告即中止，Electron 公告只告警）。feat-045 = 打包运行时 Electron 43.3.0 → **43.8.10**（43.x 的 12 条公告随之清零，全树 50 → 49，生产仍 0）+ `package.json` 的 `next` 下界 `^16.3.5` → `^16.4.6`（与锁对齐）。另外 B1 的写方半条也补完：插件导出的图片引用现在 percent-encode（空格/括号不再截断），盘上文件名仍可读。逐任务 RED/GREEN 见 `feature_list.json` 的 `feat-044`/`feat-045`/`feat-040` verification。feat-043 已 `done` 并随 `v0.3.10` 发布；`feat-042` 随 `v0.3.7` 发布；`feat-040`/`feat-041` 已关闭。
+- Next step: **等用户授权统一提交**（本轮改动 + 上一轮的 `0c64834` / `4c81a99` 均未 push）；之后 push 与发布 `0.3.11` 各需单独授权（`desktop:release` 尚未在 `0.3.11` 上真跑过；它不跑打包冒烟，不受本轮 keychain 坑影响）。其他候选（各自需授权）：Electron 45.x、云端 Provider 实文实测、Terminal 里跑一次带 `ELECTRON_SMOKE_TEST_SECRETS=1` 的规范打包冒烟（需先点掉钥匙串弹窗）、P2-3…P2-6（用户锁死推迟）。**不要重写第二套批量编排或第二条写盘路径**；版本面已 bump 到 `0.3.11`，发布无需再 bump；下一次 bump（`0.3.12`）只在改动桌面代码的轮次开头做且需授权。
+- Branch: `main` = **`4c81a99`**（第三十二轮提交后簿记），其父 `0c64834`（feat-044 整改提交，34 files / +629 / −122）；两者**均未 `git push`**，`origin/main` 仍是 `fb63c06`，`v0.3.10` 的 tag 仍指向 `77703c3`。工作树干净。`outputs/`（QA 截图/探针）按惯例不入库。stash 空。
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+（桌面产物）；浏览器插件另行验收于 Chromium，不进桌面发布门禁
 
-## 本轮（2026-11-14 第三十二轮：外部审计 P2 四条整改 + 审计门禁）
+## 本轮（2026-11-16 第三十三轮：台账漂移修复 + 三项待办整改）
+
+- **用户指令**：「先修，全部修完了再统一提交」——先是台账漂移（feat-044 已在 `0c64834` 提交、簿记 `4c81a99`，但 PROGRESS / session-handoff / QUALITY-AUDIT / 审核 FSD 仍多处写「未提交」），随后「全部修完再统一提」把三个候选一并交给本轮。
+- **台账部分**：只改**现役口径**（共 19 处：PROGRESS 6 / session-handoff 10 / QUALITY-AUDIT 2 / 审核 FSD 1），**历史轮次记录一律不动**（那些「未提交」在当轮是真的）。
+- **整改部分（全部 TDD 留痕）**：
+  - **插件写方 percent-encode**（B1 的写方半条）：`extension/src/references.ts` 新增 `escapeDestination()`，`DESTINATION_UNSAFE = /[\s\x7f()%#?<>"\\]/gu` → 按 **UTF-8 字节**出 `%XX`（提交门评审发现首版按 UTF-16 码元编码，NBSP/全角空格会被读方解成另一个名字；顺带补上 CommonMark 禁止的 DEL）；CJK 与 URL 兜底不动（桌面读方 `inline-images.ts` 自 T2.2 起就 `decodeURIComponent`）。RED 4 failed / 20 passed ⇒ GREEN 24 passed；首绿后 2 条先红是**测试期望**多编了 `@`（`@` 不会终止 bare destination），改期望不改实现。桌面侧补一条「转义目标仍能嵌入」的契约用例（首跑即绿，pin 住读写两侧的约定）；端到端加 `/article-spaced` fixture + 一条断言（引用恰为 `X%20上的%20姚金刚%20%28@yaojingang%29.images/001-photo-one.png`、`decodeURIComponent` 指向真实非空文件、盘上目录名仍可读）。
+  - **Electron 43.3.0 → 43.8.10**：12 条公告全部在 `43.8.1` 及以前清掉，同 major 最小步；45.x 留作独立轮次。`node_modules/electron/install.js` 补下 darwin-arm64 二进制，缓存里生成 `electron-v43.8.10-darwin-arm64.zip`（`prepare-desktop.mjs` 依赖）。审计现：prod 0 / electron 无公告 / 全树 **49**（3 low / 14 moderate / 27 high / 5 critical）。
+  - **`next` 下界 `^16.3.5` → `^16.4.6`**：原区间根本产不出已在跑的 16.4.6 服务端。
+- **门禁**：`./init.sh` exit 0（**96 files / 1300 passed**，+9 = 新增扩展用例与读方契约用例）；`npm run test:extension` 16 passed；三引擎 e2e **351 passed / 6 skipped / 0 failed** + tracked-file check；`rm -rf out .desktop` 后 `desktop:make` exit 0，0.3.11 ZIP = **237,921,843 bytes**（0.3.10 是 236,226,685），`Electron Framework.framework` 的 `CFBundleVersion` = **43.8.10**。
+- **打包冒烟（本轮唯一环境坑，已定性）**：新构建的 keychain ACL 绑定代码签名，agent shell 里首次运行会静默挂在 `SecItemCopyMatching`（无弹窗、无输出、无 server 子进程）。**对照实验**：`/Applications` 里已授权过的 0.3.10（Electron 43.3.0）在**同一 shell** 里跑通同一冒烟 ⇒ 挂的是签名不是 43.8.10。故用 `--use-mock-keychain` 取证：preload 桥 `secrets.set function, encryptionAvailable true`；真实转换 `Desktop conversion smoke passed: browser, 1463 bytes, 1063 non-Base64 chars, 0 embedded images`。**带 `ELECTRON_SMOKE_TEST_SECRETS=1` 的规范一次仍需用户在 Terminal 批准弹窗后跑**（`desktop:release` 不跑冒烟，不受影响）。
+
+## 上一轮（2026-11-14 第三十二轮：外部审计 P2 四条整改 + 审计门禁）
 
 - **用户指令**：外部审计报告（跨两个项目）→ 只留 `MD-Convertor` 部分逐条取证 →「按本项目 Harness 要求跑」，即 TDD 整改。**6 条审计结论全部复现成立**（以 `fb63c06` 为基准，先 `git merge --ff-only origin/main` 拉齐 2 个提交）。
 - **T1.1 批量同名覆盖（P2，最严重）**：`cleanFilenameStem` 把 `a?.md`/`a*.md` 都压成 `a-.md`，`localDocFilename` 不做冲突感知，`electron/output.mjs` 同路径直接覆盖。修法＝只对「清洗真改过名」的源追加 `-<8 位 FNV-1a>`（干净名字不动，既有产物仍命中 `skip`）；`ScannedLocalDoc`/`BatchRow` 加 `outputName`，列表显示真实产物名、原名进 `title`。RED 5 条 + 路由 1 条 + 三引擎 e2e 1 条。
 - **T2.0 符号链接越界（P2）**：`inlineLocalRef` 只做字符串前缀比较，`link.png -> ../secret.png` 被嵌成 base64（实测 `embedded: 1` 无 warning）。修法＝`realpath` 后比较，源目录 `realpath` 每篇解析一次；树外链接判 `IMAGE_SOURCE_INVALID`、树内仍内嵌。RED 2 条（树外那条先红）。
 - **T3.0 插件 md 下载假成功（P2）**：`downloads.download()` 在开始时就 resolve，`run()` 不等写完 ⇒ 角标对 0 字节/中断文件打 ✓（实测 `{ok:true}`）。修法＝复用 `waitForDownload` + `MD_TIMEOUT_MS = 10_000`，中断/超时返回 `DOWNLOAD_FAILED`；连带删掉测试侧 `waitForDownloadComplete()`（生产侧现在自己等，`--repeat-each=3` 45 passed 作证）。
 - **T4.0 发布门禁缺审计（门禁缺口）**：`release-desktop.mjs` 只跑 `init.sh`/e2e/live/make，而 `QUALITY-AUDIT.md` 明写每道门禁复跑生产审计。新增 `scripts/audit-runtime.mjs`（判报告不判退出码：生产依赖有公告即中止，Electron 公告只打印），接线进 `desktop:release`，`release-guards.test.mjs` 事件序同步；真跑 prod 0 / electron 12 条公告。`QA-DEV` 改写为活跃跟踪项。
-- **版本面 TDD bump `0.3.10` → `0.3.11`**（4 处 + 守卫测试），未提交、未发布。
+- **版本面 TDD bump `0.3.10` → `0.3.11`**（4 处 + 守卫测试）；当轮未发布（提交在提交门之后完成）。
 - **门禁**：lint/typecheck 干净；`test:coverage` **96 files / 1291 passed / 0 skipped**；三引擎 e2e **351 passed / 6 skipped / 0 failed** + tracked-file check；`test:extension` 15 passed（×3 重复 45）；`NODE_OPTIONS= ./init.sh` **exit 0**（96 files / 1291 passed，`Verification Complete`）。
 - **两条 flake（未改代码）**：① 首跑 e2e 有 1 条 firefox 掉 hydration 等待（隔离 5/5 绿、整文件绿、无失败产物）；② 提交门后重跑 e2e 有 1 条 firefox `translate.spec.ts` 报 `NS_ERROR_PROXY_CONNECTION_REFUSED`（本机系统代理 127.0.0.1:7897 无 localhost 例外，清环境变量覆盖不到；隔离 5/5 绿、复跑 351 绿）。均已记进 `docs/TESTING.md` 与 `feat-044.verification`。
 - **提交门（3 路只读评审：ponytail / Spec 轴 / neat-freak）**：1 条真错 + 8 条台账陈旧全部修掉。真错＝面板 `title` 报的是产物名（单元格已有）而四处文档都写「原名」⇒ e2e 先加断言（RED `received 产物名：a-05249472.md`）→ `panel.tsx` 改 `原名：${row.name}` → GREEN。台账：`waitForDownloadComplete` 现行口径两处、coverage 计数两处（`docs/TESTING.md` 与 zh 版）、`session-handoff` 的 stash 假记载与重复的「发布前才 bump」、审核 FSD 的哈希输入口径（含扩展名 → 去 `.md` 的词干）、CHANGELOG 角标文案（实际是「转换失败：无法写入下载目录」）、`feature_list` 的 flake 行号、三处 `/Applications` 单机状态（违反多设备约定）。
-- **未做**：`feat-045` Electron 升级（要完整门禁 + 打包冒烟 + 授权）、`next` 下界更正、未提交、未发布。
+- **未做**：`feat-045` Electron 升级（要完整门禁 + 打包冒烟 + 授权）、`next` 下界更正、push、发布。**提交已完成**：`0c64834`（实现，34 files / +629 / −122）+ `4c81a99`（簿记）。
 
-## 本轮（2026-11-14 第三十一轮：全项目审计 + 整改）
+## 上一轮（2026-11-14 第三十一轮：全项目审计 + 整改）
 
 - **用户指令**：「通读整个项目，找出所有坏掉的、不一致的、低效的、已经不需要的东西。列出来给我审。」→ 审计清单交付后「修吧」。**本轮不 bump 版本**（无桌面产品代码改动；依赖升级只动 lock，版本面 0.3.10 维持）。
 - **审计方法**：两路并行只读探查（代码层 + 文档层）+ 逐条人工复核（探查报告里的 page.tsx 死变量三条经行号核对为**误报**，已剔除；CSS 死类三个 module.css 精确对齐确认零死类）。

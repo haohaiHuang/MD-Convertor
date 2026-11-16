@@ -163,6 +163,19 @@ describe("run — image downloads", () => {
     expect(result).toMatchObject({ ok: true, saved: 0, failed: 1 });
     expect(result.ok && result.images[0]).toMatchObject({ url: "https://example.com/images/1.png" });
   });
+
+  it("writes a destination the title's spaces and parentheses cannot break", async () => {
+    const title = "X 上的 姚金刚 (@yaojingang)";
+    const fake = fakeChrome(1, { ...payloadFor(1), title });
+    const result = await run(1, fake.deps, { timers: instantTimers, imageTimeoutMs: 1000 });
+
+    expect(result).toMatchObject({ ok: true, saved: 1 });
+    // The file on disk keeps the readable name; only the reference inside the markdown is escaped.
+    expect(fake.requests[0].filename).toBe("X 上的 姚金刚 (@yaojingang).images/001-1.png");
+    expect(fake.markdownWrites()[0]).toContain(
+      "(X%20上的%20姚金刚%20%28@yaojingang%29.images/001-1.png)",
+    );
+  });
 });
 
 describe("run — badge feedback", () => {

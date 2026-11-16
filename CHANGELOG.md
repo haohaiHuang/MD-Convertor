@@ -14,11 +14,15 @@ This project follows the principles of [Keep a Changelog](https://keepachangelog
 
 - The browser extension no longer reports a successful save when its Markdown download was interrupted or never finished. It waits for Chrome to mark the file complete, and otherwise shows the failure badge (「转换失败：无法写入下载目录」) instead of a ✓.
 
+- Images downloaded by the browser extension now survive titles that contain spaces or parentheses (`X 上的 姚金刚 (@yaojingang)`). The Markdown used to point at `<title>.images/…` unescaped, so a Markdown parser stopped the reference at the space or the closing parenthesis and the image was lost; references are now percent-encoded while the files on disk keep their readable names, and the desktop app still resolves them.
+
 - Production dependencies were upgraded to close disclosed advisories (dompurify, next, sharp, undici, source-map-js — all patch-level within the existing ranges, lock file only); `npm audit --omit=dev` is back to zero. For users this means the HTML sanitizer and image pipeline no longer carry known-vulnerable versions.
 
 ### Changed
 
 - README and the product specification (both languages) now reflect the 0.3.10 feature set: the 「转换既有文档」 batch-processing entry and the 0.3.10 artifact record are in, and the product's non-goals no longer contradict the shipped batch feature.
+
+- The packaged runtime moved from Electron 43.3.0 to 43.8.10, which clears all twelve advisories that applied to the shipped runtime (the certificate mitigation alone required 43.8.1). Nothing else in the bundled app changes shape; the installer is about 1.6 MB larger because of the newer framework.
 
 - Removed one-off leftovers: the 0.3.0-era CLI probe script (its conclusions were long encoded in code and docs) and a `.gitignore` rule pointing at a file that never existed.
 

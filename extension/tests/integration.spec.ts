@@ -9,7 +9,7 @@ import {
   tempDir,
   useRealDownloadNaming,
 } from "./harness";
-import { MISSING_IMAGE, PROTECTED_IMAGE, startFixtureServer, type FixtureServer } from "./fixtures/server";
+import { MISSING_IMAGE, PROTECTED_IMAGE, SPACED_TITLE, startFixtureServer, type FixtureServer } from "./fixtures/server";
 
 // S3 layer 4: the real built extension, in a real Chromium, writing real files. Everything here
 // asserts the on-disk result rather than what the worker said it did, because "the worker thinks
@@ -29,6 +29,7 @@ const ARTICLE = { route: "/article", title: "示例文章标题" };
 const COOKIE_ARTICLE = { route: "/article-cookie", title: "会话图片文章" };
 const MISSING_ARTICLE = { route: "/article-missing", title: "缺图文章" };
 const SPECIAL_ARTICLE = { route: "/article-special", rawTitle: "发布说明/第 1 期: 中文标题", title: "发布说明-第 1 期- 中文标题" };
+const SPACED_ARTICLE = { route: "/article-spaced", title: SPACED_TITLE };
 
 let server: FixtureServer;
 let context: BrowserContext;
@@ -111,6 +112,29 @@ test("T3.1 — the markdown and its images really land, and every reference reso
   ]);
   expect(new Set(refs).size).toBe(2);
   expect(refs[0]).toBe(refs[2]);
+});
+
+// The B1 family, end to end: a title with spaces and parentheses keeps a readable file name on
+// disk, while the reference inside the markdown is escaped so no CommonMark parser cuts it at the
+// first space. Decoding the reference must point at a real file — that is the whole claim.
+test("T3.1 — a title with spaces and parentheses still yields a reference that resolves", async () => {
+  const result = await convert(SPACED_ARTICLE.route);
+  expect(result).toMatchObject({ mdName: `${SPACED_ARTICLE.title}.md`, saved: 1, failed: 0 });
+
+  const markdown = await readMarkdown(result.mdName);
+  const refs = relativeRefs(markdown);
+  expect(refs).toEqual([
+    "X%20上的%20姚金刚%20%28@yaojingang%29.images/001-photo-one.png",
+  ]);
+  for (const ref of refs) {
+    const onDisk = path.join(downloadDir, decodeURIComponent(ref));
+    expect(existsSync(onDisk), `${ref} must exist on disk once decoded`).toBe(true);
+    expect(readFileSync(onDisk).byteLength).toBeGreaterThan(0);
+  }
+  // The downloaded name itself stays human-readable — only the reference is escaped.
+  expect(readdirSync(path.join(downloadDir, `${SPACED_ARTICLE.title}.images`))).toEqual([
+    "001-photo-one.png",
+  ]);
 });
 
 test("T3.2 — an image behind the session cookie still downloads", async () => {

@@ -326,12 +326,13 @@ ELECTRON_SMOKE_TEST=1 ELECTRON_SMOKE_TEST_SECRETS=1 \
 
 Back up `settings.json` and `secrets.json` (default `~/Library/Application Support/MD-Convertor/`) and record their md5 before running the smoke against a real installation; the smoke is supposed to leave them byte-identical, and an md5 mismatch is the signal that it did not.
 
-### Two traps when the smoke is launched from an agent shell
+### Three traps when the smoke is launched from an agent shell
 
-Both were hit on 2026-09-22 (T3.4 of `feat-041`) and neither is a defect in the artifact:
-
+The first two were hit on 2026-09-22 (T3.4 of `feat-041`), the third on 2026-11-16; none is a defect in the artifact:
 - **`ELECTRON_RUN_AS_NODE` is inherited.** A shell started from an Electron host (WorkBuddy, VS Code, and others) exports `ELECTRON_RUN_AS_NODE=1`, and an Electron binary that sees it starts as plain Node.js instead of as an app. The symptom is not an error: the log holds `Welcome to Node.js v24.x` and a `>` prompt, the process waits on stdin forever, and it looks like a hang. Launch the smoke through `env -u ELECTRON_RUN_AS_NODE …` (and `NODE_OPTIONS=` to drop any host-injected `--require`).
 - **Chromium cannot sandbox itself inside another sandbox.** Where the shell already runs under macOS seatbelt — the WorkBuddy Bash tool does — Chromium's helper processes fail with `sandbox initialization failed: Operation not permitted`, the GPU process dies (`exit_code=6`), and the run ends on `FATAL: GPU process isn't usable. Goodbye.` (exit 133). This is the same root cause that makes Playwright's Firefox unable to run there. It is an artifact of the executing environment, not of the build: the same bundle runs normally when launched from Finder. Inside such a shell the smoke can still produce its functional evidence with `--no-sandbox --disable-gpu`, which yields `exit 0` and both `Preload bridge smoke passed` and `Runtime secret smoke passed`; for the canonical run — Chromium's sandbox on, exactly as a user gets it — open Terminal and run the command above there, where no outer sandbox exists.
+
+- **A brand-new build blocks on the keychain until the approval dialog is answered (2026-11-16).** The `MD-Convertor Safe Storage` item's ACL is bound to the build's code signature, so every newly built app is a stranger to the keychain. The first `safeStorage` call then waits on a dialog that an agent shell cannot show, and the process hangs with no output at all (`SecItemCopyMatching` in the unified log is the only trace; no server child appears). Control experiment: an already-approved build in `/Applications` passes the same smoke in the same shell. Add `--use-mock-keychain` for an isolated run (`ELECTRON_SMOKE_TEST=1` + a conversion smoke both pass that way); the canonical run with `ELECTRON_SMOKE_TEST_SECRETS=1` needs the user to approve the dialog once in Terminal. `desktop:release` is unaffected because it does not run the smoke.
 
 ## Verifying Package Contents
 
@@ -344,6 +345,7 @@ npx asar list "$A" | grep -c node_modules/electron    # 0 after the 0.3.3 trim
 npx asar list "$A" | grep -c '^/\.next'              # 0: the built frontend is not in the asar
 npx asar list "$A" | grep -c '^/docs'                # 0 after T3.0: only package.json + /electron
 LC_ALL=C grep -c "<a string from the change under test>" "$A"
+defaults read "$APP/Contents/Frameworks/Electron Framework.framework/Resources/Info.plist" CFBundleVersion   # e.g. 43.8.10
 ```
 
 The archive holds **only what the runtime reads**: `package.json` (Electron resolves `main` from it) and `/electron` (the Electron-side modules, including the preload). Everything else in the repository root — `src`, `docs`, `e2e`, `tests`, `scripts`, `.workbuddy`, `AGENTS.md`, `CHANGELOG*`, `PROGRESS.md`, `session-handoff.md`, `feature_list.json`, `README*`, `init.sh`, `public`, and the build/lint/test configs — is excluded on purpose (`forge.config.cjs`, task T3.0 of `docs/features/default-save-path/S3-release.md`). `tests/forge-package-scope.test.ts` guards that list in both directions, so a future edit cannot quietly drop `electron/` out of the package.

@@ -4,6 +4,21 @@ export type ImageOutcome =
 
 const PLACEHOLDER_WORD_CHAR = "[\\p{L}\\p{N}]";
 
+// Only what can terminate a bare link destination is escaped: whitespace, parentheses, DEL (which
+// CommonMark forbids in a bare destination), and the three characters that would be read as a
+// fragment/query/escape sequence. Everything else stays verbatim — percent-encoding CJK would turn
+// a readable file name into noise, and the desktop reader runs `decodeURIComponent` on whatever it
+// finds here (`src/lib/local-docs/inline-images.ts`), so every escape must be real UTF-8 bytes.
+const DESTINATION_UNSAFE = /[\s\x7f()%#?<>"\\]/gu;
+
+export function escapeDestination(value: string): string {
+  return value.replace(DESTINATION_UNSAFE, (char) =>
+    // `encodeURIComponent` leaves `(` and `)` alone, and those two are the whole reason this
+    // function exists, so they are spelled out.
+    char === "(" ? "%28" : char === ")" ? "%29" : encodeURIComponent(char),
+  );
+}
+
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -22,7 +37,7 @@ export function rewriteImageReferences(markdown: string, plans: ImageOutcome[]):
 
   const replacements = plans.map((plan) => ({
     pattern: placeholderPattern(plan.placeholder),
-    value: "path" in plan ? plan.path : plan.url,
+    value: "path" in plan ? escapeDestination(plan.path) : plan.url,
     failure: "path" in plan ? null : `<!-- 图片未下载：${plan.url} -->`,
   }));
 

@@ -219,7 +219,7 @@
 
 **缺陷（B1–B3）**
 
-- **B1（2026-09-30 定位并修复，读方）**：真机样例 `~/Downloads/X 上的 姚金刚 (@yaojingang).md`（11 张图）暴露 `src/lib/local-docs/scan-refs.ts` 的 `INLINE_IMAGE` 正则用 `[^\s)]+` 取目标，遇到**含空格 / 括号**的路径（插件产物 `<标题>.images/`，标题带空格或半角括号）会截断 ⇒ 整条图片引用不匹配 ⇒ 既不入候选也无 warning，行状态停在「完成（内嵌 0 张，保留 0 张）」。修法（读方、最小改动）：目标改为允许空格与配平括号（空格不跨行）。RED：`scan-refs.test.ts` 新增 4 例 + `process.test.ts` 新增 1 例 ⇒ 3 failed；GREEN：`src/lib/local-docs/` **7 files / 99 tests passed**；对真机样例的临时探针跑出 `{"embedded":11,"kept":0,"warnings":[]}`（探针已删）。**写方（插件是否该 percent-encode 文件名）未动**，作可选后续，需另行授权。
+- **B1（2026-09-30 定位并修复，读方）**：真机样例 `~/Downloads/X 上的 姚金刚 (@yaojingang).md`（11 张图）暴露 `src/lib/local-docs/scan-refs.ts` 的 `INLINE_IMAGE` 正则用 `[^\s)]+` 取目标，遇到**含空格 / 括号**的路径（插件产物 `<标题>.images/`，标题带空格或半角括号）会截断 ⇒ 整条图片引用不匹配 ⇒ 既不入候选也无 warning，行状态停在「完成（内嵌 0 张，保留 0 张）」。修法（读方、最小改动）：目标改为允许空格与配平括号（空格不跨行）。RED：`scan-refs.test.ts` 新增 4 例 + `process.test.ts` 新增 1 例 ⇒ 3 failed；GREEN：`src/lib/local-docs/` **7 files / 99 tests passed**；对真机样例的临时探针跑出 `{"embedded":11,"kept":0,"warnings":[]}`（探针已删）。**写方（插件是否该 percent-encode 文件名）当时未动**，作可选后续；**2026-11-16 已完成**：`extension/src/references.ts` 新增 `escapeDestination()`，只转义空白/括号/`%#?<>"\\`/DEL 且按 UTF-8 字节出 `%XX`（CJK 与 URL 兜底保持原样，盘上文件名仍可读），RED 4 failed / 20 passed ⇒ GREEN 24 passed，`test:extension` 加 `/article-spaced` 端到端用例后 16 passed。
 - **B2**：二级画面「← 返回」把品牌 `MD-Convertor` 推右 ⇒ 修 `page.module.css` 的品牌横向定位；`e2e/home.spec.ts` 加「三个画面里品牌横向位置一致」断言。
 - **B3**：设置页长目录把右侧按钮挤换行 ⇒ 设置页 `.path` 改单行 + 省略号（`min-width:0` / `overflow:hidden` / `white-space:nowrap` / `text-overflow:ellipsis`），目录加 `title`。
 
@@ -235,7 +235,7 @@
 - 12 条人工验收 2026-09-30 全部签字通过 ⇒ `feat-042` 已置 `done`（2026-09-30；当时的 0.3.7 尚未发布、未 push、未动 tag/ZIP —— **这些已在同日第二十轮的提交门轮次完成：tag `v0.3.7` + GitHub Release 已发布**）。
 - `unzip -Z1` 对非 ASCII 条目名乱码属已接受取舍（未改名 README.md）；`ditto -x -k` 与 `unzip` 解压正确。
 - 首次 e2e 的 firefox flake（`:305`）未修，与既有 V3 同族。
-- **B1 只修了读方**（`scan-refs.ts` 容忍含空格/括号的路径）；插件写方仍按 `<标题>` 原样落盘、不 percent-encode 文件名，属可选的后续加固，需另行授权。
+- **B1 写方已于 2026-11-16 补完**：读取侧（`scan-refs.ts`）早就能容忍含空格/括号的路径，现在写入侧（`extension/src/references.ts`）也把 Markdown 引用转义成 `%XX`，两侧契约对齐；盘上文件名仍是可读的 `<标题>.images/…`。
 
 ### 真机点检反馈 · 第四轮（2026-09-30，同日已处理）—— 面板布局与返回路径
 

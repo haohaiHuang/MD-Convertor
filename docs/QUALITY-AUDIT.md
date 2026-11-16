@@ -4,7 +4,9 @@
 
 **Current released version: `0.3.10`** (published 2026-10-01 as GitHub Release `v0.3.10`, tag `77703c3`; `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.10.zip`, 236,226,685 bytes, SHA-256 `f25e0ae9…c1945`, server-side digest matched). It carries feat-043, the UI walkthrough fixes (11 items: header three-column grid with centred brand, context-aware back labels, relocated local-documents warnings with a 去设置 link, placeholder contrast, disabled-state colour instead of opacity, same-row feature hints). Gate evidence: `init.sh` 95 files / 1274 passed / 0 skipped, three-engine E2E 348 passed / 6 skipped, live 2/2. Per-round details and the six known-undecided flakes: see `## Archived Round Log` below and `session-handoff.md` Environment Notes.
 
-**Latest round: 2026-11-14 (round 32, remediation of the external audit's P2 items, no release; version face is `0.3.11`)** — four code fixes proven by RED-first tests: distinct product names for sources whose names have to be cleaned (batch overwrites are gone, and the list shows the real product name), `realpath` boundary checks for local images so a symlink cannot read outside the source tree, the extension now waits for its Markdown download to reach `complete` before reporting success, and `npm run audit:runtime` wired into the release gate (production advisories block, Electron's 12 tracked advisories print). Evidence: `npm run test:coverage` 96 files / 1291 passed, three-engine E2E 351 passed / 6 skipped, `test:extension` 45 passed at `--repeat-each=3`. Details: [`features/audit-p2-remediation/FSD.md`](features/audit-p2-remediation/FSD.md).
+**Latest round: 2026-11-16 (round 33, ledger drift fix plus the three queued remediations, no release; version face stays `0.3.11`)** — first the drift: feat-044 had already been committed as `0c64834` (plus bookkeeping `4c81a99`) while PROGRESS, session-handoff, this file and the remediation FSD still called it uncommitted, so the 19 current-state claims were corrected and every historical round entry was left untouched (those were true when written). Then the three authorised items: the extension now percent-encodes local image references (writer side of the 2026-09-30 B1 finding, so titles with spaces or parentheses keep their images), Electron moved `43.3.0` → `43.8.10` (its twelve shipped-runtime advisories are gone; the full tree went 50 → 49 and production stays 0), and the `next` manifest floor was corrected to `^16.4.6` to match the locked server. Evidence: `./init.sh` 96 files / 1300 passed, `test:extension` 16 passed, three-engine E2E 351 passed / 6 skipped, `desktop:make` producing a 0.3.11 ZIP whose framework reports 43.8.10, plus a packaged smoke (preload bridge + a real conversion) on that bundle. No version bump, no push, no release.
+
+**Previous round: 2026-11-14 (round 32, remediation of the external audit's P2 items, no release; version face is `0.3.11`)** — four code fixes proven by RED-first tests: distinct product names for sources whose names have to be cleaned (batch overwrites are gone, and the list shows the real product name), `realpath` boundary checks for local images so a symlink cannot read outside the source tree, the extension now waits for its Markdown download to reach `complete` before reporting success, and `npm run audit:runtime` wired into the release gate (production advisories block, Electron's 12 tracked advisories print). Evidence: `npm run test:coverage` 96 files / 1291 passed, three-engine E2E 351 passed / 6 skipped, `test:extension` 45 passed at `--repeat-each=3`. Details: [`features/audit-p2-remediation/FSD.md`](features/audit-p2-remediation/FSD.md).
 
 **Previous audit round: 2026-11-14 (round 31, no release)** — a full-project read-only audit followed by the user-approved remediation: production dependency advisories cleared (dompurify 3.4.17, next 16.4.6, sharp 0.35.5, undici, source-map-js — `package-lock.json` only), README/PRODUCT/ARCHITECTURE brought back in sync with 0.3.10 in both languages, the stale one-shot probe script and a duplicate 116 MB Electron cache removed, and the doc-consistency drift fixed (this verdict rewritten as a short statement; QA-012 re-closed with a recurring-audit note). Gate evidence: `npm audit --omit=dev` 0 vulnerabilities, `./init.sh` 95 files / 1274 passed / 0 skipped. Historical per-version release verdicts (0.3.1–0.3.9) now live only in `## Archived Round Log` and `docs/TESTING.md`; the previous unbounded verdict paragraphs were collapsed here because they had grown into the drift source this round set out to fix.
 
@@ -214,11 +216,12 @@ The package is about 4.3 MB larger than `0.3.3`; the delta comes from this build
 ### QA-DEV — Development dependency advisories (including Electron, which ships)
 
 - Severity: maintenance risk, one of them a packaged-runtime risk
-- Status: **actively tracked since 2026-11-14**; the production half is now gated, the Electron half waits on `feat-045`
-- Evidence (2026-11-14, `npm audit --json` at commit `fb63c06`): production tree `--omit=dev` = **0** advisories; full tree = **50** (3 low / 14 moderate / 28 high / 5 critical) in build and test tooling. `electron@^43.3.0` — a devDependency that becomes the packaged runtime — resolves to `43.3.0` and matches **12** advisories (2 high below `43.4.1`, `GHSA-qmv3-fv6v-rmhq` below `43.5.0`, a certificate mitigation below `43.8.1`); the 43.x line is at `43.8.10` and the newest major is `45.3.2`.
+- Status: **resolved for the shipped runtime on 2026-11-16** (Electron upgraded, `feat-045`); the production half has been gated since 2026-11-14
+- Evidence (2026-11-16, `npm audit --json` after the upgrade): production tree `--omit=dev` = **0** advisories; full tree = **49** (3 low / 14 moderate / 27 high / 5 critical) in build and test tooling; **`electron` no longer appears in the report at all**. Before the upgrade (2026-11-14, commit `fb63c06`) the full tree was **50** (3 low / 14 moderate / 28 high / 5 critical) and `electron@^43.3.0` → `43.3.0` matched **12** advisories (2 high below `43.4.1`, `GHSA-qmv3-fv6v-rmhq` below `43.5.0`, a certificate mitigation below `43.8.1`).
 - Why it is not simply "devDependency, ignore": the packaged `.app` runs that exact Electron, so its advisories are runtime advisories in everything but `package.json` placement.
 - Mitigation now in the gate: `npm run audit:runtime` (`scripts/audit-runtime.mjs`) runs inside `npm run desktop:release` — any **production** advisory aborts the release, any **Electron** advisory is printed as a tracked warning. The gate judges the report, not the exit code, because `npm audit` exits 1 whenever anything anywhere is reported.
-- Mitigation still pending: the Electron upgrade itself (`feat-045`) needs a full gate, a packaged smoke test and a release authorization; do not force-upgrade the rest of the toolchain to silence the report.
+- Upgrade completed: `electron` `43.3.0` → `43.8.10` (same major, the lowest version that clears every 43.x advisory). Verified by `./init.sh`, `test:extension`, three-engine e2e, `desktop:make`, and a packaged smoke on the new bundle (preload bridge + real `example.com` conversion) — see the 2026-11-16 round log. 45.x was deliberately not taken; it stays a separate future round.
+- Still open (not silenced): the remaining 49 advisories live in build and test tooling only. Do not force-upgrade the toolchain to zero the report; production is the gate.
 - Re-verify: `node scripts/audit-runtime.mjs` and `npm ls electron`.
 
 ### QA-009 — Provider keys and the runtime secret path
@@ -289,6 +292,19 @@ Approved for personal testing. Not approved for frictionless public distribution
 
 ## Archived Round Log
 
+### 2026-11-16（第三十三轮）—— 台账漂移修复 + 三项待办整改（未发布）
+
+- 用户指令「先修，全部修完了再统一提交」：上一轮报出的漂移——feat-044 已在 `0c64834` 提交（随后簿记 `4c81a99`），而四处文档仍写「未提交」。
+- 只改现役口径（PROGRESS 6 处 / session-handoff 10 处 / 本文件 2 处 / `features/audit-p2-remediation/FSD.md` 1 处，共 19 处）；**历史轮次记录一律不动**——那些「未提交」在当轮为真，属存档。
+- PROGRESS 的内部矛盾（Active feature 记「未提交」、Branch 段却写「已提交在 `0c64834`」）随之消除；两份文档的 HEAD / `origin/main` / Branch 口径统一到 `4c81a99` / `fb63c06`。
+- 零代码、零版本面改动（仍 `0.3.11`），未 push、未发布。
+- 同轮随后按用户「全部修完再统一提」授权做完三项待办（各自 TDD 留痕，详见 `feat-045.verification` 与 `feat-040.verification` 末两条）：
+  - **插件写方 percent-encode**（B1 的写方半条）：`references.ts` 新增 `escapeDestination()`，只转义空白/括号/`%#?<>"\\`/DEL，按 UTF-8 字节出 `%XX`（提交门评审抓到首版按 UTF-16 码元编码：NBSP 出 `%A0`、全角空格出 `%3000`，读方 decode 会拿到另一个名字），CJK 与 URL 兜底保持原样；盘上文件名仍可读。RED 4 failed / 20 passed ⇒ GREEN 24 passed；桌面读方已有 `decodeURIComponent`，补两条「转义目标仍能嵌入」的契约用例（首跑即绿，`src/lib/local-docs/` 7 files / 105 passed）；端到端加 `/article-spaced` fixture（`X 上的 姚金刚 (@yaojingang)`）与一条断言「引用恰为 `…%28@yaojingang%29.images/001-photo-one.png` 且 `decodeURIComponent` 指向真实非空文件」⇒ `test:extension` 16 passed。
+  - **Electron 43.3.0 → 43.8.10**：43.x 十二条公告全部在 `43.8.1` 及以前清掉，故取同 major 最小步；45.x 留作独立轮次。审计现为 prod 0 / electron 无公告 / 全树 49（3 low / 14 moderate / 27 high / 5 critical）。
+  - **`next` 下界 `^16.3.5` → `^16.4.6`**：原区间根本产不出已在跑的 16.4.6 服务端。
+- 门禁：`./init.sh` 96 files / **1300 passed**；`test:extension` 16；三引擎 e2e **351 passed / 6 skipped**；`desktop:make` 出 0.3.11 ZIP（**237,921,843 bytes**，框架 43.8.10）。
+- **打包冒烟（本轮唯一的环境坑，已定性）**：新构建的 keychain ACL 绑定代码签名，agent shell 里首次运行会静默挂在 `SecItemCopyMatching`（无弹窗、无输出、无 server 子进程）。对照实验：`/Applications` 里已授权过的 0.3.10（Electron 43.3.0）在**同一 shell** 里跑通同一冒烟 ⇒ 挂的是签名不是 43.8.10。故用 `--use-mock-keychain` 取证（preload 桥 + 真实转换均通过）；**带 `ELECTRON_SMOKE_TEST_SECRETS=1` 的规范一次仍需用户在 Terminal 批准弹窗后跑**。`desktop:release` 不跑冒烟，不受影响。
+
 ### 2026-11-14（第三十二轮）—— 外部审计 P2 四条整改 + 审计门禁（未发布，版本面 `0.3.11`）
 
 - 用户指令「按照本项目 Harness 要求跑」：先把审计 6 条逐条回仓库复现（全部成立），再按 TDD 修其中 4 条代码 + 1 条门禁缺口；Electron 版本单列 `feat-045`。
@@ -298,7 +314,7 @@ Approved for personal testing. Not approved for frictionless public distribution
 - T4.0 审计门禁：新增 `scripts/audit-runtime.mjs` + 9 条单测（判报告不判退出码），接线进 `desktop:release`（`init.sh` 之后、`test:e2e` 之前），`release-guards.test.mjs` 事件序同步；真跑 prod 0 / electron 12 条公告。QA-DEV 重写为活跃跟踪项。
 - T5.0 版本面 `0.3.11`（TDD 先红后绿），`scripts/` 41 passed。门禁：lint/typecheck 干净、coverage 96 files / 1291 passed、三引擎 e2e 351 passed / 6 skipped / 0 failed、`test:extension` 15 passed。两次 e2e 抖动均判抖动未改代码：firefox 掉 hydration 等（单跑 5/5）与 firefox `NS_ERROR_PROXY_CONNECTION_REFUSED`（系统代理无 localhost 例外，单跑 5/5）。
 - 提交门（3 路只读评审）修掉一处真错：面板 `title` 给的是「产物名」（单元格里已有），四处文档说的都是「原名」⇒ e2e 先加 `title` 断言（RED `received 产物名：a-05249472.md`）再改 `panel.tsx` 为 `原名：${row.name}`；另修 8 处台账/计数器陈旧（`waitForDownloadComplete` 现行口径 ×2、coverage 文件数 ×2、stash 假记载、重复的「发布前才 bump」、哈希输入含扩展名、`QA-DEV` 编号）与 CHANGELOG 角标文案。
-- 未做：未提交、未发布、未升级 Electron、未改 `next` 下界。
+- 未做：未升级 Electron、未改 `next` 下界、push、发布（提交在提交门之后完成：`0c64834` 实现 + `4c81a99` 簿记）。
 
 ### 2026-11-14（第三十一轮）—— 全项目审计 + 整改（未发布）
 

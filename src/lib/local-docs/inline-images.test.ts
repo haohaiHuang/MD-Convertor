@@ -85,6 +85,30 @@ describe("inlineLocalDocImages — local images", () => {
     expect(result.markdown).not.toContain("nested.png");
   });
 
+  // Contract with the browser extension (B1 follow-up): the writer escapes only what can end a
+  // bare destination, so a title with spaces and parentheses arrives as `%20` / `%28` / `%29`.
+  // This case went green on its first run — the reader has decoded since T2.2 — so it pins the
+  // contract rather than driving a change.
+  it("resolves the escaped destination the extension writes for a spaced title", async () => {
+    await mkdir(path.join(root, "X 上的 姚金刚 (@y)"), { recursive: true });
+    await writeFile(path.join(root, "X 上的 姚金刚 (@y)", "001-a.png"), onePixelPng);
+    const markdown = "![a](X%20上的%20姚金刚%20%28@y%29/001-a.png)\n";
+    const result = await inline(markdown);
+
+    expect(result.stats).toEqual({ embedded: 1, kept: 0 });
+    expect(result.warnings).toEqual([]);
+  });
+
+  it("resolves a destination whose non-ASCII whitespace the extension escaped as UTF-8", async () => {
+    await mkdir(path.join(root, "X\u00a0Y"), { recursive: true });
+    await writeFile(path.join(root, "X\u00a0Y", "001-a.png"), onePixelPng);
+    const markdown = "![nbsp](X%C2%A0Y/001-a.png)\n";
+    const result = await inline(markdown);
+
+    expect(result.stats).toEqual({ embedded: 1, kept: 0 });
+    expect(result.warnings).toEqual([]);
+  });
+
   it("keeps the original reference for an absolute path outside the root", async () => {
     const outside = path.join(path.dirname(root), "outside.png");
     const markdown = `![abs](${outside})\n\n![esc](..%2Foutside.png)\n\n![esc2](../outside.png)\n`;

@@ -52,4 +52,69 @@ describe("rewriteImageReferences", () => {
         `<!-- 图片未下载：https://example.com/c.png -->\n`,
     );
   });
+
+  // B1 follow-up: the title keeps spaces and parentheses, so a bare destination would be cut at
+  // the first space (or at the first `)`) by any CommonMark parser. Only the characters that can
+  // end a bare destination are escaped — percent-encoding CJK would make the file unreadable for
+  // no gain, and the desktop reader already `decodeURIComponent`s what it finds.
+  it("percent-encodes spaces so a title with spaces keeps a parseable destination", () => {
+    const markdown = `![](md-convertor-image-1)\n`;
+    const plans: ImageOutcome[] = [
+      { placeholder: "md-convertor-image-1", path: "X 上的 姚金刚.images/001-a.png" },
+    ];
+
+    expect(rewriteImageReferences(markdown, plans)).toBe(`![](X%20上的%20姚金刚.images/001-a.png)\n`);
+  });
+
+  it("escapes parentheses so they cannot close the destination early", () => {
+    const markdown = `![](md-convertor-image-1)\n`;
+    const plans: ImageOutcome[] = [
+      { placeholder: "md-convertor-image-1", path: "X (@someone).images/001-a.png" },
+    ];
+
+    expect(rewriteImageReferences(markdown, plans)).toBe(`![](X%20%28@someone%29.images/001-a.png)\n`);
+  });
+
+  it("escapes a literal percent, hash and question mark so the reader can round-trip the name", () => {
+    const markdown = `![](md-convertor-image-1)\n`;
+    const plans: ImageOutcome[] = [
+      { placeholder: "md-convertor-image-1", path: "100% #tag ?query.images/001-a.png" },
+    ];
+
+    expect(rewriteImageReferences(markdown, plans)).toBe(
+      `![](100%25%20%23tag%20%3Fquery.images/001-a.png)\n`,
+    );
+  });
+
+  it("percent-encodes non-ASCII whitespace by UTF-8 byte so the reader decodes the same name", () => {
+    const markdown = `![](md-convertor-image-1)\n`;
+    const plans: ImageOutcome[] = [
+      { placeholder: "md-convertor-image-1", path: "X\u00a0Y\u3000Z.images/001-a.png" },
+    ];
+
+    expect(rewriteImageReferences(markdown, plans)).toBe(
+      `![](X%C2%A0Y%E3%80%80Z.images/001-a.png)\n`,
+    );
+  });
+
+  it("escapes a DEL character, which CommonMark forbids in a bare destination", () => {
+    const markdown = `![](md-convertor-image-1)\n`;
+    const plans: ImageOutcome[] = [
+      { placeholder: "md-convertor-image-1", path: "a\u007fb.images/001-a.png" },
+    ];
+
+    expect(rewriteImageReferences(markdown, plans)).toBe(`![](a%7Fb.images/001-a.png)\n`);
+  });
+
+  it("leaves a kept URL untouched — it is already a valid destination", () => {
+    const markdown = `![](md-convertor-image-1)\n`;
+    const plans: ImageOutcome[] = [
+      { placeholder: "md-convertor-image-1", url: "https://example.com/a%20b.png?x=1&y=2#frag" },
+    ];
+
+    expect(rewriteImageReferences(markdown, plans)).toBe(
+      `![](https://example.com/a%20b.png?x=1&y=2#frag)\n` +
+        `<!-- 图片未下载：https://example.com/a%20b.png?x=1&y=2#frag -->\n`,
+    );
+  });
 });

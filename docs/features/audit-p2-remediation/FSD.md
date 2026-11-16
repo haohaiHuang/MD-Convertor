@@ -12,8 +12,8 @@
 | A2 | 图片内嵌只做字符串前缀检查，符号链接可指向源目录之外 | 探针：`link.png -> 目录外/secret.png` 被当作 `embedded: 1`，无 warning | **修**（T2.0） |
 | A3 | 插件把 Markdown 下载失败也报成功（角标打 ✓） | 真实 `run()` + 假 chrome（`search` 报 `interrupted`）返回 `{ok: true}` | **修**（T3.0） |
 | A4 | 「生产依赖 0 漏洞」口径窄，且发布门禁没有落实审计 | `release-desktop.mjs` 只跑 `init.sh`/e2e/live/make；`QUALITY-AUDIT.md` 要求每道门禁复跑审计 | **修**（T4.0） |
-| A5 | Electron 43.3.0 命中 12 条公告（devDependency，但打包后即运行时） | `npm audit --json` 的 electron 条目 | **不修**，登记 `feat-045` |
-| A6 | `package.json` 写 `next: ^16.3.5`，实际锁 16.4.6（语义下界过时） | 读两个文件 | **不修**（卫生项，随下次依赖变更一并处理） |
+| A5 | Electron 43.3.0 命中 12 条公告（devDependency，但打包后即运行时） | `npm audit --json` 的 electron 条目 | **不修**，登记 `feat-045`（2026-11-16 已完成：升到 43.8.10，electron 不再出现在报告里） |
+| A6 | `package.json` 写 `next: ^16.3.5`，实际锁 16.4.6（语义下界过时） | 读两个文件 | **不修**（卫生项，2026-11-16 随依赖变更一并改为 `^16.4.6`） |
 
 非目标：不新建第二条批量编排或第二条写盘路径；不改 `extension/src/write.ts` 的签名；不升级 Electron；不发布。
 
@@ -68,6 +68,6 @@
 
 ## 5. 遗留
 
-- `feat-045`：Electron 43.3.0 → 43.8.10（或 45.x）升级，需要完整门禁 + 打包冒烟 + 发布授权。
-- `package.json` 的 `next: ^16.3.5` 下界过时（锁是 16.4.6），改它属于依赖变更，等下一次依赖轮。
-- 本轮 bump 到 `0.3.11`，**未提交、未发布**；发布需要单独授权。
+- `feat-045`（已完成，`feat-045.verification`）：Electron 43.3.0 → 43.8.10；同一轮把 `next` 下界改为 `^16.4.6`。45.x 仍是独立候选（需完整门禁 + 打包冒烟 + 授权）。
+- 打包冒烟的环境坑（2026-11-16 定性）：新构建的 keychain ACL 绑定代码签名，agent shell 里首次运行会静默挂住，需在 Terminal 里批准一次弹窗；`desktop:release` 不跑冒烟，不受影响。
+- 本轮 bump 到 `0.3.11`；提交在提交门之后完成（`0c64834` 实现 + `4c81a99` 簿记），**未 push、未发布**；发布需要单独授权。

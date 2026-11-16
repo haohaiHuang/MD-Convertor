@@ -14,6 +14,7 @@ export const SESSION_COOKIE = { name: "md-session", value: "open-sesame" };
 export const PROTECTED_IMAGE = "/protected/secret.png";
 export const MISSING_IMAGE = "/img/missing.png";
 export const ARTICLE_IMAGES = ["/img/photo-one.png", "/img/photo-two.png"];
+export const SPACED_TITLE = "X 上的 姚金刚 (@yaojingang)";
 
 const PARAGRAPHS = [
   "这是第一段正文，需要写得足够长，好让 Readability 把这一块当作文章正文而不是页面噪声，因此这里多写一些说明性的文字。",
@@ -68,6 +69,10 @@ const ROUTES: Record<string, () => string> = {
     articlePage("会话图片文章", [text(), image(PROTECTED_IMAGE, "会话图")].join("\n")),
   "/article-missing": () => articlePage("缺图文章", [text(), image(MISSING_IMAGE, "坏图")].join("\n")),
   "/article-special": () => articlePage("发布说明/第 1 期: 中文标题", [text()].join("\n")),
+  // Spaces and parentheses survive `cleanFilenameStem`, so this is the case where a bare markdown
+  // destination would be cut short by any CommonMark parser (the B1 family).
+  "/article-spaced": () =>
+    articlePage(SPACED_TITLE, [text(), image(ARTICLE_IMAGES[0], "带空格的图")].join("\n")),
   "/no-article": () =>
     `<!DOCTYPE html>
 <html lang="zh"><head><meta charset="utf-8"><title>无正文页</title></head>
