@@ -7,7 +7,7 @@
 - Active feature: **无（`feat-044`「审计 P2 整改」已 `done`，未提交、未发布）**。四项代码修复 + 一项门禁缺口：产物名哈希戳（不再静默覆盖）、本地图片 `realpath` 边界、插件 md 下载等 `complete`、`npm run audit:runtime` 进入 `desktop:release`。逐任务 RED/GREEN 在 `feature_list.json` 的 `feat-044.verification`（9 条）与 `docs/features/audit-p2-remediation/FSD.md`。关键不变量（仍生效）：两个 `/api/local-docs/*` **只读不写盘**，**唯一写盘出口是 `outputBridge().saveFile()`**。
 - **唯一推荐下一步：feat-044 的改动等用户决定提交与发布**（发布需单独授权）。之后候选：`feat-045` Electron 43.3.0 → 43.8.10/45.x（要完整门禁 + 打包冒烟）、`package.json` 的 `next` 下界过时、`extension/` 写方 percent-encode、云端 Provider 实文实测、P2-3…P2-6（用户锁死推迟）。**feat-044 未定的口径**：只有「清洗改动过名字」的源加哈希戳，干净名字保持不变（既有产物仍 `skip`）；Electron 公告只告警不阻断（`QA-DEV` + `feat-045`）。
 - Pending（无一是阻塞项）：① 产物与 tag 一律不动，缺失项按退役处理；② 签名/notarization 不做；③ 2026-09-20 旧 UI 评审（`docs/UI-REVIEW-2026-09-20.md`）勿重提（09-30 走查已销项）；④ 六条未裁决 flake（见 Environment Notes，2026-11-14 又见一条同族：`local-docs.spec.ts:565`，隔离 5/5 绿）；⑤ 版本面已是 `0.3.11`（feat-044 TDD bump 完成），**发布仍需用户单独授权**。
-- Branch: `main` = **`fb63c06`**（第三十一轮簿记提交，已推送；feat-043 实现提交 `77703c3` 即 tag `v0.3.10`）。feat-044 的改动见本轮提交。`outputs/`（QA 截图/探针）按惯例不入库。stash 空；`v0.3.9` = `9f3642e`、`v0.3.8` = `6e00474`、`v0.1.3` = `ce041c9` 不可变。
+- Branch: `main` = **`0c64834`**（feat-044 整改提交 34 files，**未 push**；父提交为第三十一轮簿记 `fb63c06`，feat-043 实现提交 `77703c3` 即 tag `v0.3.10`）。`outputs/`（QA 截图/探针）按惯例不入库。stash 空；`v0.3.9` = `9f3642e`、`v0.3.8` = `6e00474`、`v0.1.3` = `ce041c9` 不可变。
 
 - **本文件只写现役状态**（≤150 行 / ≤25KB）：阶段间交接写对应阶段文档的 `## Handoff`，轮次历史压进 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`。
 
