@@ -41,17 +41,17 @@ Do not run this command for an app whose source or checksum you do not trust.
 
 ## Current Release
 
-- Current version: `0.3.10` — the UI walkthrough fixes of feat-043, published 2026-10-01 (Apple Silicon Mac, macOS 12.0+).
-- Latest published release: [`v0.3.10`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.10).
+- Current version: `0.3.11` — safety fixes for batch products and local images, a finished download check in the extension, escaped image references, and Electron 43.8.10; published 2026-11-16 (Apple Silicon Mac, macOS 12.0+).
+- Latest published release: [`v0.3.11`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.11).
 - No build is Developer ID signed or notarized, so every artifact is suitable for personal testing only.
 
-Current gated and published artifact (`0.3.10`):
+Current gated and published artifact (`0.3.11`):
 
-- ZIP: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.10.zip`
-- Size: `236,226,685` bytes
-- SHA-256: `f25e0ae9aea0a915748ee5f6790ffb9ae467e35ecdf59512f25749684fcc1945`
+- ZIP: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.11.zip`
+- Size: `237,921,860` bytes
+- SHA-256: `a63e5192869f95afc73c5e4467067d31cd80899bda3cda6e227658d99720154d`
 
-Previous published artifacts: `0.3.9` = `236,224,633` bytes, SHA-256 `5e75709f…a9c9`; `0.3.8` = `236,224,675` bytes, SHA-256 `94624625…b2ea`; `0.3.5` = `237,335,837` bytes, SHA-256 `313bbbc341c94da0a5ca92f668f2df06cea9f734e47d7af65880500aa192d45f`. Full per-version records live in [Testing](docs/TESTING.md).
+Previous published artifacts: `0.3.10` = `236,226,685` bytes, SHA-256 `f25e0ae9…c1945`; `0.3.9` = `236,224,633` bytes, SHA-256 `5e75709f…a9c9`; `0.3.8` = `236,224,675` bytes, SHA-256 `94624625…b2ea`; `0.3.5` = `237,335,837` bytes, SHA-256 `313bbbc341c94da0a5ca92f668f2df06cea9f734e47d7af65880500aa192d45f`. Full per-version records live in [Testing](docs/TESTING.md).
 
 Download the ZIP from the [GitHub Releases](https://github.com/haohaiHuang/MD-Convertor/releases) page.
 
@@ -79,6 +79,6 @@ npm run test:live
 npm run desktop:release
 ```
 
-The release workflow requires version `0.3.10`, hash-checks every historical artifact that still exists outside the repository (missing entries are reported as retired instead of blocking), rejects stale output, and validates the packaged version, arm64 architecture, bundle structure, size, and SHA-256.
+The release workflow requires version `0.3.11`, hash-checks every historical artifact that still exists outside the repository (missing entries are reported as retired instead of blocking), rejects stale output, and validates the packaged version, arm64 architecture, bundle structure, size, and SHA-256.
 
 See [Product](docs/PRODUCT.md), [Architecture](docs/ARCHITECTURE.md), [Testing](docs/TESTING.md), [Quality Audit](docs/QUALITY-AUDIT.md), and [Changelog](CHANGELOG.md).

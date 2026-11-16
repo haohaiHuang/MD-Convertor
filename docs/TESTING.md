@@ -177,7 +177,20 @@ A later fix for long-article translation timeouts (`feat-024`, 2026-09-18) chang
 
 The `0.3.10` gate ran on 2026-10-01 and passed end to end (first attempt). It carries `feat-043` (the UI review fixes: the header brand back on the viewport centre line via a three-column grid, context-aware 「← 返回」 labels, the local-documents warnings moved above the toolbar with a 「去设置」 link and a screen-reader-visible disabled reason, the settings duplicate-hint removal, readable placeholder contrast, opaque disabled states, shorter same-axis entry cards) plus the real-machine feedback round: the three ✓ feature hints now share the translate checkbox's row, right-aligned to the content column. Counts: `./init.sh` 95 files / 1274 tests, three-engine E2E 348 passed / 6 skipped, live 2 passed.
 
-## Gated Artifact (0.3.10)
+The `0.3.11` gate ran on 2026-11-16 and passed on the second attempt. It carries `feat-044` (batch products no longer overwrite each other, the local-image boundary follows `realpath`, the extension waits for its Markdown download to finish, and `audit:runtime` joined the release gate), `feat-045` (Electron `43.3.0` → `43.8.10`, `next` floor `^16.4.6`) and the writer half of the 2026-09-30 B1 finding (the extension percent-encodes image references, by UTF-8 byte, while files on disk keep readable names). Counts: `./init.sh` 96 files / 1295 passed + 5 skipped (the five `desktop-server-scope` guards skip while `.desktop` is absent, and the baseline runs before `desktop:make`), three-engine E2E 351 passed / 6 skipped, live 2 passed, `npm audit --omit=dev` 0. The first attempt died on a firefox hydration timeout in `e2e/paste.spec.ts:221` (`gotoHydrated` waiting for `/api/settings`); the case passed 5/5 in isolation and the re-run was fully green — the same flake family as the six already logged below.
+
+## Gated Artifact (0.3.11)
+
+- Path: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.11.zip`
+- Size: `237,921,860` bytes
+- SHA-256: `a63e5192869f95afc73c5e4467067d31cd80899bda3cda6e227658d99720154d`
+- Package: version `0.3.11`, arm64, macOS 12.0+, `Electron Framework` `CFBundleVersion` `43.8.10`
+- Automated evidence: 96 files / 1295 passed + 5 skipped (the five `desktop-server-scope` guards skip when `.desktop` has not been prepared yet, and `./init.sh` runs before `desktop:make`), three-engine E2E 351 passed / 6 skipped, live 2/2, `npm audit --omit=dev` 0
+- Bundle content check: the shipped extension ZIP (`Resources/server/public/md-convertor-extension.zip`) carries the writer-side escape fix in `worker.js` (`encodeURIComponent` + the hard-coded `%28`), so a title with spaces or parentheses keeps its image references; `Resources/server` still holds exactly the whitelist (`browser`, `node_modules`, `package.json`, `public`, `server.js`, `.next`)
+- Published: [GitHub Release `v0.3.11`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.11) (tag `78c474e`, newest release; the uploaded asset's server-side digest matches the SHA-256 above)
+- Signing: not Developer ID signed or notarized, so the artifact is suitable for personal testing only
+
+## Historical Artifact (0.3.10)
 
 - Path: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.10.zip`
 - Size: `236,226,685` bytes

@@ -2,15 +2,26 @@
 
 ## Current State
 
-- Last updated: 2026-11-16（**第三十三轮：台账漂移修复 + 三项待办整改**——19 处「未提交」的现役口径改正，随后按授权做完 ①插件写方 percent-encode ②Electron 43.3.0 → 43.8.10 ③`next` 下界 `^16.4.6`；三项已提交 `ab3b7da` 并 push，未发布，版本面 `0.3.11` 未发布）
+- Last updated: 2026-11-16（**第三十四轮：`0.3.11` 提交、push 与发布**——`ab3b7da`（实现）+ `78c474e`（簿记）已 push，`v0.3.11` tag 指向 `78c474e`，GitHub Release `v0.3.11` 已上线、资产 237,921,860 bytes / SHA-256 `a63e5192…0154d`；上一轮三项整改（插件 percent-encode、Electron 43.8.10、`next ^16.4.6`）随该版本发布）
 - **多设备约定（2026-09-30 起）**：本文件与 `session-handoff.md` 是**公开仓库**里的跨机共享文档，只记**全局客观事实**（发布版本、产物 SHA-256、tag 指向、构建源码提交）。**`/Applications/<App>.app` 的装机版本是每台开发机各自的本地状态，一律不写进本文件**——多机下会互相覆盖。各机装机状态见各自的 `.workbuddy/memory/DEVICES.md`（不入 git，每机一份）。
-- Current version: 仓库版本面 **`0.3.11`（未发布，2026-11-14 随 feat-044 TDD bump）**；**已发布**的是 `0.3.10`（GitHub Release `v0.3.10`，tag 指向 `77703c3`，产物 **236,226,685 bytes** / SHA-256 `f25e0ae9…c1945`，详表见 `docs/TESTING.md` 的 `## Gated Artifact (0.3.10)`）。上一个 `0.3.9` = 236,224,633 bytes / `5e75709f…a9c9`（tag `9f3642e`），`0.3.8` = 236,224,675 bytes / `94624625…b2ea`。
-- Active feature: **无（`feat-044` 与 `feat-045` 均 `done`，三项待办已在本轮做完，已提交 `ab3b7da` 并 push，未发布）**。feat-044 = 4 条代码修复 + 1 条门禁缺口：① `localDocFilename` 只对「清洗改过名」的源追加 `-<8 位 FNV-1a>`（消除 `a?.md`/`a*.md` 撞成同一产物）② 列表显示真实产物名（`outputName`）③ 本地图片边界改看 `realpath`（符号链接不能越界）④ 插件 `run()` 等 md 下载到 `complete`，中断/超时 → `DOWNLOAD_FAILED` ⑤ `npm run audit:runtime` 接进 `desktop:release`（生产依赖有公告即中止，Electron 公告只告警）。feat-045 = 打包运行时 Electron 43.3.0 → **43.8.10**（43.x 的 12 条公告随之清零，全树 50 → 49，生产仍 0）+ `package.json` 的 `next` 下界 `^16.3.5` → `^16.4.6`（与锁对齐）。另外 B1 的写方半条也补完：插件导出的图片引用现在 percent-encode（空格/括号不再截断），盘上文件名仍可读。逐任务 RED/GREEN 见 `feature_list.json` 的 `feat-044`/`feat-045`/`feat-040` verification。feat-043 已 `done` 并随 `v0.3.10` 发布；`feat-042` 随 `v0.3.7` 发布；`feat-040`/`feat-041` 已关闭。
-- Next step: **等用户授权发布 `0.3.11`**（提交与 push 已完成，`origin/main` = `ab3b7da`；`desktop:release` 尚未在 `0.3.11` 上真跑过，它不跑打包冒烟，不受本轮 keychain 坑影响）。其他候选（各自需授权）：Electron 45.x、云端 Provider 实文实测、Terminal 里跑一次带 `ELECTRON_SMOKE_TEST_SECRETS=1` 的规范打包冒烟（需先点掉钥匙串弹窗）、P2-3…P2-6（用户锁死推迟）。**不要重写第二套批量编排或第二条写盘路径**；版本面已 bump 到 `0.3.11`，发布无需再 bump；下一次 bump（`0.3.12`）只在改动桌面代码的轮次开头做且需授权。
-- Branch: `main` = **`4c81a99`**（第三十二轮提交后簿记），其父 `0c64834`（feat-044 整改提交，34 files / +629 / −122）；两者**均未 `git push`**，`origin/main` 仍是 `fb63c06`，`v0.3.10` 的 tag 仍指向 `77703c3`。工作树干净。`outputs/`（QA 截图/探针）按惯例不入库。stash 空。
+- Current version: **`0.3.11`（已发布，2026-11-16 为 GitHub Release `v0.3.11`，tag `78c474e`）**；产物 `MD-Convertor-darwin-arm64-0.3.11.zip` = **237,921,860 bytes** / SHA-256 `a63e5192869f95afc73c5e4467067d31cd80899bda3cda6e227658d99720154d`，详表见 `docs/TESTING.md` 的 `## Gated Artifact (0.3.11)`。上一个 `0.3.10` = 236,226,685 bytes / `f25e0ae9…c1945`（tag `77703c3`），`0.3.9` = 236,224,633 bytes / `5e75709f…a9c9`（tag `9f3642e`）。
+- Active feature: **无（`feat-044` 与 `feat-045` 均 `done`，三项待办已随 `v0.3.11` 发布）**。feat-044 = 4 条代码修复 + 1 条门禁缺口：① `localDocFilename` 只对「清洗改过名」的源追加 `-<8 位 FNV-1a>`（消除 `a?.md`/`a*.md` 撞成同一产物）② 列表显示真实产物名（`outputName`）③ 本地图片边界改看 `realpath`（符号链接不能越界）④ 插件 `run()` 等 md 下载到 `complete`，中断/超时 → `DOWNLOAD_FAILED` ⑤ `npm run audit:runtime` 接进 `desktop:release`（生产依赖有公告即中止，Electron 公告只告警）。feat-045 = 打包运行时 Electron 43.3.0 → **43.8.10**（43.x 的 12 条公告随之清零，全树 50 → 49，生产仍 0）+ `package.json` 的 `next` 下界 `^16.3.5` → `^16.4.6`（与锁对齐）。另外 B1 的写方半条也补完：插件导出的图片引用现在 percent-encode（空格/括号不再截断），盘上文件名仍可读。逐任务 RED/GREEN 见 `feature_list.json` 的 `feat-044`/`feat-045`/`feat-040` verification。feat-043 已 `done` 并随 `v0.3.10` 发布；`feat-042` 随 `v0.3.7` 发布；`feat-040`/`feat-041` 已关闭。
+- Next step: **无在办事项，等用户指令**。候选（各自需授权）：Electron 45.x（另一轮，需完整门禁 + 打包冒烟）、云端 Provider 实文实测（唯一没被真人走完的主干路径）、Terminal 里跑一次带 `ELECTRON_SMOKE_TEST_SECRETS=1` 的规范打包冒烟（需先点掉钥匙串弹窗）、P2-3…P2-6（用户锁死推迟）。**不要重写第二套批量编排或第二条写盘路径**；下一次 bump（`0.3.12`）只在改动桌面代码的轮次开头做且需授权。
+- Branch: `main` = **`78c474e`**（第三十三轮簿记，tag `v0.3.11`），`origin/main` 同为 `78c474e`；父链 `ab3b7da`（实现）→ `4c81a99` → `0c64834`（feat-044）。`v0.3.10` 的 tag 仍指向 `77703c3`。工作树干净。`outputs/`（QA 截图/探针）按惯例不入库。stash 空。
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+（桌面产物）；浏览器插件另行验收于 Chromium，不进桌面发布门禁
 
-## 本轮（2026-11-16 第三十三轮：台账漂移修复 + 三项待办整改）
+## 本轮（2026-11-16 第三十四轮：`0.3.11` 提交、push 与发布）
+
+- **用户指令**：「提交并push，并且安装到本机」→「发布」。
+- **提交与 push**：`ab3b7da`（18 files / +282 / −64，实现 + 台账）与 `78c474e`（簿记 3 files / +16 / −17）逐文件 `git add`，`origin/main` `fb63c06` → `78c474e`。
+- **装机前那一次重建**（即第三十三轮 `78c474e` 簿记行记的那一次，非本轮）：`rm -rf out .desktop` + `desktop:make` ⇒ 237,921,848 bytes，`Electron Framework` `CFBundleVersion` = 43.8.10，包内插件 `worker.js` 含 `encodeURIComponent` + `%28` 指纹，据此装入本机（装机状态只记 `~/.workbuddy/memory/DEVICES.md`）。
+- **发布门禁（第二次才绿）**：清 `out/` + `.desktop` 后 `env -u *_proxy NO_PROXY=… NODE_OPTIONS= npm run desktop:release` **exit 0** —— `./init.sh` 96 files / **1295 passed / 5 skipped**（五个 `desktop-server-scope` 守卫在 `.desktop` 未就绪时跳过，基线跑在 `desktop:make` 之前）→ e2e **351 passed / 6 skipped** + tracked-file check → live **2 passed** → `desktop:make` → 产物校验。**首跑红 1 条**：firefox `e2e/paste.spec.ts:221` 卡在 `gotoHydrated` 等 `/api/settings`（30s 超时），隔离 `--repeat-each=5` **5/5 绿**，同既有 flake 族，已记进 `docs/TESTING.md`。
+- **产物**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.11.zip` = **237,921,860 bytes** / SHA-256 `a63e5192869f95afc73c5e4467067d31cd80899bda3cda6e227658d99720154d`（同源码的历次 `desktop:make` 分别为 237,921,843 / 237,921,848 / 237,921,860 bytes，字节差属重建非确定性；包内 `Resources/server` 恰为白名单六项、版本 0.3.11 / arm64 / macOS 12.0+）。
+- **tag 与 Release**：`git tag v0.3.11 78c474e` → push tag → `gh release create v0.3.11 --notes-file … --latest`（骨架）→ `gh release upload`（237 MB，耗时 10m01s）。校验：非草稿非预发布、asset `uploaded`、服务端 digest = `a63e5192…0154d` 与本地一致、`releases/latest` = `v0.3.11`。
+- **本机安装**：已按约定完成并复核（启动正常）；**装机版本、归档路径与 `lsappinfo` 实测只记该机自己的 `~/.workbuddy/memory/DEVICES.md`（不入 git）**，不进本文件（多设备约定）。
+- **文档收口**：`docs/TESTING.md` 新增 `## Gated Artifact (0.3.11)` + 本轮门禁段（0.3.10 段改 Historical）；`CHANGELOG` 双语 `[Unreleased]` → `[0.3.11] - 2026-11-16`；README 双语版本句/产物表/门禁版本号；`AGENTS.md` 版本句三处 + 审核 FSD 状态；`docs/ARCHITECTURE` 双语当前版本句。
+
+## 上一轮（2026-11-16 第三十三轮：台账漂移修复 + 三项待办整改）
 
 - **用户指令**：「先修，全部修完了再统一提交」——先是台账漂移（feat-044 已在 `0c64834` 提交、簿记 `4c81a99`，但 PROGRESS / session-handoff / QUALITY-AUDIT / 审核 FSD 仍多处写「未提交」），随后「全部修完再统一提」把三个候选一并交给本轮。
 - **台账部分**：只改**现役口径**（共 19 处：PROGRESS 6 / session-handoff 10 / QUALITY-AUDIT 2 / 审核 FSD 1），**历史轮次记录一律不动**（那些「未提交」在当轮是真的）。
