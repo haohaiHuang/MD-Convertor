@@ -121,10 +121,29 @@ describe("localDocFilename", () => {
   });
 
   it("sanitizes characters that cannot appear in a file name", () => {
-    expect(localDocFilename("a/b:c?.md")).toBe("a-b-c-.md");
+    // A stamped suffix is what keeps two sources apart when cleaning maps them onto one name
+    // (issue: `a?.md` and `a*.md` both cleaned to `a-.md` and the second write silently won).
+    expect(localDocFilename("a/b:c?.md")).toMatch(/^a-b-c-[0-9a-f]{8}\.md$/);
+  });
+
+  it("keeps names that only collide after cleaning apart", () => {
+    const names = ["a?.md", "a*.md", "a<b.md", "a|b.md"].map(localDocFilename);
+
+    expect(new Set(names).size).toBe(4);
+  });
+
+  it("stamps a deterministic hash, so a rescan predicts the same output path", () => {
+    expect(localDocFilename("a?.md")).toBe(localDocFilename("a?.md"));
+    expect(localDocFilename("a?.md")).not.toBe(localDocFilename("a*.md"));
+  });
+
+  it("never stamps a name that did not need cleaning, nor collides with a stamped one", () => {
+    expect(localDocFilename("a-.md")).toBe("a-.md");
+    expect(localDocFilename("a?.md")).not.toBe("a-.md");
   });
 
   it("falls back to a stable name when cleaning leaves nothing", () => {
-    expect(localDocFilename("....md")).toBe("document.md");
+    expect(localDocFilename("....md")).toMatch(/^document-[0-9a-f]{8}\.md$/);
+    expect(localDocFilename("????.md")).not.toBe(localDocFilename("****.md"));
   });
 });

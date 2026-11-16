@@ -69,6 +69,7 @@ function fakeChrome(
         // A data URL is the markdown write, anything else is an image download.
         if (request.url.startsWith("data:")) {
           markdownWrites.push(decodeURIComponent(request.url.slice(request.url.indexOf(",") + 1)));
+          items.set(id, { request });
           return id;
         }
         active += 1;
@@ -284,5 +285,32 @@ describe("run — failure paths", () => {
     expect(fake.markdownWrites()).toHaveLength(0);
     expect(fake.badgeTexts).toEqual(["!"]);
     expect(fake.badgeTitles[0]).toContain("无法写入下载目录");
+  });
+
+  // A data-URL download only *starts* inside `downloads.download()`; it can still be interrupted
+  // afterwards. Reporting success from the id alone left the badge at ✓ for a file that never landed.
+  it("does not report success when the markdown download is interrupted", async () => {
+    const fake = fakeChrome(1, payloadFor(1), (_id, request) => ({
+      state: request.filename.endsWith(".md") ? "interrupted" : "complete",
+      filename: `${DOWNLOAD_DIR}/${request.filename}`,
+    }));
+
+    const result = await runWithFeedback(1, fake.deps, { timers: instantTimers, imageTimeoutMs: 1000 });
+
+    expect(result).toMatchObject({ ok: false, code: "DOWNLOAD_FAILED" });
+    expect(fake.badgeTexts).toEqual(["!"]);
+    expect(fake.badgeTitles[0]).toContain("无法写入下载目录");
+  });
+
+  it("gives up on a markdown write that never completes instead of waiting forever", async () => {
+    time = 0;
+    const fake = fakeChrome(1, payloadFor(1), (_id, request) =>
+      request.filename.endsWith(".md") ? null : { state: "complete", filename: `${DOWNLOAD_DIR}/${request.filename}` },
+    );
+
+    const result = await runWithFeedback(1, fake.deps, { timers: instantTimers, imageTimeoutMs: 1000 });
+
+    expect(result).toMatchObject({ ok: false, code: "DOWNLOAD_FAILED" });
+    expect(fake.badgeTexts).toEqual(["!"]);
   });
 });

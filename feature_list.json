@@ -1,7 +1,7 @@
 {
   "project": "MD-Convertor",
-  "currentVersion": "0.3.10",
-  "updatedAt": "2026-10-01",
+  "currentVersion": "0.3.11",
+  "updatedAt": "2026-11-14",
   "activeFeature": null,
   "features": [
     {
@@ -893,6 +893,43 @@
         "2026-10-01 real-machine follow-up (user feedback after opening the packaged app): the feature-hints row on its own below the translate checkbox looked odd; the user ruled it must ride on the toggle's row, right-aligned. TDD: home.spec.ts case re-anchored to 产品特点与翻译勾选同行，特点组右对齐到内容列右缘 (same row within 6px, hints right of the toggle, group right edge flush with the .form right edge within 4px) -> RED on all three engines (vertical gap 37/37.5px), implementation adds a .footerRow flex row (space-between) wrapping the toggle plus the ✓ group, .translateToggle loses its column width and outer margin, .hintRow loses its column width -> GREEN 3/3. This supersedes the P1-6 left-axis rule (old assertion replaced; annotated in UI-FIX-DESIGN-SPEC 5.1, PLAN-ui-fix D3, S3 stage doc). With no translate toggle (unconfigured translation) the group keeps its old left position via space-between single-child behaviour. Gates: init.sh 95 files / 1274 passed / 0 skipped, full e2e 348 passed / 6 skipped / 0 failed on three engines, tracked-file guard clean. No bump (0.3.9), no commit, no release.",
         "2026-10-01 round 30 release (user-authorized: commit/push/release): TDD bump 0.3.9->0.3.10 (release-guards RED 1 failed -> GREEN 30 passed); commit 77703c3 (32 files / +1660 / -247) + tag v0.3.10 pushed; desktop:release gate passed first attempt (3m38s: lint/typecheck/coverage green, e2e 348 passed / 6 skipped / 0 failed, live 2/2, artifact verified, historical-archive retire notices as expected); artifact MD-Convertor-darwin-arm64-0.3.10.zip = 236,226,685 bytes, SHA-256 f25e0ae9aea0a915748ee5f6790ffb9ae467e35ecdf59512f25749684fcc1945; bundle fingerprints hit (footerRow same-row layout in page chunk 3wkuip11gcu97.js + CSS 2pt9pyl76f3id.css, back labels x3, 去设置, 产品特点; ZIP 3,542 entries / 566M); GitHub Release v0.3.10 published (not draft/prerelease, releases/latest points here, server digest matches local; 236MB one-shot gh release create hit unexpected EOF and was auto-rolled back, so the release was created then uploaded in two steps)."
       ]
+    },
+    {
+      "id": "feat-044",
+      "name": "Audit P2 Remediation (naming, symlinks, extension writes, audit gate)",
+      "title": "Audit P2 Remediation (naming, symlinks, extension writes, audit gate)",
+      "status": "done",
+      "dependencies": [
+        "feat-042"
+      ],
+      "scope": "Remediation of the five findings an external read-only audit raised against this repository on 2026-11-14 (all six claims were reproduced against `fb63c06` first; the Electron upgrade is deliberately left to feat-045). Construction detail: `docs/features/audit-p2-remediation/FSD.md`. D1: `localDocFilename` appends a `-<8 hex FNV-1a>` suffix only when `cleanFilenameStem` actually changed the name, so `a?.md` and `a*.md` stop producing the same product file while clean names keep their existing products (and their `skip` state); `ScannedLocalDoc` and `BatchRow` gain `outputName`, and the list shows the real product name with the source name in the title. D2: `inlineLocalRef` takes the source tree's `realpath` and compares resolved paths, so a symlink to a file outside the picked folder is refused with `IMAGE_SOURCE_INVALID` while a symlink inside the tree still inlines. D3: the extension's `run()` reuses `waitForDownload` with a new `MD_TIMEOUT_MS` of 10s, so an interrupted or never-finishing Markdown download returns `DOWNLOAD_FAILED` instead of `ok: true`; the test-only `waitForDownloadComplete` helper is deleted because production now waits. D4: `scripts/audit-runtime.mjs` judges the audit report rather than the exit code - any production advisory aborts, Electron's tracked advisories print - and `npm run audit:runtime` runs inside `desktop:release` between `init.sh` and `test:e2e`. TDD is mandatory and every task has a recorded RED.",
+      "nonGoals": [
+        "No Electron upgrade and no toolchain force-upgrade: `electron@43.3.0` and its 12 advisories are tracked as feat-045 plus QA-DEV, and the stale `next: ^16.3.5` lower bound waits for a dependency round",
+        "No second batch orchestration path and no second disk-write path: `outputBridge().saveFile()` stays the only writer, and both `/api/local-docs/*` endpoints stay read-only",
+        "No change to the extension's `markdownName`/write protocol beyond waiting for completion, and no release: the version face is bumped to 0.3.11 but nothing is published"
+      ],
+      "acceptance": [
+        "Two sources whose names both clean to `a-.md` produce two distinct product names, and a source whose name needs no cleaning keeps its previous product name (so it still reports `skip`)",
+        "The list shows each row's real product name; the source name is available as a tooltip and still drives the checkbox label",
+        "A local image referenced through a symlink that resolves outside the source tree is kept as a reference with an `IMAGE_SOURCE_INVALID` warning; a symlink resolving inside the tree still inlines",
+        "An extension run whose Markdown download is interrupted or never completes reports `DOWNLOAD_FAILED` and never a ✓ badge",
+        "`npm run audit:runtime` fails on any production advisory, prints Electron's advisories as tracked warnings, and runs as part of `npm run desktop:release`",
+        "`./init.sh`, three-engine `test:e2e` and `npm run test:extension` are all green"
+      ],
+      "verification": [
+        "2026-11-14 T0.0 baseline at `fb63c06` (after `git merge --ff-only origin/main`, 2 commits fast-forwarded): `NODE_OPTIONS= ./init.sh` exit 0, 95 files / 1274 passed / 0 skipped; `npm audit --omit=dev` 0 advisories, full tree 50 (3 low / 14 moderate / 28 high / 5 critical), electron 43.3.0 matching 12 advisories.",
+        "2026-11-14 T1.0 RED: `dedup.test.ts` gained 5 cases (hash only when cleaning changed the stem, dirty names no longer collide, clean names unchanged, deterministic) and reported 5 failed; GREEN after `stemHash()` plus the conditional suffix in `localDocFilename`.",
+        "2026-11-14 T1.1 RED: the scan route case 'tells the caller which product name a cleaned source will produce' reported `expected 1 to be 2` (no `outputName`, so both files looked alike); GREEN after `ScannedLocalDoc.outputName`, `BatchRow.outputName`, the `planBatch` mapping and the panel cell, then the new three-engine e2e 'clean-named rows show the real product name' (a `?` and a `*` source -> two distinct `a-<hash>.md` cells).",
+        "2026-11-14 T2.0 RED: `inline-images.test.ts` gained two cases with a fixture `escape.png` (-> outside the tree) and `inside-link.png` (-> `photo.png`); the outside link was embedded as base64 (`embedded: 1`, no warning). GREEN after `inlineLocalRef(target, sourceDir, rootReal, embed)` resolving `realpath` once per document and comparing resolved paths: 15 passed, stats `{embedded: 0, kept: 2}` with two `IMAGE_SOURCE_INVALID` warnings for the escapee.",
+        "2026-11-14 T3.0 RED: `worker-run.test.ts` registered the data-URL write in its fake `items` so a test could mark it `interrupted` or leave it `in_progress`; both new cases returned `{ok: true}`. GREEN after `MD_TIMEOUT_MS = 10_000` plus `waitForDownload` on the Markdown id: 14 passed. Then `waitForDownloadComplete` was deleted from `harness.ts` and `--repeat-each=3` reported 45 passed, which is the evidence that production is the one waiting now.",
+        "2026-11-14 T4.0 RED: `scripts/audit-runtime.test.mjs` (9 cases: severityCounts, electronStatus, parseAuditReport, the injected-exec call sequence, PROD_AUDIT_ERROR on a production advisory, npm-unavailable branch) failed with `Cannot find module './audit-runtime.mjs'`. GREEN after the new script; `release-guards.test.mjs` then expected `run:npm run audit:runtime` in the event order and `scripts/` reported 41 passed. Real run: `node scripts/audit-runtime.mjs` exit 0, 'production (--omit=dev): 0 vulnerabilities' plus 'electron: 12 advisories (devDependency but shipped)'.",
+        "2026-11-14 T5.0: version face bumped 0.3.10 -> 0.3.11 TDD-first (release-guards expectation RED, then `package.json`, both `package-lock.json` fields, `RELEASE_VERSION_ERROR`/the `version !==` check and `feature_list.currentVersion`), `scripts/` 41 passed.",
+        "2026-11-14 gate: `npm run lint` and `npm run typecheck` clean at `md-convertor@0.3.11`; `npm run test:coverage` 96 files / 1291 passed / 0 skipped with every per-file threshold met; three-engine `npm run test:e2e` 351 passed / 6 skipped / 0 failed plus the tracked-file check; `npm run test:extension` 15 passed; `NODE_OPTIONS= ./init.sh` exit 0 (96 files / 1291 passed, 'Verification Complete').",
+        "2026-11-14 flake note: the first full e2e run had one firefox failure in the no-output warning-row case of `e2e/local-docs.spec.ts` (the line number is not recorded on purpose - the file grows as cases are added). Isolated `--repeat-each=5` was 5/5 green, the whole file green, and no failure artifacts were written, so it is recorded as jitter rather than a regression; the re-run above is green.",
+        "2026-11-14 commit-gate fix (review finding, TDD): the panel cell's tooltip showed `产物名：<product>` - the same string already in the cell - while FSD T1.1 and the feat-042 FSD both say the tooltip carries the ORIGINAL name. The e2e case now asserts `title` is `原名：a?.md` / `原名：a*.md` (RED against the old attribute: received `产物名：a-05249472.md`), then `panel.tsx` switched to `原名：${row.name}`; the same case is green.",
+        "2026-11-14 gate re-run after the commit-gate fixes: `NODE_OPTIONS= ./init.sh` exit 0 (96 files / 1291 passed) and three-engine `npm run test:e2e` 351 passed / 6 skipped / 0 failed with the tracked-file check passing. One firefox `NS_ERROR_PROXY_CONNECTION_REFUSED` on `translate.spec.ts` was seen and cleared by re-running (the machine's system proxy at 127.0.0.1:7897 has no localhost exception; isolated `--repeat-each=5` was 5/5 green) - recorded in `docs/TESTING.md`."
+      ],
+      "updatedAt": "2026-11-14"
     }
   ],
   "history": {

@@ -18,6 +18,8 @@ export type BatchRow = {
   /** The scan's file name; unique inside one directory, so it doubles as the row key. */
   id: string;
   name: string;
+  /** What the product will be called; equals `name` unless cleaning had to change it. */
+  outputName: string;
   size: number;
   mtimeMs: number;
   state: LocalDocState;
@@ -75,6 +77,7 @@ export function planBatch(files: readonly ScannedLocalDoc[], input: BatchPlanInp
   const rows: BatchRow[] = files.map((file) => ({
     id: file.name,
     name: file.name,
+    outputName: file.outputName,
     size: file.size,
     mtimeMs: file.mtimeMs,
     state: file.state,

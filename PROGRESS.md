@@ -2,13 +2,26 @@
 
 ## Current State
 
-- Last updated: 2026-11-14（**第三十一轮：全项目审计 + 整改**——只读审计后按用户「修吧」指令落地：生产依赖 5 漏洞清零、README/PRODUCT/ARCHITECTURE 双语同步 0.3.10、探针/冗余缓存/死规则清理、QUALITY-AUDIT verdict 瘦身；上一轮为第三十轮 feat-043 提交 + `0.3.10` 发布）
+- Last updated: 2026-11-14（**第三十二轮：外部审计 P2 四条整改 + 审计门禁**——同名覆盖、符号链接越界、插件 md 下载假成功、发布门禁缺审计，全部 TDD 修复，版本面 `0.3.11`（未发布、未提交）；上一轮为第三十一轮全项目审计 + 整改）
 - **多设备约定（2026-09-30 起）**：本文件与 `session-handoff.md` 是**公开仓库**里的跨机共享文档，只记**全局客观事实**（发布版本、产物 SHA-256、tag 指向、构建源码提交）。**`/Applications/<App>.app` 的装机版本是每台开发机各自的本地状态，一律不写进本文件**——多机下会互相覆盖。各机装机状态见各自的 `.workbuddy/memory/DEVICES.md`（不入 git，每机一份）。
-- Current version: `0.3.10`（**已发布**：GitHub Release `v0.3.10`，tag 指向 `77703c3`，产物 **236,226,685 bytes** / SHA-256 `f25e0ae9…c1945`，详表见 `docs/TESTING.md` 的 `## Gated Artifact (0.3.10)`）。上一个 `0.3.9` = 236,224,633 bytes / `5e75709f…a9c9`（tag `9f3642e`），`0.3.8` = 236,224,675 bytes / `94624625…b2ea`。
-- Active feature: **无（feat-043「UI 走查整改」已 `done` 并随 `v0.3.10` 发布）**。feat-043 = 走查 11 条（9 P1 + P2-1 + P2-2）整改 + 真机反馈追补（特点行同行右对齐），S1 顶栏与栅格 / S2 状态与反馈 / S3 观感收尾，逐任务 TDD 断言先行，三阶段独立 QA 验收均 PASS；逐任务证据见 `feature_list.json` 的 `feat-043.verification` 与 `docs/features/ui-fix/` 三份阶段文档。`feat-042` 已 `done` 并随 `v0.3.7` 发布；`feat-040`/`feat-041` 已关闭。`0.3.10` = feat-043 全部整改。
-- Next step: **无在办事项，等用户下一条指令**。候选（均需单独授权）：`extension/` 写方 percent-encode、云端 Provider 实文实测、P2-3…P2-6（用户锁死推迟）。**不要重写第二套批量编排或第二条写盘路径**；**再次发布任何版本都要用户单独授权**；发布前才 TDD bump（下一目标 `0.3.11`）。
-- Branch: `main` = **`77703c3`**（feat-043 实现 + 版本面 + CHANGELOG，32 files / +1660 / −247；tag `v0.3.10` 指向它）。发布后簿记为第二提交。`outputs/`（QA 截图/探针）按惯例不入库。stash 空。
+- Current version: 仓库版本面 **`0.3.11`（未发布，2026-11-14 随 feat-044 TDD bump）**；**已发布**的是 `0.3.10`（GitHub Release `v0.3.10`，tag 指向 `77703c3`，产物 **236,226,685 bytes** / SHA-256 `f25e0ae9…c1945`，详表见 `docs/TESTING.md` 的 `## Gated Artifact (0.3.10)`）。上一个 `0.3.9` = 236,224,633 bytes / `5e75709f…a9c9`（tag `9f3642e`），`0.3.8` = 236,224,675 bytes / `94624625…b2ea`。
+- Active feature: **无（`feat-044`「审计 P2 整改」已 `done`，未发布、未提交）**。feat-044 = 4 条代码修复 + 1 条门禁缺口：① `localDocFilename` 只对「清洗改过名」的源追加 `-<8 位 FNV-1a>`（消除 `a?.md`/`a*.md` 撞成同一产物）② 列表显示真实产物名（`outputName`）③ 本地图片边界改看 `realpath`（符号链接不能越界）④ 插件 `run()` 等 md 下载到 `complete`，中断/超时 → `DOWNLOAD_FAILED` ⑤ `npm run audit:runtime` 接进 `desktop:release`（生产依赖有公告即中止，Electron 12 条公告只告警、登记 `QA-DEV` + `feat-045`）。逐任务 RED/GREEN 见 `feat-044.verification` 与 `docs/features/audit-p2-remediation/FSD.md`。feat-043 已 `done` 并随 `v0.3.10` 发布；`feat-042` 随 `v0.3.7` 发布。feat-043 = 走查 11 条（9 P1 + P2-1 + P2-2）整改 + 真机反馈追补（特点行同行右对齐），S1 顶栏与栅格 / S2 状态与反馈 / S3 观感收尾，逐任务 TDD 断言先行，三阶段独立 QA 验收均 PASS；逐任务证据见 `feature_list.json` 的 `feat-043.verification` 与 `docs/features/ui-fix/` 三份阶段文档。`feat-042` 已 `done` 并随 `v0.3.7` 发布；`feat-040`/`feat-041` 已关闭。`0.3.10` = feat-043 全部整改。
+- Next step: **feat-044 未提交、未发布**，等用户决定提交与发布（发布需单独授权）。之后候选（均需单独授权）：`feat-045` Electron 43.3.0 → 43.8.10/45.x（要完整门禁 + 打包冒烟）、`package.json` 的 `next` 下界过时、`extension/` 写方 percent-encode、云端 Provider 实文实测、P2-3…P2-6（用户锁死推迟）。**不要重写第二套批量编排或第二条写盘路径**；版本面已 bump 到 `0.3.11`，发布无需再 bump；下一次 bump（`0.3.12`）只在改动桌面代码的轮次开头做且需授权。
+- Branch: `main` = **`fb63c06`**（第三十一轮审计整改后的簿记提交；`v0.3.10` 的 tag 仍指向 `77703c3`）。第三十二轮的改动**尚未提交**（工作树有 feat-044 的代码 + 文档）。`outputs/`（QA 截图/探针）按惯例不入库。stash 空。
 - Scope: unsigned Apple Silicon Mac personal-test application; macOS 12.0+（桌面产物）；浏览器插件另行验收于 Chromium，不进桌面发布门禁
+
+## 本轮（2026-11-14 第三十二轮：外部审计 P2 四条整改 + 审计门禁）
+
+- **用户指令**：外部审计报告（跨两个项目）→ 只留 `MD-Convertor` 部分逐条取证 →「按本项目 Harness 要求跑」，即 TDD 整改。**6 条审计结论全部复现成立**（以 `fb63c06` 为基准，先 `git merge --ff-only origin/main` 拉齐 2 个提交）。
+- **T1.1 批量同名覆盖（P2，最严重）**：`cleanFilenameStem` 把 `a?.md`/`a*.md` 都压成 `a-.md`，`localDocFilename` 不做冲突感知，`electron/output.mjs` 同路径直接覆盖。修法＝只对「清洗真改过名」的源追加 `-<8 位 FNV-1a>`（干净名字不动，既有产物仍命中 `skip`）；`ScannedLocalDoc`/`BatchRow` 加 `outputName`，列表显示真实产物名、原名进 `title`。RED 5 条 + 路由 1 条 + 三引擎 e2e 1 条。
+- **T2.0 符号链接越界（P2）**：`inlineLocalRef` 只做字符串前缀比较，`link.png -> ../secret.png` 被嵌成 base64（实测 `embedded: 1` 无 warning）。修法＝`realpath` 后比较，源目录 `realpath` 每篇解析一次；树外链接判 `IMAGE_SOURCE_INVALID`、树内仍内嵌。RED 2 条（树外那条先红）。
+- **T3.0 插件 md 下载假成功（P2）**：`downloads.download()` 在开始时就 resolve，`run()` 不等写完 ⇒ 角标对 0 字节/中断文件打 ✓（实测 `{ok:true}`）。修法＝复用 `waitForDownload` + `MD_TIMEOUT_MS = 10_000`，中断/超时返回 `DOWNLOAD_FAILED`；连带删掉测试侧 `waitForDownloadComplete()`（生产侧现在自己等，`--repeat-each=3` 45 passed 作证）。
+- **T4.0 发布门禁缺审计（门禁缺口）**：`release-desktop.mjs` 只跑 `init.sh`/e2e/live/make，而 `QUALITY-AUDIT.md` 明写每道门禁复跑生产审计。新增 `scripts/audit-runtime.mjs`（判报告不判退出码：生产依赖有公告即中止，Electron 公告只打印），接线进 `desktop:release`，`release-guards.test.mjs` 事件序同步；真跑 prod 0 / electron 12 条公告。`QA-DEV` 改写为活跃跟踪项。
+- **版本面 TDD bump `0.3.10` → `0.3.11`**（4 处 + 守卫测试），未提交、未发布。
+- **门禁**：lint/typecheck 干净；`test:coverage` **96 files / 1291 passed / 0 skipped**；三引擎 e2e **351 passed / 6 skipped / 0 failed** + tracked-file check；`test:extension` 15 passed（×3 重复 45）；`NODE_OPTIONS= ./init.sh` **exit 0**（96 files / 1291 passed，`Verification Complete`）。
+- **两条 flake（未改代码）**：① 首跑 e2e 有 1 条 firefox 掉 hydration 等待（隔离 5/5 绿、整文件绿、无失败产物）；② 提交门后重跑 e2e 有 1 条 firefox `translate.spec.ts` 报 `NS_ERROR_PROXY_CONNECTION_REFUSED`（本机系统代理 127.0.0.1:7897 无 localhost 例外，清环境变量覆盖不到；隔离 5/5 绿、复跑 351 绿）。均已记进 `docs/TESTING.md` 与 `feat-044.verification`。
+- **提交门（3 路只读评审：ponytail / Spec 轴 / neat-freak）**：1 条真错 + 8 条台账陈旧全部修掉。真错＝面板 `title` 报的是产物名（单元格已有）而四处文档都写「原名」⇒ e2e 先加断言（RED `received 产物名：a-05249472.md`）→ `panel.tsx` 改 `原名：${row.name}` → GREEN。台账：`waitForDownloadComplete` 现行口径两处、coverage 计数两处（`docs/TESTING.md` 与 zh 版）、`session-handoff` 的 stash 假记载与重复的「发布前才 bump」、审核 FSD 的哈希输入口径（含扩展名 → 去 `.md` 的词干）、CHANGELOG 角标文案（实际是「转换失败：无法写入下载目录」）、`feature_list` 的 flake 行号、三处 `/Applications` 单机状态（违反多设备约定）。
+- **未做**：`feat-045` Electron 升级（要完整门禁 + 打包冒烟 + 授权）、`next` 下界更正、未提交、未发布。
 
 ## 本轮（2026-11-14 第三十一轮：全项目审计 + 整改）
 
@@ -102,7 +115,7 @@
 - **发布门**：清 `out/` + `.desktop/` 后 `NODE_OPTIONS= npm run desktop:release` **exit 0** —— `./init.sh` → e2e **312 passed / 6 skipped / 0 failed** → live **2 passed** → `desktop:make` → 产物校验（版本 / arm64 / 包结构 / 新鲜度）+ 历史归档守卫（0.1.0–0.2.1 与只读 0.1.3 副本报退役，符合预期）。
 - **提交与发布**：`6e00474`（实现 + 版本面 + CHANGELOG + 台账）→ push `origin/main`（`3a75cea` → `6e00474`）→ tag `v0.3.8` → `gh release create v0.3.8 … --latest`：非草稿非预发布、asset `uploaded`、服务端 digest 与本地一致、`releases/latest` 指向它。**未**把 ZIP 拷进 `~/Downloads/MD-Convertor-archive/releases/`（release guard 会拒绝未登记项）。
 - **产物**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.8.zip` = **236,224,675 bytes**，SHA-256 `94624625fdb99b492f533b23d9ae63aa22faa5153b5bbea6bc8a02f12cdeb2ea`；解压核查 `Resources/server` 顶层 = `.next / browser / node_modules / package.json / public / server.js`（**零仓库产物**）、ZIP 3,542 条目 / 展开 547 M、asar 命中第二十一轮 `delete current.defaults`、`Info.plist` 0.3.8 / macOS 12.0、主可执行 arm64。
-- **未做**：`extension/` 写方 percent-encode、云端 Provider 实文实测（均待授权）；`/Applications` 本轮未重装（仍是第二十一轮构建）。
+- **未做**：`extension/` 写方 percent-encode、云端 Provider 实文实测（均待授权）；`/Applications` 本轮未重装。
 
 ## 上一轮（2026-09-30 第二十二轮：打包镜像收窄 + 无仓库/无缓存可移植性实测）
 
@@ -113,7 +126,7 @@
 - **可移植性实测（本机可做的全部证据）**：把新 ZIP `ditto -x -k` 解到 `/tmp`（服务目录恰为白名单 6 项、零仓库产物）后 —— ① `HOME=/tmp/md-fresh-home`（无 `settings.json`、无 keychain 项、**无 `~/Library/Caches/ms-playwright`**）跑转换冒烟：`example.com` → `passed: browser, 1463 bytes, 1063 chars`；JS 渲染页（`tests/live` 那条 lecture URL）→ `passed: browser, 11254 bytes, 6030 chars, 1 embedded image` ⇒ 包内 `browser/chrome-headless-shell` + sharp 自足；② **把仓库目录改名**后再跑同一冒烟仍然通过（跑完已 `trap` 还原，`git status` 不变）⇒ 运行时不解析开发机路径；③ `/health` 200、`/md-convertor-extension.zip` 200（34692 B）⇒ `public/` 与插件下载链接在包内有效；④ 冒烟后 0 孤儿进程。
 - **两条边界（如实记录，不是缺陷）**：`ELECTRON_SMOKE_TEST_SECRETS=1` 在假 HOME 下必红（`safeStorage` 需要登录钥匙串 → `encryptionAvailable false` / `SECRETS_UNAVAILABLE`），密钥路径的证据只能在真 HOME 下跑（带备份+比对）；产物仍是 ad-hoc/未签名（`Identifier=Electron`、无 TeamIdentifier，`spctl -a -t exec` 拒绝）——与已发布的 0.3.7 逐项相同，属既有结论 QA-008，与收窄无关。
 - **门禁**：`NODE_OPTIONS= ./init.sh` exit 0（**95 files / 1270 tests**，含两个新守卫文件）；`tsc --noEmit` / eslint 干净；`desktop:make` exit 0（log `/tmp/make22.log`）。e2e 本轮未跑（未改 `src/`，且本轮改动只影响打包拷贝）。
-- **未做 / 待用户**：未 commit、未 push、未 bump 版本、未跑 `desktop:release`、**未重装 `/Applications`**（那里仍是第二十一轮构建）；`extension/` 写方 percent-encode 与云端 Provider 实文实测仍待授权。
+- **未做 / 待用户**：未 commit、未 push、未 bump 版本、未跑 `desktop:release`、**未重装 `/Applications`**；`extension/` 写方 percent-encode 与云端 Provider 实文实测仍待授权。
 
 
 
@@ -141,7 +154,7 @@
 - **首次发布门曾红 1 条**：firefox `e2e/local-docs.spec.ts:404`（`gotoHydrated` 等 `/api/settings` GET 30s 超时）；隔离 `--repeat-each=5` **5/5 绿**，复跑全量即无 ⇒ 与 `settings.spec.ts:731` 同族 flake，已记进 `docs/TESTING.md` 的 flake 段。
 - **产物**：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.7.zip` —— **239,472,776 bytes**，SHA-256 `6986356b0c5a80c1cffc46092eea305b59ad21563225de1844fac1aad171733c`；`gh release create v0.3.7 … --latest` ⇒ Release 非草稿非预发布、asset `state: uploaded`、服务端 digest 与本地逐字节一致、`releases/latest` 指向 `v0.3.7`。**未把 ZIP 拷进 `~/Downloads/MD-Convertor-archive/releases/`**（release guard 会拒绝未登记项）。
 - **发布后簿记提交**（生产代码同样零改动）：`docs/TESTING.md` 新增 `## Gated Artifact (0.3.7)` 并把 0.3.6 段改 Historical、补 0.3.7 gate 段与那条 firefox flake；`AGENTS.md` 版本句改「已发布」；`docs/QUALITY-AUDIT.md` 的 `Current Verdict` + `## Archived Round Log` 第二十轮条目；`PROGRESS.md`；`session-handoff.md`（136 行 / ≤25KB）；`feature_list.json`（feat-042 第 40 条 verification，记 tag/release/产物 digest）；S1–S4 与 `docs/PLAN-browser-extension.md` 里的「未发布」改成「已随 `v0.3.7` 发布」。
-- **未做**：未改任何生产代码（评审发现的行为问题只报未改）；未 bump 版本；未把 0.3.7 装到本机 `/Applications`（那里仍是 0.3.6）。
+- **未做**：未改任何生产代码（评审发现的行为问题只报未改）；未 bump 版本；未把 0.3.7 装到本机 `/Applications`。
 
 ## 上一轮（2026-09-30 第十九轮：行状态只报状态 + `feat-042` 关闭）
 
@@ -233,7 +246,7 @@
 - **payload 等待用的是全局 `setTimeout`，不受注入的 `timers` 影响**：测 `TIMEOUT` 分支必须 `vi.useFakeTimers()` + `advanceTimersByTimeAsync(10_000)`，用完还原；`timers` 只推进图片轮询与角标清空。
 - **扩展的三处覆盖率阈值取「实测值之下一点」**（`worker-run.ts` 95/85/85/95、`references.ts` 100/90/100/100、`write.ts` 全 100）：阈值只用来拦回归，不假装已经测满；要抬阈值先补测试。
 - **`npm run test:extension` 会先跑 `build:extension`；扩展套件实测不需要沙箱开关**（裸跑 15 passed / 4.2s）。`MD_CONVERTOR_EXTENSION_CHROMIUM_ARGS` 只是逃生舱；**需要 `--no-sandbox --disable-gpu` 的是打包后的 Electron，不是 Playwright 自带的 Chromium**，别把桌面那条环境限制套到扩展测试上（§ 上面的 Electron 沙箱条目另算）。
-- **`chrome.downloads.download()` 在下载「开始」时就 resolve，`run()` 不等它写完**（`worker-run.ts` 的 `writeMarkdown()` 之后直接返回）：读落盘 md 前必须等 `chrome.downloads.search()` 里 `state === "complete"`，否则约 1/10 的概率读到空/截断内容（这正是 T3.1–T3.3 那两次不可复现的 flake）。装置已固化在 `extension/tests/harness.ts` 的 `waitForDownloadComplete()`；图片不受影响（`waitForImage` 在 `run()` 返回前就等到了）。
+- **`chrome.downloads.download()` 在下载「开始」时就 resolve，不是下载完成**：曾经由测试侧 `waitForDownloadComplete()` 兜着（否则约 1/10 概率读到空/截断，即 T3.1–T3.3 那两次 flake）。**2026-11-14（feat-044）起生产侧自己等**：`run()` 复用 `waitForDownload` 轮询到 `state === "complete"` 才算成功，中断或超 `MD_TIMEOUT_MS = 10_000` 返回 `DOWNLOAD_FAILED`；该测试侧 helper 已随之删除，spec 在 `run()` resolve 后直接读 md。
 - **整篇图片全失败会留下一个空 `<标题>.images/` 目录**：Chrome 先建目标目录再发请求，中断只删半成品文件，而 `chrome.downloads` 删不了目录。断言按「不存在或为空」，不要去调 `removeFile` 硬删 —— 这是接受的已知行为，不是缺陷。
 - **`activeTab` 授权只能来自真实点击**，Playwright 点不到浏览器 chrome：集成测试走 `copyExtensionWithHostPermission()`（把 `extension/dist` 拷到临时目录给那一份副本加 `host_permissions`）后直接调 service worker；没有这一手，无手势注入会报 `Cannot access contents of the page…`（S2 探针 1 已实测）。
 - **fixture 站用 `node:http` + 临时端口（0），不引入框架、不用固定端口**：`extension/tests/fixtures/server.ts` 把 `origin` 交回调用方，并行/重复跑都不会撞端口；它自己的单测 `server.test.ts` 属第 1 层，随 `init.sh` 跑。fixture 写成 `.ts` 而非 `.mjs`（`.mjs` 导入在 TS program 里是 `TS7016`；vitest 收 `.test.ts`、Playwright 的 `testMatch` 只收 `*.spec.ts`，两者不会打架）。

@@ -145,7 +145,7 @@ buildArticle(document, sourceUrl, { sanitize, now }) → { title, markdown, imag
 - **构建不进 `init.sh`**：`build:extension` 只在第 3/4/5 层前跑（每次门禁多跑一次 esbuild 收益小于成本）。
 - **第 3/4 层自带一份 Playwright 配置**（`playwright.extension.config.ts`，`testDir: extension/tests`，只 chromium，`workers: 1`）：既有 `playwright.config.ts` 的三个项目与 `scripts/run-e2e.mjs`（桌面 e2e 门禁）**一律不动**，扩展测试不能拖慢或影响桌面门禁。
 - **打桩方式**：SW 编排函数把 `chrome` 形状的依赖**当参数注入**（`run(tabId, { downloads, tabs, action, scripting, runtime })`），测试传手写 fake。不引入 sinon/proxyquire。
-- **读文件前先等下载真完成**：`chrome.downloads.download()` 在下载**开始**时就 resolve，文件名先出现、字节后写完，而 `run()` 不等 md。早期用「文件名一出现就读」的写法偶发读到空/截断内容（本机实测约十次一遇）；`harness.ts` 的 `waitForDownloadComplete()` 轮询 `search({})` 到 `state === "complete"` 再读。
+- **md 写盘由 `run()` 自己等完**：`chrome.downloads.download()` 在下载**开始**时就 resolve，文件名先出现、字节后写完。2026-11-14 起 `run()` 复用图片那条 `waitForDownload()` 轮询 `search({})`，等到 `state === "complete"` 才算成功，中断或超过 `MD_TIMEOUT_MS`（10 秒）返回 `DOWNLOAD_FAILED`；因此测试读 md 之前不需要额外的等待（旧的测试侧 `waitForDownloadComplete()` 已删）。
 - **集成测试的已知缺口**：Playwright 点不到浏览器工具栏图标，`activeTab` 授权需要真实手势 → 第 4 层从 SW 侧直接调 `run(tabId)`。无手势注入实测被拒（探针 1：`Cannot access contents of the page. Extension manifest must request permission to access the respective host.`），因此第 4 层用**测试专用 manifest 变体**（把 `extension/dist` 拷到临时目录再补 `host_permissions`，生产 manifest 不变，见 `harness.ts` 的 `copyExtensionWithHostPermission()`），而「工具栏点击 → activeTab 授权」这一段明确标为**只能人工验收**（第 5 层）。
 
 ### 3.8 与桌面端的关系（为什么这次不共享代码）
@@ -193,7 +193,7 @@ S1 是纯逻辑（可完全 CI 验证）；S2 是外壳与平台交互（事实�
 | 无手势注入是否可用（集成测试） | **已实测：不可用**（探针 1：SW 无手势注入报 `Cannot access contents of the page…`，因为 `activeTab` 的授权来自用户点击） | 集成测试改用测试专用 manifest 变体补 `host_permissions`；「工具栏点击 → 授权」这段只能人工验收（S3 第 5 条） |
 | `chrome.downloads` 是否给无扩展名文件补扩展名 | **已实测：不补，原样落盘**（探针 2） | 引用一律以 `search()` 返回的真实 basename 为准；扩展名只由我们自己按 URL 后缀决定 |
 | ~~MV3 后台休眠打断批量下载~~ | **已实测：不打断**（2026-09-24 验收第 **5** 条，40 图页 40 张一次性全部落盘） | 已消解：预留的 20s 心跳保活**未落地**（`worker-run.ts` 未动，并发上限仍是 4）；若将来图量级再涨，仍按该处 `ponytail:` 注释加保活 |
-| 编排返回时 md 未必写完 | **已实测：`downloads.download()` 在下载开始时就 resolve** | 别把「`run()` resolve」当成「文件已完整」；要读文件就先等 `downloads.search()` 里该文件 `state === "complete"`（`extension/tests/harness.ts` 的 `waitForDownloadComplete()`）。图片不受影响：`waitForImage` 在 `run()` 返回前就等完了 |
+| 编排返回时 md 未必写完 | **已实测：`downloads.download()` 在下载开始时就 resolve** | **已修（2026-11-14）**：`run()` 现在自己等 md 到 `state === "complete"`，中断/超时一律 `DOWNLOAD_FAILED`（角标不再对没落盘的文件打 ✓）。测试侧不必再等 |
 | 整篇图片全失败会留下空 `<标题>.images/` 目录 | **已实测**：Chrome 先建目录再发请求，中断的下载只删半成品文件；`chrome.downloads` 无删目录能力 | 不修：不影响 md 正确性，代价仅一个空目录；集成测试按「目录不存在或为空」断言 |
 | 超大页面（DOM 克隆 + Readability） | 只测过小页面 | 识别到耗时 >3s 时不阻断（转换在 content script，慢就是慢）；必要时先记 `ponytail:` 再说 |
 | md 体积超过 data URL 上限 | 探针实测 2 MiB 通过 | 超过约 4 MiB 罕见；失败会被角标暴露，不静默 |

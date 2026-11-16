@@ -97,8 +97,28 @@ export function decideLocalDoc(
   return "skip";
 }
 
-/** Output name derived from the source name so a scan can predict the product path (V2). */
+/**
+ * Output name derived from the source name so a scan can predict the product path (V2).
+ *
+ * Cleaning is lossy (`?` and `*` both become `-`), so a name that had to change carries a short
+ * deterministic hash of its original stem. Without it, two sources cleaned onto one name and the
+ * second write silently overwrote the first — and the marker's `source` then flip-flopped, so the
+ * lost document looked "new" on every later scan.
+ */
 export function localDocFilename(sourceFileName: string): string {
-  const stem = cleanFilenameStem(String(sourceFileName).replace(/\.md$/i, ""));
-  return `${stem || "document"}.md`;
+  const original = String(sourceFileName).replace(/\.md$/i, "");
+  const cleaned = cleanFilenameStem(original);
+  const base = cleaned.replace(/-+$/, "") || "document";
+  if (cleaned === original) return `${cleaned || "document"}.md`;
+  return `${base}-${stemHash(original)}.md`;
+}
+
+/** FNV-1a over UTF-16 code units: no `node:crypto`, so the name is identical in every runtime. */
+function stemHash(value: string): string {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
 }

@@ -8,7 +8,6 @@ import {
   serviceWorker,
   tempDir,
   useRealDownloadNaming,
-  waitForDownloadComplete,
 } from "./harness";
 import { MISSING_IMAGE, PROTECTED_IMAGE, startFixtureServer, type FixtureServer } from "./fixtures/server";
 
@@ -80,10 +79,9 @@ async function convert(route: string): Promise<{ mdName: string; saved: number; 
   }
 }
 
-function readMarkdown(mdName: string): Promise<string> {
-  return waitForDownloadComplete(worker, mdName).then(() =>
-    readFileSync(path.join(downloadDir, mdName), "utf8"),
-  );
+// Read straight away: `run()` must not resolve before Chrome reports the markdown complete.
+function readMarkdown(mdName: string): string {
+  return readFileSync(path.join(downloadDir, mdName), "utf8");
 }
 
 // Every non-http reference in the markdown, i.e. the relative paths that have to point at real

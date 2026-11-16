@@ -4,7 +4,9 @@
 
 **Current released version: `0.3.10`** (published 2026-10-01 as GitHub Release `v0.3.10`, tag `77703c3`; `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.10.zip`, 236,226,685 bytes, SHA-256 `f25e0ae9…c1945`, server-side digest matched). It carries feat-043, the UI walkthrough fixes (11 items: header three-column grid with centred brand, context-aware back labels, relocated local-documents warnings with a 去设置 link, placeholder contrast, disabled-state colour instead of opacity, same-row feature hints). Gate evidence: `init.sh` 95 files / 1274 passed / 0 skipped, three-engine E2E 348 passed / 6 skipped, live 2/2. Per-round details and the six known-undecided flakes: see `## Archived Round Log` below and `session-handoff.md` Environment Notes.
 
-**Latest audit round: 2026-11-14 (round 31, no release)** — a full-project read-only audit followed by the user-approved remediation: production dependency advisories cleared (dompurify 3.4.17, next 16.4.6, sharp 0.35.5, undici, source-map-js — `package-lock.json` only), README/PRODUCT/ARCHITECTURE brought back in sync with 0.3.10 in both languages, the stale one-shot probe script and a duplicate 116 MB Electron cache removed, and the doc-consistency drift fixed (this verdict rewritten as a short statement; QA-012 re-closed with a recurring-audit note). Gate evidence: `npm audit --omit=dev` 0 vulnerabilities, `./init.sh` 95 files / 1274 passed / 0 skipped. Historical per-version release verdicts (0.3.1–0.3.9) now live only in `## Archived Round Log` and `docs/TESTING.md`; the previous unbounded verdict paragraphs were collapsed here because they had grown into the drift source this round set out to fix.
+**Latest round: 2026-11-14 (round 32, remediation of the external audit's P2 items, no release; version face is `0.3.11`)** — four code fixes proven by RED-first tests: distinct product names for sources whose names have to be cleaned (batch overwrites are gone, and the list shows the real product name), `realpath` boundary checks for local images so a symlink cannot read outside the source tree, the extension now waits for its Markdown download to reach `complete` before reporting success, and `npm run audit:runtime` wired into the release gate (production advisories block, Electron's 12 tracked advisories print). Evidence: `npm run test:coverage` 96 files / 1291 passed, three-engine E2E 351 passed / 6 skipped, `test:extension` 45 passed at `--repeat-each=3`. Details: [`features/audit-p2-remediation/FSD.md`](features/audit-p2-remediation/FSD.md).
+
+**Previous audit round: 2026-11-14 (round 31, no release)** — a full-project read-only audit followed by the user-approved remediation: production dependency advisories cleared (dompurify 3.4.17, next 16.4.6, sharp 0.35.5, undici, source-map-js — `package-lock.json` only), README/PRODUCT/ARCHITECTURE brought back in sync with 0.3.10 in both languages, the stale one-shot probe script and a duplicate 116 MB Electron cache removed, and the doc-consistency drift fixed (this verdict rewritten as a short statement; QA-012 re-closed with a recurring-audit note). Gate evidence: `npm audit --omit=dev` 0 vulnerabilities, `./init.sh` 95 files / 1274 passed / 0 skipped. Historical per-version release verdicts (0.3.1–0.3.9) now live only in `## Archived Round Log` and `docs/TESTING.md`; the previous unbounded verdict paragraphs were collapsed here because they had grown into the drift source this round set out to fix.
 
 Historical release verdicts for `0.3.1`–`0.3.9` (sizes, SHA-256s, gate evidence, per-round fix detail) have been collapsed into `## Archived Round Log` below and the per-version records in `docs/TESTING.md`; the original unbounded paragraphs are preserved in git history (commit `97c3301` and earlier).
 
@@ -209,12 +211,15 @@ The package is about 4.3 MB larger than `0.3.3`; the delta comes from this build
 - Mitigation if it proves too slow: lower the batch size for cloud providers, or expose the ceiling as a setting. Both are product decisions, not fixes.
 - Re-verify: `src/lib/translate/limits.test.ts`, `src/lib/translate/run.test.ts`, and a real-machine cloud run from `out/`.
 
-### QA-DEV — Development dependency advisories
+### QA-DEV — Development dependency advisories (including Electron, which ships)
 
-- Severity: non-runtime maintenance risk
-- Status: accepted for 0.3.0
-- Evidence: `npm audit --omit=dev --json` reports 3 production advisories (see QA-012); the full tree reports 1 critical, 28 high, and 3 low advisories in development/build tooling.
-- Mitigation: packaged runtime dependencies are independently prepared and the release artifact passes the complete gate. Review compatible toolchain upgrades in a separately authorized iteration; do not use force upgrades that change the supported stack without regression evidence.
+- Severity: maintenance risk, one of them a packaged-runtime risk
+- Status: **actively tracked since 2026-11-14**; the production half is now gated, the Electron half waits on `feat-045`
+- Evidence (2026-11-14, `npm audit --json` at commit `fb63c06`): production tree `--omit=dev` = **0** advisories; full tree = **50** (3 low / 14 moderate / 28 high / 5 critical) in build and test tooling. `electron@^43.3.0` — a devDependency that becomes the packaged runtime — resolves to `43.3.0` and matches **12** advisories (2 high below `43.4.1`, `GHSA-qmv3-fv6v-rmhq` below `43.5.0`, a certificate mitigation below `43.8.1`); the 43.x line is at `43.8.10` and the newest major is `45.3.2`.
+- Why it is not simply "devDependency, ignore": the packaged `.app` runs that exact Electron, so its advisories are runtime advisories in everything but `package.json` placement.
+- Mitigation now in the gate: `npm run audit:runtime` (`scripts/audit-runtime.mjs`) runs inside `npm run desktop:release` — any **production** advisory aborts the release, any **Electron** advisory is printed as a tracked warning. The gate judges the report, not the exit code, because `npm audit` exits 1 whenever anything anywhere is reported.
+- Mitigation still pending: the Electron upgrade itself (`feat-045`) needs a full gate, a packaged smoke test and a release authorization; do not force-upgrade the rest of the toolchain to silence the report.
+- Re-verify: `node scripts/audit-runtime.mjs` and `npm ls electron`.
 
 ### QA-009 — Provider keys and the runtime secret path
 
@@ -284,6 +289,17 @@ Approved for personal testing. Not approved for frictionless public distribution
 
 ## Archived Round Log
 
+### 2026-11-14（第三十二轮）—— 外部审计 P2 四条整改 + 审计门禁（未发布，版本面 `0.3.11`）
+
+- 用户指令「按照本项目 Harness 要求跑」：先把审计 6 条逐条回仓库复现（全部成立），再按 TDD 修其中 4 条代码 + 1 条门禁缺口；Electron 版本单列 `feat-045`。
+- T1.1 同源静默覆盖：`localDocFilename` 只对「清洗改动过名字」的源追加 `-<8 位 FNV-1a>`（RED 5 条）；`ScannedLocalDoc`/`BatchRow` 新增 `outputName`，列表显示真实产物名（路由 RED「expected 1 to be 2」+ 一条三引擎 e2e）。
+- T2.0 符号链接边界：`inlineLocalRef` 收 `rootReal`，改为 `realpath` 后比较（RED：目录外链接被嵌成 base64）⇒ 树外拒、树内仍内嵌。
+- T3.0 插件 md 写盘：`run()` 复用 `waitForDownload` + `MD_TIMEOUT_MS = 10_000`，中断/超时 → `DOWNLOAD_FAILED`（RED 2 条都返回 `ok:true`）；测试侧 `waitForDownloadComplete()` 随之删除，`--repeat-each=3` 45 passed 证明生产侧真在等。
+- T4.0 审计门禁：新增 `scripts/audit-runtime.mjs` + 9 条单测（判报告不判退出码），接线进 `desktop:release`（`init.sh` 之后、`test:e2e` 之前），`release-guards.test.mjs` 事件序同步；真跑 prod 0 / electron 12 条公告。QA-DEV 重写为活跃跟踪项。
+- T5.0 版本面 `0.3.11`（TDD 先红后绿），`scripts/` 41 passed。门禁：lint/typecheck 干净、coverage 96 files / 1291 passed、三引擎 e2e 351 passed / 6 skipped / 0 failed、`test:extension` 15 passed。两次 e2e 抖动均判抖动未改代码：firefox 掉 hydration 等（单跑 5/5）与 firefox `NS_ERROR_PROXY_CONNECTION_REFUSED`（系统代理无 localhost 例外，单跑 5/5）。
+- 提交门（3 路只读评审）修掉一处真错：面板 `title` 给的是「产物名」（单元格里已有），四处文档说的都是「原名」⇒ e2e 先加 `title` 断言（RED `received 产物名：a-05249472.md`）再改 `panel.tsx` 为 `原名：${row.name}`；另修 8 处台账/计数器陈旧（`waitForDownloadComplete` 现行口径 ×2、coverage 文件数 ×2、stash 假记载、重复的「发布前才 bump」、哈希输入含扩展名、`QA-DEV` 编号）与 CHANGELOG 角标文案。
+- 未做：未提交、未发布、未升级 Electron、未改 `next` 下界。
+
 ### 2026-11-14（第三十一轮）—— 全项目审计 + 整改（未发布）
 
 - 用户指令「找出所有坏掉的、不一致的、低效的、已经不需要的东西」→ 审计清单 →「修吧」。双路只读探查 + 逐条人工复核（探查报告 page.tsx 死变量三条为误报，已剔除；CSS 死类确认零）。
@@ -299,7 +315,7 @@ Approved for personal testing. Not approved for frictionless public distribution
 - 发布门禁 `desktop:release` **一次通过**（3m38s）：lint/typecheck/coverage 全绿、e2e 348/6/0、live 2/2、产物校验过、历史归档守卫退役通知符合预期。
 - 产物 `MD-Convertor-darwin-arm64-0.3.10.zip` = 236,226,685 bytes / SHA-256 `f25e0ae9aea0a915748ee5f6790ffb9ae467e35ecdf59512f25749684fcc1945`；包内指纹（footerRow 同行布局、返回文案三件套、去设置、产品特点）全命中；ZIP 3,542 条目 / 566 M。
 - GitHub Release `v0.3.10` 已发布（非草稿非预发布、`releases/latest` 已指向、服务端 digest 与本地一致）。**坑**：`gh release create` 带 236MB 资产一把梭 `unexpected EOF`（自动回滚无残留），拆「先建骨架 + `gh release upload`」两步后 53 秒传完（已记 session-handoff Environment Notes）。
-- 版本面现为已发布 `0.3.10`（tag `77703c3`）；下轮再发布需授权且发布前 TDD bump `0.3.11`。六条未裁决 flake 零命中。
+- 版本面当时为已发布 `0.3.10`（tag `77703c3`）；该轮不做 bump（后随 feat-044 于 2026-11-14 bump 至 `0.3.11`）。六条未裁决 flake 零命中。
 
 ### 2026-10-01（第二十九轮）—— feat-043「UI 走查整改」实施（S1/S2/S3 全绿）
 

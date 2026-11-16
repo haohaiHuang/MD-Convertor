@@ -17,26 +17,6 @@ export function tempDir(prefix: string): string {
   return mkdtempSync(path.join(tmpdir(), prefix));
 }
 
-// `chrome.downloads.download()` resolves once the download has *started*, so a file can exist with
-// its bytes still being written — and `waitForFile` only looks for the name. Skeleton and the S3
-// integration spec both read the file back, so they must first let Chrome declare it complete.
-// (Measured: reading straight after the worker resolves produced an empty or truncated markdown
-// in roughly one run out of ten.)
-export async function waitForDownloadComplete(worker: Worker, name: string, timeoutMs = 30_000): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  for (;;) {
-    const state = await worker.evaluate(async (target) => {
-      const items = await chrome.downloads.search({});
-      return items.find((item) => item.filename === target || item.filename.endsWith(`/${target}`))?.state;
-    }, name);
-    if (state === "complete") return;
-    if (Date.now() > deadline) {
-      throw new Error(`${name} never finished downloading (last state: ${state ?? "not found"})`);
-    }
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-}
-
 // Quirk 1: Playwright always forces CDP `Browser.setDownloadBehavior: allowAndName` on a
 // persistent context, which renames every download to a GUID and drops the requested
 // subdirectory. Pointing the profile's own download directory at a temp dir and resetting the

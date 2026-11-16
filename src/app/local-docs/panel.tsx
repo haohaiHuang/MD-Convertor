@@ -387,7 +387,9 @@ export function LocalDocsPanel({
                     }}
                   />
                 </td>
-                <td className={styles.name}>{row.name}</td>
+                <td className={styles.name} title={row.outputName === row.name ? undefined : `原名：${row.name}`}>
+                  {row.outputName}
+                </td>
                 <td className={styles.size}>{formatSize(row.size)}</td>
                 <td className={styles.time}>{formatTime(row.mtimeMs)}</td>
                 <td className={row.status.phase === "failed" ? styles.failed : styles.badge}>{statusLabel(row)}</td>

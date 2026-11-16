@@ -1,7 +1,7 @@
 {
   "name": "md-convertor",
   "productName": "MD-Convertor",
-  "version": "0.3.10",
+  "version": "0.3.11",
   "private": true,
   "main": "electron/main.mjs",
   "engines": {
@@ -21,6 +21,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "audit:runtime": "node scripts/audit-runtime.mjs",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "test:e2e": "node scripts/run-e2e.mjs",

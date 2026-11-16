@@ -56,7 +56,7 @@
 - 翻译任务预算：`translateTaskTimeoutMs(batchCount)` 返回 `max(120s, 批次数 × 180s + 30s)`，两个端点都按真实批次数决定 deadline（段数多的长文不再被固定 120s 切断）
 - 翻译勾选框、原文/译文 Tab、按 Tab 分流的复制与下载、进度、取消、重试与占比弹窗
 
-`vitest.config.ts` 把覆盖率限定在 `src/lib/**/*.ts` 与 convert、translate 路由，排除测试文件与 `src/types/**`，并为每个文件设置门槛。`src/lib/translate/**` 的每个模块都有自己的门槛（95/90/100/95，`segment.ts` 为 90/75/100/90）。当前覆盖率为 79 files / 1067 tests、statements 95.71%（包含插件的第 1–2 层；只算桌面端时是 64 files / 866 tests、95.28%）。
+`vitest.config.ts` 把覆盖率限定在 `src/lib/**/*.ts` 与 convert、translate 路由，排除测试文件与 `src/types/**`，并为每个文件设置门槛。`src/lib/translate/**` 的每个模块都有自己的门槛（95/90/100/95，`segment.ts` 为 90/75/100/90）。当前覆盖率为 96 files / 1291 tests、statements 95.98%（分支 87.83% / 函数 98.19%，包含插件的第 1–2 层；`0.3.6` 门禁时只算桌面端是 64 files / 866 tests、95.28%）。
 
 E2E 使用 production standalone 服务，并在测试后检查 tracked 文件未变化。`playwright.config.ts` 设 `workers: 1`，因为翻译引擎持有一个进程级任务槽，并行 worker 会互相撞出 429 `TRANSLATE_BUSY`。
 
@@ -83,7 +83,7 @@ E2E 使用 production standalone 服务，并在测试后检查 tracked 文件�
 改这套测试前值得知道的坑：
 
 - **绝不要给扩展上下文传 `downloadsPath`。** Playwright 一律先发 CDP `Browser.setDownloadBehavior { behavior: "allowAndName" }`，会把每个下载存成光秃秃的 `<guid>` 并丢掉请求的子目录。harness 的绕法是往 profile 的 `Default/Preferences` 预写 `download.default_directory`，并在上下文起来后自己发一次 `behavior: "default"`（见 `extension/tests/harness.ts`）。断言读真实文件，不读 `chrome.downloads.search`。
-- **`chrome.downloads.download()` 在下载开始时 resolve，不是结束时**，而 `run()` 不等 md 写完。文件名一出现就读，约十次里有一次读到空或截断内容。用 `waitForDownloadComplete(worker, name)`（轮询 `search({})` 到 `state === "complete"`）。图片不受影响：`waitForImage` 在 `run()` 返回前就已 resolve。
+- **`chrome.downloads.download()` 在下载开始时 resolve，不是结束时。** 2026-11-14 起由 `run()` 自己等：`waitForDownload()` 轮询 `search({})` 到 `state === "complete"` 才报成功，被中断或超过 `MD_TIMEOUT_MS`（10 秒）返回 `DOWNLOAD_FAILED`，角标不会再对没落盘的文件打 ✓。因此 spec 在 `run()` resolve 后可以直接读 md —— 旧的测试侧 `waitForDownloadComplete()` 已随之删除。图片走同一个 helper。
 - **`playwright.extension.config.ts` 的 `testMatch` 必须保持 `"**/*.spec.ts"`**，因为 vitest 的文件（如 `extension-build.test.mjs`）住在同一目录；放宽后会被 Playwright 收走，报 `Vitest failed to access its internal state`。
 - **spec 里的 fixture 路径从 spec 所在目录解析**，不是仓库根：用 `path.resolve(__dirname, "../..")`。
 - **整篇图片全失败会留下空的 `<标题>.images/` 目录。** Chrome 在发请求前就建好目录，中断的下载只删半成品文件，而 `chrome.downloads` 删不了目录。集成测试按「不存在或为空」断言，不当作缺陷。
@@ -107,11 +107,12 @@ fixture 站是 `extension/tests/fixtures/server.ts`（由 `server.test.ts` 做�
 
 `npm run desktop:release` 要求：
 
-- package 版本严格为 `0.3.6`
+- package 版本严格为 `0.3.11`
 - Node.js 24.x，但 **24.16.0 不可用**：该补丁在 `yauzl` 解压 Electron 归档时会卡住，`electron-forge make` 永远不产出 ZIP。24.14.1 与 24.15.0 均可完整跑过门禁
+- `npm run audit:runtime` 必须通过：`npm audit --omit=dev` 一旦有公告就中止；Electron 自身的公告（devDependency 却成为打包后的运行时）只打印为 tracked warning，登记在 `QA-DEV`
 - 历史归档集合：清单中仍然存在的 ZIP 必须保持固定 SHA-256，`~/Downloads/MD-Convertor-archive/releases/` 中不得出现未登记的发布 ZIP
 - ZIP 必须由本轮命令新生成
-- 包内版本为 `0.3.6`
+- 包内版本为 `0.3.11`
 - 可执行文件为 arm64，应用结构完整
 
 成功和失败路径都会再次校验历史产物。Forge 未生成新 ZIP 即使退出也必须判为失败。

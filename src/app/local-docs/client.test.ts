@@ -9,6 +9,7 @@ function row(overrides: Partial<BatchRow> = {}): BatchRow {
   return {
     id: "a.md",
     name: "a.md",
+    outputName: "a.md",
     size: 10,
     mtimeMs: 1,
     state: "new",

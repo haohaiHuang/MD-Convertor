@@ -1,4 +1,4 @@
-import { readFile, stat } from "node:fs/promises";
+import { readFile, realpath, stat } from "node:fs/promises";
 import path from "node:path";
 import { AppError } from "@/lib/errors";
 import { fetchPublicResource } from "@/lib/fetcher";
@@ -104,19 +104,34 @@ function resolveLocalPath(target: string, sourceDir: string): string | null {
   return resolved;
 }
 
-async function inlineLocalRef(target: string, sourceDir: string, embed: Embed): Promise<ResolvedRef> {
+async function inlineLocalRef(
+  target: string,
+  sourceDir: string,
+  rootReal: string,
+  embed: Embed,
+): Promise<ResolvedRef> {
   const resolved = resolveLocalPath(target, sourceDir);
   if (!resolved) return { ok: false, warning: sourceInvalid() };
 
   const contentType = LOCAL_TYPES.get(path.extname(resolved).toLowerCase());
   if (!contentType) return { ok: false, warning: typeUnsupported() };
 
+  // The string check above cannot see a symbolic link: `link.png -> ../secret.png` resolves inside
+  // the tree textually and outside it on disk. Only the real path settles which tree it is in.
+  let real: string;
+  try {
+    real = await realpath(resolved);
+  } catch {
+    return { ok: false, warning: unreadable(true) };
+  }
+  if (real !== rootReal && !real.startsWith(rootReal + path.sep)) return { ok: false, warning: sourceInvalid() };
+
   let buffer: Buffer;
   try {
-    const info = await stat(resolved);
+    const info = await stat(real);
     if (!info.isFile()) return { ok: false, warning: unreadable(true) };
     if (info.size > MAX_SOURCE_IMAGE_BYTES) return { ok: false, warning: tooLarge() };
-    buffer = await readFile(resolved);
+    buffer = await readFile(real);
   } catch {
     return { ok: false, warning: unreadable(true) };
   }
@@ -163,6 +178,9 @@ export async function inlineLocalDocImages(
   signal.throwIfAborted();
   const text = String(markdownText);
   const warnings: ConversionWarning[] = [];
+  // One resolution for the whole document; a missing source dir falls back to the lexical root so
+  // every reference then fails on its own `realpath` with a readable warning.
+  const rootReal = await realpath(path.resolve(sourceDir)).catch(() => path.resolve(sourceDir));
 
   // `data:` references are already inline: never read, never counted.
   const candidates = scanImageRefs(text).filter((ref) => !/^data:/i.test(ref.target));
@@ -178,7 +196,7 @@ export async function inlineLocalDocImages(
     signal.throwIfAborted();
     return /^https?:/i.test(ref.target)
       ? inlineRemoteRef(ref.target, signal, fetchResource, embed)
-      : inlineLocalRef(ref.target, sourceDir, embed);
+      : inlineLocalRef(ref.target, sourceDir, rootReal, embed);
   });
 
   // Budget accounting walks document order over byte deltas: no full re-encode per image.

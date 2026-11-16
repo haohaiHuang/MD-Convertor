@@ -1,5 +1,5 @@
 import { createServer, type Server } from "node:http";
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -35,6 +35,11 @@ beforeAll(async () => {
   await mkdir(path.join(root, "images"), { recursive: true });
   await writeFile(path.join(root, "images", "nested.png"), onePixelPng);
   await writeFile(path.join(path.dirname(root), "outside.png"), onePixelPng);
+  // A link inside the tree whose target is outside it: the string prefix check sees a relative
+  // path, so only resolving the link reveals the escape.
+  await symlink(path.join(path.dirname(root), "outside.png"), path.join(root, "escape.png"));
+  await symlink(path.dirname(root), path.join(root, "escape-dir"));
+  await symlink("photo.png", path.join(root, "inside-link.png"));
 
   server = createServer((request, response) => {
     if (request.url === "/ok.png") {
@@ -108,6 +113,23 @@ describe("inlineLocalDocImages — local images", () => {
 
     expect(result.stats).toEqual({ embedded: 0, kept: 1 });
     expect(result.warnings.map((warning) => warning.code)).toEqual(["IMAGE_TYPE_UNSUPPORTED"]);
+  });
+
+  it("refuses a symlink whose target lives outside the source tree", async () => {
+    const markdown = "![link](escape.png)\n\n![dir](escape-dir/outside.png)\n";
+    const result = await inline(markdown);
+
+    expect(result.markdown).toBe(markdown);
+    expect(result.stats).toEqual({ embedded: 0, kept: 2 });
+    expect(result.warnings.map((warning) => warning.code))
+      .toEqual(["IMAGE_SOURCE_INVALID", "IMAGE_SOURCE_INVALID"]);
+  });
+
+  it("still inlines a symlink that resolves inside the source tree", async () => {
+    const result = await inline("![link](inside-link.png)\n");
+
+    expect(result.stats).toEqual({ embedded: 1, kept: 0 });
+    expect(result.warnings).toEqual([]);
   });
 });
 

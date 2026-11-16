@@ -429,6 +429,7 @@ describe("desktop release protection orchestration", () => {
       "archive",
       "snapshot",
       "run:./init.sh",
+      "run:npm run audit:runtime",
       "run:npm run test:e2e",
       "run:npm run test:live",
       "run:npm run desktop:make",
@@ -498,7 +499,7 @@ describe("desktop release protection orchestration", () => {
     expect(events).toEqual([]);
   });
 
-  it("accepts only the current 0.3.10 release target", async () => {
+  it("accepts only the current release target", async () => {
     const { options } = makeReleaseFixture();
     await expect(runRelease(options)).resolves.toMatchObject({ digest: "digest" });
 
@@ -506,7 +507,7 @@ describe("desktop release protection orchestration", () => {
     await expect(runRelease(superseded.options)).rejects.toThrow(RELEASE_VERSION_ERROR);
     expect(superseded.events).toEqual([]);
 
-    expect(RELEASE_VERSION_ERROR).toContain("0.3.10");
+    expect(RELEASE_VERSION_ERROR).toContain(CURRENT_RELEASE_TARGET);
   });
 
   it("keeps the release target, package version, lockfile, and feature_list currentVersion aligned", async () => {

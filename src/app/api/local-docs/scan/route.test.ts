@@ -103,6 +103,19 @@ describe("POST /api/local-docs/scan", () => {
     expect(await readdir(root)).toEqual(beforeListing);
   });
 
+  it("tells the caller which product name a cleaned source will produce", async () => {
+    await writeSource(root, "a?.md");
+    await writeSource(root, "a*.md");
+
+    const body = await (await POST(scanRequest({ dirPath: root }))).json();
+    const outputNames = body.files.map((file: { outputName: string }) => file.outputName);
+
+    // Two sources that both clean to `a-` must not promise the same product file.
+    expect(outputNames).toHaveLength(2);
+    expect(new Set(outputNames).size).toBe(2);
+    for (const outputName of outputNames) expect(outputName).toMatch(/^a-[0-9a-f]{8}\.md$/);
+  });
+
   it("reports every file as new when no output directory is given", async () => {
     await writeSource(root, "notes.md");
 

@@ -8,6 +8,12 @@ This project follows the principles of [Keep a Changelog](https://keepachangelog
 
 ### Fixed
 
+- Batch processing no longer lets one document silently overwrite another. Source names that contain characters a file name cannot keep (`a?.md`, `a*.md`) both used to clean down to `a-.md`, so the second product replaced the first; such names now get a short hash suffix (`a-3f2a1b7c.md`), while names that need no cleaning stay exactly as before. The list shows the real product name for each row, with the source name in its tooltip.
+
+- Local images can no longer be pulled from outside the folder you picked. The check compared path strings, so a symlink pointing above the source folder was read and embedded anyway; it now resolves the link and refuses anything that lands outside the tree.
+
+- The browser extension no longer reports a successful save when its Markdown download was interrupted or never finished. It waits for Chrome to mark the file complete, and otherwise shows the failure badge (「转换失败：无法写入下载目录」) instead of a ✓.
+
 - Production dependencies were upgraded to close disclosed advisories (dompurify, next, sharp, undici, source-map-js — all patch-level within the existing ranges, lock file only); `npm audit --omit=dev` is back to zero. For users this means the HTML sanitizer and image pipeline no longer carry known-vulnerable versions.
 
 ### Changed

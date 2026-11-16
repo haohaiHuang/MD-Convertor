@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import { applyRowStatus, nextPending, planBatch, summarize, type BatchRow } from "./batch";
 
 const FILES = [
-  { name: "a.md", size: 10, mtimeMs: 1, state: "new" as const },
-  { name: "b.md", size: 20, mtimeMs: 2, state: "skip" as const },
-  { name: "c.md", size: 30, mtimeMs: 3, state: "check" as const },
+  { name: "a.md", outputName: "a.md", size: 10, mtimeMs: 1, state: "new" as const },
+  { name: "b.md", outputName: "b.md", size: 20, mtimeMs: 2, state: "skip" as const },
+  { name: "c.md", outputName: "c.md", size: 30, mtimeMs: 3, state: "check" as const },
 ];
 
 const BRIDGE = { inputDir: "/in", outputDir: "/out", hasBridge: true };
@@ -14,6 +14,7 @@ function row(overrides: Partial<BatchRow> = {}): BatchRow {
   return {
     id: "a.md",
     name: "a.md",
+    outputName: "a.md",
     size: 10,
     mtimeMs: 1,
     state: "new",

@@ -538,6 +538,24 @@ test.describe("本地文档面板", () => {
   // feat-043 S2 (T2.1, spec §4.1): the blocking notice is a warning row ABOVE the toolbar,
   // with a way out (去设置) and a readable disabled reason hanging on 一键转换.
 
+  test("清洗过的源文件名在列表里显示真实产物名，两篇不再撞成同一个", async ({ page }) => {
+    // `?` and `*` are legal in a file name but not in the product name, so both clean to `a-`.
+    await writeFile(path.join(inputDir, "a?.md"), "# 问号\n\n正文。\n", "utf8");
+    await writeFile(path.join(inputDir, "a*.md"), "# 星号\n\n正文。\n", "utf8");
+    await installBridge(page);
+    await routeSettings(page, defaultPatch(inputDir, outputDir), []);
+    await openLocalDocs(page);
+
+    const products = page.getByRole("cell", { name: /^a-[0-9a-f]{8}\.md$/ });
+    await expect(products).toHaveCount(2);
+    expect(new Set(await products.allTextContents()).size).toBe(2);
+    // The row is still keyed on the source, so the checkbox keeps naming the source file.
+    await expect(page.getByRole("checkbox", { name: "选择 a?.md" })).toBeVisible();
+    // The product name replaces the source in the cell, so the source has to stay reachable.
+    expect(await products.evaluateAll((cells) => cells.map((cell) => cell.getAttribute("title")).sort()))
+      .toEqual(["原名：a*.md", "原名：a?.md"].sort());
+  });
+
   test("no-output 警示行上移到工具栏之前，用警示色", async ({ page }) => {
     await installBridge(page);
     await routeSettings(

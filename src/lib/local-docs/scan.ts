@@ -25,6 +25,8 @@ const FS_CODE_MESSAGES: Record<string, string> = {
 
 export type ScannedLocalDoc = {
   name: string;
+  /** The product's file name: `name` cleaned, plus a hash when cleaning had to change it. */
+  outputName: string;
   size: number;
   mtimeMs: number;
   state: LocalDocState;
@@ -71,9 +73,9 @@ async function readFirstChunk(filePath: string): Promise<string | null> {
   }
 }
 
-async function stateFor(name: string, sourcePath: string, stats: { size: number; mtimeMs: number }, outputDir: string | null): Promise<LocalDocState> {
+async function stateFor(outputName: string, sourcePath: string, stats: { size: number; mtimeMs: number }, outputDir: string | null): Promise<LocalDocState> {
   if (outputDir === null) return "new";
-  const outputPath = path.join(outputDir, localDocFilename(name));
+  const outputPath = path.join(outputDir, outputName);
   const head = await readFirstChunk(outputPath);
   const marker = head === null ? null : parseDocMarker(head);
   return decideLocalDoc(marker, { source: sourcePath, size: stats.size, mtimeMs: stats.mtimeMs }, outputPath);
@@ -110,11 +112,13 @@ export async function scanLocalDocs(
     } catch {
       continue; // vanished between readdir and stat
     }
+    const outputName = localDocFilename(name);
     files.push({
       name,
+      outputName,
       size: stats.size,
       mtimeMs: stats.mtimeMs,
-      state: await stateFor(name, sourcePath, stats, outputDir),
+      state: await stateFor(outputName, sourcePath, stats, outputDir),
     });
   }
 

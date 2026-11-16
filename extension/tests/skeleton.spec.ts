@@ -9,7 +9,6 @@ import {
   serviceWorker,
   tempDir,
   useRealDownloadNaming,
-  waitForDownloadComplete,
   type FixtureServer,
 } from "./harness";
 
@@ -59,9 +58,7 @@ test("the worker writes <title>.md for the injected page", async () => {
   // The image in the fixture is a 404 on purpose: a failed image must not stop the markdown.
   expect(result).toMatchObject({ ok: true, mdName: "示例文章标题.md", saved: 0, failed: 1 });
 
-  // The download only has a name while it is being written; wait for Chrome to finish it before
-  // reading, otherwise the markdown comes back empty or half-written.
-  await waitForDownloadComplete(worker, "示例文章标题.md");
+  // No wait for the download: `run()` resolves only after Chrome reports the markdown complete.
   const markdown = readFileSync(path.join(downloadDir, "示例文章标题.md"), "utf8");
   expect(markdown).toContain("示例文章标题");
   expect(markdown).toContain("这是第一段正文");

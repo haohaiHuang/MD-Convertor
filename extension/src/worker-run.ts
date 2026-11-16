@@ -42,6 +42,8 @@ export const CONTENT_SCRIPT = "content.js";
 export const PAYLOAD_TIMEOUT_MS = 10_000;
 export const IMAGE_CONCURRENCY = 4;
 export const IMAGE_TIMEOUT_MS = 60_000;
+/** A markdown write is a data URL already in memory; ten seconds is generous for the disk flush. */
+export const MD_TIMEOUT_MS = 10_000;
 export const POLL_MS = 100;
 export const BADGE_CLEAR_MS = 4_000;
 export const DEFAULT_TITLE = "把当前页转成 Markdown";
@@ -101,7 +103,7 @@ async function mapWithLimit<T, R>(items: T[], limit: number, worker: (item: T, i
 
 // Polls `search` instead of listening on `onChanged`: the item can already be finished by the time
 // `download()` resolves, and the poll returns the real path in the same call.
-async function waitForImage(
+async function waitForDownload(
   downloads: DownloadsApi,
   id: number,
   timers: Timers,
@@ -149,7 +151,7 @@ async function downloadImage(
     return fail();
   }
 
-  const item = await waitForImage(downloads, id, timers, timers.now() + imageTimeoutMs);
+  const item = await waitForDownload(downloads, id, timers, timers.now() + imageTimeoutMs);
   if (!item || item.state !== "complete") return fail();
   const path = resolvedPath(item, dirName);
   return path === null ? fail() : { placeholder: image.placeholder, path };
@@ -193,10 +195,17 @@ export async function run(tabId: number, deps: ChromeDeps, options: RunOptions =
   );
 
   const mdName = mdFileName(message.title);
+  let mdId: number;
   try {
-    await writeMarkdown(deps.downloads, mdName, rewriteImageReferences(message.markdown, images));
+    mdId = await writeMarkdown(deps.downloads, mdName, rewriteImageReferences(message.markdown, images));
   } catch (error) {
     return { ok: false, code: "DOWNLOAD_FAILED", message: errorText(error) };
+  }
+  // `download()` resolves when the write *starts*, so a cancelled or failed flush would otherwise
+  // still be reported as a saved file (the badge is the only feedback there is).
+  const mdItem = await waitForDownload(deps.downloads, mdId, timers, timers.now() + MD_TIMEOUT_MS);
+  if (!mdItem || mdItem.state !== "complete") {
+    return { ok: false, code: "DOWNLOAD_FAILED", message: `下载未完成（${mdItem?.state ?? "超时"}）` };
   }
 
   const failed = images.filter((image) => "url" in image).length;
