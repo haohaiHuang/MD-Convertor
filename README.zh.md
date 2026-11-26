@@ -43,17 +43,17 @@ xattr -dr com.apple.quarantine "/Applications/MD-Convertor.app"
 
 ## 当前版本
 
-- 当前版本：`0.3.11`——批量产物与本地图片的安全修复、插件等待下载完成、图片引用转义，以及 Electron 43.8.10；2026-11-16 发布（Apple Silicon Mac，macOS 12.0+）。
-- 最近一次正式发布：[`v0.3.11`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.11)。
+- 当前版本：`0.3.12`——启动不再无谓访问钥匙串、入口卡标题对齐，以及七处 UI 走查整改（状态单行、中文短时间、截断提示、复选框命中区、全选半选、焦点环统一）；2026-11-26 发布（Apple Silicon Mac，macOS 12.0+）。
+- 最近一次正式发布：[`v0.3.12`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.12)。
 - 所有产物均未做 Developer ID 签名与 notarization，仅适合个人测试。
 
-当前已通过门禁并发布的产物（`0.3.11`）：
+当前已通过门禁并发布的产物（`0.3.12`）：
 
-- ZIP：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.11.zip`
-- 大小：`237,921,860` bytes
-- SHA-256：`a63e5192869f95afc73c5e4467067d31cd80899bda3cda6e227658d99720154d`
+- ZIP：`out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.12.zip`
+- 大小：`237,922,561` bytes
+- SHA-256：`b02254b96f7e67ec2807085082ca77bad2215571bd712ce67e6334f4463c6b7b`
 
-更早的已发布产物：`0.3.10` = `236,226,685` bytes / SHA-256 `f25e0ae9…c1945`；`0.3.9` = `236,224,633` bytes / `5e75709f…a9c9`；`0.3.8` = `236,224,675` bytes / `94624625…b2ea`；`0.3.5` = `237,335,837` bytes / `313bbbc3…92d45f`。逐版完整记录见[测试手册](docs/TESTING.md)。
+更早的已发布产物：`0.3.11` = `237,921,860` bytes / `a63e5192…0154d`；`0.3.10` = `236,226,685` bytes / SHA-256 `f25e0ae9…c1945`；`0.3.9` = `236,224,633` bytes / `5e75709f…a9c9`；`0.3.8` = `236,224,675` bytes / `94624625…b2ea`；`0.3.5` = `237,335,837` bytes / `313bbbc3…92d45f`。逐版完整记录见[测试手册](docs/TESTING.md)。
 
 请从 [GitHub Releases](https://github.com/haohaiHuang/MD-Convertor/releases) 下载。
 
@@ -81,6 +81,6 @@ npm run test:live
 npm run desktop:release
 ```
 
-发布流程只接受 `0.3.11`，对仓库外仍然存在的历史产物逐个校验哈希（缺失项报为退役而不阻断发布），拒绝旧产物，并校验包内版本、arm64 架构、应用结构、大小和 SHA-256。
+发布流程只接受 `0.3.12`，对仓库外仍然存在的历史产物逐个校验哈希（缺失项报为退役而不阻断发布），拒绝旧产物，并校验包内版本、arm64 架构、应用结构、大小和 SHA-256。
 
 更多信息见[产品说明](docs/PRODUCT.zh.md)、[架构说明](docs/ARCHITECTURE.zh.md)、[测试手册](docs/TESTING.zh.md)、[质量报告](docs/QUALITY-AUDIT.md)和[版本记录](CHANGELOG.zh.md)。

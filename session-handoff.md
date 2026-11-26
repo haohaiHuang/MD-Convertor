@@ -2,12 +2,12 @@
 
 ## Resume Here
 
-- Current version: **仓库版本面 `0.3.12`（第三十五轮 bump，未提交、未发布）**；已发布版本仍是 **`0.3.11`（2026-11-16 为 GitHub Release `v0.3.11`，tag 指向 `78c474e`）**，产物哈希见 `docs/TESTING.md` 的 `## Gated Artifact (0.3.11)`。未签名/未 notarize（个人测试定位，QA-008 accepted）。
+- Current version: **`0.3.12` 已发布（2026-11-26 Release `v0.3.12`，tag `bba8039`）**；上一版 `0.3.11`（tag `78c474e`），产物哈希见 `docs/TESTING.md` 的 `## Gated Artifact (0.3.11)`。未签名/未 notarize（个人测试定位，QA-008 accepted）。
 - **多设备约定（2026-09-30 起）**：本文件是**公开仓库**里的跨机共享文档，只记全局客观事实。**`/Applications/<App>.app` 装机版本是各机本地状态，不写进本文件**；各机见自己的 `.workbuddy/memory/DEVICES.md`（不入 git）。装机记录与实测不符时，**先怀疑不是同一台设备，不要先怀疑记录**（2026-09-30 曾因此误改另一台机器的真实记录）。
-- Active feature: **无在办（`feat-046` 按需钥匙串、`feat-047` UI 审计 7 项整改均 `done`，等授权提交/发布）**。`feat-047` = 修 W1/W2/W4a/W4b/W7/W8/P4、不修 P1/W5/W6、撤回 W3（误报）；细节见 PROGRESS 本轮段。feat-046：密钥表为空时 `exportPlaintext()` 不调 `safeStorage`（启动不再读 OSCrypt 主密钥、不再索要登录密码）+ README/PRODUCT/ARCHITECTURE 双语写清「首次打开 Control 点按」（或右键）→「打开」、「密钥只在保存/读取时才碰钥匙串」+ 删掉开发残留的 `Electron Safe Storage` 钥匙串项。其余：**`feat-044` / `feat-045` 均 `done` 并已随 `v0.3.11` 发布**（产物名哈希戳、图片 `realpath` 边界、插件 md 等 `complete`、`audit:runtime` 进门禁；Electron `43.8.10` + `next ^16.4.6`）。证据见 `feature_list.json` 的 verification。关键不变量：两个 `/api/local-docs/*` **只读不写盘**，**唯一写盘出口是 `outputBridge().saveFile()`**。
-- **唯一推荐下一步：等用户决定「提交 / 发布 `0.3.12` / 装到本机」**（三者各自需授权；发布跑 `NODE_OPTIONS= npm run desktop:release` 全门禁，`init.sh` 那次只是单元+构建面）。其他候选：Electron 45.x、云端 Provider 实文实测、Terminal 里跑一次带 `ELECTRON_SMOKE_TEST_SECRETS=1` 的规范打包冒烟（需先在弹窗里批准钥匙串）、P2-3…P2-6（用户锁死推迟）。口径：只有「清洗改过名字」的源加哈希戳；Electron 公告只告警不阻断（`QA-DEV` 已清零）。
+- Active feature: **无在办（`feat-046`/`feat-047` 均随 `v0.3.12` 发布并 `done`）**。`feat-047` = 修 W1/W2/W4a/W4b/W7/W8/P4、不修 P1/W5/W6、撤回 W3（误报）；细节见 PROGRESS 本轮段。feat-046：密钥表为空时 `exportPlaintext()` 不调 `safeStorage`（启动不再读 OSCrypt 主密钥、不再索要登录密码）+ README/PRODUCT/ARCHITECTURE 双语写清「首次打开 Control 点按」（或右键）→「打开」、「密钥只在保存/读取时才碰钥匙串」+ 删掉开发残留的 `Electron Safe Storage` 钥匙串项。其余：**`feat-044` / `feat-045` 均 `done` 并已随 `v0.3.11` 发布**（产物名哈希戳、图片 `realpath` 边界、插件 md 等 `complete`、`audit:runtime` 进门禁；Electron `43.8.10` + `next ^16.4.6`）。证据见 `feature_list.json` 的 verification。关键不变量：两个 `/api/local-docs/*` **只读不写盘**，**唯一写盘出口是 `outputBridge().saveFile()`**。
+- **唯一推荐下一步：等用户指令**。`0.3.12` 已提交（`bba8039`）、已发布、已装机；无在办。其他候选：Electron 45.x、云端 Provider 实文实测、Terminal 里跑一次带 `ELECTRON_SMOKE_TEST_SECRETS=1` 的规范打包冒烟（需先在弹窗里批准钥匙串）、P2-3…P2-6（用户锁死推迟）。口径：只有「清洗改过名字」的源加哈希戳；Electron 公告只告警不阻断（`QA-DEV` 已清零）。
 - Pending（无一是阻塞项）：① 产物与 tag 一律不动，缺失项按退役处理；② 签名/notarization 不做；③ 2026-09-20 旧 UI 评审（`docs/UI-REVIEW-2026-09-20.md`）勿重提（09-30 走查已销项）；④ 六条未裁决 flake（见 Environment Notes，2026-11-14 又见一条同族：`local-docs.spec.ts:565`，隔离 5/5 绿）。
-- Branch: `main` = **`85fd148`**（第三十四轮发布簿记），`origin/main` 同为 `85fd148`；父链 `78c474e`（tag `v0.3.11`）→ `ab3b7da`（feat-045 实现）→ `4c81a99` → `0c64834`（feat-044）。feat-043 实现提交 `77703c3` 即 tag `v0.3.10`。**工作树有第三十五至三十七轮未提交改动（27 files）**。`outputs/`（QA 截图/探针）按惯例不入库。stash 空；`v0.3.9` = `9f3642e`、`v0.3.8` = `6e00474`、`v0.1.3` = `ce041c9` 不可变。
+- Branch: `main` = **`bba8039`**，`origin/main` 同为 `bba8039`；tag `v0.3.12` → `bba8039`；父链 `78c474e`（tag `v0.3.11`）→ `ab3b7da`（feat-045 实现）→ `4c81a99` → `0c64834`（feat-044）。feat-043 实现提交 `77703c3` 即 tag `v0.3.10`。**工作树仅剩发布后簿记改动（实现已提交）**。`outputs/`（QA 截图/探针）按惯例不入库。stash 空；`v0.3.9` = `9f3642e`、`v0.3.8` = `6e00474`、`v0.1.3` = `ce041c9` 不可变。
 
 - **本文件只写现役状态**（≤150 行 / ≤25KB）：阶段间交接写对应阶段文档的 `## Handoff`，轮次历史压进 `docs/QUALITY-AUDIT.md` 的 `## Archived Round Log`。
 
@@ -15,13 +15,13 @@
 
 ```
 开工 MD-Convertor —— 0.3.11 已于 2026-11-16 发布（tag 78c474e，Release v0.3.11）；
-仓库版本面 0.3.12 已 bump、已实施 feat-046/047，但**未提交、未发布**。
+仓库版本面 0.3.12 **已发布**（Release `v0.3.12`）；feat-046/047 均已实施。
 当前无在办事项。本轮做什么由用户指令定。
 
 【建立基线，别跳过】
 1. pwd 确认在 /Users/huanghaohai/Desktop/MD-Convertor。
 2. 读 AGENTS.md、PROGRESS.md、feature_list.json、session-handoff.md（`## Resume Here` 是权威）。
-3. `git status --short` 预期**非空**：第三十五至三十七轮 27 files 待提交（见 Branch 行）；
+3. `git status --short` 预期**非空**：发布后簿记改动（见 Branch 行）；
    `origin/main` = `85fd148`，tag `v0.3.11` = `78c474e`、`v0.3.10` = `77703c3`。
 4. NODE_OPTIONS= ./init.sh 建立基线：Node 必须 24.x。期望 **96 files / 1301 passed / 0 skipped**
    （发布门禁里是 1296 passed + 5 skipped：五个 `desktop-server-scope` 守卫在 `.desktop` 未就绪时跳过）。
@@ -41,7 +41,7 @@
 - 文档口径：README 双语「首次打开 Control 点按（或右键）→ 打开」+「运行不需额外授权，只有首次存云端密钥才访钥匙串，未存密钥启动不弹窗，换版再问一次」。
 
 【版本面】
-- **`0.3.11` 已发布**（tag `78c474e`，资产 237,921,860 B）；仓库版本面 **`0.3.12`**（未提交、未发布），`release-desktop.mjs` 只认它；`out/` 里那份 237,926,019 B 的 ZIP **构建于第三十六轮之前**（不含 `2lh` 对齐修复），发布必须重跑门禁重建。
+- **`0.3.12` 已发布**（tag `bba8039`，资产 237,922,561 B / `b02254b9…63c6b7b`，见 TESTING `## Gated Artifact (0.3.12)`）；`release-desktop.mjs` 仍认 `0.3.12`，下次改桌面代码才按 TDD bump 到 `0.3.13`。
   再发布任何版本需用户单独授权；只改 `extension/` 的轮次不 bump 桌面版本。
 
 【硬约束（沿用，违反任一条都算做错）】
@@ -67,7 +67,9 @@
 
 ## Latest Change
 
-**本轮（2026-11-26 第三十七轮：UI 审计 7 项整改）**：先只读审计并产出决策板（`/tmp/mdc-audit/decision-board.html`，每个发现「问题截图 vs 改修渲染」并排）。用户拍板修 W1/W2/W4a/W4b/W7/W8/P4、不修 P1/W5/W6、撤回 W3（误报：`role="alert"` 输入时实时出现）。7 条 e2e RED→GREEN：`panel.tsx` zh-CN 短日期 + 截断提示 + 半选 + label 命中区，`panel.module.css` nowrap + 24px，`page.module.css` 链接焦点环 + 输入框外扩光晕，新建 `limits.ts`（值导入 `scan.ts` 会把 `node:fs` 拉进浏览器包）。门禁 init 96/1301、e2e **375 passed / 6 skipped**。提交门第 2 轮 6 条已修（W1 只留 nowrap、插件链接焦点环入 e2e、CHANGELOG 补 W3 撤回、删死导出、`h23`+午夜用例、`import type`）。
+**本轮（第三十八轮：`0.3.12` 提交 / 发布 / 装机）**：`bba8039`（27 files）提交并 push；关 TUN 刷 DNS 后 `desktop:release` 一次通过（init 96/1296+5、e2e 375/6/0、live 2/2、audit 0）。产物 `b02254b9…63c6b7b` / 237,922,561 B；tag `v0.3.12` → `bba8039`；Release 两步上传、digest 一致、`releases/latest` = v0.3.12。从官方 ZIP 装机（旧 0.3.11 归档），`/health` 200、扩展 ZIP 200；装机记录只在 `~/.workbuddy/memory/DEVICES.md`。**未做**：簿记提交待用户指示。
+
+**上一轮（第三十七轮：UI 审计 7 项整改）**：先只读审计并产出决策板（`/tmp/mdc-audit/decision-board.html`，每个发现「问题截图 vs 改修渲染」并排）。用户拍板修 W1/W2/W4a/W4b/W7/W8/P4、不修 P1/W5/W6、撤回 W3（误报：`role="alert"` 输入时实时出现）。7 条 e2e RED→GREEN：`panel.tsx` zh-CN 短日期 + 截断提示 + 半选 + label 命中区，`panel.module.css` nowrap + 24px，`page.module.css` 链接焦点环 + 输入框外扩光晕，新建 `limits.ts`（值导入 `scan.ts` 会把 `node:fs` 拉进浏览器包）。门禁 init 96/1301、e2e **375 passed / 6 skipped**。提交门第 2 轮 6 条已修（W1 只留 nowrap、插件链接焦点环入 e2e、CHANGELOG 补 W3 撤回、删死导出、`h23`+午夜用例、`import type`）。
 
 **上一轮（第三十六轮：入口卡标题对齐）**：还原居中 + 220px，只给 `.entryNote` 加 `min-height: 2lh`；左卡不动、右卡上移约 11px；断言比卡内相对偏移（卡 hover 抬 2px）。init 96/1301、e2e 354/6。
 
@@ -94,7 +96,7 @@
 
 ## Next Stage Entry
 
-- 当前 `activeFeature` = **无（`feat-024` – `feat-046` 均 done）**。仓库版本面 `0.3.12`（**未发布**）；已发布版本 `0.3.11`（tag `78c474e`）；上一版 `0.3.10`（tag `77703c3`）。
+- 当前 `activeFeature` = **无（`feat-024` – `feat-047` 均 done）**。**已发布版本 `0.3.12`**（tag `bba8039`）；上一版 `0.3.11`（tag `78c474e`）；再上一版 `0.3.10`（tag `77703c3`）。
 - 下一轮入口：**等用户指令**。候选（均需单独授权）：提交/发布 `0.3.12`、装到本机、Electron 45.x、云端 Provider 实文实测、Terminal 规范打包冒烟（`ELECTRON_SMOKE_TEST_SECRETS=1`，需先批准钥匙串）。别再为已关闭的验收写自动化替代品。
 - 每轮开头固定读：`PROGRESS.md` → `session-handoff.md` → `feature_list.json` → 相关 `docs/`（涉及翻译行为时先读 `docs/PRD-translation.md`），然后跑 `./init.sh` 建立基线。
 - 全部阶段文档（已完成入口）：`docs/features/translation/S1-settings-infra.md` 至 `S6-release-and-docs.md`；各文档的 Handoff 已写入下一阶段所需的真实接口与边界。
@@ -109,14 +111,14 @@
 - `MD_CONVERTOR_TEST_PROVIDER=1` 是测试/e2e 专用开关（内置伪模型，不联网）；生产未设置时该分支不可达。生产路径的环境变量仍是 `MD_CONVERTOR_USER_DATA` / `MD_CONVERTOR_SECRETS` / `MD_CONVERTOR_SESSION_TOKEN` / `PATH`。
 - **Firefox e2e 需要 `MOZ_DISABLE_CONTENT_SANDBOX=1`（已固化在 `playwright.config.ts` 顶部，`??=` 可关）**：macOS 禁嵌套沙箱——已在沙箱里的进程再 `sandbox_init()` 得 `Operation not permitted`，表现为每个用例 30s 超时。**只需这一个变量**（其余同名开关无效）；**不要用** `firefoxUserPrefs: { "security.sandbox.content.level": 0 }`（实测 SIGKILL / exit 137）。三引擎数字：**315 passed / 6 skipped / 0 failed（2026-09-30 实测）**。
 - **firefox 在视口底部窄带会丢掉合成鼠标点击（2026-09-29 查实，不是产品缺陷也不是 flake）**：修法是点偏上位置（`click({ position: { x: 30, y: 6 } })`，仍是真实鼠标点击；`toPass` 重试包装 5/5 全红）。探针数据与机制见 `docs/TESTING.md`。
-- **六条未裁决的 flake**：`home.spec.ts:305`、`paste.spec.ts:212`、`settings.spec.ts:544`（firefox 未渲染完就查 radio）、`settings.spec.ts:731` 与 `local-docs.spec.ts:404`（`gotoHydrated` 等 `/api/settings` 30s 超时）、`home.spec.ts:201`（firefox 代理，清了仍偶发）——均隔离重跑全绿；看着它红先比对干净 worktree，要碰先问用户。
+- **六条未裁决 flake**：`home.spec.ts:305`/`201`、`paste.spec.ts:212`、`settings.spec.ts:544`/`731`、`local-docs.spec.ts:404`——隔离重跑全绿；见红先比干净 worktree，要碰先问用户。
 - **判「某条 e2e 失败是不是本轮造成的」用干净 worktree**（`git worktree add` + `cp -Rc node_modules`，**不要 symlink**）+ `npm run build`；recipe 见 `docs/TESTING.md`。
 - **点客户端状态控件前先等 hydration、统一走 `e2e/entry.ts`（2026-09-29）**：入口画面 / 模式 / 内层 tab 都是客户端 state，SSR 页上的点击会在监听器接上之前被静默丢弃（firefox 最容易）。等一拍 `/api/settings` 的 GET（页面自己的挂载副作用）就稳；修的是**测例**，这是 SSR 固有的窗口。看到「点了没反应」先查这条。
 - **名字互为子串的可访问名要 `exact: true`（2026-09-30 更新）**：入口卡片是 `role="button"`、「粘贴URL/富文本转换」，内层 tab「链接转换」不再冲突，但同屏可达的「富文本转换」仍互为子串；`<td>` 里带 checkbox 时单元格名会吸到 `aria-label="选择 …"`，也要 `exact: true`。
 - **`vitest.config.ts` 的 `test.exclude` 必须保留 `.next/**` + `.desktop/**` + `out/**`**：`next build`（`output: "standalone"`）把整个仓库镜像进 `.next/standalone`（含测试文件），`.desktop/server` 与 `out/…/Resources/server` 是同一份副本；少了它们，跟在一次 build / e2e / `desktop:make` 之后的 `./init.sh` 会收进几百份重复用例并报红。**收窄（第二十二轮）没有取消这条。**
 - **打包冒烟在本 shell 需 `--use-mock-keychain`（2026-11-16 实测）**：新构建的 keychain ACL 绑定代码签名，agent shell 里首次运行会**静默挂住**（无弹窗、无输出、无 server 子进程；日志只有 `SecItemCopyMatching`）。对照：已授权过的旧构建同 shell 能跑。带 `ELECTRON_SMOKE_TEST_SECRETS=1` 的规范一次需用户在 Terminal 批准弹窗。`desktop:release` 不跑冒烟，不受影响。升级 electron 后还需 `node node_modules/electron/install.js` 拉二进制（缓存会生成 `electron-v<ver>-darwin-arm64.zip`，`prepare-desktop.mjs` 依赖它）。
 - **打包应用在本 shell 里的启动姿势（2026-09-22）**：`ELECTRON_RUN_AS_NODE=1` 会让 Electron 当纯 Node 跑（像卡死不像报错）；Chromium 自己的沙箱又被宿主 seatbelt 拒（GPU 崩）。探针用 `unset ELECTRON_RUN_AS_NODE` + `--no-sandbox --disable-gpu --remote-debugging-port=9222`（**仅探针用**，双击启动不受影响）。后台 `&` 起的进程会在该次 Bash 调用结束时被回收，启动与探针放进同一条命令；`rm -f dir/*` 无匹配会中断 `&&` 链，改用 `find dir -type f -delete`。
-- **本机安装的稳妥 recipe（2026-09-22）**：安装源用**发布 ZIP 解压**（`ditto -x -k out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-<ver>.zip /tmp/<dir>`）而不是 `out/` 里的 `.app`（不碰活着的构建、可证「装上的就是发布的那一个」）；旧安装 `mv` 到 `~/Downloads/MD-Convertor-archive/installed-apps/`，不要 `rm -rf`。
+- **本机安装 recipe**：用**发布 ZIP 解压**（`ditto -x -k …zip /tmp/<dir>`）而非 `out/` 的 `.app`；旧安装 `mv` 到 `~/Downloads/MD-Convertor-archive/installed-apps/`，不 `rm -rf`。
 - **`MD_CONVERTOR_USER_DATA` 不能隔离打包应用（2026-09-22 实测）**：`electron/env.mjs` 的 `buildServerEnv()` 无条件用主进程算出的 `userDataDir` 覆盖它，真机探针必然碰真实 `settings.json`（曾写进 iCloud）。必须五步：备份 → 跑 → 逐字段比对（页面 PUT 是整份替换）→ 还原 `defaultPath`/`useDefaultPath` → 删探针文件。
 - **`ditto` 打 ZIP 必须带 `--norsrc --noextattr`（2026-09-29）**：不带会带出 4 个 `._*` AppleDouble 伴生条目（ZIP 从 5 条变 9 条）；且 ditto **不写 ZIP 的 UTF-8 标志位**——`unzip -Z1` 对 `使用说明.md` 显示乱码（`ditto -x -k` / `unzip` 解压其实是对的）。**因此测试要解压后读字节，不要对非 ASCII 条目名做字节比对**。
 - **`public/md-convertor-extension.zip` 由 `prebuild` 保证（2026-09-29）**：任何 `next build` 都先跑 `build:extension` 产出它；**该脚本必须保持对并发调用安全**（暂存目录带 `process.pid`、ZIP 先写 `pack.zip` 再 `rename`）——**别把 `<pid>` 或 `rename` 改回去**，细节见 `docs/TESTING.md`。
@@ -125,15 +127,17 @@
 
 ## Recommended Next Action
 
-**等用户指令**（第三十五至三十七轮已完成：feat-046、入口卡对齐、feat-047 均实现；版本面 `0.3.12`，**未发布、未装机**）。
+**等用户指令**（`0.3.12` 已提交、发布、装机；无在办）。
 
-**候选（均需单独授权）**：① 提交 `0.3.12`（commit-gate 分块报结论后逐文件 add）；② 发布 `0.3.12`（`desktop:release` 全门禁 + tag + `gh release create` 两步）；③ 把 `0.3.12` 装到本机；④ Electron 45.x（另一轮，需完整门禁 + 打包冒烟）；⑤ 云端 Provider 端到端实测；⑥ Terminal 里跑一次带 `ELECTRON_SMOKE_TEST_SECRETS=1` 的规范打包冒烟（需先点掉钥匙串弹窗）。
+**下次发布前必做（用户代理无 fake-ip-filter 设置，已定案）**：先关代理的 **TUN / fake-ip** 模式 + 刷 DNS（`sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder`），确认 `walkinglabs.github.io` 解析到 `185.199.x.x` 而非 `198.18.x.x`，再跑 `desktop:release`——否则 `test:live` 的 SSRF 守卫必拒（详见 `docs/TESTING.md` 的 Release Guard 眉批）。门禁过了再开回 TUN，因为上传 238MB Release 资产要走 HTTP 代理。
 
-**已裁决/已完成，不要重开**：feat-047 UI 审计 7 项整改（第三十七轮：修 W1/W2/W4a/W4b/W7/W8/P4，不修 P1/W5/W6，撤回 W3）；feat-046 按需钥匙串 + 首次打开说明（第三十五轮）；feat-043 UI 走查整改 11 条（第二十九轮，S1–S3 全部销项）；`0.3.11` 发布（第三十四轮）；`0.3.10` 发布（第三十轮）；第三十一轮审计整改（依赖升级仅 lock 变更、文档同步、探针删除）；提交门四条「只报未改」（第二十四轮：1 修 / 3 判不改，依据在 `docs/QUALITY-AUDIT.md`）；预发布评审存疑项与 3 处 ponytail 可删（第二十一轮落地）；V1/V2（`.next/**` 排除、`settings/page.tsx` 的 `.catch()`）；真机反馈历轮 16+5+1+6 条；首页入口画面（用户裁定为最初设计意图）；打包镜像收窄（第二十二轮）；本地文档页页级标题（第二十五轮，用户选 A）。
+**候选（均需单独授权）**：① 提交发布后簿记改动；② bump 到 `0.3.13`（只在下次改桌面代码时）；④ Electron 45.x（另一轮，需完整门禁 + 打包冒烟）；⑤ 云端 Provider 端到端实测；⑥ Terminal 里跑一次带 `ELECTRON_SMOKE_TEST_SECRETS=1` 的规范打包冒烟（需先点掉钥匙串弹窗）。
+
+**已裁决，不要重开**：feat-047 7 项（修 W1/W2/W4a/W4b/W7/W8/P4，不修 P1/W5/W6，撤 W3）；feat-046 按需钥匙串 + 首次打开说明（第三十五轮）；feat-043 UI 走查整改 11 条（第二十九轮，S1–S3 全部销项）；`0.3.11` 发布（第三十四轮）；`0.3.10` 发布（第三十轮）；第三十一轮审计整改（依赖升级仅 lock 变更、文档同步、探针删除）；提交门四条「只报未改」（第二十四轮：1 修 / 3 判不改，依据在 `docs/QUALITY-AUDIT.md`）；预发布评审存疑项与 3 处 ponytail 可删（第二十一轮落地）；V1/V2（`.next/**` 排除、`settings/page.tsx` 的 `.catch()`）；真机反馈历轮 16+5+1+6 条；首页入口画面（用户裁定为最初设计意图）；打包镜像收窄（第二十二轮）；本地文档页页级标题（第二十五轮，用户选 A）。
 
 **约束提醒（`feat-041` 四条语义 + 守卫）**：`isAbsoluteDirPath` 不要收紧回 `value.includes("~")`（iCloud 目录会被全拒）；`await bridge.*` 不要去掉 `.catch()`（preload 拒非法参数是**抛异常**）；`OUTPUT_CODE_MESSAGES` 六个真实 fs 码不要换回笼统文案；下载分叉不要扩成「另存为」对话框。也不要放宽端点/密钥/归档守卫，不要删 `PROTECTED_HISTORICAL_ZIP_MANIFEST` 里已退役的条目，不要动 `0.1.3` – `0.3.8` 的 tag 与仍存在的受保护 ZIP，不要重做 `feat-024` – `feat-042`。
 
-**其余固定口径**：签名/notarization 不做（QA-008 accepted）；**两份 UI 评审别混淆**——`docs/UI-REVIEW-2026-09-20.md`（旧，P0×6+P1×10，全部不改）勿重提，`docs/UI-REVIEW-2026-09-30.md` 的 11 条已随 feat-043 销项（P2-3…P2-6 用户锁死推迟，不算欠账）；主页像素级断言是刻意锁定，要改先改断言；`extension/` 的「上架商店」（PRD 非目标）与「popup/设置页」（PRD §3 不做）不要再动。
+**其余固定口径**：签名/notarization 不做（QA-008）；**两份 UI 评审别混淆**——`docs/UI-REVIEW-2026-09-20.md`（旧，全不改）勿重提，`docs/UI-REVIEW-2026-09-30.md` 11 条已随 feat-043 销项（P2-3…P2-6 锁死推迟）；主页像素级断言刻意锁定，要改先改断言；`extension/` 的「上架商店」「popup/设置页」不要再动。
 
 ## 历史（已退役，不需要读）
 

@@ -141,9 +141,11 @@ This checklist was run and passed on 2026-09-24 (all six items; item 5 used a th
 
 ## Release Guard
 
+> **Before every release, disable the proxy's TUN / fake-ip mode first.** The `test:live` stage fetches a real public URL and the app's SSRF guard (`src/lib/security/url.ts` `resolvePublicTarget`) rejects the reserved `198.18.0.x` addresses that fake-ip returns for every host. Clear proxy env vars alone is not enough (`unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy ALL_PROXY all_proxy; export NO_PROXY=127.0.0.1,localhost`) — the interception is at DNS resolution, not the HTTP proxy. Verify with `python3 -c "import socket; print(socket.gethostbyname('walkinglabs.github.io'))"`: expect `185.199.x.x`, not `198.18.x.x`; after switching TUN off, flush DNS with `sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder`. The user's current proxy client has no fake-ip-filter setting, so turning TUN off for the release is the agreed workaround (2026-11-26; three failed gate attempts). Once the gate has passed, TUN can be turned back on — the `gh release upload` of the ~238MB ZIP actually needs the HTTP proxy (`--proxy http://127.0.0.1:7897`). No code change was made to accommodate this.
+
 `npm run desktop:release` requires:
 
-- package version exactly `0.3.12` (bumped in round 35, 2026-11-26; `0.3.11` is the newest published release)
+- package version exactly `0.3.12` (published 2026-11-26 as `v0.3.12`; the previous release is `0.3.11`)
 - Node.js 24.x, but not 24.16.0: that patch stalls inside `yauzl` while unpacking the Electron archive, so `electron-forge make` never produces a ZIP. Node 24.14.1 and 24.15.0 both pass the full gate
 - the historical archive set: every manifest ZIP that still exists must keep its fixed SHA-256, and no unlisted release ZIP may appear in `~/Downloads/MD-Convertor-archive/releases/`
 - `npm run audit:runtime` to pass: `npm audit --omit=dev` reporting any advisory aborts the run, while Electron's own advisories (a devDependency that becomes the packaged runtime) are printed as a tracked warning under `QA-DEV`
@@ -181,7 +183,19 @@ The `0.3.10` gate ran on 2026-10-01 and passed end to end (first attempt). It ca
 
 The `0.3.11` gate ran on 2026-11-16 and passed on the second attempt. It carries `feat-044` (batch products no longer overwrite each other, the local-image boundary follows `realpath`, the extension waits for its Markdown download to finish, and `audit:runtime` joined the release gate), `feat-045` (Electron `43.3.0` → `43.8.10`, `next` floor `^16.4.6`) and the writer half of the 2026-09-30 B1 finding (the extension percent-encodes image references, by UTF-8 byte, while files on disk keep readable names). Counts: `./init.sh` 96 files / 1295 passed + 5 skipped (the five `desktop-server-scope` guards skip while `.desktop` is absent, and the baseline runs before `desktop:make`), three-engine E2E 351 passed / 6 skipped, live 2 passed, `npm audit --omit=dev` 0. The first attempt died on a firefox hydration timeout in `e2e/paste.spec.ts:221` (`gotoHydrated` waiting for `/api/settings`); the case passed 5/5 in isolation and the re-run was fully green — the same flake family as the six already logged below.
 
-## Gated Artifact (0.3.11)
+The `0.3.12` gate ran on 2026-11-26 and passed end to end. It carries `feat-046` (empty key store returns before `safeStorage`, so startup never touches the login keychain), the entry-card title alignment, and `feat-047` (seven approved UI-audit fixes; three findings deferred, one withdrawn). Counts: `./init.sh` 96 files / 1296 passed + 5 skipped (1295 artifact-affecting plus the new `desktop-server-scope` cases), three-engine E2E 375 passed / 6 skipped, live 2 passed, `npm audit --omit=dev` 0. Three earlier gate attempts failed at `test:live`: the Mac's proxy was running TUN/fake-ip, so `node:dns.lookup` returned reserved `198.18.0.x` addresses and the app's SSRF guard correctly refused the WalkingLabs URL; after TUN/fake-ip was disabled and the DNS cache flushed, the same gate passed on the first clean run. No code change was made to work around it.
+
+## Gated Artifact (0.3.12)
+
+- Path: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.12.zip`
+- Size: `237,922,561` bytes
+- SHA-256: `b02254b96f7e67ec2807085082ca77bad2215571bd712ce67e6334f4463c6b7b`
+- Package: version `0.3.12`, arm64, macOS 12.0+
+- Automated evidence: 96 files / 1296 passed + 5 skipped, three-engine E2E 375 passed / 6 skipped, live 2/2, `npm audit --omit=dev` 0
+- Published: [GitHub Release `v0.3.12`](https://github.com/haohaiHuang/MD-Convertor/releases/tag/v0.3.12) (tag `bba8039`, newest release; uploaded asset's server-side digest matches the SHA-256 above)
+- Signing: not Developer ID signed or notarized, so the artifact is suitable for personal testing only
+
+## Historical Artifact (0.3.11)
 
 - Path: `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.11.zip`
 - Size: `237,921,860` bytes
