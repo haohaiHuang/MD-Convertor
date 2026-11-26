@@ -32,7 +32,7 @@ Error responses use `400`, `403`, `413`, `422`, `429`, `502`, or `504` with Simp
 
 ### Settings and key storage
 
-`settings.json` holds the provider list, the local CLI list, the target language, and the default translation toggle. Electron `safeStorage` encrypts provider API keys in `secrets.json` (mode `0600`, the same atomic write). A provider key has exactly one source: the runtime key table seeded from that encrypted store (injected into the server environment by the Electron main process at start, updated in memory on every save or clear). Keys never enter `settings.json`, the renderer process, logs, or error messages, and a `secrets.json` that cannot be parsed is never overwritten.
+`settings.json` holds the provider list, the local CLI list, the target language, and the default translation toggle. Electron `safeStorage` encrypts provider API keys in `secrets.json` (mode `0600`, the same atomic write). A provider key has exactly one source: the runtime key table seeded from that encrypted store (injected into the server environment by the Electron main process at start, updated in memory on every save or clear). Keys never enter `settings.json`, the renderer process, logs, or error messages, and a `secrets.json` that cannot be parsed is never overwritten. When the store is empty the main process returns early without calling `safeStorage`, so a launch with no stored key never triggers macOS keychain authorisation.
 
 ### Two separate address policies
 

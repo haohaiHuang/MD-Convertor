@@ -109,6 +109,9 @@ export function createSecretsStore({ filePath, safeStorage }) {
     /** Plaintext map for MD_CONVERTOR_SECRETS. Unreadable entries are skipped, not fatal. */
     async exportPlaintext() {
       const entries = await readEntries(filePath);
+      // Nothing stored means nothing to decrypt: returning early keeps macOS from reading the
+      // OSCrypt master key from the login keychain, so a fresh install never asks for a password.
+      if (Object.keys(entries).length === 0) return {};
       if (!safeStorage.isEncryptionAvailable()) return {};
       const plaintext = {};
       for (const [id, entry] of Object.entries(entries)) {

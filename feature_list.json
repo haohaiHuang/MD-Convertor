@@ -1,7 +1,7 @@
 {
   "project": "MD-Convertor",
-  "currentVersion": "0.3.11",
-  "updatedAt": "2026-11-16",
+  "currentVersion": "0.3.12",
+  "updatedAt": "2026-11-26",
   "activeFeature": null,
   "features": [
     {
@@ -969,6 +969,56 @@
         "2026-11-16 release: `0.3.11` shipped as GitHub Release `v0.3.11` (tag `78c474e`). `env -u *_proxy NO_PROXY=127.0.0.1,localhost NODE_OPTIONS= npm run desktop:release` exited 0 -> `./init.sh` 96 files / 1295 passed + 5 skipped, three-engine E2E 351 passed / 6 skipped, live 2 passed, `desktop:make` artifact check passed. Artifact `MD-Convertor-darwin-arm64-0.3.11.zip` = 237,921,860 bytes, SHA-256 `a63e5192869f95afc73c5e4467067d31cd80899bda3cda6e227658d99720154d`; server-side asset digest matches and `releases/latest` resolves to `v0.3.11`. First gate attempt failed on one firefox hydration timeout (`e2e/paste.spec.ts:221`, `gotoHydrated` waiting for `/api/settings`); the case passed 5/5 in isolation and the re-run was fully green - same flake family as the six already logged."
       ],
       "updatedAt": "2026-11-16"
+    },
+    {
+      "id": "feat-046",
+      "name": "On-Demand Keychain (lazy secrets read, first-launch docs)",
+      "title": "On-Demand Keychain (lazy secrets read, first-launch docs)",
+      "status": "done",
+      "dependencies": [
+        "feat-045"
+      ],
+      "scope": "Startup must not touch the macOS login keychain while no cloud key is stored (user report 2026-11-26: every new build asked for the login password, which made the app look untrustworthy). `exportPlaintext()` in `electron/secrets.mjs` now returns `{}` as soon as the store has no entries, before `safeStorage.isEncryptionAvailable()` - that call is what makes OSCrypt read its master key from the login keychain, and because the shipped build is ad-hoc signed (QA-008) every new cdhash is a stranger to the keychain ACL. `keyStored` and `clear` were already keychain-free; `set()` stays the only writer and still refuses to touch plaintext when encryption is unavailable. Docs (both languages): README says the first launch needs Control-click (or right-click) -> Open instead of a double-click, and that the keychain is only touched when a cloud key is saved or read; PRODUCT and ARCHITECTURE record the same rule; CHANGELOG `[Unreleased]`. Housekeeping: the leftover `Electron Safe Storage` keychain item created by development and packaged smoke runs was deleted (it held no user secret).",
+      "nonGoals": [
+        "No Developer ID signing or notarization - that stays QA-008 accepted and is the only way to remove the per-build prompt entirely",
+        "No plaintext or self-managed key storage (contradicts PRODUCT/PRD)",
+        "No deferral of stored-key decryption until a translation runs: a build that already has keys still injects them into the server environment at startup",
+        "No Settings UI text change"
+      ],
+      "acceptance": [
+        "A build whose `secrets.json` has no entries completes startup without touching the system keychain",
+        "With a stored key, the existing behaviour (decrypt at startup, skip unreadable entries) is unchanged",
+        "README (both languages) carries the first-launch Control-click gesture plus the on-demand permission model; PRODUCT and ARCHITECTURE (both languages) record the on-demand model and the empty-store early return"
+      ],
+      "verification": [
+        "RED: new `electron/secrets.test.mjs` case \"never touches the system keychain while nothing is stored\" counts every `safeStorage` call (`isEncryptionAvailable` / `encryptString` / `decryptString`) around `exportPlaintext()`, `keyStored()` and `clear()`. Against the unmodified store it failed with `expected 1 to be +0` - exactly one call, the availability probe. GREEN after the early return in `exportPlaintext()`: `npx vitest run electron/secrets.test.mjs` 12 passed.",
+        "2026-11-26 gate: `NODE_OPTIONS= ./init.sh` exit 0 (96 files / 1301 passed, one more than round 34's 1300 because of the new case). Version face bumped 0.3.11 -> 0.3.12 TDD-first: `package.json` moved alone first, `scripts/release-guards.test.mjs` reported the derived-target mismatch (RED), then `package-lock.json` (both fields), `RELEASE_VERSION_ERROR` and the `version !==` guard plus `feature_list.currentVersion` followed -> 30 passed.",
+        "2026-11-26 packaged evidence: `npm run desktop:make` exit 0 produced `out/make/zip/darwin/arm64/MD-Convertor-darwin-arm64-0.3.12.zip` (237,926,019 bytes) and `MD-Convertor.app` at 0.3.12. Launching that fresh app (new cdhash, therefore outside every keychain ACL) from an agent shell with `env -u ELECTRON_RUN_AS_NODE NODE_OPTIONS= ... --no-sandbox --disable-gpu` stayed up and served `GET /health` 200 and `GET /md-convertor-extension.zip` 200 (35,934 bytes) - the same run on the 0.3.11 build hung silently inside `SecItemCopyMatching` (round 32) - and `log show --last 8m | grep -i \"Safe Storage\"` found no keychain prompt. `@electron/asar` extraction of the packaged `app.asar` confirms the early return is the shipped code.",
+        "Environment trap recorded: `ELECTRON_CACHE` must not point at `.desktop/electron`, because `scripts/prepare-desktop.mjs` deletes that directory before copying the cached zip into it; doing so deletes the source zip (this round did exactly that and re-downloaded `electron-v43.8.10-darwin-arm64.zip` through `@electron/get` into `~/Library/Caches/electron`).",
+        "Coverage on the combined tree: round 36 changed only `src/app/page.module.css` and `e2e/home.spec.ts`, and its three-engine e2e run (354 passed / 6 skipped / 0 failed) exercised this change too, so it is no longer unverified by an end-to-end run. Still not done on purpose: no commit, no push, no release, no install (the packaged keychain behaviour was measured on the round-35 build, see the previous entry)."
+      ],
+      "updatedAt": "2026-11-26"
+    },
+    {
+      "id": "feat-047",
+      "name": "UI Audit 2026-11-26 Remediation (7 approved findings)",
+      "title": "UI Audit 2026-11-26 Remediation (7 approved findings)",
+      "status": "done",
+      "dependencies": [
+        "feat-046"
+      ],
+      "scope": "Read-only UI/UX audit (2026-11-26) produced 8 warnings + 10 polish items plus a decision board (/tmp/mdc-audit/decision-board.html) with problem screenshots beside live-rendered proposed fixes. User decisions: FIX W1 (status column wraps), W2 (US date format in zh-CN UI), W4a (link focus ring fell back to UA default), W4b (input focus halo inconsistent with source URL field), W7 (>500-file truncation silently shown as empty directory), W8 (16x16 checkbox hit area), P4 (select-all has no indeterminate state). RETRACT W3 (false positive: the live role=alert does appear on invalid URL). DEFER P1 (home h1), W5 (control border contrast), W6 (result page column width) by explicit user decision. Scope is src/app/local-docs/{panel.tsx,panel.module.css}, src/app/page.module.css, and a new client-safe src/lib/local-docs/limits.ts (MAX_SCANNED_FILES extracted out of scan.ts so the browser bundle never imports node:fs). No version bump (already 0.3.12 from round 35), no commit, no release.",
+      "nonGoals": "No changes to P1 home heading, W5 colour token, W6 result-page width, or W3 validation copy. No redesign of the table or the landing screen. No change to 22 pending files from rounds 35-36 beyond the files this feature touches.",
+      "acceptance": "W1: status cell stays on one line with a long filename (computed white-space=nowrap; row heights equal). W2: time cell shows zh-CN short 'MM-DD HH:MM' with no AM/PM or slash date. W4a: settings link focus outline is 2px solid var(--accent). W4b: link input focus uses outer 3px halo, no inset. W7: truncated scan shows an amber 'over 500' status and no longer says 'no md files'. W8: row checkbox wrapped in a label with a >=24x24 hit area. P4: select-all checkbox sets .indeterminate on partial selection and clears it on none/all. All seven verified by e2e in three engines.",
+      "verification": [
+        "RED: 7 new e2e cases (5 in e2e/local-docs.spec.ts under 'UI 审计整改（2026-11-26）', 2 in e2e/home.spec.ts under '焦点可见性') all failed against the unmodified code — W1 height diff 16px, W2 cell not found (US format), W7 no '500' status, W8 no wrapping label, P4 indeterminate stayed false, W4a outline 'auto 1px rgb(0,95,204)', W4b box-shadow 'inset 0 0 0 2px'. Two RED assertions were then corrected (W2 timestamp built with local Date not Date.UTC, since Intl formats in the runner's UTC+8 zone; W1 measured the nowrap contract + equal row heights instead of an absolute 26px), both still red before the fix.",
+        "GREEN: after the fixes all 7 pass in chromium (7 passed in 3.1s). Two real implementation bugs caught on the way: importing MAX_SCANNED_FILES as a value from scan.ts pulled node:fs into the browser bundle (build failed with 'can't resolve fs/net/tls'), fixed by extracting src/lib/local-docs/limits.ts; and the indeterminate useEffect was placed after an early return (eslint react-hooks/rules-of-hooks), moved above the returns with its derived values.",
+        "Real (not CSS-injected) screenshots captured via /tmp/mdc-audit/real-after.mjs: date '11-25 10:37', W7 full amber text, W4a outline 'rgb(42,57,92) solid 2px', W4b 'rgba(42,57,92,0.12) 0px 0px 0px 3px'. The decision board was rebuilt from these real screenshots and re-verified (11 cards, zero console errors, decision badges show 修/不修/撤回).",
+        "NODE_OPTIONS= ./init.sh exit 0 — 96 files / 1301 passed / 0 failed (unchanged from the round-36 baseline; the 7 new cases are e2e-only). npx tsc --noEmit exit 0; eslint on all touched files clean (CSS ignored). npm run build exit 0.",
+        "npm run test:e2e exit 0 — 375 passed / 6 skipped / 0 failed across chromium/firefox/webkit (+21 = 7 new cases x 3 engines), E2E tracked-file check passed. Proxies unset and NO_PROXY=127.0.0.1,localhost for both runs.",
+        "Commit-gate round 2 (ponytail + Spec) raised 6 small items; all fixed and re-verified: (1) W1 case dropped the equal-row-height assertion (a pure nowrap contract + exact cell name pin the fix; the old assertion could go red on an unrelated font change, and its comment contradicted it); (2) W4a e2e now loops both links so removing `.pluginLink:focus-visible` turns it red; (3) CHANGELOG both languages now record the W3 retraction, so 7 fixed + 3 deferred + 1 withdrawn = 11 board cards; (4) dead `export { MAX_SCANNED_FILES } from './limits'` removed from scan.ts (only its own import remains); (5) `hour12:false` → `hourCycle:'h23'` with a midnight 00:07 case so the hour boundary is contractual, not locale luck; (6) e2e `ScanFile` local type replaced by `import type { ScannedLocalDoc } from '../src/lib/local-docs/scan'`. Re-run: tsc 0, eslint clean, build 0, 7/7 chromium green; full init.sh and three-engine e2e re-run recorded in the next entry."
+      ],
+      "updatedAt": "2026-11-26"
     }
   ],
   "history": {

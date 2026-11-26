@@ -43,6 +43,8 @@ Enter the converter through `e2e/entry.ts` rather than a bare `page.goto("/")`. 
 
 Firefox on this machine drops synthesized mouse clicks in a thin band near the bottom of the 1280x720 viewport - measured at `y=672` in the landing-adjacent error layout, which is exactly where the 「改用富文本粘贴」 button's vertical centre lands. At that `y` the click reaches the page as nothing at all (deterministic 3/3 across every `x`), while `y=661` and `y=690` deliver normally and one early probe at `y=700` arrived as `clientY=652`, 48px off. `document.elementFromPoint(735, 672)` still returns the button, and a DOM `.click()` from `evaluate` switches the tab, so this is input dispatch, not page logic or a load flake; it reproduces with `page.mouse.click` too, which rules out the locator. The remedy is a positional click that aims above the band (`click({ position: { x: 30, y: 6 } })`, still a real mouse click) - a `toPass` retry wrapper does not work, because the click never lands within the retry budget. Recorded because it is an environment defect that will otherwise be diagnosed as a product bug.
 
+Measure a card's content against that card's own edges, never card-to-card. The landing entries lift by 2px on hover, and the pointer is wherever the previous case left it, so `title.y` for two cards can differ mid-transition while the layout is perfectly aligned: the 2026-11-26 alignment case reported a 1.08-1.47px "misalignment" in 4 of 4 firefox runs, and the reported boxes showed the right card 1.08px higher in its entirety - the lift, not the copy. Comparing `title.y - card.y` between the two cards is invariant under the lift and still fails hard (about 11px) if the reserved two-line height is removed.
+
 Firefox occasionally loses the hydration wait itself: `gotoHydrated` sits on `page.waitForResponse("/api/settings")` and the whole case dies at the 30s timeout with the page still reading 「正在读取设置…」. Seen as `settings.spec.ts:731` (2026-09-30, round 17), `e2e/local-docs.spec.ts:404` (2026-09-30, the first `0.3.7` release-gate run) and the no-output warning-row case in `e2e/local-docs.spec.ts` (2026-11-14, the feat-044 run; 5/5 green in isolation under `--repeat-each=5`, green in the whole file, no failure artifacts, and the next full three-engine run green at 351 passed); both passed 3/3 and 5/5 under `--project=firefox --repeat-each`, and the following full run was green, so it is a slow-RC condition, not a product bug and not a reason to weaken the wait - the wait is what proves React is attached. Handle it the same way every time: re-run the single case on firefox with `--repeat-each=N`, and if it is green, re-run the gate.
 
 Translation tests need no network and no key: `scripts/start-e2e-server.mjs` sets `MD_CONVERTOR_TEST_PROVIDER=1`, which makes `/api/translate/*` use an in-process stub model. The branch does not exist when the flag is unset, so a production run still returns 409 `TRANSLATE_NOT_CONFIGURED` without a configured model. Keep the flag out of any production or release command.
@@ -141,12 +143,12 @@ This checklist was run and passed on 2026-09-24 (all six items; item 5 used a th
 
 `npm run desktop:release` requires:
 
-- package version exactly `0.3.11`
+- package version exactly `0.3.12` (bumped in round 35, 2026-11-26; `0.3.11` is the newest published release)
 - Node.js 24.x, but not 24.16.0: that patch stalls inside `yauzl` while unpacking the Electron archive, so `electron-forge make` never produces a ZIP. Node 24.14.1 and 24.15.0 both pass the full gate
 - the historical archive set: every manifest ZIP that still exists must keep its fixed SHA-256, and no unlisted release ZIP may appear in `~/Downloads/MD-Convertor-archive/releases/`
 - `npm run audit:runtime` to pass: `npm audit --omit=dev` reporting any advisory aborts the run, while Electron's own advisories (a devDependency that becomes the packaged runtime) are printed as a tracked warning under `QA-DEV`
 - a ZIP created during the current run
-- packaged version `0.3.11`
+- packaged version `0.3.12`
 - an arm64 executable and complete application bundle
 
 The guard rechecks historical artifacts on both success and failure. A Forge command that exits without a new ZIP is a failure.

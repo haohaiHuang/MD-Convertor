@@ -537,6 +537,48 @@ test.describe("首页入口画面", () => {
     await expect(page.getByRole("tab", { name: "链接转换", exact: true })).toHaveCount(0);
   });
 
+  test("两张入口卡的标题顶端对齐，内容仍垂直居中", async ({ page }) => {
+    // The cards centre their content vertically, so a card whose note wraps to fewer lines used
+    // to start its title lower (user report 2026-11-26: the left card looked higher). The fix
+    // only lifts the shorter note's block: content must stay centred, not pinned to the top.
+    await gotoHydrated(page);
+
+    const docsCard = page.getByRole("button", { name: "转换既有文档" });
+    const convertCard = page.getByRole("button", { name: "粘贴URL/富文本转换" });
+
+    // The two lines reserved for the note must stay two lines at every width the window can take
+    // (960 is Electron's minWidth), so the alignment is checked across the range, not just once.
+    for (const width of [960, 1180, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      const boxes = await rectsInOneFrame(page, {
+        docsTitle: docsCard.locator("span").first(),
+        convertTitle: convertCard.locator("span").first(),
+        docsNote: docsCard.locator("span").nth(1),
+        convertNote: convertCard.locator("span").nth(1),
+        docs: docsCard,
+        convert: convertCard,
+      });
+
+      // Measured against each card's own top edge, never card-to-card: hovering an entry lifts the
+      // whole card by 2px, and the pointer is wherever the previous step left it. The block's
+      // offset inside its card is what has to match.
+      const tops = [] as number[];
+      for (const [card, title, note] of [
+        [boxes.docs, boxes.docsTitle, boxes.docsNote],
+        [boxes.convert, boxes.convertTitle, boxes.convertNote],
+      ] as const) {
+        const above = title.y - card.y;
+        const below = card.y + card.height - (note.y + note.height);
+        tops.push(above);
+        // Centred, not top-aligned: the gap above the title and below the note are the same, so
+        // the title cannot sit on the card's 28px padding.
+        expect(above, `title offset at ${width}px`).toBeGreaterThan(28);
+        expect(Math.abs(above - below), `centring at ${width}px`).toBeLessThanOrEqual(2);
+      }
+      expect(Math.abs(tops[0] - tops[1]), `title tops at ${width}px`).toBeLessThanOrEqual(1);
+    }
+  });
+
   test("三个画面里品牌横向位置一致（返回按钮不把品牌推右）", async ({ page }) => {
     await gotoHydrated(page);
     const brand = page.locator('[aria-label="MD-Convertor"]');
@@ -705,5 +747,36 @@ test.describe("入口画面与表单同轴（S3）", () => {
     expect(stacked.convert.y).toBeGreaterThanOrEqual(stacked.docs.y + stacked.docs.height - 4);
     expect(stacked.docs.width).toBeLessThanOrEqual(760);
     expect(stacked.docs.height).toBeLessThanOrEqual(260);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// UI audit 2026-11-26 — focus-visible parity. Buttons already carry a 2px accent ring;
+// the audit's 09-20 batch was locked, but the user approved these two on 11-26.
+// ---------------------------------------------------------------------------
+test.describe("焦点可见性（UI 审计 2026-11-26）", () => {
+  test("页面上的链接焦点环是 2px 实线，不是浏览器默认的自动细线（W4a）", async ({ page }) => {
+    await gotoHydrated(page);
+    // Both links share the rule: removing either from the selector must turn this case red.
+    for (const link of [page.getByRole("link", { name: "设置" }), page.getByRole("link", { name: "下载浏览器插件" })]) {
+      await link.focus();
+      const ring = await link.evaluate((el) => {
+        const s = getComputedStyle(el);
+        return { style: s.outlineStyle, width: s.outlineWidth, color: s.outlineColor };
+      });
+      expect(ring.style).toBe("solid");
+      expect(parseFloat(ring.width)).toBeGreaterThanOrEqual(2);
+      expect(ring.color).toBe("rgb(42, 57, 92)"); // var(--accent)
+    }
+  });
+
+  test("网页链接输入框聚焦时用外扩光晕，与来源 URL 输入框同一套（W4b）", async ({ page }) => {
+    await gotoConverter(page);
+    const input = page.getByLabel("网页链接");
+    await input.focus();
+    const shadow = await input.evaluate((el) => getComputedStyle(el).boxShadow);
+    // Current .input uses `inset 0 0 0 2px ...`; .sourceInput uses `0 0 0 3px ...`.
+    expect(shadow).not.toMatch(/inset/);
+    expect(shadow).toMatch(/0px 0px 0px 3px/);
   });
 });

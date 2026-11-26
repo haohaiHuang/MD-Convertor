@@ -102,6 +102,12 @@
   color: var(--accent);
 }
 
+.settingsLink:focus-visible,
+.pluginLink:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .hero {
   max-width: var(--col);
   margin: 0 auto;
@@ -190,6 +196,11 @@
   color: var(--muted);
   font-size: 13.5px;
   line-height: 1.7;
+  /* Both cards centre their content vertically, so two blocks of different height would start
+     their titles on different lines (user report 2026-11-26). Reserving the taller note's two
+     lines keeps both blocks the same height, which aligns the titles without pinning the whole
+     block to the top of the card. The copy wraps to two lines from 960px to 1920px. */
+  min-height: 2lh;
 }
 
 .docsPanel {
@@ -388,8 +399,10 @@
 }
 
 .input:focus-visible {
+  border-color: var(--accent);
   border-radius: 10px;
-  box-shadow: inset 0 0 0 2px rgb(42 57 92 / 24%);
+  /* Same outer halo as .sourceInput so the two inputs read as one control family. */
+  box-shadow: 0 0 0 3px rgb(42 57 92 / 12%);
 }
 
 .submit,

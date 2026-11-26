@@ -31,13 +31,15 @@ MD-Convertor 是一个 Apple Silicon Mac 网页转 Markdown 单机工具。你�
 - 链接网页和远程图片需要联网；纯文本和已内嵌的 `data:` 图片可离线转换
 - 运行安装包不需要 Node.js、浏览器、Playwright 或其他开发环境
 
-当前产物未签名、未 notarize。请先核对校验值，再解压并把 `MD-Convertor.app` 拖入“应用程序”，优先尝试 Finder 右键“打开”或在“隐私与安全性”中允许。如果 macOS 仍提示可信 ZIP 中的应用“已经损坏”，可只移除 quarantine 属性：
+当前产物未签名、未 notarize。请先核对校验值，再解压并把 `MD-Convertor.app` 拖入“应用程序”。首次打开请按住 **Control** 点按（或右键）图标后选“打开”，在弹窗里再点一次“打开”（双击通常会被 Gatekeeper 拦下）；也可以在“隐私与安全性”里允许。如果 macOS 仍提示可信 ZIP 中的应用“已经损坏”，可只移除 quarantine 属性：
 
 ```bash
 xattr -dr com.apple.quarantine "/Applications/MD-Convertor.app"
 ```
 
 不要对来源或校验值不可信的应用执行该命令。
+
+上面说的只是“怎么打开”，运行本身不需要额外授权：转换网页、转换本地文档、本机 CLI 翻译都不会碰钥匙串。macOS 只在**保存或读取已存密钥**时才请求访问登录钥匙串——首次保存云端 Provider 的 API 密钥时会问一次，换上新版本后首次启动要读取已存密钥时也会问一次；输入登录密码、点“始终允许”即可，同一份构建之后不再询问。**没存过密钥就启动完全不弹窗。**因为应用没有 Developer ID 签名，这套授权只对当前这份二进制有效，换新版本会重新询问一次。
 
 ## 当前版本
 

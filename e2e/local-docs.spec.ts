@@ -4,6 +4,8 @@ import os from "node:os";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 
+import type { ScannedLocalDoc } from "../src/lib/local-docs/scan";
+
 import { openLocalDocs } from "./entry";
 import { rectsInOneFrame } from "./geometry";
 
@@ -94,6 +96,19 @@ async function routeSettings(
     const body = (await fetched.json()) as Record<string, unknown>;
     await route.fulfill({ response: fetched, json: { ...body, ...patch } });
   });
+}
+
+/**
+ * Replaces only the scan response, so a case can pin exact file names/times or the `truncated`
+ * flag without creating hundreds of real files. Every other case uses the real route.
+ * The item type is imported from the real route so the stub cannot drift from its contract.
+ */
+async function routeScan(page: Page, files: ScannedLocalDoc[], truncated = false): Promise<void> {
+  await page.route("**/api/local-docs/scan", (route) =>
+    route.fulfill({
+      json: { dirPath: inputDir, downloadsDir: inputDir, files, truncated },
+    }),
+  );
 }
 
 /** Navigates and waits for the settings fetch: it proves React is attached, so later clicks land. */
@@ -624,5 +639,94 @@ test.describe("本地文档面板", () => {
     await page.getByRole("button", { name: `改用 ${inputDir}/processed` }).click();
     await expect(run).toBeEnabled();
     await expect(run).not.toHaveAttribute("aria-describedby");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// UI audit 2026-11-26 — the fixes the user approved (P1 / W5 / W6 deferred).
+// Each case asserts the visible outcome, so removing the CSS/JS fix turns it red.
+// ---------------------------------------------------------------------------
+test.describe("UI 审计整改（2026-11-26）", () => {
+  const LONG = "长标题测试：当这个标题非常非常长以至于在表格里必须被截断显示否则会把整行撑爆.md";
+
+  test("状态列「已处理」保持单行，长文件名不会把它折成两行（W1）", async ({ page }) => {
+    await installBridge(page);
+    await routeSettings(page, defaultPatch(inputDir, outputDir), []);
+    await routeScan(page, [
+      { name: LONG, outputName: LONG, size: 1500, mtimeMs: Date.UTC(2026, 10, 25, 10, 37), state: "skip" },
+      { name: "短名.md", outputName: "短名.md", size: 800, mtimeMs: Date.UTC(2026, 10, 25, 10, 38), state: "new" },
+    ]);
+    await openLocalDocs(page);
+
+    const rows = page.locator("table tbody tr");
+    await expect(rows).toHaveCount(2);
+    // Pin the W1 contract itself: the status cell keeps `white-space: nowrap` regardless of
+    // how wide the file-name column grows. Do NOT assert a fixed row height — the long name
+    // may legitimately wrap and stretch the row without breaking this fix.
+    const whiteSpace = await rows.evaluateAll((elements) =>
+      elements.map((row) => getComputedStyle(row.lastElementChild as HTMLElement).whiteSpace),
+    );
+    expect(whiteSpace.every((value) => value === "nowrap")).toBe(true);
+    // A wrapped 已处理 reads as "已处" + "理"; the accessible cell name stays whole.
+    await expect(page.getByRole("cell", { name: "已处理", exact: true })).toBeVisible();
+  });
+
+  test("修改时间用中文短格式，不出现美式 AM/PM；午夜是 00 不是 24（W2）", async ({ page }) => {
+    await installBridge(page);
+    await routeSettings(page, defaultPatch(inputDir, outputDir), []);
+    // Build timestamps in local time: Intl formats in the runner's zone (this Mac is UTC+8).
+    // The first is the common case; the second pins h23 so midnight never renders as 24:07.
+    await routeScan(page, [
+      { name: "白天.md", outputName: "白天.md", size: 2048, mtimeMs: new Date(2026, 10, 25, 10, 7).getTime(), state: "new" },
+      { name: "午夜.md", outputName: "午夜.md", size: 2048, mtimeMs: new Date(2026, 10, 25, 0, 7).getTime(), state: "new" },
+    ]);
+    await openLocalDocs(page);
+
+    const time = page.getByRole("cell", { name: "11-25 10:07", exact: true });
+    await expect(time).toBeVisible();
+    await expect(page.getByRole("cell", { name: "11-25 00:07", exact: true })).toBeVisible();
+    for (const text of [await time.textContent(), await page.getByRole("cell", { name: "11-25 00:07", exact: true }).textContent()]) {
+      expect(text).not.toMatch(/\d{1,2}\/\d{1,2}\/\d{4}/);
+      expect(text).not.toMatch(/AM|PM|24:/);
+    }
+  });
+
+  test("超过 500 篇被截断时给出明确提示，而不是显示空目录（W7）", async ({ page }) => {
+    await installBridge(page);
+    await routeSettings(page, defaultPatch(inputDir, outputDir), []);
+    await routeScan(page, [], true);
+    await openLocalDocs(page);
+
+    await expect(page.getByRole("status").filter({ hasText: "500" })).toContainText("超过 500 个");
+    await expect(page.getByRole("status").filter({ hasText: "没有 md 文件" })).toHaveCount(0);
+  });
+
+  test("行复选框有 24×24 以上的可点区域（W8）", async ({ page }) => {
+    await installBridge(page);
+    await routeSettings(page, defaultPatch(inputDir, outputDir), []);
+    await openLocalDocs(page);
+
+    const box = await page.getByLabel("选择 第一篇.md").evaluate((input) => {
+      const label = input.closest("label");
+      const rect = (label ?? input).getBoundingClientRect();
+      return { w: Math.round(rect.width), h: Math.round(rect.height), label: Boolean(label) };
+    });
+    expect(box.label).toBe(true);
+    expect(box.w).toBeGreaterThanOrEqual(24);
+    expect(box.h).toBeGreaterThanOrEqual(24);
+  });
+
+  test("勾一部分行时「全选」进入半选态，全选/全不选仍是两态（P4）", async ({ page }) => {
+    await installBridge(page);
+    await routeSettings(page, defaultPatch(inputDir, outputDir), []);
+    await openLocalDocs(page);
+
+    const head = page.getByLabel("全选");
+    await expect(head).toBeChecked();
+    await page.getByLabel("选择 第一篇.md").uncheck();
+    await expect.poll(() => head.evaluate((el) => (el as HTMLInputElement).indeterminate)).toBe(true);
+    await page.getByLabel("选择 第二篇.md").uncheck();
+    await expect(head).not.toBeChecked();
+    await expect.poll(() => head.evaluate((el) => (el as HTMLInputElement).indeterminate)).toBe(false);
   });
 });

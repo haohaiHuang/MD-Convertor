@@ -79,6 +79,35 @@ describe("createSecretsStore", () => {
     expect(await entries()).toEqual([]);
   });
 
+  it("never touches the system keychain while nothing is stored", async () => {
+    // macOS only asks for the login password when OSCrypt reads its master key, so an empty
+    // store must not call safeStorage at all: a fresh install asks for nothing.
+    let touches = 0;
+    const store = createSecretsStore({
+      filePath,
+      safeStorage: {
+        isEncryptionAvailable: () => {
+          touches += 1;
+          return true;
+        },
+        encryptString: (value) => {
+          touches += 1;
+          return Buffer.from(value);
+        },
+        decryptString: () => {
+          touches += 1;
+          return "";
+        },
+      },
+    });
+
+    await expect(store.exportPlaintext()).resolves.toEqual({});
+    await expect(store.keyStored("openai")).resolves.toBe(false);
+    await store.clear("openai");
+
+    expect(touches).toBe(0);
+  });
+
   it("clears a stored key", async () => {
     const store = createSecretsStore({ filePath, safeStorage: fakeSafeStorage() });
     await store.set("openai", KEY);

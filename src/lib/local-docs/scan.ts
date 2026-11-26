@@ -11,7 +11,7 @@ import { AppError } from "@/lib/errors";
 import { decideLocalDoc, localDocFilename, parseDocMarker, type LocalDocState } from "./dedup";
 import { isMarkdownFileName, requireSafeDirectoryPath } from "./paths";
 
-export const MAX_SCANNED_FILES = 500;
+import { MAX_SCANNED_FILES } from "./limits";
 
 /** The marker line is short; reading a whole multi-megabyte product just to see it is waste. */
 const MARKER_READ_BYTES = 4096;

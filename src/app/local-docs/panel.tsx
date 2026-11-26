@@ -16,6 +16,7 @@ import {
   type BatchRow,
   type BatchSummary,
 } from "@/lib/local-docs/batch";
+import { MAX_SCANNED_FILES } from "@/lib/local-docs/limits";
 import type { LocalDocsScanResult } from "@/lib/local-docs/scan";
 import type { Settings } from "@/types/settings";
 
@@ -44,8 +45,18 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+/** Fixed zh-CN short format: locale-independent, and short enough not to crowd the name column. */
+const TIME_FORMAT = new Intl.DateTimeFormat("zh-CN", {
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  // Explicit h23: midnight is 00:07, never 24:07 on an engine that maps hour12:false to h24.
+  hourCycle: "h23",
+});
+
 function formatTime(mtimeMs: number): string {
-  return new Date(mtimeMs).toLocaleString();
+  return TIME_FORMAT.format(new Date(mtimeMs)).replace(/\//g, "-");
 }
 
 function stateLabel(state: BatchRow["state"]): string {
@@ -98,6 +109,7 @@ export function LocalDocsPanel({
   const [writtenTo, setWrittenTo] = useState<string | null>(null);
   const [openMessage, setOpenMessage] = useState<string | null>(null);
   const scannedFor = useRef<string | null>(null);
+  const selectAllRef = useRef<HTMLInputElement>(null);
 
   // The preload object does not exist while the page is server-rendered, so it is read as an
   // external store: the server says "loading", the hydrated client tells the truth, and the
@@ -229,12 +241,6 @@ export function LocalDocsPanel({
     }
   }
 
-  if (bridgeState === "loading") return null;
-
-  if (!hasBridge) {
-    return <p className={styles.degraded}>本地文档处理只能在桌面应用中使用。</p>;
-  }
-
   const checkedCount = rows.filter((row) => row.checked).length;
   const processedCount = rows.filter((row) => row.state !== "new").length;
   // 全选 covers what a batch run means by default: the documents that still need work. An
@@ -242,6 +248,19 @@ export function LocalDocsPanel({
   // asks for a redo (L4), and it is the only way to ask (FSD §4.6).
   const selectable = rows.filter((row) => row.state !== "skip");
   const allChecked = selectable.length > 0 && selectable.every((row) => row.checked);
+  const someChecked = selectable.some((row) => row.checked);
+
+  // `checked` alone cannot express a partial selection: reflect it on the DOM property as well.
+  // Must stay above the early returns so every render calls the same hooks in the same order.
+  useEffect(() => {
+    if (selectAllRef.current) selectAllRef.current.indeterminate = someChecked && !allChecked;
+  }, [someChecked, allChecked]);
+
+  if (bridgeState === "loading") return null;
+
+  if (!hasBridge) {
+    return <p className={styles.degraded}>本地文档处理只能在桌面应用中使用。</p>;
+  }
 
   let disabledReason: string | null = null;
   if (busy === "running") disabledReason = "正在处理，请等待这一批结束。";
@@ -253,7 +272,12 @@ export function LocalDocsPanel({
   const notice =
     refusal === "same-dir"
       ? "输出目录和输入目录是同一个目录，产物会覆盖源文件，所以这一批被拒绝。"
-      : disabledReason ?? (scan && rows.length === 0 ? "这个目录里没有 md 文件。" : null);
+      : disabledReason ?? (scan && rows.length === 0 && !scan.truncated ? "这个目录里没有 md 文件。" : null);
+  // A capped scan is not an empty directory. Say so out loud instead of silently showing the
+  // same copy as a genuinely empty one, which reads as "nothing to do" and hides 500+ files.
+  const truncatedNotice = scan?.truncated
+    ? `这个目录里超过 ${MAX_SCANNED_FILES} 个 md，本次只读取了前 ${MAX_SCANNED_FILES} 个（按文件名排序）。可以先选一个更小的目录，或分批处理。`
+    : null;
 
   return (
     <section className={styles.panel}>
@@ -282,6 +306,12 @@ export function LocalDocsPanel({
           </button>
         </div>
       </div>
+
+      {/* A truncated scan is a real limit, not an empty directory: warn in the same amber
+          vocabulary as the refusals so it cannot be mistaken for "nothing to do". */}
+      {truncatedNotice ? (
+        <p className={`${styles.hint} ${styles.hintWarning}`} role="status">{truncatedNotice}</p>
+      ) : null}
 
       {/* feat-043 §4.1: the blocking notice sits above the toolbar, warning-coloured for the
           two refusals, and offers the way out inline. Informational rows stay muted. */}
@@ -350,6 +380,7 @@ export function LocalDocsPanel({
             <tr>
               <th>
                 <input
+                  ref={selectAllRef}
                   className={styles.checkbox}
                   type="checkbox"
                   aria-label="全选"
@@ -373,19 +404,23 @@ export function LocalDocsPanel({
             {rows.map((row) => (
               <tr key={row.id}>
                 <td>
-                  <input
-                    className={styles.checkbox}
-                    type="checkbox"
-                    aria-label={`选择 ${row.name}`}
-                    checked={row.checked}
-                    disabled={busy !== null}
-                    onChange={(event) => {
-                      const checked = event.target.checked;
-                      // Ticking a row means "process it": that is what lets an already-processed
-                      // document be redone, now that the per-row 重新处理 button is gone (L4).
-                      setRows((current) => applyRowStatus(current, row.id, { checked, forced: checked }));
-                    }}
-                  />
+                  {/* The label widens the clickable area to the whole cell without changing the
+                      checkbox's visual size (WCAG 2.2 2.5.8: at least 24×24). */}
+                  <label className={styles.checkTarget}>
+                    <input
+                      className={styles.checkbox}
+                      type="checkbox"
+                      aria-label={`选择 ${row.name}`}
+                      checked={row.checked}
+                      disabled={busy !== null}
+                      onChange={(event) => {
+                        const checked = event.target.checked;
+                        // Ticking a row means "process it": that is what lets an already-processed
+                        // document be redone, now that the per-row 重新处理 button is gone (L4).
+                        setRows((current) => applyRowStatus(current, row.id, { checked, forced: checked }));
+                      }}
+                    />
+                  </label>
                 </td>
                 <td className={styles.name} title={row.outputName === row.name ? undefined : `原名：${row.name}`}>
                   {row.outputName}

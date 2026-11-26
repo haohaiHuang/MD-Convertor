@@ -31,13 +31,15 @@ The app does not bypass login pages, paywalls, CAPTCHAs, or access restrictions.
 - Internet access for linked webpages and remote images; plain text and embedded `data:` images can be converted offline
 - No Node.js, browser, Playwright, or development environment is required to run the packaged app
 
-The current build is unsigned and not notarized. After verifying the checksum, extract the ZIP, move `MD-Convertor.app` to Applications, and try Finder → Open or Privacy & Security first. If macOS still reports that the trusted ZIP is damaged, remove only its quarantine attribute:
+The current build is unsigned and not notarized. After verifying the checksum, extract the ZIP and move `MD-Convertor.app` to Applications. For the first launch, **Control**-click (or right-click) the icon and choose Open, then confirm Open in the dialog — a plain double-click is usually stopped by Gatekeeper. Allowing it in Privacy & Security works too. If macOS still reports that the trusted ZIP is damaged, remove only its quarantine attribute:
 
 ```bash
 xattr -dr com.apple.quarantine "/Applications/MD-Convertor.app"
 ```
 
 Do not run this command for an app whose source or checksum you do not trust.
+
+That step is only about opening the app; running it asks for nothing else. Converting pages, converting local documents, and translating through a local agent CLI never touch the keychain. macOS asks for access to your login keychain **only** when a cloud provider key is saved or read back — that is, the first time you save one, and the first launch after a new version starts decrypting a key you already stored: enter your login password, choose Always Allow, and that build stops asking. A launch with no stored key raises no prompt at all. Because the build has no Developer ID signature, that approval is bound to this one binary, so a new version asks once more.
 
 ## Current Release
 

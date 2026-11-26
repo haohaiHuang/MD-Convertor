@@ -4,6 +4,16 @@
 
 This project follows the principles of [Keep a Changelog](https://keepachangelog.com/). User-facing changes that have not yet been released belong under `Unreleased`.
 
+## [Unreleased]
+
+### Fixed
+
+- Seven small UI issues found in the 2026-11-26 review are fixed (three others were left alone by request, and one more — the "disabled button gives no explanation" item — was withdrawn: the inline error does appear as you type). In the local-document list, the status now stays on one line when a file name is very long, and modification times use a short Chinese format (`11-25 10:37`) instead of an American one with AM/PM. A directory with more than 500 markdown files now says so instead of looking empty. Row checkboxes have a larger clickable area, and 「select all」 shows a half-checked state when only some rows are picked. The settings link and the URL field now have the same clear keyboard focus ring as the buttons.
+
+- The two entry cards on the start screen now start their titles on the same line. Both cards centre their content vertically, so the one whose note wrapped to fewer lines started lower and the pair read as left-high, right-low. The note now reserves the height of two lines, which leaves the taller card untouched and lifts the shorter one by about 11px — card height and the centred layout are exactly as before.
+
+- A build with no saved cloud API key no longer asks for your login password when it starts. The main process used to open the encrypted key store on every launch — even when it held nothing — and because the app is not Developer ID signed, every new build looked like a stranger to the login keychain. An empty store now returns before `safeStorage` is called, so the keychain is touched only when a key is actually saved or read. The README (both languages) now spells out this on-demand behaviour, and that the first launch needs a Control-click (or right-click) → Open rather than a double-click.
+
 ## [0.3.11] - 2026-11-16
 
 ### Fixed

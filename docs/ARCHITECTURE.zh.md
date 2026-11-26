@@ -32,7 +32,7 @@ Electron 渲染进程启用沙箱与上下文隔离，关闭 Node.js 集成。�
 
 ### 设置与密钥存储
 
-`settings.json` 保存 Provider 列表、本地 CLI 列表、目标语言与默认翻译开关。Electron `safeStorage` 把 Provider 的 API Key 加密存入 `secrets.json`（权限 `0600`，同样是原子写入）。密钥只有一个来源：由加密存储播种的运行时密钥表（主进程在服务启动时注入，保存或删除后即时更新）。密钥不会进入 `settings.json`、渲染进程、日志或错误消息；`secrets.json` 不可解析时拒绝覆写。
+`settings.json` 保存 Provider 列表、本地 CLI 列表、目标语言与默认翻译开关。Electron `safeStorage` 把 Provider 的 API Key 加密存入 `secrets.json`（权限 `0600`，同样是原子写入）。密钥只有一个来源：由加密存储播种的运行时密钥表（主进程在服务启动时注入，保存或删除后即时更新）。密钥不会进入 `settings.json`、渲染进程、日志或错误消息；`secrets.json` 不可解析时拒绝覆写。密钥表为空时主进程直接返回，不调用 `safeStorage`——因此没存过密钥的启动不会触发 macOS 钥匙串授权。
 
 ### 两套独立的地址策略
 

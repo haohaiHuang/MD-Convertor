@@ -15,7 +15,7 @@
 **关键决定**（规格 §5）：
 
 1. `.hintRow` 整组左对齐（D3）：`width: min(var(--col),100%); margin: 18px auto 0; justify-content: flex-start`；与 `.translateToggle` 左缘同轴。✓ 字形（P2-5）不动；760px `flex-wrap` 保留。**（2026-10-01 真机反馈取代：特点组改为与勾选框同行、右对齐到内容列右缘，见 Result 追记。）**
-2. `.entryCard`：删 `aspect-ratio: 1/1` → `min-height: 220px`；padding `28px 24px`；删 760px 的 `aspect-ratio: auto` 死规则；其余（gap 12px、居中、22px/13.5px 字号）不动。
+2. `.entryCard`：删 `aspect-ratio: 1/1` → `min-height: 220px`；padding `28px 24px`；删 760px 的 `aspect-ratio: auto` 死规则；其余（gap 12px、居中、22px/13.5px 字号）不动。**（2026-11-26 用户反馈：两卡标题要顶端对齐；「居中」与 220px 保留，只让说明文字预留两行高度，见 Result 追记。）**
 3. 终验对照度：禁用 primary 5.78:1、secondary 6.26:1、placeholder 4.71:1（如实记录）；Tab 焦点扫描无缺环。
 
 ---
@@ -38,6 +38,8 @@
 ## Result
 
 （2026-10-01 完成）T3.1–T3.4 全部落地：T3.1 同轴断言 RED（左缘差 314.72px）→ `.hintRow` `justify-content: flex-start` → GREEN（实测 delta 0.00px）；T3.2 entryCard 断言 RED（433px 高）→ 删 `aspect-ratio` 换 `min-height:220px` + padding `28px 24px` + 删 760px 死规则 → GREEN（220px，双列/单列护栏绿）；补强 title 反向锁（`settings.spec`，护栏断言无 RED，如实申报）。**T3.3 独立 QA 终验 PASS**：init.sh 95/1274/0、e2e **348 passed/6 skipped/0 failed** 三引擎（Firefox 必跑）、**11/11 销项**（销项表与截图 `outputs/qa-s3-*.png` + qa-s1/qa-s2 两组）、Tab 焦点扫描四页 0 缺环、对比度复核 5.78/6.26/4.71 全对上且禁用态 opacity 全 1。T3.4 台账已同步（feature_list 7 条 verification + status done、PROGRESS、session-handoff、QUALITY-AUDIT round log、CHANGELOG 双语、AGENTS.md）。**未 bump（0.3.9）、未 commit、未发布。**
+
+**追记（2026-11-26 用户反馈：入口卡标题左高右低）**：`.entryCard` 是 `justify-content: center`，两卡说明行数不同（左 2 行、右 1 行）⇒ 内容块高度不同 ⇒ 居中后左卡标题更靠上（实测差 **10.84px**）。**首版做法被用户否掉**：当时改成 `justify-content: flex-start` + `min-height: 184px`，标题是对齐了，但整块内容被顶到胶囊上方，用户明确要求「在上一个版本的基础上只把右侧标题上移一点点」。**最终做法**：`justify-content: center` 与 `min-height: 220px` 全部还原，只给 `.entryNote` 加 `min-height: 2lh`（预留两行）⇒ 两块内容等高、左卡像素级不动、右卡标题上移约 11px。TDD：`home.spec.ts` 用例改名为「两张入口卡的标题顶端对齐，内容仍垂直居中」，断言两卡标题 y 差 ≤1px **且** 每卡「标题上方留白」与「说明下方留白」相等（≤2px，实测 66.77 / 66.77）⇒ 首版实现下该用例必红（内容贴顶）⇒ GREEN（chromium 该文件 32 passed）。实测 960 / 1180 / 1440 / 1920 四档卡片均 220px、两卡标题同一 y、每卡上下留白各 66.77px；`2lh` 对应左卡说明的两行，若日后文案变成 3 行会由该用例报红。760 单列仍一卡一行、高度 ≤260 的既有断言不变。
 
 **追记（2026-10-01 真机确认反馈）**：用户指出特点行独占一行「感觉很怪」，裁定改为与翻译勾选框**同一行、右对齐**。TDD：`home.spec.ts` 用例改名「产品特点与翻译勾选同行，特点组右对齐到内容列右缘」（同行 ≤6px / 在勾选右侧 / 组右缘贴 `.form` 右缘 ±4px）⇒ RED（三引擎垂直差 37px）→ 新增 `.footerRow`（`space-between`）包住勾选 + 特点组、`.translateToggle` 去宽去外边距、`.hintRow` 去列宽 ⇒ GREEN 3/3。取代 T3.1 的左缘同轴口径（该断言已被新断言替换）；无勾选框（未配翻译）时特点组维持左对齐（`space-between` 单子项行为）。门禁：init.sh 95/1274/0 + e2e **348 passed / 6 skipped / 0 failed** 三引擎。
 
